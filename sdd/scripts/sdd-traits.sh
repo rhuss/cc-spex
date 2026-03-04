@@ -360,6 +360,9 @@ EOF
 do_apply() {
   ensure_config
 
+  # Ensure agent teams env var matches current trait state on every apply
+  ensure_agent_teams_env
+
   # Collect enabled traits
   enabled_traits=$(jq -r '.traits | to_entries[] | select(.value == true) | .key' "$TRAITS_CONFIG")
 
