@@ -5,6 +5,9 @@ When a user submits a /sdd: slash command, the UserPromptSubmit hook (context-ho
 writes a marker file with the pending skill name. This hook checks for that marker
 and blocks any non-Skill tool call until the Skill tool is invoked first.
 
+ToolSearch is always allowed through because Skill is a deferred tool that must be
+loaded via ToolSearch before it can be called.
+
 This prevents the model from drifting into file exploration or analysis before
 invoking the skill that contains the process to follow.
 """
@@ -39,6 +42,10 @@ def main():
 
     if not marker.exists():
         sys.exit(0)  # No pending skill, allow everything
+
+    if tool_name == 'ToolSearch':
+        # ToolSearch must be allowed through so the deferred Skill tool can be loaded
+        sys.exit(0)
 
     if tool_name == 'Skill':
         # Skill tool invoked, clear the gate
