@@ -1,3 +1,5 @@
+<!-- DEPRECATED: Replaced by sdd/overlays/teams/commands/speckit.implement.append.md -->
+<!-- Use the consolidated 'teams' trait instead of 'teams-spec'. -->
 
 <!-- SDD-TRAIT:teams-spec -->
 ## Spec Guardian: Lead Reviews, Teammates Implement
