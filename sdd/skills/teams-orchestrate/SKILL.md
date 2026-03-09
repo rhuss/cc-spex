@@ -31,6 +31,8 @@ FLAG=$(jq -r '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS // ""' .claude/settings.
 
 **If the flag is set:** Proceed with team orchestration.
 
+**If the flag becomes unset mid-session** (e.g., user restarts without it): The pre-flight check runs at skill invocation time, not continuously. If the env var disappears mid-session, already-spawned teammates continue working. On next invocation, the check will catch the missing flag and fall back to sequential.
+
 ## Task Graph Analysis
 
 Read the tasks.md file and analyze the dependency structure:
@@ -150,6 +152,8 @@ After all teammates have completed and all reviews have passed:
 When teams cannot be used (feature flag not active, single task, linear dependencies):
 
 Execute tasks sequentially in the current session following the standard implementation flow from tasks.md. This is the normal behavior when the teams trait is not active.
+
+**Mixed independence**: When some tasks are independent and others are sequential (e.g., 1 of 3 tasks is independent, 2 are sequential), group the sequential tasks together as one teammate's workload and assign the independent task to a separate teammate. If only one independent group results, fall back to sequential execution.
 
 ## Key Principles
 
