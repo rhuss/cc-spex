@@ -1,3 +1,5 @@
+<!-- DEPRECATED: Replaced by sdd/overlays/teams/commands/speckit.implement.append.md -->
+<!-- Use the consolidated 'teams' trait instead of 'teams-vanilla'. -->
 
 <!-- SDD-TRAIT:teams-vanilla -->
 ## Agent Teams: Parallel Implementation

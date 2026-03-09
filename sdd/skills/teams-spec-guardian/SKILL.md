@@ -1,6 +1,8 @@
 ---
 name: teams-spec-guardian
-description: "Spec guardian pattern for teams-spec trait: lead reviews, teammates implement in worktrees, beads bridge for persistence"
+description: "DEPRECATED: Merged into sdd:teams-orchestrate. Use the consolidated 'teams' trait instead of 'teams-spec'."
+deprecated: true
+replacement: sdd:teams-orchestrate
 ---
 
 # Spec Guardian: Lead Reviews, Teammates Implement
@@ -87,7 +89,7 @@ The lead monitors teammates and reviews their work as they complete tasks.
    **If review PASSES:**
    - Merge the worktree changes into the working branch
    - Mark the corresponding beads issue(s) as closed: `bd close <id> -r "Reviewed and merged"`
-   - Run `bd sync` to persist state
+   - Run `bd backup` to persist state
    - Message the teammate: "Work approved and merged. Move to your next task."
 
    **If review FAILS:**
@@ -143,9 +145,9 @@ When all tasks are complete and merged:
    "<sdd-beads-sync-command>" "$SPEC_DIR/tasks.md" --reverse
    ```
 
-3. **Final beads sync:**
+3. **Final beads backup:**
    ```bash
-   bd sync
+   bd backup
    ```
 
 4. **Clean up the team:**
