@@ -60,6 +60,9 @@ build/
 *.bak
 *.log
 
+# Beads runtime state (Dolt server)
+.beads/dolt-server.*
+
 # Sync-related temporary files
 skills/**/SKILL.md.proposed
 /tmp/upstream-changes-*.patch
