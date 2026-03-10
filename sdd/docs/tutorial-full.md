@@ -209,7 +209,7 @@ Named after the upstream Superpowers plugin whose process discipline it draws fr
 | `/speckit.plan` | Runs spec review before planning. After planning: generates tasks, runs plan review, commits spec artifacts, offers a spec PR |
 | `/speckit.implement` | Verifies the spec package before starting. Runs code review + verification after completion |
 
-The spec PR flow is particularly useful for teams. After `/speckit.plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, review-summary.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
+The spec PR flow is particularly useful for teams. After `/speckit.plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEW.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
 
 ### The Beads Trait
 

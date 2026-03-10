@@ -1,13 +1,13 @@
 ---
 name: review-plan
-description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and review-summary.md generation
+description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEW.md generation
 ---
 
 # Post-Planning Quality Validation
 
 ## Overview
 
-This skill validates plan and task quality after `/speckit.plan` and `/speckit.tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `review-summary.md`.
+This skill validates plan and task quality after `/speckit.plan` and `/speckit.tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEW.md`.
 
 ## Prerequisites
 
@@ -102,9 +102,9 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 5. Generate review-summary.md (MANDATORY)
+## 5. Generate REVIEW.md (MANDATORY)
 
-Generating `review-summary.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/review-summary.md`:
+Generating `REVIEW.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEW.md`:
 
 ```markdown
 # Review Summary: [Feature Name]
@@ -151,6 +151,39 @@ reviewer enough context to understand the feature without reading the full spec.
 - Work through the **Reviewer Checklist** below
 - Mark items as checked, flag concerns as PR comments
 
+## Review Response Matrix (conditional)
+
+> Include this section ONLY when the spec revision addresses feedback from a prior
+> PR or review. Skip entirely for first-time specs.
+
+**Detection:** Check if any of these indicators are present:
+- spec.md contains a "Clarifications" section referencing prior reviews
+- research.md mentions "revised after PR #NNN review"
+- Commit messages reference prior PR numbers
+- Open Questions reference prior PR discussions
+
+**If prior review feedback exists:**
+
+1. Collect all original reviewer comments from the referenced PR(s)
+   using `gh api repos/{owner}/{repo}/pulls/{number}/comments`
+2. Build a 1:1 mapping from each reviewer comment to its resolution
+3. Group by reviewer (not by theme) so each reviewer can verify their
+   specific concerns were addressed
+4. Never collapse multiple distinct reviewer comments into one row,
+   even if they address the same underlying concept
+
+| # | Reviewer | Original Comment | Resolution | Spec Location |
+|---|----------|-----------------|------------|---------------|
+| 1 | @reviewer | [Paraphrased concern with link] | [How resolved] | FR-XXX, section Y |
+| 2 | @reviewer | [Another concern with link] | [Resolution] | FR-YYY |
+
+For any unaddressed comments, mark explicitly as:
+- **Deferred** (with rationale and link to tracking issue)
+- **Disagreed** (with justification visible to the original reviewer)
+- **Out of scope** (with explanation of why)
+
+Never silently omit a reviewer comment.
+
 ## PR Contents
 
 This spec PR includes the following artifacts:
@@ -160,7 +193,7 @@ This spec PR includes the following artifacts:
 | `spec.md` | [One-line summary of what the spec defines] |
 | `plan.md` | [One-line summary of the implementation approach] |
 | `tasks.md` | [Number of tasks across N phases] |
-| `review-summary.md` | This file |
+| `REVIEW.md` | This file |
 | [Other artifacts if any, e.g. checklist.md, diagrams] | [Description] |
 
 ## Technical Decisions
@@ -235,6 +268,8 @@ This spec PR includes the following artifacts:
 - Critical References MUST point to specific sections (with section numbers or anchors) in spec.md and plan.md
 - Reviewer Checklist items should be concrete and actionable, not vague
 - Summarize, don't transcribe
+- When a Review Response Matrix is present, the Technical Decisions section MUST be derived from the matrix entries (not authored independently). This ensures every reviewer concern maps to a visible spec change and nothing is lost in thematic summarization.
+- Each distinct reviewer comment gets its own row in the matrix, even if multiple comments address the same architectural concept. Reviewers scan for their name and need to find every comment they made.
 
 ## 6. Present Results
 
@@ -243,7 +278,7 @@ Report to the user:
 - Coverage matrix summary
 - Red flag scan results
 - NFR validation results
-- Path to generated review-summary.md
+- Path to generated REVIEW.md
 
 ## Integration
 
