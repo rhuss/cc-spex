@@ -102,9 +102,9 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 5. Generate review-summary.md
+## 5. Generate review-summary.md (MANDATORY)
 
-After validation passes, generate `specs/[feature-name]/review-summary.md`:
+Generating `review-summary.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/review-summary.md`:
 
 ```markdown
 # Review Summary: [Feature Name]
@@ -121,6 +121,35 @@ non-specialist can follow. Cover: what problem this feature solves, how it works
 high level, what changes it introduces, and why it matters. Avoid jargon where possible;
 where technical terms are necessary, explain them briefly. This section should give a
 reviewer enough context to understand the feature without reading the full spec.]
+
+## Review Recipe (30 minutes)
+
+> Step-by-step guide to review this spec efficiently. Focus on the most critical
+> parts first. The full review should take no longer than 30 minutes.
+
+### Step 1: Understand the problem (5 min)
+- Read the Executive Summary above
+- Skim `spec.md` Section 1 (Problem Statement / Motivation)
+- Ask yourself: Is this problem worth solving? Is the scope right?
+
+### Step 2: Check critical references (10 min)
+- Review each item in the **Critical References** table below
+- These are the sections that carry the most risk or define key contracts
+- For each: read the referenced section, check the reasoning, flag concerns
+
+### Step 3: Evaluate technical decisions (8 min)
+- Review the **Technical Decisions** section below
+- For each decision: Are the rejected alternatives valid? Is the trade-off acceptable?
+- Pay special attention to decisions marked with a "Reviewer question"
+
+### Step 4: Validate coverage and risks (5 min)
+- Scan the **Risk Areas** table: Are mitigations sufficient for high-impact risks?
+- Check **Scope Boundaries**: Is anything missing that should be in scope?
+- Glance at the coverage matrix in the review output to spot gaps
+
+### Step 5: Complete the checklist (2 min)
+- Work through the **Reviewer Checklist** below
+- Mark items as checked, flag concerns as PR comments
 
 ## PR Contents
 
