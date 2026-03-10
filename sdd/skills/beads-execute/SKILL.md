@@ -1,6 +1,6 @@
 ---
 name: beads-execute
-description: Beads-driven task execution - bootstraps issues from tasks.md, uses bd ready for scheduling, bd sync for persistence
+description: Beads-driven task execution - bootstraps issues from tasks.md, uses bd ready for scheduling, bd backup for persistence
 ---
 
 # Beads-Driven Task Execution
@@ -31,8 +31,8 @@ if ! bd list --json &>/dev/null; then
   echo "Initialized beads database."
 fi
 
-# Refresh SQLite cache from JSONL to prevent "Database out of sync" errors
-bd sync --import-only 2>/dev/null || true
+# Restore database from backup files if available (e.g. after fresh clone)
+bd backup restore 2>/dev/null || true
 ```
 
 If `bd` is not available, report the error and stop. Do not fall back to non-beads execution within this skill.
@@ -77,8 +77,8 @@ while [ -n "$NEXT" ]; do
   # To add a detailed comment, use a separate command:
   # bd comments add "$TASK_ID" "Detailed notes here"
 
-  # Sync state to git
-  bd sync
+  # Persist state for git tracking
+  bd backup
 
   # Get next ready task
   NEXT=$(bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then empty else .[0] // empty end')
@@ -90,7 +90,7 @@ done
 After completing each task (or group of parallel tasks), persist state:
 
 ```bash
-bd sync
+bd backup
 ```
 
 This ensures:
@@ -129,8 +129,8 @@ bd list --status open
 # Reverse sync to update tasks.md with all status changes and discovered work
 "<sdd-beads-sync-command>" "$SPEC_DIR/tasks.md" --reverse
 
-# Final sync
-bd sync
+# Final backup
+bd backup
 ```
 
 Report the beads execution summary:

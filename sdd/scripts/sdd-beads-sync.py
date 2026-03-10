@@ -157,14 +157,13 @@ def bd_list_json():
 # --- Forward Sync ---
 
 def ensure_db_fresh():
-    """Re-import JSONL into the SQLite database to prevent stale-db errors.
+    """Restore database from backup files if available.
 
-    The bd CLI maintains a SQLite cache that can fall out of sync with the
-    backing JSONL file (e.g. after external edits or partial operations).
-    Running ``bd sync --import-only`` rebuilds the cache from JSONL, which
-    avoids "Database out of sync with JSONL" errors on subsequent commands.
+    After a fresh clone or if the Dolt database was lost, ``bd backup restore``
+    rebuilds the database from the JSONL backup files in ``.beads/backup/``.
+    This is a no-op if the database is already up to date.
     """
-    run_bd('sync', '--import-only', check=False)
+    run_bd('backup', 'restore', check=False)
 
 
 def do_forward_sync(tasks_file, dry_run):
@@ -355,9 +354,9 @@ def do_forward_sync(tasks_file, dry_run):
             updated_lines.append(line)
         tasks_file.write_text('\n'.join(updated_lines) + '\n')
 
-    # Final sync
+    # Final backup to persist state for git
     if not dry_run:
-        run_bd('sync', check=False)
+        run_bd('backup', check=False)
 
     print()
     print("Forward sync complete:")

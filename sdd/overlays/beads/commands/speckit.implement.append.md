@@ -21,7 +21,7 @@ Instead, you MUST use {Skill: sdd:beads-execute} for ALL task execution.
 This skill handles:
 1. Dependency-aware scheduling via `bd ready --json`
 2. Marking tasks complete via `bd close <id> -r "reason"` (NOT by editing tasks.md)
-3. Git-backed state persistence via `bd sync` after each task
+3. Git-backed state persistence via `bd backup` after each task
 4. Discovered work tracking via `bd create`
 5. Reverse sync at completion to update tasks.md
 
