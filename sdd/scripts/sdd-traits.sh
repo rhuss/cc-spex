@@ -28,7 +28,7 @@ set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TRAITS_CONFIG=".specify/sdd-traits.json"
-VALID_TRAITS="superpowers beads teams teams-vanilla teams-spec"
+VALID_TRAITS="superpowers beads teams"
 
 # --- Helpers ---
 
@@ -55,7 +55,6 @@ get_trait_deps() {
   # Returns space-separated list of required traits (bash 3.2 compatible)
   case "$1" in
     teams) echo "superpowers beads" ;;
-    teams-spec) echo "teams-vanilla superpowers beads" ;;
     *) echo "" ;;
   esac
 }
@@ -117,9 +116,7 @@ ensure_config() {
   "traits": {
     "superpowers": false,
     "beads": false,
-    "teams": false,
-    "teams-vanilla": false,
-    "teams-spec": false
+    "teams": false
   },
   "applied_at": "$(now_iso)"
 }
@@ -133,36 +130,34 @@ EOF
     exit 1
   fi
 
-  # Normalize old teams trait names to consolidated "teams"
+  # Migrate old teams trait names to consolidated "teams" and remove deprecated keys
   local tv ts
-  tv=$(jq -r '.traits["teams-vanilla"] // false' "$TRAITS_CONFIG" 2>/dev/null)
-  ts=$(jq -r '.traits["teams-spec"] // false' "$TRAITS_CONFIG" 2>/dev/null)
-  if [ "$tv" = "true" ] || [ "$ts" = "true" ]; then
-    local has_teams
-    has_teams=$(jq -r '.traits["teams"] // false' "$TRAITS_CONFIG" 2>/dev/null)
-    if [ "$has_teams" != "true" ]; then
-      local tmp
-      tmp=$(mktemp)
-      jq '.traits["teams"] = true | .traits["teams-vanilla"] = false | .traits["teams-spec"] = false' "$TRAITS_CONFIG" > "$tmp"
-      mv "$tmp" "$TRAITS_CONFIG"
-      echo "NOTICE: Migrated teams-vanilla/teams-spec to consolidated 'teams' trait in config."
+  tv=$(jq -r '.traits["teams-vanilla"] // "absent"' "$TRAITS_CONFIG" 2>/dev/null)
+  ts=$(jq -r '.traits["teams-spec"] // "absent"' "$TRAITS_CONFIG" 2>/dev/null)
+  if [ "$tv" != "absent" ] || [ "$ts" != "absent" ]; then
+    local tmp
+    tmp=$(mktemp)
+    if [ "$tv" = "true" ] || [ "$ts" = "true" ]; then
+      jq '.traits["teams"] = true | del(.traits["teams-vanilla"], .traits["teams-spec"])' "$TRAITS_CONFIG" > "$tmp"
+      echo "NOTICE: Migrated teams-vanilla/teams-spec to consolidated 'teams' trait."
+    else
+      jq 'del(.traits["teams-vanilla"], .traits["teams-spec"])' "$TRAITS_CONFIG" > "$tmp"
     fi
+    mv "$tmp" "$TRAITS_CONFIG"
   fi
 }
 
 ensure_agent_teams_env() {
   # Set or remove CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS in settings.local.json
-  # based on whether any teams trait is currently enabled.
+  # based on whether the teams trait is currently enabled.
   ensure_settings
 
-  local teams_vanilla teams_spec teams_consolidated
-  teams_vanilla=$(jq -r '.traits["teams-vanilla"] // false' "$TRAITS_CONFIG" 2>/dev/null)
-  teams_spec=$(jq -r '.traits["teams-spec"] // false' "$TRAITS_CONFIG" 2>/dev/null)
-  teams_consolidated=$(jq -r '.traits["teams"] // false' "$TRAITS_CONFIG" 2>/dev/null)
+  local teams_enabled
+  teams_enabled=$(jq -r '.traits["teams"] // false' "$TRAITS_CONFIG" 2>/dev/null)
 
   local tmp
   tmp=$(mktemp)
-  if [ "$teams_vanilla" = "true" ] || [ "$teams_spec" = "true" ] || [ "$teams_consolidated" = "true" ]; then
+  if [ "$teams_enabled" = "true" ]; then
     jq '.env //= {} | .env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
     echo "Set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in $SETTINGS_FILE"
@@ -278,8 +273,8 @@ do_enable() {
     ensure_beads_db
   fi
 
-  # Set agent teams env var if a teams trait was enabled
-  if [ "$trait" = "teams-vanilla" ] || [ "$trait" = "teams-spec" ] || [ "$trait" = "teams" ]; then
+  # Set agent teams env var if teams trait was enabled
+  if [ "$trait" = "teams" ]; then
     ensure_agent_teams_env
   fi
 
@@ -325,8 +320,8 @@ do_disable() {
   mv "$tmp" "$TRAITS_CONFIG"
   echo "Trait '$trait' disabled in config."
 
-  # Remove agent teams env var if no teams traits remain enabled
-  if [ "$trait" = "teams-vanilla" ] || [ "$trait" = "teams-spec" ] || [ "$trait" = "teams" ]; then
+  # Remove agent teams env var if teams trait was disabled
+  if [ "$trait" = "teams" ]; then
     ensure_agent_teams_env
   fi
 
@@ -357,14 +352,19 @@ do_init() {
   done
 
   # Build the traits JSON object
-  local superpowers_val="false" beads_val="false"
-  local teams_vanilla_val="false" teams_spec_val="false"
-  local teams_consolidated_val="false"
+  local superpowers_val="false" beads_val="false" teams_val="false"
 
   if [ -n "$enable_list" ]; then
     IFS=',' read -ra traits_arr <<< "$enable_list"
     for t in "${traits_arr[@]}"; do
       t=$(echo "$t" | tr -d ' ')
+      # Accept deprecated names and map to consolidated trait
+      case "$t" in
+        teams-vanilla|teams-spec)
+          echo "NOTICE: '$t' is deprecated. Using consolidated 'teams' trait."
+          t="teams"
+          ;;
+      esac
       if ! is_valid_trait "$t"; then
         echo "ERROR: Invalid trait '$t'. Valid traits: $VALID_TRAITS" >&2
         exit 2
@@ -372,24 +372,12 @@ do_init() {
       case "$t" in
         superpowers) superpowers_val="true" ;;
         beads) beads_val="true" ;;
-        teams) teams_consolidated_val="true" ;;
-        teams-vanilla) teams_vanilla_val="true" ;;
-        teams-spec) teams_spec_val="true" ;;
+        teams) teams_val="true" ;;
       esac
     done
 
-    # Auto-resolve: old trait names to consolidated teams
-    if [ "$teams_vanilla_val" = "true" ] || [ "$teams_spec_val" = "true" ]; then
-      if [ "$teams_consolidated_val" != "true" ]; then
-        teams_consolidated_val="true"
-        echo "NOTICE: Migrating old teams trait names to consolidated 'teams' trait."
-      fi
-      teams_vanilla_val="false"
-      teams_spec_val="false"
-    fi
-
     # Auto-resolve: teams requires superpowers and beads
-    if [ "$teams_consolidated_val" = "true" ]; then
+    if [ "$teams_val" = "true" ]; then
       if [ "$superpowers_val" = "false" ]; then
         superpowers_val="true"
         echo "NOTE: Auto-enabling superpowers (required by teams)."
@@ -397,17 +385,6 @@ do_init() {
       if [ "$beads_val" = "false" ]; then
         beads_val="true"
         echo "NOTE: Auto-enabling beads (required by teams)."
-      fi
-    fi
-
-    # Check non-auto-resolvable deps for teams-spec (backward compat)
-    if [ "$teams_spec_val" = "true" ]; then
-      local missing_deps=""
-      [ "$superpowers_val" = "false" ] && missing_deps="$missing_deps superpowers"
-      [ "$beads_val" = "false" ] && missing_deps="$missing_deps beads"
-      if [ -n "$missing_deps" ]; then
-        echo "ERROR: teams-spec requires these traits to also be enabled:$missing_deps" >&2
-        exit 2
       fi
     fi
   fi
@@ -419,9 +396,7 @@ do_init() {
   "traits": {
     "superpowers": $superpowers_val,
     "beads": $beads_val,
-    "teams": $teams_consolidated_val,
-    "teams-vanilla": $teams_vanilla_val,
-    "teams-spec": $teams_spec_val
+    "teams": $teams_val
   },
   "applied_at": "$(now_iso)"
 }
@@ -434,8 +409,8 @@ EOF
     ensure_beads_db
   fi
 
-  # Set agent teams env var if any teams trait was enabled
-  if [ "$teams_vanilla_val" = "true" ] || [ "$teams_spec_val" = "true" ] || [ "$teams_consolidated_val" = "true" ]; then
+  # Set agent teams env var if teams trait was enabled
+  if [ "$teams_val" = "true" ]; then
     ensure_agent_teams_env
   fi
 
@@ -529,7 +504,7 @@ do_apply() {
 
   # Cleanup stale trait blocks from target files
   # Get list of all known trait sentinels and check which are disabled/aliased
-  local all_sentinels="superpowers beads teams teams-vanilla teams-spec"
+  local all_sentinels="superpowers beads teams"
   for target in $(printf '%s\n' "${target_files[@]}" | sort -u); do
     for sentinel_trait in $all_sentinels; do
       local sentinel="<!-- SDD-TRAIT:${sentinel_trait} -->"
