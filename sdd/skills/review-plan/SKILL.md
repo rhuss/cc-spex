@@ -1,13 +1,13 @@
 ---
 name: review-plan
-description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEW.md generation
+description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEWERS.md generation
 ---
 
 # Post-Planning Quality Validation
 
 ## Overview
 
-This skill validates plan and task quality after `/speckit.plan` and `/speckit.tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEW.md`.
+This skill validates plan and task quality after `/speckit.plan` and `/speckit.tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEWERS.md`.
 
 ## Prerequisites
 
@@ -102,9 +102,28 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 5. Generate REVIEW.md (MANDATORY)
+## 5. Generate REVIEWERS.md (MANDATORY)
 
-Generating `REVIEW.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEW.md`:
+Generating `REVIEWERS.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEWERS.md`.
+
+**CRITICAL: This file is for HUMAN reviewers, not a self-assessment.**
+
+`REVIEWERS.md` guides human reviewers through the spec and plan. It is NOT a place to write your own quality scores, verdicts, coverage matrices, or validation results. Those go to console output in step 6.
+
+Do NOT output coverage matrices, quality scores, or pass/fail verdicts as REVIEWERS.md. Those are internal validation artifacts (step 6 console output), not reviewer documentation.
+
+Do NOT include in `REVIEWERS.md`:
+- Your quality scores or pass/fail verdicts
+- Coverage matrix tables (those are step 6 console output)
+- Red flag scan results
+- Phrases like "Quality Score: X/Y", "Verdict: PASS", "Recommendation: proceed to..."
+
+DO include in `REVIEWERS.md`:
+- Executive Summary explaining the feature for a non-specialist
+- Review Recipe guiding a human through a 30-minute review
+- Technical Decisions with alternatives and trade-offs for humans to evaluate
+- Critical References pointing humans to sections that need their attention
+- Reviewer Checklist with concrete items for humans to verify
 
 ```markdown
 # Review Summary: [Feature Name]
@@ -193,7 +212,7 @@ This spec PR includes the following artifacts:
 | `spec.md` | [One-line summary of what the spec defines] |
 | `plan.md` | [One-line summary of the implementation approach] |
 | `tasks.md` | [Number of tasks across N phases] |
-| `REVIEW.md` | This file |
+| `REVIEWERS.md` | This file |
 | [Other artifacts if any, e.g. checklist.md, diagrams] | [Description] |
 
 ## Technical Decisions
@@ -271,6 +290,23 @@ This spec PR includes the following artifacts:
 - When a Review Response Matrix is present, the Technical Decisions section MUST be derived from the matrix entries (not authored independently). This ensures every reviewer concern maps to a visible spec change and nothing is lost in thematic summarization.
 - Each distinct reviewer comment gets its own row in the matrix, even if multiple comments address the same architectural concept. Reviewers scan for their name and need to find every comment they made.
 
+**Structural validation (run after writing REVIEWERS.md):**
+
+REVIEWERS.md MUST contain at least 5 of these 8 headings: Executive Summary, Review Recipe, Technical Decisions, Critical References, Reviewer Checklist, Scope Boundaries, Risk Areas, PR Contents.
+
+After writing the file, verify:
+
+```bash
+SPEC_DIR="specs/[feature-name]"
+REQUIRED_HEADINGS="Executive Summary|Review Recipe|Technical Decisions|Critical References|Reviewer Checklist|Scope Boundaries|Risk Areas|PR Contents"
+HEADING_COUNT=$(grep -cE "^##\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEWERS.md" 2>/dev/null || echo 0)
+if [ "$HEADING_COUNT" -lt 5 ]; then
+  echo "ERROR: REVIEWERS.md has only $HEADING_COUNT of 8 expected sections. Regenerate with the template from step 5."
+fi
+```
+
+If the check fails, the file was likely generated as a self-review instead of a reviewer guide. Delete it and regenerate using the template above.
+
 ## 6. Present Results
 
 Report to the user:
@@ -278,7 +314,7 @@ Report to the user:
 - Coverage matrix summary
 - Red flag scan results
 - NFR validation results
-- Path to generated REVIEW.md
+- Path to generated REVIEWERS.md
 
 ## Integration
 
