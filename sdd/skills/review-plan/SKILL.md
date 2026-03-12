@@ -34,7 +34,7 @@ BEADS_ENABLED=$(jq -r '.traits.beads // false' .specify/sdd-traits.json 2>/dev/n
 If beads is enabled (`true`), verify that bd issues exist for this feature:
 
 ```bash
-ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end')
+ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end' 2>/dev/null || echo 0)
 TASK_COUNT=$(grep -c '^\- \[ \]' "$SPEC_DIR/tasks.md" 2>/dev/null || echo 0)
 ```
 

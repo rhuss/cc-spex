@@ -61,7 +61,7 @@ Use `bd ready` to get the next unblocked task:
 
 ```bash
 # Get next ready task (all dependencies resolved)
-NEXT=$(bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then empty else .[0] // empty end')
+NEXT=$(bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then empty else .[0] // empty end' 2>/dev/null || true)
 
 while [ -n "$NEXT" ]; do
   TASK_ID=$(echo "$NEXT" | jq -r '.id')
@@ -81,7 +81,7 @@ while [ -n "$NEXT" ]; do
   bd backup
 
   # Get next ready task
-  NEXT=$(bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then empty else .[0] // empty end')
+  NEXT=$(bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then empty else .[0] // empty end' 2>/dev/null || true)
 done
 ```
 
@@ -151,12 +151,19 @@ database). All jq filters MUST check for errors before processing results.
 Also, NEVER use `2>&1` when piping bd output to jq. Stderr noise corrupts the
 JSON stream. Use `2>/dev/null` to discard stderr.
 
+**IMPORTANT:** `bd` may also output non-JSON text to stdout (e.g., connection
+errors, server not running). The `2>/dev/null` on `bd` only suppresses stderr.
+You MUST also add `2>/dev/null` to `jq` and provide a fallback with `||` to
+handle non-JSON input gracefully. Without this, `jq` will crash with
+"parse error: Invalid numeric literal".
+
 **Error-safe wrapper** (use this pattern for all bd JSON queries):
 ```bash
 # Guard: type == "object" and .error  (plain .error crashes on arrays)
-bd show "$ID" --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else .[0] | {id, title, status} end'
-bd list --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else . end'
-bd ready --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else . end'
+# Note: 2>/dev/null on BOTH bd and jq, plus || fallback for non-JSON stdout
+bd show "$ID" --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else .[0] | {id, title, status} end' 2>/dev/null || echo '{}'
+bd list --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else . end' 2>/dev/null || echo '[]'
+bd ready --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else . end' 2>/dev/null || echo '[]'
 ```
 
 ### Correct patterns
@@ -166,19 +173,19 @@ get the first element, or `.[]` to iterate.
 
 ```bash
 # List open tasks (excluding epics)
-bd list --type task --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | "\(.id): \(.title)" end'
+bd list --type task --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | "\(.id): \(.title)" end' 2>/dev/null || true
 
 # Get ready tasks
-bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | "\(.id): \(.title)" end'
+bd ready --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | "\(.id): \(.title)" end' 2>/dev/null || true
 
 # Filter by label
-bd list --label "phase:1" --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | .title end'
+bd list --label "phase:1" --json 2>/dev/null | jq -r 'if type == "object" and .error then error(.error) else .[] | .title end' 2>/dev/null || true
 
 # Count open issues
-bd list --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else length end'
+bd list --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else length end' 2>/dev/null || echo 0
 
 # Show specific fields (bd show returns an array, use .[0])
-bd show "$ID" --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else .[0] | {id, title, status} end'
+bd show "$ID" --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else .[0] | {id, title, status} end' 2>/dev/null || echo '{}'
 
 # Bulk create issues from a markdown file (use -f or --file, NOT --from-file)
 bd create -f tasks.md --dry-run

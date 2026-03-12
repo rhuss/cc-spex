@@ -25,7 +25,7 @@ Before spawning any teammates, ensure beads issues exist for all tasks:
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
-ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end')
+ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end' 2>/dev/null || echo 0)
 TASK_COUNT=$(grep -c '^\- \[ \]' "$SPEC_DIR/tasks.md" 2>/dev/null || echo 0)
 ```
 
@@ -136,7 +136,7 @@ When all tasks are complete and merged:
 
 1. **Verify all beads issues are closed:**
    ```bash
-   bd list --status open --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else length end'
+   bd list --status open --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else length end' 2>/dev/null || echo 0
    ```
    Should return 0.
 

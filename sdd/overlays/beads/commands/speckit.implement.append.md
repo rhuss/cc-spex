@@ -6,7 +6,7 @@ Before executing ANY task, you MUST verify beads issues are synced.
 Run this check FIRST, before any implementation work:
 
 ```bash
-ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end')
+ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end' 2>/dev/null || echo 0)
 ```
 
 - If `bd` is not installed: **STOP.** Report error. Do not fall back to non-beads execution.
@@ -32,3 +32,4 @@ This skill handles:
 - Always use `jq` to parse bd JSON output. NEVER use inline Python one-liners.
 - NEVER use `2>&1` when piping to jq (stderr corrupts JSON). Use `2>/dev/null`.
 - Always guard jq filters: `if type == "object" and .error then error(.error) else ... end`
+- Always add `2>/dev/null` to jq AND a `||` fallback (e.g., `|| echo 0`, `|| echo '[]'`, `|| true`) to handle non-JSON stdout from bd.
