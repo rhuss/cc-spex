@@ -18,7 +18,7 @@ A user runs `/speckit.specify` in a project with the `sdd` trait enabled. The sp
 
 **Acceptance Scenarios**:
 
-1. **Given** a project with the `sdd` trait enabled (overlay applied to `speckit.specify.md`), **When** the user runs `/speckit.specify "Add user authentication"`, **Then** spec-kit creates the spec normally, and after completion the SDD overlay invokes `{Skill: sdd:review-spec}` to validate the spec, and checks `specs/constitution.md` for alignment if it exists.
+1. **Given** a project with the `sdd` trait enabled (overlay applied to `speckit.specify.md`), **When** the user runs `/speckit.specify "Add user authentication"`, **Then** spec-kit creates the spec normally, and after completion the SDD overlay invokes `{Skill: sdd:review-spec}` to validate the spec, and checks `.specify/memory/constitution.md` for alignment if it exists.
 
 2. **Given** a project with no traits enabled, **When** the user runs `/speckit.specify`, **Then** spec-kit creates the spec normally with no additional quality gates (baseline spec-kit behavior).
 

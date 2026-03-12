@@ -203,13 +203,11 @@ Read thoroughly, take notes on issues.
 
 ### 7. Check Against Constitution
 
-**If constitution exists (check both locations):**
+**If constitution exists:**
 
 ```bash
 if [ -f ".specify/memory/constitution.md" ]; then
   cat .specify/memory/constitution.md
-elif [ -f "specs/constitution.md" ]; then
-  cat specs/constitution.md
 else
   echo "no-constitution"
 fi

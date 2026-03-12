@@ -68,7 +68,7 @@ After `specify init`, these `/speckit.*` commands are available:
 | `/speckit.analyze` | Cross-artifact consistency | (analysis output) |
 | `/speckit.checklist` | Generate quality checklist | checklist file |
 | `/speckit.implement` | Execute implementation | code files |
-| `/speckit.constitution` | Create project constitution | `.specify/memory/constitution.md` (also check `specs/constitution.md`) |
+| `/speckit.constitution` | Create project constitution | `.specify/memory/constitution.md` |
 
 **Usage in skills:**
 
@@ -126,19 +126,12 @@ Use these helpers to validate spec-kit file structure:
 
 ### Check Constitution
 
-The constitution can exist in two locations depending on how it was created:
-- `.specify/memory/constitution.md` (created by `/speckit.constitution`)
-- `specs/constitution.md` (created manually via `sdd:constitution`)
-
-**Always check both locations:**
+The constitution is stored at `.specify/memory/constitution.md` (the canonical location, matching upstream spec-kit).
 
 ```bash
-# Check both possible constitution locations
+# Check constitution location
 if [ -f ".specify/memory/constitution.md" ]; then
   CONSTITUTION=".specify/memory/constitution.md"
-  echo "constitution-exists: $CONSTITUTION"
-elif [ -f "specs/constitution.md" ]; then
-  CONSTITUTION="specs/constitution.md"
   echo "constitution-exists: $CONSTITUTION"
 else
   echo "no-constitution"

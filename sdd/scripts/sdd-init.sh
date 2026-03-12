@@ -34,15 +34,36 @@ apply_traits() {
   fi
 }
 
-# --- Fix constitution symlink silently ---
+# --- Migrate legacy constitution symlink setup ---
+# Older versions stored the constitution at specs/constitution.md with a symlink
+# from .specify/memory/constitution.md. The canonical location is now
+# .specify/memory/constitution.md (matching upstream spec-kit).
 fix_constitution() {
-  if [ -f "specs/constitution.md" ] && [ ! -e ".specify/memory/constitution.md" ]; then
+  # Case 1: symlink at .specify/memory/ pointing to specs/ - replace with real file
+  if [ -L ".specify/memory/constitution.md" ]; then
+    local target
+    target=$(readlink ".specify/memory/constitution.md")
+    if [ -f ".specify/memory/constitution.md" ]; then
+      cp --remove-destination ".specify/memory/constitution.md" ".specify/memory/constitution.md.tmp" 2>/dev/null \
+        || cp "$(cd .specify/memory && pwd -P)/$(readlink constitution.md)" ".specify/memory/constitution.md.tmp"
+      rm ".specify/memory/constitution.md"
+      mv ".specify/memory/constitution.md.tmp" ".specify/memory/constitution.md"
+      echo "Migrated constitution: replaced symlink with real file at .specify/memory/constitution.md"
+    fi
+    # Clean up the old specs/ copy if it was the symlink target
+    if [ -f "specs/constitution.md" ] && [ ! -L "specs/constitution.md" ]; then
+      rm "specs/constitution.md"
+      echo "Removed legacy specs/constitution.md"
+    fi
+  # Case 2: real file at specs/ but nothing at .specify/memory/ - move it
+  elif [ -f "specs/constitution.md" ] && [ ! -e ".specify/memory/constitution.md" ]; then
     mkdir -p .specify/memory
-    ln -s ../../specs/constitution.md .specify/memory/constitution.md
-  elif [ -f ".specify/memory/constitution.md" ] && [ ! -L ".specify/memory/constitution.md" ] && [ ! -f "specs/constitution.md" ]; then
-    mkdir -p specs
-    mv .specify/memory/constitution.md specs/constitution.md
-    ln -s ../../specs/constitution.md .specify/memory/constitution.md
+    mv specs/constitution.md .specify/memory/constitution.md
+    echo "Migrated constitution: moved specs/constitution.md to .specify/memory/constitution.md"
+  # Case 3: real file at both locations - keep .specify/memory/, remove specs/
+  elif [ -f "specs/constitution.md" ] && [ -f ".specify/memory/constitution.md" ] && [ ! -L ".specify/memory/constitution.md" ]; then
+    rm "specs/constitution.md"
+    echo "Removed duplicate specs/constitution.md (canonical: .specify/memory/constitution.md)"
   fi
 }
 

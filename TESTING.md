@@ -115,7 +115,7 @@ What SDD skills are available?
 **Steps:**
 1. Invoke: `/sdd:constitution` or ask: "Create a constitution for this project"
 2. Follow the interactive prompts
-3. Verify constitution created at `specs/constitution.md`
+3. Verify constitution created at `.specify/memory/constitution.md`
 
 **Expected:**
 - [ ] Constitution file created
@@ -139,7 +139,7 @@ Standards: ESLint, Prettier
 **Objective:** Verify created constitution is well-formed
 
 **Steps:**
-1. Read `specs/constitution.md`
+1. Read `.specify/memory/constitution.md`
 2. Check for required sections
 3. Verify no placeholder text (TBD, TODO, etc.)
 

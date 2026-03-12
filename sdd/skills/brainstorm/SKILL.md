@@ -109,7 +109,7 @@ If `/speckit.*` commands are not available, tell the user to run `/sdd:init` fir
 
 **Check context first:**
 - Review existing specs (if any) in `specs/` directory
-- Check for constitution (`specs/constitution.md`)
+- Check for constitution (`.specify/memory/constitution.md`)
 - Review recent commits to understand project state
 - Look for related features or patterns
 - Scan `brainstorm/` directory for existing brainstorm documents (triggers revisit detection, see step 3 in checklist)
@@ -256,7 +256,7 @@ and template formatting. Bypassing it is a process violation.
 ```
 
 6. **Validate against constitution** (if exists):
-   - Read `specs/constitution.md`
+   - Read `.specify/memory/constitution.md`
    - Check spec aligns with project principles
    - Note any violations and address them
 

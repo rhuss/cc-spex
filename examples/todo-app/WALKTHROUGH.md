@@ -15,10 +15,10 @@ This document shows the step-by-step process of building the Todo CRUD feature u
    - Error response format (422 for validation)
    - Validation approach
    - Testing standards
-3. Created `specs/constitution.md`
+3. Created `.specify/memory/constitution.md`
 4. Committed to git
 
-**Output:** `specs/constitution.md`
+**Output:** `.specify/memory/constitution.md`
 
 **Key Decisions:**
 - Use 422 for validation errors (not 400)

@@ -19,8 +19,10 @@ This example demonstrates the complete Specification-Driven Development workflow
 todo-app/
 ├── README.md                           # This file
 ├── WALKTHROUGH.md                      # Step-by-step workflow guide
+├── .specify/
+│   └── memory/
+│       └── constitution.md             # Project constitution
 ├── specs/
-│   ├── constitution.md                 # Project constitution
 │   └── features/
 │       └── todo-crud.md                # Todo CRUD feature spec
 ├── docs/
@@ -73,7 +75,7 @@ A simple Todo API with CRUD operations:
 
 ### Option 1: Read Through
 Simply read the files in order to understand the workflow:
-1. `specs/constitution.md` - See project principles
+1. `.specify/memory/constitution.md` - See project principles
 2. `specs/features/todo-crud.md` - See feature spec
 3. `docs/plans/2025-11-10-todo-crud-implementation.md` - See implementation plan
 4. `src/` and `tests/` - See implementation and tests
@@ -95,7 +97,7 @@ Start Claude Code in this directory and ask questions:
 ## Key Takeaways
 
 ### 1. Constitution Provides Consistency
-See how `specs/constitution.md` defines:
+See how `.specify/memory/constitution.md` defines:
 - RESTful API patterns
 - Error response format
 - Validation approach
@@ -140,7 +142,7 @@ A: See `specs/features/todo-crud.md` - specific enough to implement, not prescri
 A: See the spec structure - functional, error handling, edge cases, success criteria.
 
 **Q: What goes in a constitution?**
-A: See `specs/constitution.md` - patterns that repeat across features.
+A: See `.specify/memory/constitution.md` - patterns that repeat across features.
 
 **Q: How do I plan from a spec?**
 A: See the implementation plan - each spec requirement becomes tasks with file paths.

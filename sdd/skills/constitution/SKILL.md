@@ -98,28 +98,13 @@ Make implicit standards explicit.
 **With /speckit.constitution (if available):**
 Invoke `/speckit.constitution` to create the constitution interactively.
 
-**After /speckit.constitution completes**, ensure the file is accessible at `specs/constitution.md` (the canonical user-facing location). The command writes to `.specify/memory/constitution.md`, so move and symlink:
-
-```bash
-# If speckit created it at .specify/memory/ but not at specs/
-if [ -f ".specify/memory/constitution.md" ] && [ ! -L ".specify/memory/constitution.md" ] && [ ! -f "specs/constitution.md" ]; then
-  mv .specify/memory/constitution.md specs/constitution.md
-  ln -s ../../specs/constitution.md .specify/memory/constitution.md
-  echo "Moved constitution to specs/constitution.md with symlink"
-fi
-```
+The command writes to `.specify/memory/constitution.md`, which is the canonical location (matching upstream spec-kit).
 
 **Manual creation (if command not available):**
-Create `specs/constitution.md` with template below.
-
-After manual creation, ensure the symlink exists so `/speckit.*` commands can find it:
+Create `.specify/memory/constitution.md` with the template below. Ensure the `.specify/memory/` directory exists first:
 
 ```bash
-if [ -f "specs/constitution.md" ] && [ ! -e ".specify/memory/constitution.md" ]; then
-  mkdir -p .specify/memory
-  ln -s ../../specs/constitution.md .specify/memory/constitution.md
-  echo "Symlink created for speckit compatibility"
-fi
+mkdir -p .specify/memory
 ```
 
 ### 4. Create Constitution Content
@@ -322,7 +307,7 @@ cat specs/features/[feature].md
 ### 7. Commit Constitution
 
 ```bash
-git add specs/constitution.md
+git add .specify/memory/constitution.md
 git commit -m "Add project constitution
 
 Defines project-wide principles and standards:

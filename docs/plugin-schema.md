@@ -87,7 +87,7 @@ Spec-kit CLI integration:
 
 #### sdd.constitution
 Constitution file settings:
-- `path` (string, default: "specs/constitution.md") - Path to constitution file
+- `path` (string, default: ".specify/memory/constitution.md") - Path to constitution file
 - `required` (boolean, default: false) - Require constitution before spec work
 
 #### sdd.specs
