@@ -82,7 +82,7 @@ Before ANY implementation work:
 - **sdd:spec-refactoring** - Consolidate and improve evolved specs
 
 ### Configuration
-- **sdd:traits** - Enable/disable SDD discipline overlays (superpowers, beads)
+- **sdd:traits** - Enable/disable SDD discipline overlays (superpowers, teams)
 - **sdd:init** - Initialize project with spec-kit and SDD configuration
 - **sdd:constitution** - Create/manage project-wide principles
 

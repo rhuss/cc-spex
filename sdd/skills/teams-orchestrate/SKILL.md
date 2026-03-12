@@ -70,7 +70,7 @@ Your work will be reviewed against spec.md before merging.
 
 ## Your Assigned Tasks
 
-[List the specific tasks assigned to this teammate, including bd issue IDs alongside task IDs]
+[List the specific tasks assigned to this teammate with task IDs]
 
 ## Spec Context
 
@@ -94,9 +94,7 @@ Tell Claude to create an agent team:
 Create an agent team for parallel implementation of [feature-name].
 
 Spawn [N] teammates:
-- Teammate 1: [task group description] - tasks [IDs] (bd issues [bd-IDs])
-- Teammate 2: [task group description] - tasks [IDs] (bd issues [bd-IDs])
-...
+- Teammate 1: [task group description] - tasks [IDs]- Teammate 2: [task group description] - tasks [IDs]...
 
 Each teammate should implement their assigned tasks independently in their worktree.
 Wait for all teammates to complete before proceeding to review.
@@ -119,33 +117,11 @@ When a teammate reports completion, the lead reviews their changes:
 
 1. **Review changes**: Examine the teammate's commits and modified files
 2. **Run spec compliance check** via `{Skill: sdd:review-code}` against spec.md
-3. **If PASS**: Merge worktree changes, close beads issues with `bd close <id> -r "Reviewed and merged"`, run `bd backup`
+3. **If PASS**: Merge worktree changes, update tasks.md checkboxes to `[X]` for completed tasks
 4. **If FAIL**: Send feedback to the teammate with specific spec violations. The teammate fixes the issues and re-submits for review.
 5. **If 3+ failures on the same task**: Report to the user and pause. Do not continue retrying.
 
 The lead never implements code directly. The lead's sole job during this phase is review and coordination.
-
-## Beads Integration
-
-### Bootstrap
-
-At the start of orchestration, check the beads state:
-
-- Verify bd issue count matches expected tasks
-- If issues are missing, run sync to populate them
-
-### Persistence
-
-- Run `bd backup` after each successful merge to preserve progress
-- This ensures task state survives across sessions
-
-### Final Sync
-
-After all teammates have completed and all reviews have passed:
-
-1. Verify all bd issues are closed
-2. Reverse sync tasks.md to reflect final state
-3. Run final `bd backup`
 
 ## Sequential Fallback
 
@@ -161,7 +137,6 @@ Execute tasks sequentially in the current session following the standard impleme
 - **Lead never implements**: The lead's job is review and coordination
 - **Spec is the standard**: All review decisions based on spec.md
 - **Worktrees prevent conflicts**: Each teammate has clean file isolation
-- **Beads preserves state**: Task progress survives across sessions
 - **Graceful degradation**: Always fall back to sequential if teams can't help
 - **Respect task dependencies**: Never assign dependent tasks to different teammates
 

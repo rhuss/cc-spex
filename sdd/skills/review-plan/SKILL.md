@@ -23,27 +23,6 @@ SPEC_DIR="specs/[feature-name]"
 
 If either file is missing, stop and instruct the user to generate the missing artifact.
 
-## Beads Readiness Check (conditional)
-
-Check if the beads trait is enabled:
-
-```bash
-BEADS_ENABLED=$(jq -r '.traits.beads // false' .specify/sdd-traits.json 2>/dev/null)
-```
-
-If beads is enabled (`true`), verify that bd issues exist for this feature:
-
-```bash
-ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end' 2>/dev/null || echo 0)
-TASK_COUNT=$(grep -c '^\- \[ \]' "$SPEC_DIR/tasks.md" 2>/dev/null || echo 0)
-```
-
-- If `bd` is not installed: flag as **"beads trait enabled but bd CLI missing"**
-- If issue count is 0 but task count > 0: flag as **"beads sync required before implementation"** and instruct user to run `/sdd:beads-task-sync`
-- If issues exist: report count and note beads is ready for implementation
-
-Include the beads readiness result in the final report (step 6).
-
 ## 1. Task Quality Enforcement
 
 After tasks.md exists, verify every task meets these criteria:

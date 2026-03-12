@@ -193,7 +193,6 @@ Traits are overlay modules that inject automated behavior into spec-kit commands
 ```
 /sdd:traits list              # Show which traits are active
 /sdd:traits enable superpowers        # Enable sdd quality gates
-/sdd:traits enable beads      # Enable beads task memory
 /sdd:traits disable superpowers       # Remove sdd quality gates
 ```
 
@@ -211,21 +210,9 @@ Named after the upstream Superpowers plugin whose process discipline it draws fr
 
 The spec PR flow is particularly useful for teams. After `/speckit.plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
 
-### The Beads Trait
-
-The beads trait provides persistent task memory through the `bd` CLI. It tracks tasks as issues with dependency awareness, so progress survives across sessions.
-
-| Command | What the beads trait adds |
-|---------|--------------------------|
-| `/speckit.plan` | After task generation, syncs tasks.md to `bd` issues automatically |
-| `/speckit.implement` | Delegates to beads for execution: `bd ready` for scheduling, `bd close` for completion tracking, reverse sync updates tasks.md |
-| `tasks.md` | Includes beads usage instructions in the template |
-
-If `bd` is not installed, beads sync steps are skipped silently without blocking the workflow.
-
 ### How Traits Compose
 
-Traits are independent. You can enable one, both, or neither. Each trait uses sentinel markers (HTML comments like `<!-- SDD-TRAIT:superpowers -->`) in overlay files to prevent double-application. Enabling both traits gives you quality gates from superpowers and persistent task memory from beads, with each trait's additions stacking on top of the base commands.
+Traits are independent and can be enabled or disabled individually. Each trait uses sentinel markers (HTML comments like `<!-- SDD-TRAIT:superpowers -->`) in overlay files to prevent double-application. Enabling multiple traits stacks their additions on top of the base commands.
 
 ## Skill Lineage
 

@@ -11,29 +11,15 @@ replacement: sdd:teams-orchestrate
 
 This skill implements the spec guardian pattern for the `teams-spec` trait. The lead session does not implement any tasks. Instead, it:
 
-1. Bootstraps beads issues from tasks.md (if not already synced)
+1. Reads tasks from tasks.md
 2. Spawns teammates in isolated git worktrees
 3. Reviews each teammate's completed work against spec.md
 4. Merges compliant changes, rejects non-compliant work with feedback
-5. Syncs final state back to beads
+5. Updates tasks.md with final state
 
 **This skill supersedes `sdd:teams-orchestrate`** when both `teams-vanilla` and `teams-spec` traits are active. Check `.specify/sdd-traits.json` for `teams-spec: true` to confirm this skill should run.
 
-## 1. Beads Bootstrap
-
-Before spawning any teammates, ensure beads issues exist for all tasks:
-
-```bash
-SPEC_DIR="specs/[feature-name]"
-ISSUE_COUNT=$(bd list --json 2>/dev/null | jq 'if type == "object" and .error then 0 else length end' 2>/dev/null || echo 0)
-TASK_COUNT=$(grep -c '^\- \[ \]' "$SPEC_DIR/tasks.md" 2>/dev/null || echo 0)
-```
-
-- If `bd` is not installed: **STOP.** Report error. The beads trait is required.
-- If issue count is 0 but tasks exist: Run `"<sdd-beads-sync-command>" "$SPEC_DIR/tasks.md"` to create issues.
-- If issues already exist: Proceed. Report: "Beads issues already synced ([N] issues)."
-
-## 2. Task Graph Analysis
+## 1. Task Graph Analysis
 
 Same as `sdd:teams-orchestrate`: read tasks.md, identify independent task groups, determine parallel opportunities.
 
@@ -88,8 +74,7 @@ The lead monitors teammates and reviews their work as they complete tasks.
 
    **If review PASSES:**
    - Merge the worktree changes into the working branch
-   - Mark the corresponding beads issue(s) as closed: `bd close <id> -r "Reviewed and merged"`
-   - Run `bd backup` to persist state
+   - Mark the corresponding tasks as done in tasks.md (checkbox `[X]`)
    - Message the teammate: "Work approved and merged. Move to your next task."
 
    **If review FAILS:**
@@ -134,35 +119,16 @@ If a teammate repeatedly fails review (3+ attempts on the same task):
 
 When all tasks are complete and merged:
 
-1. **Verify all beads issues are closed:**
-   ```bash
-   bd list --status open --json 2>/dev/null | jq 'if type == "object" and .error then error(.error) else length end' 2>/dev/null || echo 0
-   ```
-   Should return 0.
-
-2. **Run reverse sync** to update tasks.md checkboxes:
-   ```bash
-   "<sdd-beads-sync-command>" "$SPEC_DIR/tasks.md" --reverse
-   ```
-
-3. **Final beads backup:**
-   ```bash
-   bd backup
-   ```
-
-4. **Clean up the team:**
-   Ask Claude to clean up the agent team resources.
-
-5. **Report completion:**
+1. **Verify all tasks.md checkboxes are checked**
+2. **Clean up the team:** Ask Claude to clean up the agent team resources.
+3. **Report completion:**
    - Total tasks executed
    - Tasks that required re-review
    - Any discovered work items
-   - Final beads status
 
 ## Key Principles
 
 - **Lead never implements**: The lead's job is review and coordination, not coding
 - **Spec is the standard**: All review decisions are based on spec.md compliance
 - **Worktrees prevent conflicts**: Each teammate has clean file isolation
-- **Beads preserves state**: Task progress survives across sessions
 - **Graceful degradation**: If teams fail, fall back to sequential with review

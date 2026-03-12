@@ -12,7 +12,7 @@
 
 [Spec-Kit](https://github.com/github/spec-kit) gives you a CLI and templates for specification-driven development. You write specs, generate plans, and implement features with a structured workflow. But Spec-Kit's commands are intentionally generic. If you want spec review after creation, or code verification after implementation, you have to remember to do it yourself every time.
 
-cc-sdd solves this with **traits**, a mixin-like mechanism that enriches Spec-Kit commands with additional behavior. Each trait appends overlay content to Spec-Kit's command files, so the extra steps become part of the command itself. Enable the `superpowers` trait, and `/speckit.specify` automatically includes spec review. Enable `beads`, and `/speckit.implement` gains persistent task tracking across sessions. You pick the traits you want, and your Spec-Kit workflow adapts accordingly.
+cc-sdd solves this with **traits**, a mixin-like mechanism that enriches Spec-Kit commands with additional behavior. Each trait appends overlay content to Spec-Kit's command files, so the extra steps become part of the command itself. Enable the `superpowers` trait, and `/speckit.specify` automatically includes spec review. You pick the traits you want, and your Spec-Kit workflow adapts accordingly.
 
 ## Workflow
 
@@ -87,17 +87,16 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 - `/speckit.plan` gets spec validation before planning and consistency checks after
 - `/speckit.implement` gets code review and verification gates
 
-**`beads`** adds persistent task execution through the [bd CLI](https://github.com/obra/beads):
-- `/speckit.plan` syncs generated tasks to the beads database
-- `/speckit.implement` uses dependency-aware task scheduling via `bd ready`
-- Tasks persist across Claude Code sessions
+**`teams`** (experimental) adds parallel implementation via Claude Code Agent Teams:
+- `/speckit.implement` delegates to team orchestration with spec guardian review
+- Teammates work in isolated git worktrees
 
 ### Managing Traits
 
 ```
 /sdd:traits list                  # Show which traits are active
 /sdd:traits enable superpowers    # Enable a trait
-/sdd:traits disable beads         # Disable a trait
+/sdd:traits disable superpowers   # Disable a trait
 ```
 
 Trait configuration is stored in `.specify/sdd-traits.json`, which survives Spec-Kit updates.

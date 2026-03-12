@@ -12,4 +12,4 @@ merges compliant changes.
 **This overrides teams-vanilla behavior** when both traits are active.
 
 **Execution**: Delegate to {Skill: sdd:teams-spec-guardian} for worktree
-spawning, spec compliance review, merge protocol, and beads bridge.
+spawning, spec compliance review, and merge protocol.

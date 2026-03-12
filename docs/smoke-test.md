@@ -11,7 +11,7 @@ SDD builds on two upstream projects:
 - [`specify` CLI](https://github.com/github/spec-kit) installed and on PATH (`uv pip install specify-cli`)
 - Claude Code with the SDD plugin loaded
 - `gh` CLI authenticated (for the PR step)
-- Optional: `bd` CLI installed if you want to test the beads trait
+
 
 ## 1. Create a test repo
 
@@ -220,20 +220,7 @@ Cross-artifact consistency check across spec, plan, and tasks.
 ```
 Generates a custom QA checklist for the feature.
 
-## 14. Beads integration (optional)
-
-If you have the `bd` CLI installed, enable the beads trait and test task syncing:
-
-```
-/sdd:traits enable beads
-/sdd:beads-task-sync
-```
-
-Verify:
-- `bd` issues created from `tasks.md`
-- Dependencies mapped between issues
-
-## 15. Clean up
+## 14. Clean up
 
 ```bash
 rm -rf /tmp/sdd-smoke

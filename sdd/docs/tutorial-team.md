@@ -112,17 +112,6 @@ With the superpowers trait enabled, `/speckit.plan` handles spec PR creation aut
 
 This fits naturally with the "Spec PRs before implementation" pattern described above. Instead of manually creating spec PRs, the trait handles it as part of the planning step.
 
-### Beads for Cross-Session Continuity
-
-For teams where multiple developers touch the same feature, the **beads trait** provides persistent task tracking through `bd` issues. Tasks survive across sessions and machines, and dependency ordering ensures work proceeds in the right sequence.
-
-Enable both traits for the full experience:
-
-```
-/sdd:traits enable superpowers
-/sdd:traits enable beads
-```
-
 ## Multi-Developer Patterns
 
 ### Pattern 1: Spec Author != Implementer

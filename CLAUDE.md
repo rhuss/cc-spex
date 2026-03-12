@@ -1,38 +1,32 @@
 # cc-sdd Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-02-13
+Auto-generated from all feature plans. Last updated: 2026-03-12
 
 ## Active Technologies
-- Bash (POSIX-compatible), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep`/`rg` (sentinel detection) (003-command-consolidation)
-- JSON (`.specify/sdd-traits.json`), Markdown files (003-command-consolidation)
-- Markdown (skill prompt definition) + Existing brainstorm skill, filesystem (mkdir, ls), existing spec creation flow (004-brainstorm-persistence)
-- Markdown files in `brainstorm/` directory at project roo (004-brainstorm-persistence)
-- Bash (POSIX-compatible) + Markdown + `jq` for JSON parsing + `sdd-traits.sh` (existing), Claude Code Agent Teams (experimental, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), `bd` CLI (beads, for teams-spec only) (005-teams-traits)
-- `.specify/sdd-traits.json` (trait config), `.beads/` (beads database, existing) (005-teams-traits)
-- Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `sdd-traits.sh` (existing), `bd` CLI (beads), Claude Code Agent Teams (006-teams-trait-consolidation)
-- `.specify/sdd-traits.json` (trait config), `.beads/` (beads database) (006-teams-trait-consolidation)
-
-- Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep` (sentinel detection) (002-traits-infrastructure)
+- Bash (POSIX-compatible), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep`/`rg` (sentinel detection)
+- JSON (`.specify/sdd-traits.json`), Markdown files
+- Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `sdd-traits.sh`, Claude Code Agent Teams
 
 ## Project Structure
 
 ```text
-src/
-tests/
+sdd/
+  commands/        # Slash command definitions
+  skills/          # Skill prompt files
+  overlays/        # Trait overlay files
+  scripts/         # Shell/Python scripts and hooks
+  docs/            # Tutorials and help
+specs/             # Feature specifications (historical)
 ```
-
-## Commands
-
-# Add commands for Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills
 
 ## Code Style
 
 Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follow standard conventions
 
-## Recent Changes
-- 006-teams-trait-consolidation: Added Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `sdd-traits.sh` (existing), `bd` CLI (beads), Claude Code Agent Teams
-- 005-teams-traits: Added Bash (POSIX-compatible) + Markdown + `jq` for JSON parsing + `sdd-traits.sh` (existing), Claude Code Agent Teams (experimental, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), `bd` CLI (beads, for teams-spec only)
-- 004-brainstorm-persistence: Added Markdown (skill prompt definition) + Existing brainstorm skill, filesystem (mkdir, ls), existing spec creation flow
+## Traits
+
+- `superpowers`: Quality gates on speckit commands (review-spec, review-code, verification)
+- `teams`: Parallel implementation via Claude Code Agent Teams (experimental, requires superpowers)
 
 
 <!-- MANUAL ADDITIONS START -->

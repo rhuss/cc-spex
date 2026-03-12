@@ -50,8 +50,6 @@ def main():
     # Resolve script paths
     init_script = plugin_root / 'scripts' / 'sdd-init.sh'
     traits_script = plugin_root / 'scripts' / 'sdd-traits.sh'
-    beads_sync_script = plugin_root / 'scripts' / 'sdd-beads-sync.py'
-
     # Check if SDD traits are configured
     sdd_configured = (cwd / '.specify' / 'sdd-traits.json').exists()
 
@@ -69,7 +67,6 @@ def main():
     KNOWN_SDD_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
         'review-code', 'review-plan', 'review-spec', 'traits',
-        'beads-task-sync',
     }
     COMMAND_CORRECTIONS = {
         'specify': '/speckit.specify',
@@ -90,7 +87,7 @@ def main():
                     f"<sdd-error>"
                     f"ERROR: /{skill_name} does not exist. "
                     f"Did you mean {suggestion}? "
-                    f"SDD commands: brainstorm, review-*, evolve, traits, init, help, constitution, beads-task-sync. "
+                    f"SDD commands: brainstorm, review-*, evolve, traits, init, help, constitution. "
                     f"Spec-kit commands: /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement."
                     f"</sdd-error>"
                 )
@@ -153,7 +150,6 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 <sdd-initialized>{str(sdd_initialized).lower()}</sdd-initialized>
 <sdd-init-command>{init_script}{init_args}</sdd-init-command>
 <sdd-traits-command>{traits_script}</sdd-traits-command>
-<sdd-beads-sync-command>{beads_sync_script}</sdd-beads-sync-command>
 </sdd-context>{enforcement}"""
 
     response = {

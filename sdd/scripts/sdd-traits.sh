@@ -28,7 +28,7 @@ set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TRAITS_CONFIG=".specify/sdd-traits.json"
-VALID_TRAITS="superpowers beads teams"
+VALID_TRAITS="superpowers teams"
 
 # --- Helpers ---
 
@@ -54,7 +54,7 @@ resolve_trait_name() {
 get_trait_deps() {
   # Returns space-separated list of required traits (bash 3.2 compatible)
   case "$1" in
-    teams) echo "superpowers beads" ;;
+    teams) echo "superpowers" ;;
     *) echo "" ;;
   esac
 }
@@ -115,7 +115,6 @@ ensure_config() {
   "version": 1,
   "traits": {
     "superpowers": false,
-    "beads": false,
     "teams": false
   },
   "applied_at": "$(now_iso)"
@@ -128,6 +127,19 @@ EOF
   if ! jq empty "$TRAITS_CONFIG" 2>/dev/null; then
     echo "ERROR: Invalid JSON in $TRAITS_CONFIG" >&2
     exit 1
+  fi
+
+  # Migrate removed beads trait: delete key from config
+  local bv
+  bv=$(jq -r '.traits["beads"] // "absent"' "$TRAITS_CONFIG" 2>/dev/null)
+  if [ "$bv" != "absent" ]; then
+    local tmp
+    tmp=$(mktemp)
+    jq 'del(.traits["beads"])' "$TRAITS_CONFIG" > "$tmp"
+    mv "$tmp" "$TRAITS_CONFIG"
+    if [ "$bv" = "true" ]; then
+      echo "BEADS_MIGRATION_NEEDED"
+    fi
   fi
 
   # Migrate old teams trait names to consolidated "teams" and remove deprecated keys
@@ -165,26 +177,6 @@ ensure_agent_teams_env() {
     jq 'if .env then .env |= del(.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) | if .env == {} then del(.env) else . end else . end' "$SETTINGS_FILE" > "$tmp"
     mv "$tmp" "$SETTINGS_FILE"
   fi
-}
-
-ensure_beads_db() {
-  # Initialize bd database if bd is installed but no database exists
-  if ! command -v bd &>/dev/null; then
-    echo "NOTE: bd CLI not found. Install beads to use the beads trait:"
-    echo "  See https://github.com/beads-project/beads"
-    echo "  Beads trait is enabled but bd commands will be skipped until installed."
-    return
-  fi
-
-  if bd list --json &>/dev/null; then
-    return  # database already exists
-  fi
-
-  echo "Initializing beads database..."
-  bd init
-  # Restore database from backup files if available
-  bd backup restore 2>/dev/null || true
-  echo "Beads database initialized."
 }
 
 # --- Subcommands ---
@@ -268,11 +260,6 @@ do_enable() {
   mv "$tmp" "$TRAITS_CONFIG"
   echo "Trait '$trait' enabled."
 
-  # Trait-specific post-enable setup
-  if [ "$trait" = "beads" ]; then
-    ensure_beads_db
-  fi
-
   # Set agent teams env var if teams trait was enabled
   if [ "$trait" = "teams" ]; then
     ensure_agent_teams_env
@@ -352,7 +339,7 @@ do_init() {
   done
 
   # Build the traits JSON object
-  local superpowers_val="false" beads_val="false" teams_val="false"
+  local superpowers_val="false" teams_val="false"
 
   if [ -n "$enable_list" ]; then
     IFS=',' read -ra traits_arr <<< "$enable_list"
@@ -364,6 +351,10 @@ do_init() {
           echo "NOTICE: '$t' is deprecated. Using consolidated 'teams' trait."
           t="teams"
           ;;
+        beads)
+          echo "NOTICE: 'beads' trait has been removed. Task state is tracked directly in tasks.md."
+          continue
+          ;;
       esac
       if ! is_valid_trait "$t"; then
         echo "ERROR: Invalid trait '$t'. Valid traits: $VALID_TRAITS" >&2
@@ -371,20 +362,15 @@ do_init() {
       fi
       case "$t" in
         superpowers) superpowers_val="true" ;;
-        beads) beads_val="true" ;;
         teams) teams_val="true" ;;
       esac
     done
 
-    # Auto-resolve: teams requires superpowers and beads
+    # Auto-resolve: teams requires superpowers
     if [ "$teams_val" = "true" ]; then
       if [ "$superpowers_val" = "false" ]; then
         superpowers_val="true"
         echo "NOTE: Auto-enabling superpowers (required by teams)."
-      fi
-      if [ "$beads_val" = "false" ]; then
-        beads_val="true"
-        echo "NOTE: Auto-enabling beads (required by teams)."
       fi
     fi
   fi
@@ -395,7 +381,6 @@ do_init() {
   "version": 1,
   "traits": {
     "superpowers": $superpowers_val,
-    "beads": $beads_val,
     "teams": $teams_val
   },
   "applied_at": "$(now_iso)"
@@ -403,11 +388,6 @@ do_init() {
 EOF
 
   echo "Traits config created."
-
-  # Initialize beads database if beads trait was enabled
-  if [ "$beads_val" = "true" ]; then
-    ensure_beads_db
-  fi
 
   # Set agent teams env var if teams trait was enabled
   if [ "$teams_val" = "true" ]; then
@@ -557,8 +537,6 @@ SETTINGS_FILE=".claude/settings.local.json"
 # SDD-specific permission patterns
 SDD_PATTERN_INIT='Bash(*/scripts/sdd-init.sh*)'
 SDD_PATTERN_TRAITS='Bash(*/scripts/sdd-traits.sh*)'
-SDD_PATTERN_BEADS_SYNC='Bash(*/scripts/sdd-beads-sync.py*)'
-SDD_PATTERN_BEADS_BD='Bash(bd *)'
 SDD_PATTERN_SPECIFY='Bash(specify *)'
 # Broad tool patterns for YOLO level
 SDD_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "mcp__*")
@@ -584,7 +562,7 @@ remove_sdd_patterns() {
         .permissions.allow[] |
         select(
           # SDD script patterns
-          (test("sdd-init\\.sh|sdd-traits\\.sh|sdd-beads-sync\\.py|^Bash\\(specify |^Bash\\(bd ") | not)
+          (test("sdd-init\\.sh|sdd-traits\\.sh|^Bash\\(specify ") | not)
           and
           # YOLO broad patterns (exact matches only)
           (. != "Bash" and . != "Read" and . != "Edit" and . != "Write" and . != "mcp__*")
@@ -617,17 +595,15 @@ detect_permission_level() {
   local allow
   allow=$(jq -r '.permissions.allow // [] | .[]' "$SETTINGS_FILE")
 
-  local has_init=false has_traits=false has_beads_sync=false has_bd=false has_specify=false has_bash=false
+  local has_init=false has_traits=false has_specify=false has_bash=false
   echo "$allow" | grep -q "sdd-init" && has_init=true
   echo "$allow" | grep -q "sdd-traits" && has_traits=true
-  echo "$allow" | grep -q "sdd-beads-sync\." && has_beads_sync=true
-  echo "$allow" | grep -q "Bash(bd " && has_bd=true
   echo "$allow" | grep -q "specify " && has_specify=true
   echo "$allow" | grep -qx "Bash" && has_bash=true
 
-  if [ "$has_init" = true ] && [ "$has_traits" = true ] && [ "$has_beads_sync" = true ] && [ "$has_bd" = true ] && [ "$has_specify" = true ] && [ "$has_bash" = true ]; then
+  if [ "$has_init" = true ] && [ "$has_traits" = true ] && [ "$has_specify" = true ] && [ "$has_bash" = true ]; then
     echo "yolo"
-  elif [ "$has_init" = true ] && [ "$has_traits" = true ] && [ "$has_beads_sync" = true ] && [ "$has_bd" = true ]; then
+  elif [ "$has_init" = true ] && [ "$has_traits" = true ]; then
     echo "standard"
   else
     echo "none"
@@ -646,7 +622,7 @@ do_permissions() {
       echo ""
       echo "Levels:"
       echo "  none       No auto-approvals (confirm every command)"
-      echo "  standard   Auto-approve SDD plugin scripts and beads CLI (bd)"
+      echo "  standard   Auto-approve SDD plugin scripts"
       echo "  yolo       Auto-approve all tools (Bash, Read, Edit, Write, MCP, specify)"
       ;;
     none)
@@ -663,13 +639,11 @@ do_permissions() {
       local before
       before=$(detect_permission_level)
       remove_sdd_patterns
-      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS" "$SDD_PATTERN_BEADS_SYNC" "$SDD_PATTERN_BEADS_BD"
+      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS"
       echo "Auto-approval set to: standard"
       echo "Auto-approved:"
       echo "  sdd-init.sh        Project initialization"
       echo "  sdd-traits.sh      Trait configuration and overlay management"
-      echo "  sdd-beads-sync.py  Bidirectional sync between tasks.md and bd issues"
-      echo "  bd *               Beads CLI (create, close, backup, ready, list, dep)"
       [ "$before" != "standard" ] && echo "CHANGED" || true
       ;;
     yolo)
@@ -677,9 +651,9 @@ do_permissions() {
       local before
       before=$(detect_permission_level)
       remove_sdd_patterns
-      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS" "$SDD_PATTERN_BEADS_SYNC" "$SDD_PATTERN_BEADS_BD" "$SDD_PATTERN_SPECIFY" "${SDD_YOLO_EXTRAS[@]}"
+      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS" "$SDD_PATTERN_SPECIFY" "${SDD_YOLO_EXTRAS[@]}"
       echo "Auto-approval set to: yolo"
-      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SDD scripts, beads CLI."
+      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SDD scripts."
       [ "$before" != "yolo" ] && echo "CHANGED" || true
       ;;
     *)

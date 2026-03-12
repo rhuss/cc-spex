@@ -72,28 +72,21 @@ SDD TRAITS (quality gates for spec-kit commands)
     /speckit.implement → verifies spec package before starting,
                          runs code review + verification after
 
-  beads trait:
-    /speckit.plan     → syncs tasks.md to bd issues after task
-                         generation, preparing beads for implementation
-    /speckit.implement → delegates to beads for persistent task
-                         execution: syncs tasks.md to bd issues,
-                         uses bd ready for dependency scheduling,
-                         bd close to track completion, reverse
-                         sync updates tasks.md at the end
-    tasks.md           → includes beads usage instructions
+  teams trait (experimental):
+    /speckit.implement → parallel task execution via Claude Code
+                         Agent Teams with spec guardian review
 
 
 SDD COMMANDS (helpers and configuration)
 
   /sdd:init           Initialize spec-kit + configure traits and permissions
-  /sdd:traits         Enable/disable traits (superpowers, beads)
+  /sdd:traits         Enable/disable traits (superpowers, teams)
   /sdd:brainstorm     Rough idea into formal spec (interactive dialogue)
   /sdd:review-spec    Check spec quality and completeness
   /sdd:review-plan    Validate plan coverage, task quality, red flags
   /sdd:review-code    Check code compliance against spec
   /sdd:evolve         Reconcile spec/code drift
   /sdd:constitution   Define project-wide principles and standards
-  /sdd:beads-task-sync  Sync tasks.md with beads issues (forward/reverse)
   /sdd:help           This quick reference
 
 

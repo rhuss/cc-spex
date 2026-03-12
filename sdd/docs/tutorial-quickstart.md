@@ -99,18 +99,17 @@ EVOLUTION
 
 Traits are quality gates that automate reviews and validation at each workflow step. They inject checks into spec-kit commands so you don't have to remember to run them manually.
 
-**Two traits are available:**
+**Available traits:**
 
 | Trait | Purpose |
 |-------|---------|
 | `superpowers` | Automated spec reviews, plan reviews, spec PR creation |
-| `beads` | Persistent task memory via `bd` CLI, dependency-aware scheduling |
+| `teams` | Parallel implementation via Claude Code Agent Teams (experimental) |
 
 **How to enable:**
 
 ```
 /sdd:traits enable superpowers       # Enable quality gates
-/sdd:traits enable beads     # Enable persistent task memory
 ```
 
 You can also enable traits during `/sdd:init`.

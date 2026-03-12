@@ -26,7 +26,7 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 - To create specs: `/speckit.specify` (NOT `/sdd:specify`, which does not exist)
 - To plan: `/speckit.plan` (NOT `/sdd:plan`)
 - To implement: `/speckit.implement` (NOT `/sdd:implement`)
-- SDD commands are only: brainstorm, review-*, evolve, traits, init, help, constitution, beads-task-sync
+- SDD commands are only: brainstorm, review-*, evolve, traits, init, help, constitution
 
 ## Anti-Pattern: "This Is Too Simple To Need A Spec"
 

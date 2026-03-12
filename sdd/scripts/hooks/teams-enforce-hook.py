@@ -58,8 +58,7 @@ def main():
             "which bypasses Agent Teams. Instead, delegate to "
             "{Skill: sdd:teams-orchestrate} which provides: "
             "(1) worktree isolation for each teammate, "
-            "(2) spec compliance review before merge, "
-            "(3) beads persistence for task tracking."
+            "(2) spec compliance review before merge."
         )
     }))
 
