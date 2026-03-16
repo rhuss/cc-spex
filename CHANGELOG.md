@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-16
+
 ### Added
 - **Automatic spec-kit initialization** - Plugin automatically initializes projects on first SDD command
   - Checks if spec-kit CLI is installed
@@ -21,14 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `spec-kit` - Technical integration layer (auto-init, layout validation, CLI wrappers)
   - `using-superpowers` - Methodology layer (workflow routing, process discipline)
   - All workflow skills call `spec-kit` for automatic setup
+- **Traits infrastructure** - Hook-based plugin root injection, `superpowers` and `teams` traits with sentinel-guarded overlays
+- **Brainstorm document persistence** - Sessions produce numbered brainstorm documents with overview index, revisit detection, and status tracking
+- **REVIEWERS.md** - Anti-self-review guardrails with structural validation (5+ required headings)
+- **Constitution path standardized** - Canonical location at `.specify/memory/constitution.md`
 
 ### Changed (BREAKING)
 - **spec-kit is now a required dependency** - Plugin no longer bundles templates, scripts, or spec-kit commands
 - Templates, scripts, and commands now live in local project (`.specify/` and `.claude/commands/`) via `specify init`
 - Single source of truth: spec-kit repository maintains all templates, scripts, and commands
 - Cleaner separation of concerns: plugin focuses on Claude Code integration, spec-kit provides tooling
+- **Consolidated teams traits** - `teams-vanilla` and `teams-spec` merged into single `teams` trait (migration on init)
+- **Task tracking simplified** - Direct `tasks.md` checkbox tracking replaces external state management
 
 ### Removed
+- **`sdd:constitution` skill** - Redundant wrapper; use `/speckit.constitution` directly
+- **`beads` trait** - Removed entirely; task state tracked in `tasks.md` checkboxes
+- **`teams-vanilla` and `teams-spec` traits** - Consolidated into `teams` trait
 - **Bundled templates** - Removed `templates/` directory (use `specify init` instead)
 - **Bundled scripts** - Removed `scripts/` directory (use `specify init` instead)
 - **Bundled spec-kit commands** - Removed `commands/speckit.*` files (installed to `.claude/commands/` via `specify init`)
