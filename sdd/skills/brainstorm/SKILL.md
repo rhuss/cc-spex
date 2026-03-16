@@ -21,12 +21,19 @@ Start by understanding the current project context, then ask questions one at a 
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a specification and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
 
-## Command Namespace Reference
+<HARD-GATE>
+## Command Namespace: NEVER suggest /sdd:specify, /sdd:plan, /sdd:implement, /sdd:tasks
 
-- To create specs: `/speckit.specify` (NOT `/sdd:specify`, which does not exist)
+These commands DO NOT EXIST. They will fail with "Unknown skill". When proposing next steps:
+
+- To create specs: `/speckit.specify` (NOT `/sdd:specify`)
 - To plan: `/speckit.plan` (NOT `/sdd:plan`)
+- To generate tasks: `/speckit.tasks` (NOT `/sdd:tasks`)
 - To implement: `/speckit.implement` (NOT `/sdd:implement`)
-- SDD commands are only: brainstorm, review-*, evolve, traits, init, help, constitution
+
+SDD namespace only has: brainstorm, review-*, evolve, traits, init, help.
+All spec workflow commands live in the `speckit.*` namespace.
+</HARD-GATE>
 
 ## Anti-Pattern: "This Is Too Simple To Need A Spec"
 
@@ -583,7 +590,7 @@ If no constitution exists and this seems to be early in project:
   - Quality gates
   - Error handling approaches
 - "Would you like to create one? It ensures consistency across features."
-- If yes, use `sdd:constitution`
+- If yes, use `/speckit.constitution`
 
 **Don't be pushy:** Constitution is optional but recommended.
 

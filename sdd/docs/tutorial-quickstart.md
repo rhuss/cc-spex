@@ -67,7 +67,7 @@ Use this to pick the right command:
 | Spec + code mismatch | Alignment | `/sdd:evolve` |
 | Draft spec | Validation | `/sdd:review-spec` |
 | Code changes | Compliance check | `/sdd:review-code` |
-| New project | Standards | `/sdd:constitution` |
+| New project | Standards | `/speckit.constitution` |
 
 ## Quick Reference Card
 
@@ -75,7 +75,7 @@ Use this to pick the right command:
 SPEC CREATION
   /sdd:brainstorm    Rough idea → spec (interactive)
   /speckit.specify          Clear reqs → spec (direct)
-  /sdd:constitution  Project-wide principles
+  /speckit.constitution  Project-wide principles
 
 VALIDATION
   /sdd:review-spec   Check spec quality

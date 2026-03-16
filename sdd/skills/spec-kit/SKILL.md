@@ -297,7 +297,6 @@ Run: specify init --force
 **Called by these workflow skills:**
 - sdd:brainstorm (at start)
 - sdd:evolve (at start)
-- sdd:constitution (at start)
 - sdd:review-spec (at start)
 - sdd:review-plan (at start)
 - `/speckit.implement` via superpowers trait overlay (at start)

@@ -170,7 +170,7 @@ For projects with multiple features or team members, create a constitution.
 - Referenced during all spec creation and review
 - Ensures consistency across features
 
-**Command:** `/sdd:constitution`
+**Command:** `/speckit.constitution`
 
 **What it defines:**
 - Coding standards (naming, structure)
@@ -231,7 +231,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 - `test-driven-development`, `systematic-debugging`, `using-git-worktrees`, `dispatching-parallel-agents`
 
 **SDD-only skills** (no upstream equivalent):
-- `using-superpowers`, `evolve`, `review-spec`, `spec-refactoring`, `spec-kit`, `constitution`
+- `using-superpowers`, `evolve`, `review-spec`, `spec-refactoring`, `spec-kit`
 
 ## Command Reference
 
@@ -240,7 +240,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 |---------|---------|
 | `/sdd:brainstorm` | Rough idea to spec through dialogue |
 | `/speckit.specify` | Clear requirements to spec directly |
-| `/sdd:constitution` | Project-wide principles |
+| `/speckit.constitution` | Project-wide principles |
 
 ### Validation
 | Command | Purpose |
@@ -293,6 +293,6 @@ A: Generally no. Each feature should have its own spec. Use the constitution for
 2. **Review it:** `/sdd:review-spec` to validate
 3. **Build it:** `/speckit.implement` with TDD
 4. **If drift:** `/sdd:evolve` to reconcile
-5. **For consistency:** `/sdd:constitution` to set project standards
+5. **For consistency:** `/speckit.constitution` to set project standards
 
 The best way to learn SDD is to use it on a real feature. Start small, follow the process, and see how it feels.

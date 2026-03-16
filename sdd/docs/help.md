@@ -86,7 +86,6 @@ SDD COMMANDS (helpers and configuration)
   /sdd:review-plan    Validate plan coverage, task quality, red flags
   /sdd:review-code    Check code compliance against spec
   /sdd:evolve         Reconcile spec/code drift
-  /sdd:constitution   Define project-wide principles and standards
   /sdd:help           This quick reference
 
 

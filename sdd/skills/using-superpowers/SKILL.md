@@ -72,6 +72,8 @@ Before ANY implementation work:
 - `/speckit.plan` - Generate plan and tasks (superpowers trait adds spec review + plan review)
 - `/speckit.implement` - Execute implementation (superpowers trait adds pre/post quality gates)
 
+**NAMESPACE WARNING:** `/sdd:specify`, `/sdd:plan`, `/sdd:tasks`, `/sdd:implement` DO NOT EXIST. Always use the `/speckit.*` names above. The `sdd:` namespace only contains helper skills (brainstorm, review-*, evolve, traits, init, help).
+
 ### SDD Helper Skills
 - **sdd:brainstorm** - Rough idea → spec through collaborative dialogue
 - **sdd:review-spec** - Validate spec soundness and completeness
@@ -84,7 +86,6 @@ Before ANY implementation work:
 ### Configuration
 - **sdd:traits** - Enable/disable SDD discipline overlays (superpowers, teams)
 - **sdd:init** - Initialize project with spec-kit and SDD configuration
-- **sdd:constitution** - Create/manage project-wide principles
 
 ### Compatible Superpowers Skills
 These work as-is with spec context:
@@ -216,7 +217,7 @@ Consider creating a constitution for your project:
 - Team projects: Always (defines shared understanding)
 
 **How to create:**
-Use `/sdd:constitution` skill.
+Use `/speckit.constitution`.
 
 ## Instructions ≠ Permission to Skip Workflows
 

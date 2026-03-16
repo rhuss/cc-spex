@@ -115,11 +115,6 @@ Implementation (with TDD, code review, verification gates)
 - TodoWrite integration
 - Error handling with context
 
-**`sdd:constitution`** - Project principles
-- Creates project-wide rules
-- Optional but recommended
-- Referenced during validation
-
 **`sdd:using-superpowers`** - Entry skill
 - Mandatory workflow establishment
 - Skill discovery and usage

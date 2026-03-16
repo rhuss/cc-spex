@@ -55,7 +55,7 @@ claude
 ## 4. Create a project constitution
 
 ```
-/sdd:constitution
+/speckit.constitution
 ```
 
 Tell Claude the project is a CLI tool written in Python that should follow standard CLI conventions (exit codes, stderr for errors, stdout for output). Let Claude generate the constitution.

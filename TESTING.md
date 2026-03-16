@@ -67,7 +67,6 @@ What SDD skills are available?
 - sdd:review-spec
 - sdd:spec-refactoring
 - sdd:spec-kit
-- sdd:constitution
 
 ---
 
@@ -113,7 +112,7 @@ What SDD skills are available?
 **Objective:** Create a project constitution from scratch
 
 **Steps:**
-1. Invoke: `/sdd:constitution` or ask: "Create a constitution for this project"
+1. Invoke: `/speckit.constitution` or ask: "Create a constitution for this project"
 2. Follow the interactive prompts
 3. Verify constitution created at `.specify/memory/constitution.md`
 

@@ -6,7 +6,7 @@ This document shows the step-by-step process of building the Todo CRUD feature u
 
 ### Step 1: Create Constitution
 
-**Command:** `/sdd:constitution`
+**Command:** `/speckit.constitution`
 
 **Process:**
 1. Decided constitution needed (team project, patterns emerging)
