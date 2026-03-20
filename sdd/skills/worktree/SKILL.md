@@ -121,13 +121,13 @@ fi
 
 ### Step 7: Write Context Handoff File
 
-Create the handoff file in the worktree at `<worktree>/.claude/handoff.md` (FR-003):
+Create the handoff file in the worktree at `<worktree>/.claude/sdd-handoff.md` (FR-003):
 
 ```bash
 mkdir -p "$WORKTREE_PATH/.claude"
 ```
 
-Write `handoff.md` with:
+Write `sdd-handoff.md` with:
 - A brief summary (5-10 lines) of key decisions from the brainstorm/specify session
 - A pointer to the spec file: `specs/<branch-name>/spec.md`
 - The suggested next step: "Run `/speckit.plan` to create the implementation plan"
@@ -167,7 +167,7 @@ Print clear instructions for the user (FR-004):
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
 │                                                             │
-│ The handoff file at .claude/handoff.md contains             │
+│ The handoff file at .claude/sdd-handoff.md contains             │
 │ context from this brainstorm/specify session.               │
 └─────────────────────────────────────────────────────────────┘
 ```
