@@ -98,24 +98,24 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **After the plan is generated:**
 1. Run `/speckit.tasks` to generate the task breakdown
-2. Invoke {Skill: sdd:review-plan} to validate coverage, task quality, and generate review-summary.md
+2. Invoke {Skill: sdd:review-plan} to validate coverage, task quality, and generate REVIEWERS.md
 
 **Pre-PR Quality Gate (mandatory):**
 
 Before creating a spec PR, verify that ALL three quality checks have been completed:
 1. `/sdd:review-spec` (spec soundness, completeness, implementability)
-2. `/sdd:review-plan` (coverage matrix, task quality, review-summary.md generation)
+2. `/sdd:review-plan` (coverage matrix, task quality, REVIEWERS.md generation)
 3. `/speckit.clarify` (clarification questions resolved, answers encoded in spec)
 
-If any of these have NOT been run during this planning session, run them now before proceeding. Do NOT skip any of these steps. The review-summary.md file MUST exist in the spec directory.
+If any of these have NOT been run during this planning session, run them now before proceeding. Do NOT skip any of these steps. The REVIEWERS.md file MUST exist in the spec directory.
 
 **Commit and PR:**
-1. Commit spec artifacts (spec.md, plan.md, tasks.md, review-summary.md) to the feature branch
+1. Commit spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) to the feature branch
 2. **Ask the user** before creating a spec PR. Do NOT create a PR automatically.
    - If approved, proceed with:
    - Target remote: `upstream` if configured, otherwise `origin`
    - PR title: feature name from spec
-   - PR body: summarize the feature, then direct reviewers to review-summary.md
+   - PR body: summarize the feature, then direct reviewers to REVIEWERS.md
      in the spec directory for detailed review guidance
 
 

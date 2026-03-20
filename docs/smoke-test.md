@@ -102,14 +102,14 @@ With the superpowers trait enabled, this command runs the full planning pipeline
 1. Spec review (pre-planning gate)
 2. Plan generation from the spec
 3. Task generation (`/speckit.tasks`)
-4. Plan review (`/sdd:review-plan`) producing `review-summary.md`
+4. Plan review (`/sdd:review-plan`) producing `REVIEWERS.md`
 5. Commits spec artifacts to a feature branch
 6. Offers to create a spec PR (accept or decline)
 
 Verify:
 - `plan.md` created in the spec directory
 - `tasks.md` created with dependency-ordered tasks
-- `review-summary.md` generated
+- `REVIEWERS.md` generated
 - Artifacts committed (check `git log --oneline`)
 
 ## 8. Review the plan independently
