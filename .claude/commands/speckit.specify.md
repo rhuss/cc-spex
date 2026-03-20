@@ -274,3 +274,15 @@ After completing the specification, validate quality:
 1. Check constitution alignment (if `.specify/memory/constitution.md` exists)
 2. Invoke {Skill: sdd:review-spec} to validate completeness and clarity
 3. Ensure spec contains WHAT/WHY only, no implementation details
+
+
+<!-- SDD-TRAIT:worktrees -->
+## Worktree Isolation
+
+After completing the specification and all quality gates:
+
+1. Invoke {Skill: sdd:worktree} with action "create" to:
+   - Create a git worktree for the feature branch in a sibling directory
+   - Restore `main` in the original repo
+   - Write a context handoff file summarizing the brainstorm
+   - Print instructions for switching to the worktree
