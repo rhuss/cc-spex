@@ -5,8 +5,8 @@
     "teams": true,
     "worktrees": true
   },
-  "applied_at": "2026-03-20T07:56:29Z",
   "worktrees_config": {
     "base_path": ".."
-  }
+  },
+  "applied_at": "2026-03-20T10:56:11Z"
 }
