@@ -1,7 +1,7 @@
 {
   "upstream_repo": "https://github.com/obra/superpowers",
-  "last_sync_commit": "e16d611eee14ac4c3253b4bf4c55a98d905c2e64",
-  "last_sync_date": "2026-02-13",
+  "last_sync_commit": "8ea39819eed74fe2a0338e71789f06b30e953041",
+  "last_sync_date": "2026-03-20",
   "note": "Synced via /update-superpowers",
   "modified_skills": {
     "writing-plans": {
@@ -16,7 +16,9 @@
         "Task Quality Standards (Actionable, Testable, Atomic, Ordered)",
         "Error/Edge Case Coverage Checks",
         "NFR Validation Approach",
-        "Success Criteria Reference"
+        "Success Criteria Reference",
+        "Scope Check (multi-subsystem plan detection)",
+        "File Structure Mapping validation"
       ]
     },
     "review-code": {
@@ -70,18 +72,27 @@
     "brainstorm": {
       "upstream_file": "skills/brainstorming/SKILL.md",
       "local_file": "skills/brainstorm/SKILL.md",
-      "modification_summary": "Output changed from design document to formal specification; WHAT/WHY focus",
+      "modification_summary": "Output is spec (not design doc); WHAT/WHY focus. Merged upstream scope assessment, design-for-isolation, existing-codebase guidance, spec review loop (via sdd:review-spec), user review gate.",
       "key_sections_modified": [
         "Overview: Output is SPEC not design doc",
         "Creating the specification: New section with spec structure",
         "Capture implementation insights: Separate implementation-notes.md (new section)",
-        "Prerequisites: Calls spec-kit for initialization"
+        "Prerequisites: Calls spec-kit for initialization",
+        "Scope assessment: Multi-subsystem detection and decomposition (from upstream v5.0.0+)",
+        "Design for isolation: Clear boundaries, focused units (from upstream v5.0.0+)",
+        "Working in existing codebases: Follow patterns, targeted improvements (from upstream v5.0.0+)",
+        "Spec review loop: Uses sdd:review-spec, max 3 iterations (adapted from upstream v5.0.0+)",
+        "User review gate: User approves spec before planning (from upstream v5.0.0+)"
       ],
       "sdd_additions": [
         "## Prerequisites (calls spec-kit)",
         "## Creating the specification (spec structure template)",
         "## IMPORTANT: Capture implementation insights separately",
         "WHAT vs HOW separation principle"
+      ],
+      "skipped_upstream": [
+        "Visual companion (browser-based tool, superpowers-specific infrastructure)",
+        "docs/superpowers/specs/ path convention (SDD uses specs/NNN-feature/ via spec-kit)"
       ]
     }
   },

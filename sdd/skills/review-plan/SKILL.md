@@ -23,6 +23,18 @@ SPEC_DIR="specs/[feature-name]"
 
 If either file is missing, stop and instruct the user to generate the missing artifact.
 
+## 0. Scope Check
+
+Before detailed validation, check whether the plan attempts to cover multiple independent subsystems in a single document. Indicators:
+
+- Tasks span subsystems with no shared interfaces or dependencies
+- The plan has distinct groups of tasks that could each produce working software independently
+- File changes cluster into unrelated areas of the codebase
+
+If the plan covers multiple independent subsystems, flag it: "This plan may benefit from being split into separate plans, one per subsystem. Each plan should produce working, testable software on its own."
+
+This is advisory, not blocking. Some plans legitimately span subsystems.
+
 ## 1. Task Quality Enforcement
 
 After tasks.md exists, verify every task meets these criteria:
@@ -36,6 +48,14 @@ Also check:
 - Every task specifies concrete file paths (not "somewhere" or "TBD")
 - Phase ordering is logical (setup before core, tests before integration)
 - No tasks duplicate work already covered by other tasks
+
+Verify the plan includes a file structure mapping:
+- Files to be created or modified are listed with their responsibilities
+- Each file has one clear responsibility (not vague "utils" or "helpers" without defined scope)
+- Design units have clear boundaries and well-defined interfaces
+- In existing codebases, the plan follows established patterns rather than unilaterally restructuring
+
+If the plan lacks a file structure mapping, note it as a gap: tasks without a file map are harder to verify for completeness and overlap.
 
 If tasks fail these checks, note the issues and suggest refinements.
 

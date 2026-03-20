@@ -5,8 +5,6 @@ description: "You MUST use this before any creative work - refines rough ideas i
 
 # Brainstorming Ideas Into Specifications
 
-## Overview
-
 Help turn rough ideas into formal, executable specifications through natural collaborative dialogue.
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the specification and get user approval.
@@ -50,10 +48,12 @@ You MUST create a task for each of these items and complete them in order:
 5. **Propose 2-3 approaches** - with trade-offs and your recommendation
 6. **Present spec sections** - scaled to their complexity, get user approval after each section
 7. **Create specification** - invoke `/speckit.specify` (or create manually), validate and commit
-8. **Generate review brief** - synthesize spec into reviewer-friendly summary
-9. **Transition** - offer next steps via `/speckit.plan` or `/speckit.implement`
-10. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`
-11. **Update overview** - create or refresh `brainstorm/00-overview.md` with index, open threads, parked ideas
+8. **Spec review loop** - use `sdd:review-spec` to validate soundness; fix issues and re-review until approved (max 3 iterations, then surface to human)
+9. **User reviews written spec** - ask user to review the spec file before proceeding
+10. **Generate review brief** - synthesize spec into reviewer-friendly summary
+11. **Transition** - offer next steps via `/speckit.plan` or `/speckit.implement`
+12. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`
+13. **Update overview** - create or refresh `brainstorm/00-overview.md` with index, open threads, parked ideas
 
 ## Process Flow
 
@@ -67,6 +67,9 @@ digraph brainstorming {
     "Present spec sections" [shape=box];
     "User approves spec?" [shape=diamond];
     "Create specification file" [shape=box];
+    "Spec review loop\n(sdd:review-spec)" [shape=box];
+    "Spec review passed?" [shape=diamond];
+    "User reviews spec?" [shape=diamond];
     "Validate & commit spec" [shape=box];
     "Offer /speckit.plan or /speckit.implement" [shape=box];
     "Write brainstorm document" [shape=box];
@@ -82,7 +85,12 @@ digraph brainstorming {
     "Present spec sections" -> "User approves spec?";
     "User approves spec?" -> "Present spec sections" [label="no, revise"];
     "User approves spec?" -> "Create specification file" [label="yes"];
-    "Create specification file" -> "Validate & commit spec";
+    "Create specification file" -> "Spec review loop\n(sdd:review-spec)";
+    "Spec review loop\n(sdd:review-spec)" -> "Spec review passed?";
+    "Spec review passed?" -> "Spec review loop\n(sdd:review-spec)" [label="issues found,\nfix and re-review"];
+    "Spec review passed?" -> "User reviews spec?" [label="approved"];
+    "User reviews spec?" -> "Create specification file" [label="changes requested"];
+    "User reviews spec?" -> "Validate & commit spec" [label="approved"];
     "Validate & commit spec" -> "Offer /speckit.plan or /speckit.implement";
     "Offer /speckit.plan or /speckit.implement" -> "Write brainstorm document";
     "Write brainstorm document" -> "Update overview";
@@ -121,8 +129,12 @@ If `/speckit.*` commands are not available, tell the user to run `/sdd:init` fir
 - Look for related features or patterns
 - Scan `brainstorm/` directory for existing brainstorm documents (triggers revisit detection, see step 3 in checklist)
 
+**Assess scope before deep-diving:**
+- Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
+- If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec, plan, and implementation cycle.
+
 **Ask questions to refine:**
-- Ask questions one at a time
+- For appropriately-scoped projects, ask questions one at a time to refine the idea
 - Only one question per message. If a topic needs more exploration, break it into multiple questions
 - Prefer multiple choice when possible, but open-ended is fine too
 - Focus on: purpose, constraints, success criteria, edge cases
@@ -151,6 +163,19 @@ If `/speckit.*` commands are not available, tell the user to run `/sdd:init` fir
 - Ask after each section whether it looks right so far
 - Cover: purpose, requirements, success criteria, error handling, edge cases, dependencies
 - Be ready to go back and clarify if something doesn't make sense
+
+**Design for isolation and clarity:**
+
+- Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently
+- For each unit, you should be able to answer: what does it do, how do you use it, and what does it depend on?
+- Can someone understand what a unit does without reading its internals? Can you change the internals without breaking consumers? If not, the boundaries need work.
+- Smaller, well-bounded units are also easier for you to work with. You reason better about code you can hold in context at once, and your edits are more reliable when files are focused. When a file grows large, that's often a signal that it's doing too much.
+
+**Working in existing codebases:**
+
+- Explore the current structure before proposing changes. Follow existing patterns.
+- Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the spec. A good developer improves code they're working in.
+- Don't propose unrelated refactoring. Stay focused on what serves the current goal.
 
 ### Creating the specification
 
@@ -269,13 +294,24 @@ and template formatting. Bypassing it is a process violation.
 
 ### After spec creation
 
-**Record spec path for brainstorm document:**
-Note the spec path (`specs/[NNNN]-[feature-name]/`) so the brainstorm document (step 10) can reference it with status `spec-created`.
+**Spec Review Loop:**
 
-**Validate the spec:**
-- Use `sdd:review-spec` to check soundness
-- Ensure spec is implementable
-- Confirm no ambiguities remain
+After creating the spec, run the review loop:
+
+1. Use `sdd:review-spec` to validate the spec for soundness and completeness
+2. If issues are found: fix them, re-run `sdd:review-spec`, repeat until approved
+3. If the loop exceeds 3 iterations, surface to human for guidance
+
+**User Review Gate:**
+
+After the spec review loop passes, ask the user to review the written spec before proceeding:
+
+> "Spec written and reviewed at `<path>`. Please review it and let me know if you want to make any changes before we proceed to planning."
+
+Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
+
+**Record spec path for brainstorm document:**
+Note the spec path (`specs/[NNNN]-[feature-name]/`) so the brainstorm document (step 12) can reference it with status `spec-created`.
 
 **Run consistency check (RECOMMENDED):**
 If `/speckit.analyze` is available, invoke it to check for cross-artifact consistency.
@@ -481,7 +517,7 @@ Then update the overview to reflect any status or thread changes.
 
 ## Writing the Brainstorm Document
 
-**When:** Step 10 of the checklist (after transition, at session end).
+**When:** Step 12 of the checklist (after transition, at session end).
 
 You MUST write the brainstorm document at session end. This step is NOT optional.
 
@@ -520,7 +556,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
 
 ## Updating the Overview
 
-**When:** Step 11 of the checklist (immediately after writing the brainstorm document).
+**When:** Step 13 of the checklist (immediately after writing the brainstorm document).
 
 You MUST update the overview after every brainstorm document write or update. This step is NOT optional.
 
@@ -645,8 +681,9 @@ User: Yes
 
 You: Spec approved! Creating the specification file...
 
-[Creates spec via /speckit.specify or manually]
+[Creates spec via /speckit.specify]
 [Runs sdd:review-spec]
+[Asks user to review spec before proceeding]
 
 Spec is sound and implementable.
 
