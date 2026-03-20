@@ -28,7 +28,7 @@ set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TRAITS_CONFIG=".specify/sdd-traits.json"
-VALID_TRAITS="superpowers teams"
+VALID_TRAITS="superpowers teams worktrees"
 
 # --- Helpers ---
 
@@ -265,6 +265,18 @@ do_enable() {
     ensure_agent_teams_env
   fi
 
+  # Add worktrees_config with defaults when enabling worktrees
+  if [ "$trait" = "worktrees" ]; then
+    local has_wt_config
+    has_wt_config=$(jq -r '.worktrees_config // "absent"' "$TRAITS_CONFIG")
+    if [ "$has_wt_config" = "absent" ]; then
+      local tmp
+      tmp=$(mktemp)
+      jq '.worktrees_config = {"base_path": ".."}' "$TRAITS_CONFIG" > "$tmp"
+      mv "$tmp" "$TRAITS_CONFIG"
+    fi
+  fi
+
   # Apply overlays
   do_apply
 }
@@ -339,7 +351,7 @@ do_init() {
   done
 
   # Build the traits JSON object
-  local superpowers_val="false" teams_val="false"
+  local superpowers_val="false" teams_val="false" worktrees_val="false"
 
   if [ -n "$enable_list" ]; then
     IFS=',' read -ra traits_arr <<< "$enable_list"
@@ -363,6 +375,7 @@ do_init() {
       case "$t" in
         superpowers) superpowers_val="true" ;;
         teams) teams_val="true" ;;
+        worktrees) worktrees_val="true" ;;
       esac
     done
 
@@ -376,13 +389,21 @@ do_init() {
   fi
 
   mkdir -p "$(dirname "$TRAITS_CONFIG")"
+  local worktrees_config=""
+  if [ "$worktrees_val" = "true" ]; then
+    worktrees_config=',
+  "worktrees_config": {
+    "base_path": ".."
+  }'
+  fi
   cat > "$TRAITS_CONFIG" <<EOF
 {
   "version": 1,
   "traits": {
     "superpowers": $superpowers_val,
-    "teams": $teams_val
-  },
+    "teams": $teams_val,
+    "worktrees": $worktrees_val
+  }${worktrees_config},
   "applied_at": "$(now_iso)"
 }
 EOF
@@ -484,7 +505,7 @@ do_apply() {
 
   # Cleanup stale trait blocks from target files
   # Get list of all known trait sentinels and check which are disabled/aliased
-  local all_sentinels="superpowers beads teams"
+  local all_sentinels="superpowers beads teams worktrees"
   for target in $(printf '%s\n' "${target_files[@]}" | sort -u); do
     for sentinel_trait in $all_sentinels; do
       local sentinel="<!-- SDD-TRAIT:${sentinel_trait} -->"

@@ -76,11 +76,17 @@ SDD TRAITS (quality gates for spec-kit commands)
     /speckit.implement → parallel task execution via Claude Code
                          Agent Teams with spec guardian review
 
+  worktrees trait:
+    /speckit.specify  → creates git worktree for feature branch,
+                        restores main, writes context handoff file
+    /sdd:worktree     → list active worktrees, cleanup merged ones
+
 
 SDD COMMANDS (helpers and configuration)
 
   /sdd:init           Initialize spec-kit + configure traits and permissions
-  /sdd:traits         Enable/disable traits (superpowers, teams)
+  /sdd:traits         Enable/disable traits (superpowers, teams, worktrees)
+  /sdd:worktree       List active worktrees or cleanup merged ones
   /sdd:brainstorm     Rough idea into formal spec (interactive dialogue)
   /sdd:review-spec    Check spec quality and completeness
   /sdd:review-plan    Validate plan coverage, task quality, red flags
