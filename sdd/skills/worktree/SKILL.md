@@ -86,34 +86,36 @@ if [ -d "$WORKTREE_PATH" ] || [ -f "$WORKTREE_PATH" ]; then
 fi
 ```
 
-### Step 5: Create the Worktree
+### Step 5: Restore Main Branch (before worktree creation)
 
-```bash
-git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
-```
-
-If this fails (disk full, permission denied, etc.), report the error clearly and stop. The original repo remains on the feature branch (edge case 3):
-
-```bash
-if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
-  echo "ERROR: Failed to create worktree at $WORKTREE_PATH"
-  echo "The repository remains on branch $BRANCH_NAME."
-  echo "Resolve the issue and retry, or continue working in this directory."
-  # Stop here - do not attempt to restore main
-fi
-```
-
-### Step 6: Restore Main Branch
-
-Switch the original repo back to `main` (FR-002):
+Git does not allow two worktrees to have the same branch checked out. Since `speckit.specify` just created and checked out the feature branch, we must switch back to `main` before creating a worktree for that branch.
 
 ```bash
 if ! git checkout main 2>&1; then
   echo "WARNING: Could not switch back to main."
   echo "You likely have uncommitted changes. Commit or stash them first."
-  echo "The worktree at $WORKTREE_PATH was created successfully."
   echo "The repository remains on branch $BRANCH_NAME."
-  # Do not abort - worktree is already created
+  echo "Worktree creation skipped (cannot create worktree while branch is checked out here)."
+  # Stop here - worktree creation is not possible without switching branches first
+fi
+```
+
+### Step 6: Create the Worktree
+
+Now that the current worktree is on `main`, create a new worktree for the feature branch:
+
+```bash
+git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
+```
+
+If this fails (disk full, permission denied, etc.), report the error clearly. The original repo is already back on `main`:
+
+```bash
+if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
+  echo "ERROR: Failed to create worktree at $WORKTREE_PATH"
+  echo "The repository is on main. The feature branch $BRANCH_NAME still exists."
+  echo "Resolve the issue and retry, or switch to the branch manually: git checkout $BRANCH_NAME"
+  # Stop here
 fi
 ```
 
