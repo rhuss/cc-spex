@@ -1,14 +1,14 @@
 ---
 name: sdd:traits
 description: Manage SDD trait overlays - enable, disable, or list active traits
-argument-hint: "[list | enable <superpowers|teams> | disable <superpowers|teams>]"
+argument-hint: "[list | enable <superpowers|teams|worktrees> | disable <superpowers|teams|worktrees>]"
 ---
 
 # SDD Traits Management
 
 Manage which SDD traits are active. Traits inject discipline overlays into spec-kit command and template files.
 
-**Valid traits**: `superpowers`, `teams`
+**Valid traits**: `superpowers`, `teams`, `worktrees`
 
 ### Step 0: Resolve Script Path
 

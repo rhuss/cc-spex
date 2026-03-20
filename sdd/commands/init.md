@@ -44,6 +44,7 @@ You MUST ask the user these two questions using AskUserQuestion before doing any
 1. (`multiSelect: true`, header: "Traits"): "Which SDD traits do you want to enable?"
    - "superpowers": "Quality gates on speckit commands (review-spec, review-code, verification)"
    - "teams": "Parallel implementation with spec guardian review via Claude Code Agent Teams (experimental, requires: superpowers)"
+   - "worktrees": "Git worktree isolation after speckit.specify (creates sibling worktree, restores main, context handoff)"
 
 2. (`multiSelect: false`, header: "Permissions"): "How should SDD commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve SDD plugin scripts (sdd-init.sh, sdd-traits.sh)"
