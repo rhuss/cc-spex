@@ -1,6 +1,6 @@
 # cc-sdd
 
-![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -52,7 +52,7 @@ flowchart TD
 
 **Prerequisites:**
 1. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-2. [Spec-Kit](https://github.com/github/spec-kit) installed (`npm install -g @anthropic/spec-kit` or see their docs)
+2. [Spec-Kit](https://github.com/github/spec-kit) installed (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git` or see their docs)
 
 **Install cc-sdd:**
 
@@ -87,9 +87,12 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 - `/speckit.plan` gets spec validation before planning and consistency checks after
 - `/speckit.implement` gets code review and verification gates
 
-**`teams`** (experimental) adds parallel implementation via Claude Code Agent Teams:
+**`teams`** (experimental, requires `superpowers`) adds parallel implementation via Claude Code Agent Teams:
 - `/speckit.implement` delegates to team orchestration with spec guardian review
-- Teammates work in isolated git worktrees
+
+**`worktrees`** adds git worktree isolation for feature development:
+- `/speckit.specify` creates a sibling worktree for the feature branch, restores `main` in the original repo, and writes a context handoff file
+- `/sdd:worktree` lists active worktrees or cleans up merged ones
 
 ### Managing Traits
 
@@ -131,6 +134,7 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/sdd:review-spec` | Validate a spec for soundness, completeness, and clarity |
 | `/sdd:review-code` | Review code against its spec for compliance |
 | `/sdd:review-plan` | Review a plan for feasibility and spec alignment |
+| `/sdd:worktree` | List active worktrees or clean up merged ones |
 | `/sdd:traits` | Enable, disable, or list active traits |
 | `/sdd:help` | Show a quick reference for all commands |
 
