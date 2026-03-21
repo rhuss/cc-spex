@@ -6,13 +6,13 @@
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
 [![Builds on Spec-Kit](https://img.shields.io/badge/builds%20on-Spec--Kit-blue)](https://github.com/github/spec-kit)
 
-> Enrich Spec-Kit with composable traits and additional workflow commands for Claude Code.
+> Extend Spec-Kit with composable traits and additional workflow commands for Claude Code.
 
 ## Why cc-sdd?
 
-[Spec-Kit](https://github.com/github/spec-kit) provides a solid foundation for specification-driven development. cc-sdd is a Claude Code plugin that stays as close to upstream Spec-Kit as possible while adding orthogonal features through **traits**, a composable overlay mechanism similar to aspect-oriented programming for Claude Code plugins.
+[Spec-Kit](https://github.com/github/spec-kit) is a great foundation for specification-driven development. cc-sdd is a Claude Code plugin that stays as close to upstream Spec-Kit as possible while adding orthogonal features through **traits**, a composable overlay mechanism similar to aspect-oriented programming for Claude Code plugins.
 
-Each trait injects cross-cutting behavior into Spec-Kit's existing commands without modifying them. Quality gates, git worktree isolation, parallel agent execution: these concerns don't belong in the core workflow, but they're valuable when you need them. Traits let you opt into them selectively, and Spec-Kit's commands remain the same underneath.
+Each trait injects cross-cutting behavior into Spec-Kit's existing commands without modifying them. Quality gates, git worktree isolation, parallel agent execution: these concerns live outside the core workflow. Traits let you opt into them selectively, and Spec-Kit's commands remain the same underneath.
 
 cc-sdd also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. The workflow diagram below is a guide, not an automated pipeline. You call each step yourself, in the order that fits your situation.
 
@@ -70,11 +70,11 @@ make install
 /sdd:init
 ```
 
-This runs Spec-Kit's `specify init`, asks which traits to enable, and configures permission auto-approval. After initialization, all `/speckit.*` commands are enhanced with your selected traits.
+This runs Spec-Kit's `specify init`, asks which traits to enable, and configures permission auto-approval. After initialization, your selected traits extend all `/speckit.*` commands.
 
 ## The Traits System
 
-Traits are the core idea behind cc-sdd. Instead of wrapping Spec-Kit commands with separate `/sdd:*` versions, traits modify the commands directly by appending overlay content.
+cc-sdd is built around traits. Instead of wrapping Spec-Kit commands with separate `/sdd:*` versions, traits modify the commands directly by appending overlay content.
 
 ### How It Works
 
@@ -93,7 +93,7 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 - `/speckit.implement` delegates to team orchestration with spec guardian review
 
 **`worktrees`** adds git worktree isolation for feature development:
-- `/speckit.specify` creates a sibling worktree for the feature branch, restores `main` in the original repo, and writes a context handoff file
+- `/speckit.specify` creates a sibling worktree for the feature branch and restores `main` in the original repo. It also writes a context handoff file for the new session
 - `/sdd:worktree` lists active worktrees or cleans up merged ones
 
 ### Managing Traits
@@ -142,7 +142,7 @@ These commands provide functionality beyond what Spec-Kit offers.
 
 ## Acknowledgements
 
-cc-sdd builds on two excellent projects:
+cc-sdd builds on two projects:
 
 - **[Superpowers](https://github.com/obra/superpowers)** by Jesse Vincent, which provides quality gates and verification workflows for Claude Code.
 - **[Spec-Kit](https://github.com/github/spec-kit)** by GitHub, which provides specification-driven development templates and the `specify` CLI.
