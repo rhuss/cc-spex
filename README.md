@@ -10,9 +10,11 @@
 
 ## Why cc-sdd?
 
-[Spec-Kit](https://github.com/github/spec-kit) gives you a CLI and templates for specification-driven development. You write specs, generate plans, and implement features with a structured workflow. But Spec-Kit's commands are intentionally generic. If you want spec review after creation, or code verification after implementation, you have to remember to do it yourself every time.
+[Spec-Kit](https://github.com/github/spec-kit) provides a solid foundation for specification-driven development. cc-sdd is a Claude Code plugin that stays as close to upstream Spec-Kit as possible while adding orthogonal features through **traits**, a composable overlay mechanism similar to aspect-oriented programming for Claude Code plugins.
 
-cc-sdd solves this with **traits**, a mixin-like mechanism that enriches Spec-Kit commands with additional behavior. Each trait appends overlay content to Spec-Kit's command files, so the extra steps become part of the command itself. Enable the `superpowers` trait, and `/speckit.specify` automatically includes spec review. You pick the traits you want, and your Spec-Kit workflow adapts accordingly.
+Each trait injects cross-cutting behavior into Spec-Kit's existing commands without modifying them. Quality gates, git worktree isolation, parallel agent execution: these concerns don't belong in the core workflow, but they're valuable when you need them. Traits let you opt into them selectively, and Spec-Kit's commands remain the same underneath.
+
+cc-sdd also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. The workflow diagram below is a guide, not an automated pipeline. You call each step yourself, in the order that fits your situation.
 
 ## Workflow
 
