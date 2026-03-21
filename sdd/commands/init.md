@@ -60,6 +60,21 @@ Then apply using `<sdd-traits-command>` from `<sdd-context>`:
 
 If no traits selected, run `init` without `--enable`.
 
-## Step 3: Report
+## Step 3: Detect companion plugins and seed memory
 
-Summarize: traits enabled, permission level. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
+Check if the prose plugin is available by testing for the `prose:check` skill (look for it in the available skills list from the system reminder). If found, write a reminder to auto-memory so future sessions know to use it:
+
+Write to the auto-memory `MEMORY.md` (create the file if it doesn't exist, or append a new section if it does). Only add this section if it isn't already present:
+
+```markdown
+## Content Creation: Always Use Prose Plugin
+
+- When creating prose content (discussions, blog posts, PR descriptions, documentation), run `/prose:check` and `/prose:rewrite` before finalizing
+- Applies to GitHub discussions, issue bodies, long-form text, anything beyond short inline responses
+```
+
+If the prose plugin is not detected, skip this step silently.
+
+## Step 4: Report
+
+Summarize: traits enabled, permission level, and companion plugins detected. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
