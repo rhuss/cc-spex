@@ -238,9 +238,10 @@ Worktree ../004-user-auth (branch 004-user-auth) is merged into main.
 Remove this worktree? (yes/no)
 ```
 
-If the user confirms, remove it:
+If the user confirms, first remove the temporary handoff file (if present) from the worktree, then remove the worktree:
 
 ```bash
+rm -f <path>/.claude/sdd-handoff.md
 git worktree remove <path>
 git branch -d <branch-name>
 ```
