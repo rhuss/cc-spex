@@ -53,6 +53,15 @@ def main():
     # Check if SDD traits are configured
     sdd_configured = (cwd / '.specify' / 'sdd-traits.json').exists()
 
+    # Read handoff file if present (bridges context across sessions/worktrees)
+    handoff_file = cwd / '.claude' / 'sdd-handoff.md'
+    handoff_content = ''
+    if handoff_file.exists():
+        try:
+            handoff_content = handoff_file.read_text().strip()
+        except Exception:
+            pass
+
     # Check if project is fully initialized (mirrors check_ready() in sdd-init.sh)
     sdd_initialized = (
         (cwd / '.specify').is_dir()
@@ -142,6 +151,8 @@ Do NOT read files, explore code, or analyze anything before invoking the skill.
 A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked.
 </skill-enforcement>"""
 
+    handoff_block = f'\n<handoff>\n{handoff_content}\n</handoff>' if handoff_content else ''
+
     context = f"""<sdd-context>
 <plugin-root>{plugin_root}</plugin-root>
 <project-dir>{cwd}</project-dir>
@@ -149,7 +160,7 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 <sdd-configured>{str(sdd_configured).lower()}</sdd-configured>
 <sdd-initialized>{str(sdd_initialized).lower()}</sdd-initialized>
 <sdd-init-command>{init_script}{init_args}</sdd-init-command>
-<sdd-traits-command>{traits_script}</sdd-traits-command>
+<sdd-traits-command>{traits_script}</sdd-traits-command>{handoff_block}
 </sdd-context>{enforcement}"""
 
     response = {
