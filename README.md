@@ -136,7 +136,7 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/sdd:review-spec` | Validate a spec for soundness, completeness, and clarity |
 | `/sdd:review-code` | Review code against its spec for compliance |
 | `/sdd:review-plan` | Review a plan for feasibility and spec alignment |
-| `/sdd:worktree` | List active worktrees or clean up merged ones |
+| `/sdd:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
 | `/sdd:traits` | Enable, disable, or list active traits |
 | `/sdd:help` | Show a quick reference for all commands |
 
