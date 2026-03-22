@@ -91,6 +91,7 @@ SDD COMMANDS (helpers and configuration)
   /sdd:review-spec    Check spec quality and completeness
   /sdd:review-plan    Validate plan coverage, task quality, red flags
   /sdd:review-code    Check code compliance against spec
+  /sdd:verify         Run verification (tests, hygiene, spec compliance)
   /sdd:evolve         Reconcile spec/code drift
   /sdd:help           This quick reference
 

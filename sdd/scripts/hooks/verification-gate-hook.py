@@ -34,9 +34,35 @@ def is_sdd_project(cwd):
 def is_git_commit(tool_input):
     """Check if the Bash command is a git commit."""
     command = tool_input.get('command', '')
-    # Match 'git commit' but not 'git commit --amend' style operations
-    # that might be fixing a previous commit
     return bool(re.search(r'\bgit\s+commit\b', command))
+
+
+def is_spec_only_commit(cwd):
+    """Check if staged changes are spec/doc-only (no code to verify).
+
+    Returns True when all staged files are under specs/, brainstorm/,
+    or are markdown/documentation files that don't need code verification.
+    """
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['git', 'diff', '--cached', '--name-only'],
+            capture_output=True, text=True, cwd=cwd, timeout=5
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return False
+        for f in result.stdout.strip().splitlines():
+            f = f.strip()
+            # Allow spec, brainstorm, doc paths and standalone markdown files
+            if (f.startswith('specs/') or f.startswith('brainstorm/')
+                    or f.startswith('docs/') or f.startswith('.specify/')
+                    or f.endswith('.md')):
+                continue
+            # Any other file means this is a code commit
+            return False
+        return True
+    except Exception:
+        return False
 
 
 def read_hook_input():
@@ -77,6 +103,10 @@ def main():
     if marker.exists():
         sys.exit(0)
 
+    # Allow spec-only commits without verification (no code to check)
+    if is_spec_only_commit(cwd):
+        sys.exit(0)
+
     # Block the commit
     response = {
         "hookSpecificOutput": {
@@ -86,7 +116,7 @@ def main():
                 "SDD VERIFICATION GATE: This is an SDD-managed project but "
                 "verification has not been run this session. "
                 "Before committing, run the code hygiene review and verification:\n\n"
-                "  1. Invoke {Skill: sdd:verification-before-completion}\n"
+                "  1. Run /sdd:verify to execute the verification workflow\n"
                 "  2. Or ask the user if they want to skip verification\n\n"
                 "If the user explicitly approves skipping verification, "
                 "set SKIP_SDD_VERIFY=1 before the commit command."

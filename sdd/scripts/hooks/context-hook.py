@@ -75,7 +75,7 @@ def main():
     # Guard against hallucinated commands (e.g., /sdd:specify, /sdd:plan)
     KNOWN_SDD_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
-        'review-code', 'review-plan', 'review-spec', 'traits',
+        'review-code', 'review-plan', 'review-spec', 'traits', 'verify', 'worktree',
     }
     COMMAND_CORRECTIONS = {
         'specify': '/speckit.specify',
