@@ -238,9 +238,14 @@ Worktree ../004-user-auth (branch 004-user-auth) is merged into main.
 Remove this worktree? (yes/no)
 ```
 
-If the user confirms, first remove the temporary handoff file (if present) from the worktree, then remove the worktree:
+If the user confirms, first switch to the main repo root (to avoid cwd pointing at the deleted directory), remove the handoff file, then remove the worktree:
 
 ```bash
+# Switch cwd to the main worktree BEFORE removing the feature worktree.
+# If cwd is inside the worktree being removed, all subsequent commands will
+# fail with "Path does not exist" because the Bash tool persists cwd.
+MAIN_WORKTREE=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+cd "$MAIN_WORKTREE"
 rm -f <path>/.claude/sdd-handoff.md
 git worktree remove <path>
 git branch -d <branch-name>

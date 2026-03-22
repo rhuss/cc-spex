@@ -15,9 +15,10 @@ Verify implementation is complete by running tests AND validating spec complianc
 
 **Key Additions from Standard Verification:**
 - Step 1: Run tests (existing behavior)
-- **Step 2: Validate spec compliance** (new)
-- **Step 3: Check for spec drift** (new)
-- Blocks completion if EITHER tests OR spec compliance fails
+- **Step 2: Code hygiene review** (mechanical defect detection)
+- **Step 3: Validate spec compliance** (spec-driven)
+- **Step 4: Check for spec drift** (spec-driven)
+- Blocks completion if tests, code hygiene, OR spec compliance fails
 
 ## The Iron Law
 
@@ -101,7 +102,36 @@ npm test  # or pytest, go test, etc.
 - Do not skip this step
 - Do not claim completion
 
-### 2. Validate Spec Compliance
+### 2. Code Hygiene Review
+
+**Before checking spec compliance, review every changed file for mechanical defects.
+These are craft-level issues that no spec describes but that cause real bugs.**
+
+**For each function you wrote or modified, check:**
+
+#### Dead Code and Logic
+- [ ] Every conditional branch produces a **different** outcome (no branches that do the same thing)
+- [ ] Every parameter is **actually used** to change behavior (no unused parameters)
+- [ ] Every exported function has **at least one caller** outside tests (no orphaned API surface)
+- [ ] No variables assigned but never read
+
+#### Copy and Mutation Safety
+- [ ] When copying a data structure, verify whether **nested references are shared**
+- [ ] If the copy is later mutated, confirm the original is **not affected**
+- [ ] If a function receives a pointer/reference, verify whether it is expected to **mutate or read-only**
+
+#### Cleanup and Consistency
+- [ ] When removing/disabling something, verify **all references** to it are also cleaned up (no orphaned entries, dangling references, stale indices)
+- [ ] When adding to a collection, verify **duplicates are handled** (deduplicate or reject)
+- [ ] When deriving a value from an identifier, verify the **derivation uses the correct source** (e.g., a display name vs an internal ID vs a type name are different things)
+
+#### Unnecessary Operations
+- [ ] No sorting/ordering when the result doesn't depend on order (counting, summing, existence checks)
+- [ ] No intermediate data structures that serve no purpose (building a list just to iterate it once)
+
+**If any issue found:** Fix before proceeding. These are not style nits; they are latent bugs.
+
+### 3. Validate Spec Compliance
 
 **Load spec:**
 ```bash
@@ -137,7 +167,7 @@ Spec Compliance: X/X requirements = XX%
 - Document all deviations
 - Do not proceed until resolved
 
-### 3. Check for Spec Drift
+### 4. Check for Spec Drift
 
 **Compare:**
 - What spec says NOW
@@ -155,7 +185,7 @@ Spec Compliance: X/X requirements = XX%
 - Use `sdd:evolve` to reconcile
 - Do not proceed with drift
 
-### 4. Verify Success Criteria
+### 5. Verify Success Criteria
 
 **From spec, check each criterion:**
 
@@ -176,7 +206,7 @@ If any criterion not met:
 - Implement missing piece
 - Re-verify
 
-### 5. Generate Verification Report
+### 6. Generate Verification Report
 
 **Report structure:**
 
@@ -245,10 +275,11 @@ OR
 [What needs to be done]
 ```
 
-### 6. Make Go/No-Go Decision
+### 7. Make Go/No-Go Decision
 
 **All conditions must be true:**
 - [x] All tests passing
+- [x] Code hygiene review clean (no dead code, no mutation bugs, no orphans)
 - [x] Spec compliance 100%
 - [x] No spec drift
 - [x] All success criteria met
@@ -256,6 +287,11 @@ OR
 **If ALL true:**
 - VERIFIED: Proceed to completion
 - Safe to commit/merge/deploy
+- **Write verification marker** so the commit gate hook allows the commit:
+  ```bash
+  touch "${TMPDIR:-/tmp}/.claude-sdd-verified-${SESSION_ID}"
+  ```
+  (The SESSION_ID is available from the hook context. If not, use a stable session identifier.)
 
 **If ANY false:**
 - NOT VERIFIED: Block completion
@@ -301,6 +337,10 @@ Use TodoWrite to track:
 
 - [ ] Run full test suite
 - [ ] Verify all tests passing
+- [ ] Code hygiene: check for dead branches and unused parameters
+- [ ] Code hygiene: check copy/mutation safety
+- [ ] Code hygiene: check cleanup consistency (no orphans)
+- [ ] Code hygiene: check for unnecessary operations
 - [ ] Load specification
 - [ ] Validate spec compliance for all requirements
 - [ ] Check for spec drift
@@ -479,9 +519,10 @@ Action: Update code or revert spec, re-verify
 **This skill enforces quality gates:**
 
 1. **All tests must pass** (from superpowers)
-2. **100% spec compliance required** (SDD)
-3. **No spec drift allowed** (SDD)
-4. **All success criteria must be met** (SDD)
+2. **Code hygiene review clean** (mechanical defects)
+3. **100% spec compliance required** (SDD)
+4. **No spec drift allowed** (SDD)
+5. **All success criteria must be met** (SDD)
 
 **No exceptions. No shortcuts.**
 
