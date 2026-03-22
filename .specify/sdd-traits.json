@@ -3,10 +3,7 @@
   "traits": {
     "superpowers": true,
     "teams": true,
-    "worktrees": true
+    "worktrees": false
   },
-  "worktrees_config": {
-    "base_path": ".."
-  },
-  "applied_at": "2026-03-20T10:56:11Z"
+  "applied_at": "2026-03-22T12:59:33Z"
 }

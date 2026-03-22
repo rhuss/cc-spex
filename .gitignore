@@ -60,6 +60,9 @@ build/
 *.bak
 *.log
 
+# SDD transient phase marker
+.specify/.sdd-phase
+
 # Sync-related temporary files
 skills/**/SKILL.md.proposed
 /tmp/upstream-changes-*.patch

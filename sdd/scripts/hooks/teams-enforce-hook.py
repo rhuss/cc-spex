@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: blocks Agent tool with run_in_background when teams trait is active."""
+"""PreToolUse hook: blocks Agent tool with run_in_background during implementation phase."""
 import json
 import os
 import sys
@@ -36,7 +36,6 @@ def main():
         with open(traits_config) as f:
             config = json.load(f)
         teams_enabled = config.get("traits", {}).get("teams", False)
-        # Also check old names for backward compat
         if not teams_enabled:
             teams_enabled = (
                 config.get("traits", {}).get("teams-vanilla", False)
@@ -50,13 +49,26 @@ def main():
         print(json.dumps({"decision": "approve"}))
         return
 
-    # Block: teams trait is active and Agent with run_in_background detected
+    # Only enforce during implementation phase (phase file set by speckit.implement)
+    phase_file = os.path.join(os.getcwd(), ".specify", ".sdd-phase")
+    try:
+        with open(phase_file) as f:
+            phase = f.read().strip()
+    except FileNotFoundError:
+        print(json.dumps({"decision": "approve"}))
+        return
+
+    if phase != "implement":
+        print(json.dumps({"decision": "approve"}))
+        return
+
+    # Block: implementation phase + teams trait active + background Agent
     print(json.dumps({
         "decision": "block",
         "reason": (
-            "TEAMS ENFORCEMENT: You are using Agent with run_in_background, "
-            "which bypasses Agent Teams. Instead, delegate to "
-            "{Skill: sdd:teams-orchestrate} which provides: "
+            "TEAMS ENFORCEMENT (implement phase): You are using Agent with "
+            "run_in_background, which bypasses Agent Teams. Instead, delegate "
+            "to {Skill: sdd:teams-orchestrate} which provides: "
             "(1) worktree isolation for each teammate, "
             "(2) spec compliance review before merge."
         )

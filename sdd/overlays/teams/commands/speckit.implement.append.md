@@ -4,6 +4,21 @@
 
 **ENFORCEMENT**: This section is NON-NEGOTIABLE when implementing 2+ independent tasks.
 
+### Phase Marker (FIRST action)
+
+Before any implementation logic, set the phase marker so the teams enforcement hook
+is active for this session:
+
+```bash
+echo "implement" > .specify/.sdd-phase
+```
+
+When implementation completes (success or failure), clean it up:
+
+```bash
+rm -f .specify/.sdd-phase
+```
+
 ### Decision Gate (BEFORE any implementation)
 
 When the implement skill is invoked with multiple tasks:

@@ -215,6 +215,21 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
 
 **ENFORCEMENT**: This section is NON-NEGOTIABLE when implementing 2+ independent tasks.
 
+### Phase Marker (FIRST action)
+
+Before any implementation logic, set the phase marker so the teams enforcement hook
+is active for this session:
+
+```bash
+echo "implement" > .specify/.sdd-phase
+```
+
+When implementation completes (success or failure), clean it up:
+
+```bash
+rm -f .specify/.sdd-phase
+```
+
 ### Decision Gate (BEFORE any implementation)
 
 When the implement skill is invoked with multiple tasks:
@@ -238,7 +253,3 @@ When the implement skill is invoked with multiple tasks:
 - Skipping the pre-flight check
 
 
-<!-- SDD-TRAIT:worktrees -->
-## Worktree Context
-
-You are likely running in a worktree created by the `worktrees` trait. The spec and plan files in this worktree contain all context needed for implementation. No separate handoff file is needed.
