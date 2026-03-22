@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: blocks git commit when SDD verification hasn't been run.
+"""PreToolUse hook: reminds about SDD verification before git commit.
 
 When an SDD project is active (.specify/ directory exists), this hook intercepts
 git commit commands and checks whether verification was completed this session.
 
 The verification-before-completion skill writes a marker file on success.
-If that marker is missing, the commit is blocked with a pointer to run verification.
+If that marker is missing, a reminder is injected asking the model to confirm
+with the user before proceeding. The commit is NOT blocked.
 
 The hook is non-intrusive:
 - Only activates when .specify/ exists in the working directory
 - Only intercepts Bash tool calls containing 'git commit'
 - Allows commits when verification marker exists
-- Allows the user to bypass with SKIP_SDD_VERIFY=1
+- Reminds (not blocks) when verification hasn't been run
 """
 import json
 import os
@@ -75,10 +76,6 @@ def read_hook_input():
 
 
 def main():
-    # Environment bypass for when the user explicitly opts out
-    if os.environ.get('SKIP_SDD_VERIFY') == '1':
-        sys.exit(0)
-
     hook_input = read_hook_input()
 
     tool_name = hook_input.get('tool_name', '')
@@ -107,19 +104,14 @@ def main():
     if is_spec_only_commit(cwd):
         sys.exit(0)
 
-    # Block the commit
+    # Remind about verification (non-blocking)
     response = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": (
-                "SDD VERIFICATION GATE: This is an SDD-managed project but "
-                "verification has not been run this session. "
-                "Before committing, run the code hygiene review and verification:\n\n"
-                "  1. Run /sdd:verify to execute the verification workflow\n"
-                "  2. Or ask the user if they want to skip verification\n\n"
-                "If the user explicitly approves skipping verification, "
-                "set SKIP_SDD_VERIFY=1 before the commit command."
+            "additionalContext": (
+                "SDD VERIFICATION REMINDER: Verification has not been run this session. "
+                "Consider running /sdd:verify first, or confirm with the user that "
+                "they want to proceed without verification."
             )
         }
     }

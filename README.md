@@ -93,7 +93,7 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 - `/speckit.implement` delegates to team orchestration with spec guardian review
 
 **`worktrees`** adds git worktree isolation for feature development:
-- `/speckit.specify` creates a sibling worktree for the feature branch and restores `main` in the original repo. It also writes a context handoff file for the new session
+- `/speckit.specify` creates a sibling worktree for the feature branch and restores `main` in the original repo
 - `/sdd:worktree` lists active worktrees or cleans up merged ones
 
 ### Managing Traits

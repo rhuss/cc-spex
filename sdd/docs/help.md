@@ -78,7 +78,7 @@ SDD TRAITS (quality gates for spec-kit commands)
 
   worktrees trait:
     /speckit.specify  → creates git worktree for feature branch,
-                        restores main, writes context handoff file
+                        restores main
     /sdd:worktree     → list active worktrees, cleanup merged ones
 
 

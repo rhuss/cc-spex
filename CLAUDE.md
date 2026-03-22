@@ -27,7 +27,7 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 
 - `superpowers`: Quality gates on speckit commands (review-spec, review-code, verification)
 - `teams`: Parallel implementation via Claude Code Agent Teams (experimental, requires superpowers)
-- `worktrees`: Git worktree isolation after speckit.specify (creates sibling worktree, restores main, context handoff)
+- `worktrees`: Git worktree isolation after speckit.specify (creates sibling worktree, restores main)
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -315,6 +315,43 @@ Report to the user:
 - NFR validation results
 - Path to generated REVIEWERS.md
 
+## 7. Offer Remediation
+
+After presenting results, collect ALL findings from steps 0-4 into a numbered list. Include both blocking and non-blocking issues. Present them as a consolidated findings summary:
+
+```
+Findings:
+
+  1. [BLOCKING] Task T003 is not actionable: "figure out auth approach"
+  2. [advisory] Plan may benefit from splitting (2 independent subsystems)
+  3. [gap] FR-007 has no implementing task in the coverage matrix
+  4. [red-flag] tasks.md line 42: "TBD" placeholder
+  5. [nfr] NFR-002 "response time < 200ms" has no measurement method
+```
+
+Then ask the user how to proceed:
+
+Use AskUserQuestion with:
+- header: "Findings"
+- multiSelect: false
+- Options:
+  - "Fix all": "Address every finding automatically"
+  - "Let me pick": "Select specific findings to fix (you can add comments)"
+  - "Skip": "Proceed without changes"
+
+**If "Fix all"**: Apply fixes to plan.md and/or tasks.md for each finding, then re-run the relevant checks to confirm resolution.
+
+**If "Let me pick"**: Use AskUserQuestion with multiSelect: true, listing up to 4 findings as options (if more than 4, batch them across multiple rounds). Each option's label is the short finding (e.g., "#1 Task T003 not actionable") and the description is the detail. The user can select which to fix and use "Other" to add comments or instructions for specific findings.
+
+After the user selects findings, apply fixes to plan.md and/or tasks.md. For each selected finding:
+1. Read the user's comment (if any) to understand their intent
+2. Make the minimal targeted edit to resolve the finding
+3. Report what was changed
+
+After all selected fixes are applied, re-present any remaining unaddressed findings as informational (no further prompting).
+
+**If "Skip"**: Proceed without changes. Note that blocking issues remain unresolved.
+
 ## Integration
 
 **This skill is invoked by:**

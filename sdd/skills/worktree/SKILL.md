@@ -10,7 +10,7 @@ argument-hint: "[list|cleanup]"
 
 This skill manages git worktrees to isolate feature development. It supports three actions:
 
-- **create**: Called by the `worktrees` trait overlay after `speckit.specify` completes. Creates a worktree, restores `main`, writes a handoff file, and prints switch instructions.
+- **create**: Called by the `worktrees` trait overlay after `speckit.specify` completes. Creates a worktree, restores `main`, and prints switch instructions.
 - **list**: Shows all active feature worktrees with path, branch, and feature name.
 - **cleanup**: Detects worktrees whose branches are merged and offers removal.
 
@@ -119,44 +119,7 @@ if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
 fi
 ```
 
-### Step 7: Write Context Handoff File
-
-Create the handoff file in the worktree at `<worktree>/.claude/sdd-handoff.md` (FR-003):
-
-```bash
-mkdir -p "$WORKTREE_PATH/.claude"
-```
-
-Write `sdd-handoff.md` with:
-- A brief summary (5-10 lines) of key decisions from the brainstorm/specify session
-- A pointer to the spec file: `specs/<branch-name>/spec.md`
-- The suggested next step: "Run `/speckit.plan` to create the implementation plan"
-
-The handoff content should be generated from the current conversation context, summarizing:
-- What problem the feature solves
-- Key design decisions made during brainstorm
-- Any constraints or alternatives that were discussed
-
-Example format:
-
-```markdown
-# Context Handoff: <feature-name>
-
-## Summary
-<Brief description of what was discussed and decided during brainstorm/specify>
-
-## Key Decisions
-- <Decision 1>
-- <Decision 2>
-
-## Spec Location
-- Feature spec: `specs/<branch-name>/spec.md`
-
-## Next Step
-Run `/speckit.plan` to create the implementation plan, then `/speckit.tasks` for task breakdown.
-```
-
-### Step 8: Print Switch Instructions
+### Step 7: Print Switch Instructions
 
 Print clear instructions for the user (FR-004):
 
@@ -167,8 +130,7 @@ Print clear instructions for the user (FR-004):
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
 │                                                             │
-│ The handoff file at .claude/sdd-handoff.md contains             │
-│ context from this brainstorm/specify session.               │
+│ The spec file contains all context from this session.       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -238,7 +200,7 @@ Worktree ../004-user-auth (branch 004-user-auth) is merged into main.
 Remove this worktree? (yes/no)
 ```
 
-If the user confirms, first switch to the main repo root (to avoid cwd pointing at the deleted directory), remove the handoff file, then remove the worktree:
+If the user confirms, first switch to the main repo root (to avoid cwd pointing at the deleted directory), then remove the worktree:
 
 ```bash
 # Switch cwd to the main worktree BEFORE removing the feature worktree.
@@ -246,7 +208,6 @@ If the user confirms, first switch to the main repo root (to avoid cwd pointing 
 # fail with "Path does not exist" because the Bash tool persists cwd.
 MAIN_WORKTREE=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 cd "$MAIN_WORKTREE"
-rm -f <path>/.claude/sdd-handoff.md
 git worktree remove <path>
 git branch -d <branch-name>
 ```
