@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "sdd",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "description": "Specification-Driven Development with Process Discipline for Claude Code",
       "author": {
         "name": "Roland Huss",
