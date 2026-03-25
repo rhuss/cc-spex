@@ -26,9 +26,8 @@ def read_hook_input():
     """Read and parse hook input JSON from stdin."""
     try:
         return json.loads(sys.stdin.read())
-    except Exception as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(2)
+    except Exception:
+        sys.exit(0)
 
 
 def main():
