@@ -1,7 +1,7 @@
 ---
-name: sdd:worktree
+name: spex:worktree
 description: Manage git worktrees for isolated feature development
 argument-hint: "[list|cleanup]"
 ---
 
-{Skill: sdd:worktree}
+{Skill: spex:worktree}

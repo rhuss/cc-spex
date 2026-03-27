@@ -3,18 +3,18 @@
 ## SDD Quality Gates for Planning
 
 **Before generating the plan:**
-1. Invoke {Skill: sdd:review-spec} to validate the spec is sound
+1. Invoke {Skill: spex:review-spec} to validate the spec is sound
 2. If review finds critical issues, stop and fix before planning
 
 **After the plan is generated:**
 1. Run `/speckit.tasks` to generate the task breakdown
-2. Invoke {Skill: sdd:review-plan} to validate coverage, task quality, and generate REVIEWERS.md
+2. Invoke {Skill: spex:review-plan} to validate coverage, task quality, and generate REVIEWERS.md
 
 **Pre-PR Quality Gate (mandatory):**
 
 Before creating a spec PR, verify that ALL three quality checks have been completed:
-1. `/sdd:review-spec` (spec soundness, completeness, implementability)
-2. `/sdd:review-plan` (coverage matrix, task quality, REVIEWERS.md generation)
+1. `/spex:review-spec` (spec soundness, completeness, implementability)
+2. `/spex:review-plan` (coverage matrix, task quality, REVIEWERS.md generation)
 3. `/speckit.clarify` (clarification questions resolved, answers encoded in spec)
 
 If any of these have NOT been run during this planning session, run them now before proceeding. Do NOT skip any of these steps. The REVIEWERS.md file MUST exist in the spec directory.

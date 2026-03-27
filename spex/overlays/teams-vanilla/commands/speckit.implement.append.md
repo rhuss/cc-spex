@@ -1,4 +1,4 @@
-<!-- DEPRECATED: Replaced by sdd/overlays/teams/commands/speckit.implement.append.md -->
+<!-- DEPRECATED: Replaced by spex/overlays/teams/commands/speckit.implement.append.md -->
 <!-- Use the consolidated 'teams' trait instead of 'teams-vanilla'. -->
 
 <!-- SDD-TRAIT:teams-vanilla -->
@@ -11,5 +11,5 @@ for parallel task execution instead of sequential single-session work.
 If not, set it in `.claude/settings.local.json` under `env` and inform the user
 that a restart is needed.
 
-**Execution**: Delegate to {Skill: sdd:teams-orchestrate} for task graph analysis,
+**Execution**: Delegate to {Skill: spex:teams-orchestrate} for task graph analysis,
 teammate spawning, and completion coordination.

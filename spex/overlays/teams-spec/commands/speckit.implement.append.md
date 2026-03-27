@@ -1,4 +1,4 @@
-<!-- DEPRECATED: Replaced by sdd/overlays/teams/commands/speckit.implement.append.md -->
+<!-- DEPRECATED: Replaced by spex/overlays/teams/commands/speckit.implement.append.md -->
 <!-- Use the consolidated 'teams' trait instead of 'teams-spec'. -->
 
 <!-- SDD-TRAIT:teams-spec -->
@@ -11,5 +11,5 @@ merges compliant changes.
 
 **This overrides teams-vanilla behavior** when both traits are active.
 
-**Execution**: Delegate to {Skill: sdd:teams-spec-guardian} for worktree
+**Execution**: Delegate to {Skill: spex:teams-spec-guardian} for worktree
 spawning, spec compliance review, and merge protocol.

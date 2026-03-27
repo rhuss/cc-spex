@@ -24,7 +24,7 @@ from pathlib import Path
 def get_marker_path(session_id):
     """Return the verification marker file path for a given session."""
     tmpdir = Path(os.environ.get('TMPDIR', '/tmp'))
-    return tmpdir / f'.claude-sdd-verified-{session_id}'
+    return tmpdir / f'.claude-spex-verified-{session_id}'
 
 
 def is_sdd_project(cwd):
@@ -110,7 +110,7 @@ def main():
             "hookEventName": "PreToolUse",
             "additionalContext": (
                 "SDD VERIFICATION REMINDER: Verification has not been run this session. "
-                "Consider running /sdd:verify first, or confirm with the user that "
+                "Consider running /spex:verify first, or confirm with the user that "
                 "they want to proceed without verification."
             )
         }

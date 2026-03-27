@@ -31,7 +31,7 @@ def main():
         return
 
     # Check if teams trait is enabled
-    traits_config = os.path.join(os.getcwd(), ".specify", "sdd-traits.json")
+    traits_config = os.path.join(os.getcwd(), ".specify", "spex-traits.json")
     try:
         with open(traits_config) as f:
             config = json.load(f)
@@ -50,7 +50,7 @@ def main():
         return
 
     # Only enforce during implementation phase (phase file set by speckit.implement)
-    phase_file = os.path.join(os.getcwd(), ".specify", ".sdd-phase")
+    phase_file = os.path.join(os.getcwd(), ".specify", ".spex-phase")
     try:
         with open(phase_file) as f:
             phase = f.read().strip()
@@ -68,7 +68,7 @@ def main():
         "reason": (
             "TEAMS ENFORCEMENT (implement phase): You are using Agent with "
             "run_in_background, which bypasses Agent Teams. Instead, delegate "
-            "to {Skill: sdd:teams-orchestrate} which provides: "
+            "to {Skill: spex:teams-orchestrate} which provides: "
             "(1) worktree isolation for each teammate, "
             "(2) spec compliance review before merge."
         )

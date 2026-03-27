@@ -1,6 +1,6 @@
 ---
-name: sdd:evolve
+name: spex:evolve
 description: Reconcile spec/code mismatches with AI-guided evolution and user control
 ---
 
-{Skill: sdd:evolve}
+{Skill: spex:evolve}

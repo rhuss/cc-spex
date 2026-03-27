@@ -1,4 +1,4 @@
-<!-- DEPRECATED: Replaced by sdd/overlays/teams/commands/speckit.plan.append.md -->
+<!-- DEPRECATED: Replaced by spex/overlays/teams/commands/speckit.plan.append.md -->
 <!-- Use the consolidated 'teams' trait instead of 'teams-vanilla'. -->
 
 <!-- SDD-TRAIT:teams-vanilla -->
@@ -12,5 +12,5 @@ generates the plan.
 If not, set it in `.claude/settings.local.json` under `env` and inform the user
 that a restart is needed.
 
-**Execution**: Delegate to {Skill: sdd:teams-research} for research topic
+**Execution**: Delegate to {Skill: spex:teams-research} for research topic
 identification, agent spawning, findings consolidation, and plan generation.

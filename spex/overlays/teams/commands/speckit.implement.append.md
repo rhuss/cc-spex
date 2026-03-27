@@ -10,13 +10,13 @@ Before any implementation logic, set the phase marker so the teams enforcement h
 is active for this session:
 
 ```bash
-echo "implement" > .specify/.sdd-phase
+echo "implement" > .specify/.spex-phase
 ```
 
 When implementation completes (success or failure), clean it up:
 
 ```bash
-rm -f .specify/.sdd-phase
+rm -f .specify/.spex-phase
 ```
 
 ### Decision Gate (BEFORE any implementation)
@@ -27,7 +27,7 @@ When the implement skill is invoked with multiple tasks:
    - If not: Set it in `.claude/settings.local.json`, inform user restart needed, STOP.
    - If yes: proceed.
 
-2. **DELEGATE**: Call `{Skill: sdd:teams-orchestrate}` for task graph analysis,
+2. **DELEGATE**: Call `{Skill: spex:teams-orchestrate}` for task graph analysis,
    teammate spawning in worktrees, spec compliance review, and merge coordination.
    Do NOT proceed with direct implementation.
 

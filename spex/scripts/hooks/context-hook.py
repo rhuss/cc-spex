@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Hook script for UserPromptSubmit event.
-Injects SDD plugin context as system reminder when sdd commands detected.
+Injects SDD plugin context as system reminder when spex commands detected.
 Also writes a marker file for the PreToolUse skill gate hook to enforce
 that the Skill tool is called before any other tool.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 def get_marker_path(session_id):
     """Return the skill gate marker file path for a given session."""
     tmpdir = Path(os.environ.get('TMPDIR', '/tmp'))
-    return tmpdir / f'.claude-sdd-skill-pending-{session_id}'
+    return tmpdir / f'.claude-spex-skill-pending-{session_id}'
 
 
 def clear_marker(session_id):
@@ -38,8 +38,8 @@ def main():
     session_id = hook_input.get('session_id', 'unknown')
     cwd = Path(hook_input.get('cwd', '.'))
 
-    # For non-SDD commands, clean up any stale marker and exit
-    if not prompt.startswith('/sdd:'):
+    # For non-spex commands, clean up any stale marker and exit
+    if not prompt.startswith('/spex:'):
         clear_marker(session_id)
         sys.exit(0)
 
@@ -48,22 +48,22 @@ def main():
     plugin_root = Path(__file__).parent.parent.parent
 
     # Resolve script paths
-    init_script = plugin_root / 'scripts' / 'sdd-init.sh'
-    traits_script = plugin_root / 'scripts' / 'sdd-traits.sh'
+    init_script = plugin_root / 'scripts' / 'spex-init.sh'
+    traits_script = plugin_root / 'scripts' / 'spex-traits.sh'
     # Check if SDD traits are configured
-    sdd_configured = (cwd / '.specify' / 'sdd-traits.json').exists()
+    sdd_configured = (cwd / '.specify' / 'spex-traits.json').exists()
 
-    # Check if project is fully initialized (mirrors check_ready() in sdd-init.sh)
+    # Check if project is fully initialized (mirrors check_ready() in spex-init.sh)
     sdd_initialized = (
         (cwd / '.specify').is_dir()
         and (cwd / '.specify' / 'templates' / 'spec-template.md').exists()
         and any((cwd / '.claude' / 'commands').glob('speckit.*'))
     ) if (cwd / '.claude' / 'commands').is_dir() else False
 
-    # Extract the skill name from the command (e.g., "/sdd:brainstorm foo" -> "sdd:brainstorm")
+    # Extract the skill name from the command (e.g., "/spex:brainstorm foo" -> "spex:brainstorm")
     skill_name = prompt.split()[0].lstrip('/')
 
-    # Guard against hallucinated commands (e.g., /sdd:specify, /sdd:plan)
+    # Guard against hallucinated commands (e.g., /spex:specify, /spex:plan)
     KNOWN_SDD_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
         'review-code', 'review-plan', 'review-spec', 'traits', 'verify', 'worktree',
@@ -78,18 +78,18 @@ def main():
     if command_short_check not in KNOWN_SDD_COMMANDS:
         suggestion = COMMAND_CORRECTIONS.get(
             command_short_check,
-            'Run /sdd:help for valid commands'
+            'Run /spex:help for valid commands'
         )
         response = {
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
                 "additionalContext": (
-                    f"<sdd-error>"
+                    f"<spex-error>"
                     f"ERROR: /{skill_name} does not exist. "
                     f"Did you mean {suggestion}? "
                     f"SDD commands: brainstorm, review-*, evolve, traits, init, help, constitution. "
                     f"Spec-kit commands: /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement."
-                    f"</sdd-error>"
+                    f"</spex-error>"
                 )
             }
         }
@@ -97,7 +97,7 @@ def main():
         sys.exit(0)
 
     # Only write the skill gate marker if the command delegates to a Skill.
-    # Commands containing "{Skill: sdd:...}" need the gate to ensure the Skill
+    # Commands containing "{Skill: spex:...}" need the gate to ensure the Skill
     # tool is called first. Direct workflow commands (init, traits, help, etc.)
     # already provide instructions inline and should NOT be gated.
     command_short = skill_name.split(':', 1)[1] if ':' in skill_name else skill_name
@@ -121,7 +121,7 @@ def main():
 
     # Parse init arguments (--refresh, --update)
     init_args = ''
-    if prompt.startswith('/sdd:init'):
+    if prompt.startswith('/spex:init'):
         parts = prompt.split()
         for part in parts[1:]:
             if part in ('--refresh', '--update', '-r', '-u'):
@@ -142,15 +142,15 @@ Do NOT read files, explore code, or analyze anything before invoking the skill.
 A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked.
 </skill-enforcement>"""
 
-    context = f"""<sdd-context>
+    context = f"""<spex-context>
 <plugin-root>{plugin_root}</plugin-root>
 <project-dir>{cwd}</project-dir>
 <session-id>{session_id}</session-id>
-<sdd-configured>{str(sdd_configured).lower()}</sdd-configured>
-<sdd-initialized>{str(sdd_initialized).lower()}</sdd-initialized>
-<sdd-init-command>{init_script}{init_args}</sdd-init-command>
-<sdd-traits-command>{traits_script}</sdd-traits-command>
-</sdd-context>{enforcement}"""
+<spex-configured>{str(sdd_configured).lower()}</spex-configured>
+<spex-initialized>{str(sdd_initialized).lower()}</spex-initialized>
+<spex-init-command>{init_script}{init_args}</spex-init-command>
+<spex-traits-command>{traits_script}</spex-traits-command>
+</spex-context>{enforcement}"""
 
     response = {
         "hookSpecificOutput": {

@@ -1,6 +1,6 @@
 ---
-name: sdd:verify
+name: spex:verify
 description: Run verification before completion - tests, code hygiene, spec compliance, drift check
 ---
 
-{Skill: sdd:verification-before-completion}
+{Skill: spex:verification-before-completion}

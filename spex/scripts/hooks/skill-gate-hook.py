@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: blocks all tools until Skill is invoked when /sdd: command pending.
+"""PreToolUse hook: blocks all tools until Skill is invoked when /spex: command pending.
 
-When a user submits a /sdd: slash command, the UserPromptSubmit hook (context-hook.py)
+When a user submits a /spex: slash command, the UserPromptSubmit hook (context-hook.py)
 writes a marker file with the pending skill name. This hook checks for that marker
 and blocks any non-Skill tool call until the Skill tool is invoked first.
 
@@ -20,7 +20,7 @@ from pathlib import Path
 def get_marker_path(session_id):
     """Return the marker file path for a given session."""
     tmpdir = Path(os.environ.get('TMPDIR', '/tmp'))
-    return tmpdir / f'.claude-sdd-skill-pending-{session_id}'
+    return tmpdir / f'.claude-spex-skill-pending-{session_id}'
 
 
 def read_hook_input():

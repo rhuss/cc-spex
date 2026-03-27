@@ -7,5 +7,5 @@
 2. If any are missing, stop and instruct the user to generate them first
 
 **After implementation completes:**
-1. Invoke {Skill: sdd:review-code} to check code compliance against spec
-2. Invoke {Skill: sdd:verification-before-completion} for final verification
+1. Invoke {Skill: spex:review-code} to check code compliance against spec
+2. Invoke {Skill: spex:verification-before-completion} for final verification
