@@ -24,7 +24,7 @@
     "review-code": {
       "upstream_file": null,
       "local_file": "skills/review-code/SKILL.md",
-      "modification_summary": "SDD-only skill - no upstream equivalent. Focused on spec compliance checking with compliance scoring and evolution triggering",
+      "modification_summary": "Spex-only skill - no upstream equivalent. Focused on spec compliance checking with compliance scoring and evolution triggering",
       "note": "Upstream has 'requesting-code-review' and 'receiving-code-review' but no direct equivalent",
       "key_sections_modified": [
         "Overview: Spec compliance as primary focus",

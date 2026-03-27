@@ -1,5 +1,5 @@
 {
-  "name": "sdd",
+  "name": "spex",
   "version": "2.0.0",
   "description": "Specification-Driven Development with Process Discipline for Claude Code",
   "author": {
@@ -13,7 +13,7 @@
     "claude-code",
     "plugin",
     "specification-driven-development",
-    "sdd",
+    "spex",
     "specs",
     "test-driven-development",
     "tdd",
