@@ -86,7 +86,27 @@ if [ -d "$WORKTREE_PATH" ] || [ -f "$WORKTREE_PATH" ]; then
 fi
 ```
 
-### Step 5: Restore Main Branch (before worktree creation)
+### Step 5: Commit Spec Files to Feature Branch
+
+Before switching away from the feature branch, commit any spec files that `speckit.specify` created. Without this, the files would remain as untracked artifacts in the main worktree and would not appear in the feature worktree.
+
+```bash
+# Check for uncommitted spec files in the feature's spec directory
+SPEC_DIR="specs/$BRANCH_NAME"
+if [ -d "$SPEC_DIR" ]; then
+  UNTRACKED=$(git status --porcelain "$SPEC_DIR" 2>/dev/null)
+  if [ -n "$UNTRACKED" ]; then
+    git add "$SPEC_DIR"
+    git commit -m "feat: Add spec for $BRANCH_NAME
+
+Assisted-By: 🤖 Claude Code"
+  fi
+fi
+```
+
+This ensures the spec files are persisted on the feature branch before the worktree is created from it.
+
+### Step 6: Restore Main Branch (before worktree creation)
 
 Git does not allow two worktrees to have the same branch checked out. Since `speckit.specify` just created and checked out the feature branch, we must switch back to `main` before creating a worktree for that branch.
 
@@ -100,7 +120,7 @@ if ! git checkout main 2>&1; then
 fi
 ```
 
-### Step 6: Create the Worktree
+### Step 7: Create the Worktree
 
 Now that the current worktree is on `main`, create a new worktree for the feature branch:
 
@@ -119,7 +139,7 @@ if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
 fi
 ```
 
-### Step 7: Print Switch Instructions
+### Step 8: Print Switch Instructions
 
 Print clear instructions for the user (FR-004):
 
