@@ -23,6 +23,27 @@ check_ready() {
   return 0
 }
 
+# --- Migrate sdd-traits.json to spex-traits.json ---
+migrate_traits_config() {
+  local old_config=".specify/sdd-traits.json"
+  local new_config=".specify/spex-traits.json"
+
+  if [ -f "$old_config" ] && [ ! -f "$new_config" ]; then
+    cp "$old_config" "$new_config"
+    echo "Migrated trait config: copied $old_config to $new_config"
+    echo "  You can safely delete $old_config after verifying the migration."
+  elif [ -f "$old_config" ] && [ -f "$new_config" ]; then
+    echo "Both $old_config and $new_config exist. Using $new_config (preferred)."
+  fi
+}
+
+# --- Migrate .sdd-phase to .spex-phase ---
+migrate_phase_marker() {
+  if [ -f ".specify/.sdd-phase" ] && [ ! -f ".specify/.spex-phase" ]; then
+    mv ".specify/.sdd-phase" ".specify/.spex-phase"
+  fi
+}
+
 # --- Apply trait overlays if configured ---
 apply_traits() {
   local script_dir
@@ -174,6 +195,8 @@ do_init() {
   # Verify after init
   if check_ready; then
     fix_constitution
+    migrate_traits_config
+    migrate_phase_marker
     migrate_from_beads
     apply_traits
     echo ""
@@ -239,6 +262,9 @@ case "${1:-}" in
     do_update
     ;;
   *)
+    # Migrate legacy config files first
+    migrate_traits_config
+    migrate_phase_marker
     # Fast path: already ready?
     if check_ready; then
       fix_constitution

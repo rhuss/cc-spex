@@ -19,9 +19,9 @@
 
 **Purpose**: Structural renames that must happen before any content changes
 
-- [ ] T001 Rename plugin root directory: `git mv sdd/ spex/`
-- [ ] T002 Rename init script: `git mv spex/scripts/sdd-init.sh spex/scripts/spex-init.sh`
-- [ ] T003 Rename traits script: `git mv spex/scripts/sdd-traits.sh spex/scripts/spex-traits.sh`
+- [x] T001 Rename plugin root directory: `git mv sdd/ spex/`
+- [x] T002 Rename init script: `git mv spex/scripts/sdd-init.sh spex/scripts/spex-init.sh`
+- [x] T003 Rename traits script: `git mv spex/scripts/sdd-traits.sh spex/scripts/spex-traits.sh`
 
 **Checkpoint**: Directory structure is in place. All subsequent tasks reference `spex/` paths.
 
@@ -33,9 +33,9 @@
 
 **CRITICAL**: Plugin will not load correctly until these are updated to match directory structure.
 
-- [ ] T004 Update plugin name and keywords in `spex/.claude-plugin/plugin.json`: change `"name": "sdd"` to `"spex"`, keyword `"sdd"` to `"spex"`
-- [ ] T005 [P] Update hooks.json path references in `spex/.claude-plugin/` if any reference `sdd/`
-- [ ] T006 [P] Update `spex/.superpowers-sync` metadata references from `sdd` to `spex`
+- [x] T004 Update plugin name and keywords in `spex/.claude-plugin/plugin.json`: change `"name": "sdd"` to `"spex"`, keyword `"sdd"` to `"spex"`
+- [x] T005 [P] Update hooks.json path references in `spex/.claude-plugin/` if any reference `sdd/` (no-op: uses ${CLAUDE_PLUGIN_ROOT})
+- [x] T006 [P] Update `spex/.superpowers-sync` metadata references from `sdd` to `spex`
 
 **Checkpoint**: Plugin metadata points to correct names and paths.
 
@@ -49,57 +49,57 @@
 
 ### Command Files (10 files)
 
-- [ ] T007 [P] [US1] Update frontmatter `name: sdd:brainstorm` to `spex:brainstorm` and all internal `sdd:` refs in `spex/commands/brainstorm.md`
-- [ ] T008 [P] [US1] Update frontmatter `name: sdd:evolve` to `spex:evolve` and all internal `sdd:` refs in `spex/commands/evolve.md`
-- [ ] T009 [P] [US1] Update frontmatter `name: sdd:help` to `spex:help` and all internal `sdd:` refs in `spex/commands/help.md`
-- [ ] T010 [P] [US1] Update frontmatter `name: sdd:init` to `spex:init` and all internal `sdd:` refs in `spex/commands/init.md`
-- [ ] T011 [P] [US1] Update frontmatter `name: sdd:review-code` to `spex:review-code` and all internal `sdd:` refs in `spex/commands/review-code.md`
-- [ ] T012 [P] [US1] Update frontmatter `name: sdd:review-plan` to `spex:review-plan` and all internal `sdd:` refs in `spex/commands/review-plan.md`
-- [ ] T013 [P] [US1] Update frontmatter `name: sdd:review-spec` to `spex:review-spec` and all internal `sdd:` refs in `spex/commands/review-spec.md`
-- [ ] T014 [P] [US1] Update frontmatter `name: sdd:traits` to `spex:traits` and all internal `sdd:` refs in `spex/commands/traits.md`
-- [ ] T015 [P] [US1] Update frontmatter `name: sdd:verify` to `spex:verify` and all internal `sdd:` refs in `spex/commands/verify.md`
-- [ ] T016 [P] [US1] Update frontmatter `name: sdd:worktree` to `spex:worktree` and all internal `sdd:` refs in `spex/commands/worktree.md`
+- [x] T007 [P] [US1] Update frontmatter `name: sdd:brainstorm` to `spex:brainstorm` and all internal `sdd:` refs in `spex/commands/brainstorm.md`
+- [x] T008 [P] [US1] Update frontmatter `name: sdd:evolve` to `spex:evolve` and all internal `sdd:` refs in `spex/commands/evolve.md`
+- [x] T009 [P] [US1] Update frontmatter `name: sdd:help` to `spex:help` and all internal `sdd:` refs in `spex/commands/help.md`
+- [x] T010 [P] [US1] Update frontmatter `name: sdd:init` to `spex:init` and all internal `sdd:` refs in `spex/commands/init.md`
+- [x] T011 [P] [US1] Update frontmatter `name: sdd:review-code` to `spex:review-code` and all internal `sdd:` refs in `spex/commands/review-code.md`
+- [x] T012 [P] [US1] Update frontmatter `name: sdd:review-plan` to `spex:review-plan` and all internal `sdd:` refs in `spex/commands/review-plan.md`
+- [x] T013 [P] [US1] Update frontmatter `name: sdd:review-spec` to `spex:review-spec` and all internal `sdd:` refs in `spex/commands/review-spec.md`
+- [x] T014 [P] [US1] Update frontmatter `name: sdd:traits` to `spex:traits` and all internal `sdd:` refs in `spex/commands/traits.md`
+- [x] T015 [P] [US1] Update frontmatter `name: sdd:verify` to `spex:verify` and all internal `sdd:` refs in `spex/commands/verify.md`
+- [x] T016 [P] [US1] Update frontmatter `name: sdd:worktree` to `spex:worktree` and all internal `sdd:` refs in `spex/commands/worktree.md`
 
 ### Skill Files (14 files with references)
 
-- [ ] T017 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/brainstorm/SKILL.md`
-- [ ] T018 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/evolve/SKILL.md`
-- [ ] T019 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/help/SKILL.md`
-- [ ] T020 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/init/SKILL.md`
-- [ ] T021 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-code/SKILL.md`
-- [ ] T022 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-plan/SKILL.md`
-- [ ] T023 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-spec/SKILL.md`
-- [ ] T024 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/spec-kit/SKILL.md`
-- [ ] T025 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/spec-refactoring/SKILL.md`
-- [ ] T026 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/teams-orchestrate/SKILL.md`
-- [ ] T027 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/teams-spec-guardian/SKILL.md`
-- [ ] T028 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/using-superpowers/SKILL.md`
-- [ ] T029 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/verification-before-completion/SKILL.md`
-- [ ] T030 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/worktree/SKILL.md`
+- [x] T017 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/brainstorm/SKILL.md`
+- [x] T018 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/evolve/SKILL.md`
+- [x] T019 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/help/SKILL.md`
+- [x] T020 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/init/SKILL.md`
+- [x] T021 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-code/SKILL.md`
+- [x] T022 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-plan/SKILL.md`
+- [x] T023 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/review-spec/SKILL.md`
+- [x] T024 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/spec-kit/SKILL.md`
+- [x] T025 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/spec-refactoring/SKILL.md`
+- [x] T026 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/teams-orchestrate/SKILL.md`
+- [x] T027 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/teams-spec-guardian/SKILL.md`
+- [x] T028 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/using-superpowers/SKILL.md`
+- [x] T029 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/verification-before-completion/SKILL.md`
+- [x] T030 [P] [US1] Replace `{Skill: sdd:*}` with `{Skill: spex:*}` and `/sdd:` with `/spex:` in `spex/skills/worktree/SKILL.md`
 
 ### Overlay Files (9 files with references)
 
-- [ ] T031 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.specify.append.md`
-- [ ] T032 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.plan.append.md`
-- [ ] T033 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.implement.append.md`
-- [ ] T034 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams/commands/speckit.implement.append.md`
-- [ ] T035 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams/commands/speckit.plan.append.md`
-- [ ] T036 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-spec/commands/speckit.implement.append.md`
-- [ ] T037 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-vanilla/commands/speckit.implement.append.md`
-- [ ] T038 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-vanilla/commands/speckit.plan.append.md`
-- [ ] T039 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/worktrees/commands/speckit.specify.append.md`
+- [x] T031 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.specify.append.md`
+- [x] T032 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.plan.append.md`
+- [x] T033 [P] [US1] Replace `{Skill: sdd:*}` and `/sdd:` refs in `spex/overlays/superpowers/commands/speckit.implement.append.md`
+- [x] T034 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams/commands/speckit.implement.append.md`
+- [x] T035 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams/commands/speckit.plan.append.md`
+- [x] T036 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-spec/commands/speckit.implement.append.md`
+- [x] T037 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-vanilla/commands/speckit.implement.append.md`
+- [x] T038 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/teams-vanilla/commands/speckit.plan.append.md`
+- [x] T039 [P] [US1] Replace `{Skill: sdd:*}` refs in `spex/overlays/worktrees/commands/speckit.specify.append.md`
 
 ### Hook Scripts (4 Python files)
 
-- [ ] T040 [US1] Update `spex/scripts/hooks/context-hook.py`: change `/sdd:` prefix matching to `/spex:`, XML tags `<sdd-*>` to `<spex-*>`, marker file `.claude-sdd-*` to `.claude-spex-*`, script paths `sdd-init.sh`/`sdd-traits.sh` to `spex-*`, config path `sdd-traits.json` to `spex-traits.json`, known commands list
-- [ ] T041 [P] [US1] Update `spex/scripts/hooks/skill-gate-hook.py`: change marker file `.claude-sdd-skill-pending-*` to `.claude-spex-skill-pending-*`, `/sdd:` refs to `/spex:`
-- [ ] T042 [P] [US1] Update `spex/scripts/hooks/verification-gate-hook.py`: change marker `.claude-sdd-verified-*` to `.claude-spex-verified-*`, `/sdd:verify` to `/spex:verify`
-- [ ] T043 [P] [US1] Update `spex/scripts/hooks/teams-enforce-hook.py`: change `{Skill: sdd:teams-orchestrate}` to `{Skill: spex:teams-orchestrate}`
+- [x] T040 [US1] Update `spex/scripts/hooks/context-hook.py`: change `/sdd:` prefix matching to `/spex:`, XML tags `<sdd-*>` to `<spex-*>`, marker file `.claude-sdd-*` to `.claude-spex-*`, script paths `sdd-init.sh`/`sdd-traits.sh` to `spex-*`, config path `sdd-traits.json` to `spex-traits.json`, known commands list
+- [x] T041 [P] [US1] Update `spex/scripts/hooks/skill-gate-hook.py`: change marker file `.claude-sdd-skill-pending-*` to `.claude-spex-skill-pending-*`, `/sdd:` refs to `/spex:`
+- [x] T042 [P] [US1] Update `spex/scripts/hooks/verification-gate-hook.py`: change marker `.claude-sdd-verified-*` to `.claude-spex-verified-*`, `/sdd:verify` to `/spex:verify`
+- [x] T043 [P] [US1] Update `spex/scripts/hooks/teams-enforce-hook.py`: change `{Skill: sdd:teams-orchestrate}` to `{Skill: spex:teams-orchestrate}`
 
 ### Shell Scripts (internal references)
 
-- [ ] T044 [US1] Update `spex/scripts/spex-init.sh`: change `sdd-traits.sh` refs to `spex-traits.sh`, `sdd-traits.json` refs to `spex-traits.json`, any `sdd/` path refs to `spex/`
-- [ ] T045 [US1] Update `spex/scripts/spex-traits.sh` in sub-steps (400+ occurrences, highest-risk task):
+- [x] T044 [US1] Update `spex/scripts/spex-init.sh`: change `sdd-traits.sh` refs to `spex-traits.sh`, `sdd-traits.json` refs to `spex-traits.json`, any `sdd/` path refs to `spex/`
+- [x] T045 [US1] Update `spex/scripts/spex-traits.sh` in sub-steps (400+ occurrences, highest-risk task):
   1. Change `TRAITS_CONFIG` constant from `.specify/sdd-traits.json` to `.specify/spex-traits.json`
   2. Change `SDD_PATTERN_INIT` value to reference `spex-init.sh`
   3. Change `SDD_PATTERN_TRAITS` value to reference `spex-traits.sh`
@@ -107,20 +107,20 @@
   5. Replace `.sdd-phase` with `.spex-phase`
   6. Keep `<!-- SDD-TRAIT:* -->` sentinel format unchanged (methodology name)
   7. Verify with `rg 'sdd' spex/scripts/spex-traits.sh` that only `SDD-TRAIT` sentinels and "SDD" prose remain
-- [ ] T046 [P] [US1] Update `spex/scripts/check-upstream-changes.sh`: change any `sdd` path references to `spex`
+- [x] T046 [P] [US1] Update `spex/scripts/check-upstream-changes.sh`: change any `sdd` path references to `spex`
 
 ### Plugin Docs (6 files)
 
-- [ ] T047 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/help.md`
-- [ ] T048 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-full.md`
-- [ ] T049 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-quickstart.md`
-- [ ] T050 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-team.md`
-- [ ] T051 [P] [US1] Update `sdd` refs in `spex/docs/sync-reports/sync-2026-03-20.md`
-- [ ] T052 [P] [US1] Update `sdd` refs in `spex/docs/sync-reports/sync-2026-02-13.md`
+- [x] T047 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/help.md`
+- [x] T048 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-full.md`
+- [x] T049 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-quickstart.md`
+- [x] T050 [P] [US1] Update `sdd:` command refs to `spex:` in `spex/docs/tutorial-team.md`
+- [x] T051 [P] [US1] Update `sdd` refs in `spex/docs/sync-reports/sync-2026-03-20.md`
+- [x] T052 [P] [US1] Update `sdd` refs in `spex/docs/sync-reports/sync-2026-02-13.md`
 
 ### Dev Command
 
-- [ ] T053 [US1] Update `cc-sdd` verification checks in `spex/.claude/commands/update-superpowers.md`
+- [x] T053 [US1] Update `cc-sdd` verification checks in `spex/.claude/commands/update-superpowers.md`
 
 **Checkpoint**: Plugin internal rename complete. `make reinstall` should load all `/spex:*` commands. Run `/spex:help` to verify.
 

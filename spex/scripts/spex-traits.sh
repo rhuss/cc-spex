@@ -28,6 +28,10 @@ set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TRAITS_CONFIG=".specify/spex-traits.json"
+# Backwards compatibility: fall back to old config if new one doesn't exist
+if [ ! -f "$TRAITS_CONFIG" ] && [ -f ".specify/sdd-traits.json" ]; then
+  TRAITS_CONFIG=".specify/sdd-traits.json"
+fi
 VALID_TRAITS="superpowers teams worktrees"
 
 # --- Helpers ---
