@@ -1,21 +1,21 @@
 #!/bin/bash
-# sdd-traits.sh - Manage SDD trait configuration and overlay application
+# spex-traits.sh - Manage SDD trait configuration and overlay application
 #
 # Combines config management and overlay application into a single script.
 # All trait operations go through this script for reproducibility.
 #
 # Usage:
-#   sdd-traits.sh list                      # Show current trait status
-#   sdd-traits.sh enable <trait>            # Enable a trait and apply overlays
-#   sdd-traits.sh disable <trait>           # Disable a trait (config only, no reinit)
-#   sdd-traits.sh init [--enable t1,t2]     # Create config (all disabled, or enable specified)
-#   sdd-traits.sh apply                     # Apply overlays for all enabled traits
-#   sdd-traits.sh permissions [level]       # Show or set auto-approval level
+#   spex-traits.sh list                      # Show current trait status
+#   spex-traits.sh enable <trait>            # Enable a trait and apply overlays
+#   spex-traits.sh disable <trait>           # Disable a trait (config only, no reinit)
+#   spex-traits.sh init [--enable t1,t2]     # Create config (all disabled, or enable specified)
+#   spex-traits.sh apply                     # Apply overlays for all enabled traits
+#   spex-traits.sh permissions [level]       # Show or set auto-approval level
 #
 # Permission levels:
 #   none       - No auto-approvals (confirm every command)
-#   standard   - Auto-approve SDD plugin scripts
-#   yolo       - Auto-approve SDD scripts + specify CLI
+#   standard   - Auto-approve SPEX plugin scripts
+#   yolo       - Auto-approve SPEX scripts + specify CLI
 #
 # Must be run from the project root (where .specify/ and .claude/ exist).
 #
@@ -27,7 +27,7 @@
 set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TRAITS_CONFIG=".specify/sdd-traits.json"
+TRAITS_CONFIG=".specify/spex-traits.json"
 VALID_TRAITS="superpowers teams worktrees"
 
 # --- Helpers ---
@@ -343,7 +343,7 @@ do_init() {
         ;;
       *)
         echo "ERROR: Unknown argument '$1'" >&2
-        echo "Usage: sdd-traits.sh init [--enable trait1,trait2]" >&2
+        echo "Usage: spex-traits.sh init [--enable trait1,trait2]" >&2
         exit 2
         ;;
     esac
@@ -556,8 +556,8 @@ do_apply() {
 SETTINGS_FILE=".claude/settings.local.json"
 
 # SDD-specific permission patterns
-SDD_PATTERN_INIT='Bash(*/scripts/sdd-init.sh*)'
-SDD_PATTERN_TRAITS='Bash(*/scripts/sdd-traits.sh*)'
+SDD_PATTERN_INIT='Bash(*/scripts/spex-init.sh*)'
+SDD_PATTERN_TRAITS='Bash(*/scripts/spex-traits.sh*)'
 SDD_PATTERN_SPECIFY='Bash(specify *)'
 # Broad tool patterns for YOLO level
 SDD_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "mcp__*")
@@ -573,7 +573,7 @@ ensure_settings() {
   fi
 }
 
-# Remove all SDD-managed patterns from the allow list
+# Remove all SPEX-managed patterns from the allow list
 remove_sdd_patterns() {
   local tmp
   tmp=$(mktemp)
@@ -582,8 +582,8 @@ remove_sdd_patterns() {
       .permissions.allow = [
         .permissions.allow[] |
         select(
-          # SDD script patterns
-          (test("sdd-init\\.sh|sdd-traits\\.sh|^Bash\\(specify ") | not)
+          # SPEX script patterns
+          (test("spex-init\\.sh|spex-traits\\.sh|^Bash\\(specify ") | not)
           and
           # YOLO broad patterns (exact matches only)
           (. != "Bash" and . != "Read" and . != "Edit" and . != "Write" and . != "mcp__*")
@@ -617,8 +617,8 @@ detect_permission_level() {
   allow=$(jq -r '.permissions.allow // [] | .[]' "$SETTINGS_FILE")
 
   local has_init=false has_traits=false has_specify=false has_bash=false
-  echo "$allow" | grep -q "sdd-init" && has_init=true
-  echo "$allow" | grep -q "sdd-traits" && has_traits=true
+  echo "$allow" | grep -q "spex-init" && has_init=true
+  echo "$allow" | grep -q "spex-traits" && has_traits=true
   echo "$allow" | grep -q "specify " && has_specify=true
   echo "$allow" | grep -qx "Bash" && has_bash=true
 
@@ -643,7 +643,7 @@ do_permissions() {
       echo ""
       echo "Levels:"
       echo "  none       No auto-approvals (confirm every command)"
-      echo "  standard   Auto-approve SDD plugin scripts"
+      echo "  standard   Auto-approve SPEX plugin scripts"
       echo "  yolo       Auto-approve all tools (Bash, Read, Edit, Write, MCP, specify)"
       ;;
     none)
@@ -652,7 +652,7 @@ do_permissions() {
       before=$(detect_permission_level)
       remove_sdd_patterns
       echo "Auto-approval set to: none"
-      echo "All SDD commands will require confirmation."
+      echo "All SPEX commands will require confirmation."
       [ "$before" != "none" ] && echo "CHANGED" || true
       ;;
     standard)
@@ -663,8 +663,8 @@ do_permissions() {
       add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS"
       echo "Auto-approval set to: standard"
       echo "Auto-approved:"
-      echo "  sdd-init.sh        Project initialization"
-      echo "  sdd-traits.sh      Trait configuration and overlay management"
+      echo "  spex-init.sh        Project initialization"
+      echo "  spex-traits.sh      Trait configuration and overlay management"
       [ "$before" != "standard" ] && echo "CHANGED" || true
       ;;
     yolo)
@@ -674,7 +674,7 @@ do_permissions() {
       remove_sdd_patterns
       add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS" "$SDD_PATTERN_SPECIFY" "${SDD_YOLO_EXTRAS[@]}"
       echo "Auto-approval set to: yolo"
-      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SDD scripts."
+      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SPEX scripts."
       [ "$before" != "yolo" ] && echo "CHANGED" || true
       ;;
     *)
@@ -685,7 +685,7 @@ do_permissions() {
 }
 
 show_usage() {
-  echo "Usage: sdd-traits.sh <command> [options]"
+  echo "Usage: spex-traits.sh <command> [options]"
   echo ""
   echo "Commands:"
   echo "  list                      Show current trait status"

@@ -6,7 +6,7 @@ description: "[Plugin Dev] Sync modified skills with upstream superpowers while 
 
 **Purpose**: Sync modified skills with upstream superpowers while preserving SDD enhancements.
 
-**Context**: This command is for maintaining the cc-sdd plugin, not for end users.
+**Context**: This command is for maintaining the cc-spex plugin, not for end users.
 
 ## Safety Check
 
@@ -14,15 +14,15 @@ Before proceeding, verify we're in the plugin development directory:
 
 ```bash
 # Check for plugin marker
-if [ ! -f "sdd/.superpowers-sync" ] || [ ! -f "sdd/.claude-plugin/plugin.json" ]; then
-  echo "ERROR: This command only works in cc-sdd plugin directory"
+if [ ! -f "spex/.superpowers-sync" ] || [ ! -f "spex/.claude-plugin/plugin.json" ]; then
+  echo "ERROR: This command only works in cc-spex plugin directory"
   echo "Current directory: $(pwd)"
   exit 1
 fi
 
 # Verify we're in the right repo
-if ! grep -q "cc-sdd" sdd/.claude-plugin/plugin.json 2>/dev/null; then
-  echo "ERROR: This doesn't appear to be the cc-sdd repository"
+if ! grep -q "cc-spex" spex/.claude-plugin/plugin.json 2>/dev/null; then
+  echo "ERROR: This doesn't appear to be the cc-spex repository"
   exit 1
 fi
 
@@ -36,7 +36,7 @@ echo "Plugin directory confirmed"
 ### 1. Load Current Sync State
 
 ```bash
-cat sdd/.superpowers-sync
+cat spex/.superpowers-sync
 ```
 
 Extract:
@@ -67,7 +67,7 @@ echo "Upstream HEAD: $CURRENT_COMMIT ($CURRENT_DATE)"
 For each modified skill, get the diff:
 
 ```bash
-LAST_SYNC=$(jq -r '.last_sync_commit' sdd/.superpowers-sync)
+LAST_SYNC=$(jq -r '.last_sync_commit' spex/.superpowers-sync)
 
 # For each modified skill
 for skill in writing-plans code-review verification-before-completion brainstorming; do
@@ -94,24 +94,24 @@ For each modified skill, we'll use AI agents to merge upstream changes with SDD 
 
 ### Per-Skill Merge Process
 
-For each skill in `sdd/.superpowers-sync` → `modified_skills`:
+For each skill in `spex/.superpowers-sync` → `modified_skills`:
 
 **Special case: writing-plans (reference-only)**
 
 If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
 1. Read the upstream changes to `skills/writing-plans/SKILL.md`
-2. Read the target skill specified in `"feeds_into"` (e.g., `sdd/skills/plan/SKILL.md`)
+2. Read the target skill specified in `"feeds_into"` (e.g., `spex/skills/plan/SKILL.md`)
 3. Identify new quality patterns, validation approaches, or anti-rationalization improvements
 4. Adapt relevant changes into the target skill's post-generation quality checks
 5. Status becomes "Evaluated" instead of "Merged"
-6. **Do NOT create a local writing-plans SKILL.md.** All patterns go into `sdd:plan`.
+6. **Do NOT create a local writing-plans SKILL.md.** All patterns go into `spex:plan`.
 
 **Standard case: all other skills**
 
 1. **Read three sources**:
    - Upstream current version: `$TEMP_DIR/superpowers-upstream/skills/[skill]/SKILL.md`
-   - Local current version: `sdd/skills/[skill]/SKILL.md`
-   - Modification metadata: from `sdd/.superpowers-sync`
+   - Local current version: `spex/skills/[skill]/SKILL.md`
+   - Modification metadata: from `spex/.superpowers-sync`
 
 2. **Get upstream changes** (if not INITIAL sync):
    ```bash
@@ -136,12 +136,12 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
    **Context:**
    - Skill: [skill-name]
    - Upstream repo: https://github.com/obra/superpowers
-   - Local repo: cc-sdd (this plugin)
+   - Local repo: cc-spex (this plugin)
 
    **Your task:**
-   1. Read the current local version: sdd/skills/[skill]/SKILL.md
+   1. Read the current local version: spex/skills/[skill]/SKILL.md
    2. Read the upstream current version: $TEMP_DIR/superpowers-upstream/skills/[skill]/SKILL.md
-   3. Read the modification metadata from sdd/.superpowers-sync
+   3. Read the modification metadata from spex/.superpowers-sync
    4. If not INITIAL sync, read upstream changes: /tmp/upstream-changes-[skill].patch
    5. Analyze:
       - What improved in upstream (better examples, new patterns, fixes)
@@ -180,8 +180,8 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
    - If "NEEDS REVIEW", examine conflicts carefully
 
 5. **Apply or defer**:
-   - If "READY TO APPLY": Write merged content to `sdd/skills/[skill]/SKILL.md`
-   - If "NEEDS REVIEW": Save to `sdd/skills/[skill]/SKILL.md.proposed` and mark for manual review
+   - If "READY TO APPLY": Write merged content to `spex/skills/[skill]/SKILL.md`
+   - If "NEEDS REVIEW": Save to `spex/skills/[skill]/SKILL.md.proposed` and mark for manual review
 
 ## Run Merge for All Modified Skills
 
@@ -193,7 +193,7 @@ Execute the above process for each skill:
 4. `brainstorm` (upstream: `skills/brainstorming/SKILL.md`)
 
 **Use TodoWrite to track progress:**
-- [ ] Evaluate writing-plans changes for sdd:plan quality gates
+- [ ] Evaluate writing-plans changes for spex:plan quality gates
 - [ ] Merge review-code
 - [ ] Merge verification-before-completion
 - [ ] Merge brainstorm
@@ -217,19 +217,19 @@ Create `docs/sync-reports/sync-YYYY-MM-DD.md`:
 
 ## Skills Updated
 
-### writing-plans (reference-only, feeds into sdd:plan)
+### writing-plans (reference-only, feeds into spex:plan)
 **Status**: ✅ Evaluated / ⚠️ Needs Review
 
 **Upstream Changes Identified**:
 - [List improvements from upstream commits]
 
-**Adapted into sdd:plan**:
+**Adapted into spex:plan**:
 - [New quality patterns adapted into post-generation checks]
 - [New validation approaches integrated]
 - [Anti-rationalization improvements absorbed]
 
 **Not Applicable**:
-- [Changes that don't apply to the sdd:plan model, with reason]
+- [Changes that don't apply to the spex:plan model, with reason]
 
 ---
 
@@ -256,9 +256,9 @@ Create `docs/sync-reports/sync-YYYY-MM-DD.md`:
 # Update tracking file
 jq --arg commit "$CURRENT_COMMIT" --arg date "$(date +%Y-%m-%d)" \
   '.last_sync_commit = $commit | .last_sync_date = $date | .note = "Synced via /update-superpowers"' \
-  sdd/.superpowers-sync > sdd/.superpowers-sync.tmp
+  spex/.superpowers-sync > spex/.superpowers-sync.tmp
 
-mv sdd/.superpowers-sync.tmp sdd/.superpowers-sync
+mv spex/.superpowers-sync.tmp spex/.superpowers-sync
 ```
 
 ### 3. Update CHANGELOG
@@ -270,7 +270,7 @@ Add entry:
 
 ### Changed
 - Synced with superpowers@[COMMIT_SHORT] ([DATE])
-  - `writing-plans`: [evaluated, adapted into sdd:plan quality gates]
+  - `writing-plans`: [evaluated, adapted into spex:plan quality gates]
   - `review-code`: [summary]
   - `verification-before-completion`: [summary]
   - `brainstorm`: [summary]
@@ -293,12 +293,12 @@ After merge, verify each skill:
 
 ```bash
 # Read through each modified skill
-cat sdd/skills/review-code/SKILL.md
-cat sdd/skills/verification-before-completion/SKILL.md
-cat sdd/skills/brainstorm/SKILL.md
+cat spex/skills/review-code/SKILL.md
+cat spex/skills/verification-before-completion/SKILL.md
+cat spex/skills/brainstorm/SKILL.md
 
-# writing-plans is reference-only: check that sdd:plan absorbed any new patterns
-cat sdd/skills/plan/SKILL.md
+# writing-plans is reference-only: check that spex:plan absorbed any new patterns
+cat spex/skills/plan/SKILL.md
 
 # Check for:
 # - SDD sections still present (spec-first, compliance checking, etc.)
@@ -306,7 +306,7 @@ cat sdd/skills/plan/SKILL.md
 # - Improved examples/wording from upstream integrated
 # - No merge artifacts (<<<<<<, >>>>>>, etc.)
 # - Consistent tone and structure
-# - sdd:plan quality gates reflect any new writing-plans patterns
+# - spex:plan quality gates reflect any new writing-plans patterns
 ```
 
 ## Final Output
@@ -320,7 +320,7 @@ Present to user:
 **Skills updated**: 4
 
 **Summary**:
-- writing-plans: ✅ [evaluated, X patterns adapted into sdd:plan]
+- writing-plans: ✅ [evaluated, X patterns adapted into spex:plan]
 - review-code: ✅ [X changes integrated]
 - verification-before-completion: ✅ [X changes integrated]
 - brainstorm: ✅ [X changes integrated]
@@ -337,7 +337,7 @@ Present to user:
 
 [If any skills need manual review]:
 ⚠️  Manual review needed:
-- sdd/skills/[skill]/SKILL.md.proposed - [reason]
+- spex/skills/[skill]/SKILL.md.proposed - [reason]
 
 Please review and resolve before committing.
 ```
@@ -345,19 +345,19 @@ Please review and resolve before committing.
 ## Usage Example
 
 ```bash
-# User runs in cc-sdd directory
+# User runs in cc-spex directory
 /update-superpowers
 
 # Claude executes:
 # 1. Verifies we're in plugin directory ✅
-# 2. Reads sdd/.superpowers-sync
+# 2. Reads spex/.superpowers-sync
 # 3. Clones upstream superpowers
 # 4. Checks for changes since last sync
 # 5. Launches merge agents for each modified skill
 # 6. Reviews agent outputs
 # 7. Applies merged versions
 # 8. Generates sync report
-# 9. Updates sdd/.superpowers-sync
+# 9. Updates spex/.superpowers-sync
 # 10. Suggests CHANGELOG entry
 # 11. Shows summary and next steps
 ```
@@ -365,7 +365,7 @@ Please review and resolve before committing.
 ## Notes
 
 - This command is **only for plugin maintainers**
-- It will fail if run outside cc-sdd directory
+- It will fail if run outside cc-spex directory
 - Always review merged skills before committing
 - SDD enhancements should NEVER be removed
 - Upstream improvements should be integrated when they don't conflict

@@ -30,7 +30,7 @@ SDD adds the glue: specs as single source of truth, spec-first enforcement, comp
 
 | Starting Point | Command | What Happens |
 |----------------|---------|--------------|
-| Rough idea | `/sdd:brainstorm` | Collaborative dialogue refines idea into formal spec |
+| Rough idea | `/spex:brainstorm` | Collaborative dialogue refines idea into formal spec |
 | Clear requirements | `/speckit.specify` | Create spec directly using spec-kit |
 
 **Output:** A specification file in `specs/features/[name]/spec.md`
@@ -51,7 +51,7 @@ SDD adds the glue: specs as single source of truth, spec-first enforcement, comp
 
 | Situation | Command | What Happens |
 |-----------|---------|--------------|
-| Spec/code mismatch | `/sdd:evolve` | AI analyzes, recommends update spec vs fix code |
+| Spec/code mismatch | `/spex:evolve` | AI analyzes, recommends update spec vs fix code |
 
 **Output:** Restored alignment between spec and code
 
@@ -61,31 +61,31 @@ Use this to pick the right command:
 
 | You Have | You Want | Use |
 |----------|----------|-----|
-| Vague idea | Clear spec | `/sdd:brainstorm` |
+| Vague idea | Clear spec | `/spex:brainstorm` |
 | Clear requirements | Formal spec | `/speckit.specify` |
 | Validated spec | Working code | `/speckit.implement` |
-| Spec + code mismatch | Alignment | `/sdd:evolve` |
-| Draft spec | Validation | `/sdd:review-spec` |
-| Code changes | Compliance check | `/sdd:review-code` |
+| Spec + code mismatch | Alignment | `/spex:evolve` |
+| Draft spec | Validation | `/spex:review-spec` |
+| Code changes | Compliance check | `/spex:review-code` |
 | New project | Standards | `/speckit.constitution` |
 
 ## Quick Reference Card
 
 ```
 SPEC CREATION
-  /sdd:brainstorm    Rough idea → spec (interactive)
+  /spex:brainstorm    Rough idea → spec (interactive)
   /speckit.specify          Clear reqs → spec (direct)
   /speckit.constitution  Project-wide principles
 
 VALIDATION
-  /sdd:review-spec   Check spec quality
-  /sdd:review-code   Check code-to-spec compliance
+  /spex:review-spec   Check spec quality
+  /spex:review-code   Check code-to-spec compliance
 
 IMPLEMENTATION
   /speckit.implement     Spec → code with TDD
 
 EVOLUTION
-  /sdd:evolve        Fix spec/code drift
+  /spex:evolve        Fix spec/code drift
 ```
 
 ## Key Principles
@@ -109,16 +109,16 @@ Traits are quality gates that automate reviews and validation at each workflow s
 **How to enable:**
 
 ```
-/sdd:traits enable superpowers       # Enable quality gates
+/spex:traits enable superpowers       # Enable quality gates
 ```
 
-You can also enable traits during `/sdd:init`.
+You can also enable traits during `/spex:init`.
 
 **What changes with traits enabled:**
 
 Without traits, you run each step manually:
 ```
-/speckit.specify  →  /sdd:review-spec  →  /speckit.plan  →  /sdd:review-plan
+/speckit.specify  →  /spex:review-spec  →  /speckit.plan  →  /spex:review-plan
 ```
 
 With the superpowers trait, reviews happen automatically:
@@ -134,13 +134,13 @@ Traits are optional. Start without them to learn the workflow, then enable them 
 **Don't:**
 - Skip specs for "simple" features (they still need spec context)
 - Put implementation details in specs (that's for code)
-- Ignore drift warnings (use `/sdd:evolve`)
+- Ignore drift warnings (use `/spex:evolve`)
 - Write code then spec afterward (that's documentation, not SDD)
 
 **Do:**
 - Start every feature with a spec
 - Keep specs focused on WHAT and WHY
-- Use `/sdd:evolve` when reality differs from plan
+- Use `/spex:evolve` when reality differs from plan
 - Review specs before implementing
 
 ## Try It Now
@@ -148,7 +148,7 @@ Traits are optional. Start without them to learn the workflow, then enable them 
 Best way to learn: try it on a real feature.
 
 1. Think of a feature you want to build
-2. Run `/sdd:brainstorm` to turn it into a spec
+2. Run `/spex:brainstorm` to turn it into a spec
 3. Run `/speckit.implement` to build it
 4. See how the workflow feels
 

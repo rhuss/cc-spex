@@ -6,7 +6,7 @@ WORKFLOW
      │   IDEA   │─────▶│   SPEC   │─────▶│   PLAN   │
      └──────────┘      └──────────┘      └──────────┘
            │                │                   │
-           │  /sdd:brainstorm  /speckit.specify    /speckit.plan
+           │  /spex:brainstorm  /speckit.specify    /speckit.plan
            │                │                   │
            │                ▼                   ▼
            │         ┌──────────┐      ┌──────────────┐
@@ -30,7 +30,7 @@ WORKFLOW
            │                            ╚══════════╝
            │                                   ▲
            │                            ┌──────┴─────┐
-           │                            │   EVOLVE   │ /sdd:evolve
+           │                            │   EVOLVE   │ /spex:evolve
            │                            └────────────┘
            │                                   ▲
            └───────────────────────────────────┘
@@ -62,7 +62,7 @@ BUILT ON
 SDD TRAITS (quality gates for spec-kit commands)
 
   Traits inject automated quality gates into the spec-kit workflow.
-  Enable them with /sdd:init or /sdd:traits enable <trait>.
+  Enable them with /spex:init or /spex:traits enable <trait>.
 
   superpowers trait:
     /speckit.specify  → auto-runs spec review + constitution check
@@ -79,29 +79,29 @@ SDD TRAITS (quality gates for spec-kit commands)
   worktrees trait:
     /speckit.specify  → creates git worktree for feature branch,
                         restores main
-    /sdd:worktree     → list active worktrees, cleanup merged ones
+    /spex:worktree     → list active worktrees, cleanup merged ones
 
 
-SDD COMMANDS (helpers and configuration)
+SPEX COMMANDS (helpers and configuration)
 
-  /sdd:init           Initialize spec-kit + configure traits and permissions
-  /sdd:traits         Enable/disable traits (superpowers, teams, worktrees)
-  /sdd:worktree       List active worktrees or cleanup merged ones
-  /sdd:brainstorm     Rough idea into formal spec (interactive dialogue)
-  /sdd:review-spec    Check spec quality and completeness
-  /sdd:review-plan    Validate plan coverage, task quality, red flags
-  /sdd:review-code    Check code compliance against spec
-  /sdd:verify         Run verification (tests, hygiene, spec compliance)
-  /sdd:evolve         Reconcile spec/code drift
-  /sdd:help           This quick reference
+  /spex:init           Initialize spec-kit + configure traits and permissions
+  /spex:traits         Enable/disable traits (superpowers, teams, worktrees)
+  /spex:worktree       List active worktrees or cleanup merged ones
+  /spex:brainstorm     Rough idea into formal spec (interactive dialogue)
+  /spex:review-spec    Check spec quality and completeness
+  /spex:review-plan    Validate plan coverage, task quality, red flags
+  /spex:review-code    Check code compliance against spec
+  /spex:verify         Run verification (tests, hygiene, spec compliance)
+  /spex:evolve         Reconcile spec/code drift
+  /spex:help           This quick reference
 
 
 COMMON MISTAKES (do NOT use these)
 
-  /sdd:specify   ✗  Does not exist → use /speckit.specify
-  /sdd:plan      ✗  Does not exist → use /speckit.plan
-  /sdd:tasks     ✗  Does not exist → use /speckit.tasks
-  /sdd:implement ✗  Does not exist → use /speckit.implement
+  /spex:specify   ✗  Does not exist → use /speckit.specify
+  /spex:plan      ✗  Does not exist → use /speckit.plan
+  /spex:tasks     ✗  Does not exist → use /speckit.tasks
+  /spex:implement ✗  Does not exist → use /speckit.implement
 
-  Rule: SDD commands are helpers (brainstorm, review, evolve).
+  Rule: SPEX commands are helpers (brainstorm, review, evolve).
         Spec-kit commands are the workflow (specify, plan, implement).

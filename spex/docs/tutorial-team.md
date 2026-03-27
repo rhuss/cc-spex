@@ -47,7 +47,7 @@ SDD team approach: Create spec, get team alignment, then implement. The PR revie
 ```
 1. CREATE BRANCH AND SPEC
    Developer creates feature branch
-   Runs /sdd:brainstorm to create spec
+   Runs /spex:brainstorm to create spec
    Spec lives at specs/features/authentication/spec.md
 
 2. CREATE SPEC-ONLY PR
@@ -94,7 +94,7 @@ Think of specs as contracts between team members:
 
 **The implementer promises:**
 - Build exactly what's specified
-- Use `/sdd:evolve` if reality differs
+- Use `/spex:evolve` if reality differs
 - Don't silently deviate from spec
 
 ## Traits for Team Workflows
@@ -189,7 +189,7 @@ Team: "Let's go with magic links for v1, OAuth as future enhancement"
 
 ```
 Implementer: "The spec says X, but I discovered Y is better"
-→ Don't silently change. Use /sdd:evolve
+→ Don't silently change. Use /spex:evolve
 → Create PR updating spec with reasoning
 → Team reviews the change
 → Spec and code stay aligned
@@ -207,7 +207,7 @@ SDD makes onboarding easier:
 
 **Onboarding workflow:**
 ```
-1. /sdd:tutorial - Learn the methodology
+1. /spex:tutorial - Learn the methodology
 2. Review constitution - Understand project standards
 3. Review 2-3 feature specs - See examples
 4. Pair on spec creation - Practice with support
@@ -242,7 +242,7 @@ SDD makes onboarding easier:
 - Fewer "I thought it meant X" moments
 
 **"Specs become outdated"**
-- That's what `/sdd:evolve` is for
+- That's what `/spex:evolve` is for
 - Deliberate evolution > silent drift
 - Constitution defines update expectations
 
@@ -263,7 +263,7 @@ SDD makes onboarding easier:
 **Key practices:**
 1. Spec PRs for significant features
 2. Review specs before implementation
-3. Use `/sdd:evolve` for any deviations
+3. Use `/spex:evolve` for any deviations
 4. Constitution for shared standards
 5. Treat specs as team contracts
 

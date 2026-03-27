@@ -1,10 +1,10 @@
 #!/bin/bash
-# sdd-init.sh - Fast spec-kit initialization check and setup
+# spex-init.sh - Fast spec-kit initialization check and setup
 #
 # Usage:
-#   sdd-init.sh           # Check + initialize if needed
-#   sdd-init.sh --refresh # Re-download templates and refresh project
-#   sdd-init.sh --update  # Update specify-cli and refresh project
+#   spex-init.sh           # Check + initialize if needed
+#   spex-init.sh --refresh # Re-download templates and refresh project
+#   spex-init.sh --update  # Update specify-cli and refresh project
 #
 # Exit codes:
 #   0 - READY (spec-kit fully initialized)
@@ -27,9 +27,9 @@ check_ready() {
 apply_traits() {
   local script_dir
   script_dir="$(dirname "$0")"
-  if [ -f .specify/sdd-traits.json ] && [ -x "$script_dir/sdd-traits.sh" ]; then
-    if ! "$script_dir/sdd-traits.sh" apply "$@"; then
-      echo "WARNING: sdd-traits.sh apply failed (traits not applied). spec-kit is still usable." >&2
+  if [ -f .specify/spex-traits.json ] && [ -x "$script_dir/spex-traits.sh" ]; then
+    if ! "$script_dir/spex-traits.sh" apply "$@"; then
+      echo "WARNING: spex-traits.sh apply failed (traits not applied). spec-kit is still usable." >&2
     fi
   fi
 }
@@ -74,7 +74,7 @@ fix_constitution() {
 migrate_from_beads() {
   local has_beads_dir=false has_beads_trait=false has_bd_markers=false
   [ -d ".beads" ] && has_beads_dir=true
-  [ "$(jq -r '.traits.beads // false' .specify/sdd-traits.json 2>/dev/null)" = "true" ] && has_beads_trait=true
+  [ "$(jq -r '.traits.beads // false' .specify/spex-traits.json 2>/dev/null)" = "true" ] && has_beads_trait=true
   grep -rq '(bd-' specs/*/tasks.md 2>/dev/null && has_bd_markers=true
 
   # Nothing to migrate
@@ -86,7 +86,7 @@ migrate_from_beads() {
   echo "BEADS_HAS_MARKERS=$has_bd_markers"
 }
 
-# Run the actual beads migration (called after user confirms in sdd:init)
+# Run the actual beads migration (called after user confirms in spex:init)
 do_beads_migration() {
   echo "Migrating from beads..."
 
@@ -118,11 +118,11 @@ do_beads_migration() {
   done
 
   # Disable beads trait in config (if still present)
-  if [ -f .specify/sdd-traits.json ]; then
+  if [ -f .specify/spex-traits.json ]; then
     local tmp
     tmp=$(mktemp)
-    jq 'del(.traits["beads"])' .specify/sdd-traits.json > "$tmp"
-    mv "$tmp" .specify/sdd-traits.json
+    jq 'del(.traits["beads"])' .specify/spex-traits.json > "$tmp"
+    mv "$tmp" .specify/spex-traits.json
   fi
 
   echo "Beads migration complete. The .beads/ directory is kept for reference."

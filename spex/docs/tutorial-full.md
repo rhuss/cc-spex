@@ -43,7 +43,7 @@ Every feature starts as an idea. Before writing code, turn that idea into a form
 
 | Path | When to Use | Command |
 |------|-------------|---------|
-| Brainstorm | Rough idea, needs exploration | `/sdd:brainstorm` |
+| Brainstorm | Rough idea, needs exploration | `/spex:brainstorm` |
 | Direct spec | Clear requirements, no ambiguity | `/speckit.specify` |
 
 **Brainstorm workflow:**
@@ -92,7 +92,7 @@ What it explicitly doesn't do
 
 Before implementing, validate your spec.
 
-**Command:** `/sdd:review-spec`
+**Command:** `/spex:review-spec`
 
 **What it checks:**
 - Structure and completeness
@@ -135,7 +135,7 @@ After implementation, verify both tests and spec compliance.
 
 Specs will drift from code. This is normal and healthy. The key is handling it deliberately.
 
-**Command:** `/sdd:evolve`
+**Command:** `/spex:evolve`
 
 **What happens:**
 1. AI analyzes the mismatch
@@ -191,12 +191,12 @@ Traits are overlay modules that inject automated behavior into spec-kit commands
 ### Managing Traits
 
 ```
-/sdd:traits list              # Show which traits are active
-/sdd:traits enable superpowers        # Enable sdd quality gates
-/sdd:traits disable superpowers       # Remove sdd quality gates
+/spex:traits list              # Show which traits are active
+/spex:traits enable superpowers        # Enable SDD quality gates
+/spex:traits disable superpowers       # Remove SDD quality gates
 ```
 
-You can also enable traits during `/sdd:init`.
+You can also enable traits during `/spex:init`.
 
 ### The Superpowers Trait
 
@@ -238,15 +238,15 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 ### Spec Creation
 | Command | Purpose |
 |---------|---------|
-| `/sdd:brainstorm` | Rough idea to spec through dialogue |
+| `/spex:brainstorm` | Rough idea to spec through dialogue |
 | `/speckit.specify` | Clear requirements to spec directly |
 | `/speckit.constitution` | Project-wide principles |
 
 ### Validation
 | Command | Purpose |
 |---------|---------|
-| `/sdd:review-spec` | Validate spec quality |
-| `/sdd:review-code` | Check code-to-spec compliance |
+| `/spex:review-spec` | Validate spec quality |
+| `/spex:review-code` | Check code-to-spec compliance |
 
 ### Implementation
 | Command | Purpose |
@@ -256,7 +256,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 ### Evolution
 | Command | Purpose |
 |---------|---------|
-| `/sdd:evolve` | Reconcile spec/code drift |
+| `/spex:evolve` | Reconcile spec/code drift |
 
 ## FAQ
 
@@ -267,13 +267,13 @@ A: Even small features benefit from spec context. A minimal spec (Purpose, Requi
 A: No. The spec is what you "know exactly." Write it down, then implement. This catches gaps you didn't realize existed.
 
 **Q: What if the spec keeps changing during implementation?**
-A: That's normal. Use `/sdd:evolve` to reconcile. The process makes changes deliberate rather than accidental.
+A: That's normal. Use `/spex:evolve` to reconcile. The process makes changes deliberate rather than accidental.
 
 **Q: How detailed should specs be?**
 A: Detailed enough that implementation is unambiguous. If you're guessing during implementation, the spec needs more detail.
 
 **Q: What about legacy code without specs?**
-A: Create specs by analyzing existing code. Use `/sdd:evolve` to reconcile any differences between what the code does and what it should do.
+A: Create specs by analyzing existing code. Use `/spex:evolve` to reconcile any differences between what the code does and what it should do.
 
 **Q: Can multiple features share a spec?**
 A: Generally no. Each feature should have its own spec. Use the constitution for shared patterns and principles.
@@ -289,10 +289,10 @@ A: Generally no. Each feature should have its own spec. Use the constitution for
 
 ## Getting Started
 
-1. **First feature:** `/sdd:brainstorm` to create your first spec
-2. **Review it:** `/sdd:review-spec` to validate
+1. **First feature:** `/spex:brainstorm` to create your first spec
+2. **Review it:** `/spex:review-spec` to validate
 3. **Build it:** `/speckit.implement` with TDD
-4. **If drift:** `/sdd:evolve` to reconcile
+4. **If drift:** `/spex:evolve` to reconcile
 5. **For consistency:** `/speckit.constitution` to set project standards
 
 The best way to learn SDD is to use it on a real feature. Start small, follow the process, and see how it feels.
