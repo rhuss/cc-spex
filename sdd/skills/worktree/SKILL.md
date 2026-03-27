@@ -150,6 +150,9 @@ Print clear instructions for the user (FR-004):
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
 │                                                             │
+│ In the new session, run /sdd:init to set up spec-kit        │
+│ commands and SDD traits in the worktree.                    │
+│                                                             │
 │ The spec file contains all context from this session.       │
 └─────────────────────────────────────────────────────────────┘
 ```
