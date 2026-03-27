@@ -47,7 +47,7 @@ Which spec should I review code against?
 No specs found in specs/ directory.
 
 Code review against spec requires a spec to compare against.
-Use `sdd:brainstorm` or `/speckit.specify` to create one first.
+Use `spex:brainstorm` or `/speckit.specify` to create one first.
 ```
 
 ## The Process
@@ -158,7 +158,7 @@ Overall: 16/18 = 89%
 
 **Spec:** specs/features/[feature].md
 **Date:** YYYY-MM-DD
-**Reviewer:** Claude (sdd:review-code)
+**Reviewer:** Claude (spex:review-code)
 
 ## Compliance Summary
 
@@ -221,7 +221,7 @@ Overall: 16/18 = 89%
 [Overall assessment]
 
 **Next Steps:**
-- If compliance < 100%: Use `sdd:evolve` to reconcile deviations
+- If compliance < 100%: Use `spex:evolve` to reconcile deviations
 - If compliance = 100%: Proceed to verification
 ```
 
@@ -229,12 +229,12 @@ Overall: 16/18 = 89%
 
 **If deviations found:**
 - Present review results to user
-- Recommend using `sdd:evolve`
+- Recommend using `spex:evolve`
 - Don't proceed to verification until resolved
 
 **If 100% compliant:**
 - Approve for verification
-- Proceed to `sdd:verification-before-completion`
+- Proceed to `spex:verification-before-completion`
 
 ## Review Checklist
 
@@ -258,7 +258,7 @@ Use TodoWrite to track:
 
 **Spec:** specs/features/user-profile-api.md
 **Date:** 2025-11-10
-**Reviewer:** Claude (sdd:review-code)
+**Reviewer:** Claude (spex:review-code)
 
 ## Compliance Summary
 
@@ -322,7 +322,7 @@ Use TodoWrite to track:
 Code implementation is 94% compliant with spec. All functional requirements and error handling correctly implemented. One non-functional requirement unverified and one helpful feature added beyond spec.
 
 **Next Steps:**
-Use `sdd:evolve` to update spec with:
+Use `spex:evolve` to update spec with:
 1. `updated_at` field (minor addition)
 2. Clarify performance requirement (remove specific timing or add test)
 
@@ -387,7 +387,7 @@ This is not just code quality review; it's **spec validation**.
 
 - Don't force-fit wrong spec
 - Don't ignore deviations
-- Use `sdd:evolve` to reconcile
+- Use `spex:evolve` to reconcile
 
 **The code and spec must tell the same story.**
 

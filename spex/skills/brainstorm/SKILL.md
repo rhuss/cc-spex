@@ -20,16 +20,16 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 </HARD-GATE>
 
 <HARD-GATE>
-## Command Namespace: NEVER suggest /sdd:specify, /sdd:plan, /sdd:implement, /sdd:tasks
+## Command Namespace: NEVER suggest /spex:specify, /spex:plan, /spex:implement, /spex:tasks
 
 These commands DO NOT EXIST. They will fail with "Unknown skill". When proposing next steps:
 
-- To create specs: `/speckit.specify` (NOT `/sdd:specify`)
-- To plan: `/speckit.plan` (NOT `/sdd:plan`)
-- To generate tasks: `/speckit.tasks` (NOT `/sdd:tasks`)
-- To implement: `/speckit.implement` (NOT `/sdd:implement`)
+- To create specs: `/speckit.specify` (NOT `/spex:specify`)
+- To plan: `/speckit.plan` (NOT `/spex:plan`)
+- To generate tasks: `/speckit.tasks` (NOT `/spex:tasks`)
+- To implement: `/speckit.implement` (NOT `/spex:implement`)
 
-SDD namespace only has: brainstorm, review-*, evolve, traits, init, help.
+SPEX namespace only has: brainstorm, review-*, evolve, traits, init, help.
 All spec workflow commands live in the `speckit.*` namespace.
 </HARD-GATE>
 
@@ -48,7 +48,7 @@ You MUST create a task for each of these items and complete them in order:
 5. **Propose 2-3 approaches** - with trade-offs and your recommendation
 6. **Present spec sections** - scaled to their complexity, get user approval after each section
 7. **Create specification** - invoke `/speckit.specify` (or create manually), validate and commit
-8. **Spec review loop** - use `sdd:review-spec` to validate soundness; fix issues and re-review until approved (max 3 iterations, then surface to human)
+8. **Spec review loop** - use `spex:review-spec` to validate soundness; fix issues and re-review until approved (max 3 iterations, then surface to human)
 9. **User reviews written spec** - ask user to review the spec file before proceeding
 10. **Generate review brief** - synthesize spec into reviewer-friendly summary
 11. **Transition** - offer next steps via `/speckit.plan` or `/speckit.implement`
@@ -67,7 +67,7 @@ digraph brainstorming {
     "Present spec sections" [shape=box];
     "User approves spec?" [shape=diamond];
     "Create specification file" [shape=box];
-    "Spec review loop\n(sdd:review-spec)" [shape=box];
+    "Spec review loop\n(spex:review-spec)" [shape=box];
     "Spec review passed?" [shape=diamond];
     "User reviews spec?" [shape=diamond];
     "Validate & commit spec" [shape=box];
@@ -85,9 +85,9 @@ digraph brainstorming {
     "Present spec sections" -> "User approves spec?";
     "User approves spec?" -> "Present spec sections" [label="no, revise"];
     "User approves spec?" -> "Create specification file" [label="yes"];
-    "Create specification file" -> "Spec review loop\n(sdd:review-spec)";
-    "Spec review loop\n(sdd:review-spec)" -> "Spec review passed?";
-    "Spec review passed?" -> "Spec review loop\n(sdd:review-spec)" [label="issues found,\nfix and re-review"];
+    "Create specification file" -> "Spec review loop\n(spex:review-spec)";
+    "Spec review loop\n(spex:review-spec)" -> "Spec review passed?";
+    "Spec review passed?" -> "Spec review loop\n(spex:review-spec)" [label="issues found,\nfix and re-review"];
     "Spec review passed?" -> "User reviews spec?" [label="approved"];
     "User reviews spec?" -> "Create specification file" [label="changes requested"];
     "User reviews spec?" -> "Validate & commit spec" [label="approved"];
@@ -116,7 +116,7 @@ Claude MUST use `/speckit.specify` to create specs. Claude MUST NOT:
 - Create spec.md files directly
 - Bypass `/speckit.specify` for any reason
 
-If `/speckit.*` commands are not available, tell the user to run `/sdd:init` first. Do NOT fall back to manual spec creation.
+If `/speckit.*` commands are not available, tell the user to run `/spex:init` first. Do NOT fall back to manual spec creation.
 
 ## The Process
 
@@ -198,7 +198,7 @@ and template formatting. Bypassing it is a process violation.
    Pass the approved spec content to `/speckit.specify` so it populates the template correctly.
 
    **If `/speckit.specify` is not available** (commands not installed): Stop and tell the user
-   to run `/sdd:init` first. Do NOT fall back to manual file creation.
+   to run `/spex:init` first. Do NOT fall back to manual file creation.
 
 3. **Run clarification check (RECOMMENDED):**
 
@@ -298,8 +298,8 @@ and template formatting. Bypassing it is a process violation.
 
 After creating the spec, run the review loop:
 
-1. Use `sdd:review-spec` to validate the spec for soundness and completeness
-2. If issues are found: fix them, re-run `sdd:review-spec`, repeat until approved
+1. Use `spex:review-spec` to validate the spec for soundness and completeness
+2. If issues are found: fix them, re-run `spex:review-spec`, repeat until approved
 3. If the loop exceeds 3 iterations, surface to human for guidance
 
 **User Review Gate:**
@@ -396,12 +396,12 @@ Write to `specs/[feature-name]/review_brief.md` using the template:
 
 **Check if SDD is initialized:**
 If `.specify/` directory does not exist or `.claude/commands/speckit.specify.md` does not exist, warn the user:
-- "Before running `/speckit.plan` or `/speckit.implement`, you need to initialize the project with `/sdd:init`. This sets up spec-kit templates, commands, and trait configuration."
+- "Before running `/speckit.plan` or `/speckit.implement`, you need to initialize the project with `/spex:init`. This sets up spec-kit templates, commands, and trait configuration."
 
 **Offer next steps (use EXACTLY these command names):**
-- "Ready for `/speckit.specify`" (NOT `/sdd:specify`, which does not exist)
+- "Ready for `/speckit.specify`" (NOT `/spex:specify`, which does not exist)
 - After specify: plan with `/speckit.plan` or implement with `/speckit.implement`
-- Never suggest `/sdd:specify`, `/sdd:plan`, `/sdd:implement`, or `/sdd:tasks`
+- Never suggest `/spex:specify`, `/spex:plan`, `/spex:implement`, or `/spex:tasks`
 
 **Commit the spec:**
 ```bash
@@ -635,7 +635,7 @@ If no constitution exists and this seems to be early in project:
 ```
 User: I want to add a comment system to the blog
 
-You: I'm using sdd:brainstorm to refine this idea into a spec.
+You: I'm using spex:brainstorm to refine this idea into a spec.
 
 Let me understand the context first...
 [Reviews existing code and specs]
@@ -682,7 +682,7 @@ User: Yes
 You: Spec approved! Creating the specification file...
 
 [Creates spec via /speckit.specify]
-[Runs sdd:review-spec]
+[Runs spex:review-spec]
 [Asks user to review spec before proceeding]
 
 Spec is sound and implementable.

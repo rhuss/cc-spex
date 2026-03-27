@@ -356,7 +356,7 @@ After all selected fixes are applied, re-present any remaining unaddressed findi
 
 **This skill is invoked by:**
 - The superpowers trait overlay for `/speckit.plan` (after task generation)
-- Users directly via `/sdd:review-plan`
+- Users directly via `/spex:review-plan`
 
 **This skill invokes:**
 - `{Skill: spec-kit}` for initialization

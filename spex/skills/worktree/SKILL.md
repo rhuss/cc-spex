@@ -36,10 +36,10 @@ This action runs after `speckit.specify` has created a feature branch and spec f
 
 ### Step 1: Read Configuration
 
-Read `base_path` from `.specify/sdd-traits.json`:
+Read `base_path` from `.specify/spex-traits.json`:
 
 ```bash
-BASE_PATH=$(jq -r '.worktrees_config.base_path // ".."' .specify/sdd-traits.json 2>/dev/null)
+BASE_PATH=$(jq -r '.worktrees_config.base_path // ".."' .specify/spex-traits.json 2>/dev/null)
 ```
 
 Default: `..` (sibling directory to the repo root).
@@ -81,7 +81,7 @@ Check if the target path already exists (FR-008):
 ```bash
 if [ -d "$WORKTREE_PATH" ] || [ -f "$WORKTREE_PATH" ]; then
   echo "ERROR: Target path already exists: $WORKTREE_PATH"
-  echo "Remove it manually or choose a different base_path in .specify/sdd-traits.json"
+  echo "Remove it manually or choose a different base_path in .specify/spex-traits.json"
   # Stop worktree creation, but don't fail the entire specify flow
 fi
 ```
@@ -150,7 +150,7 @@ Print clear instructions for the user (FR-004):
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
 │                                                             │
-│ In the new session, run /sdd:init to set up spec-kit        │
+│ In the new session, run /spex:init to set up spec-kit        │
 │ commands and SDD traits in the worktree.                    │
 │                                                             │
 │ The spec file contains all context from this session.       │

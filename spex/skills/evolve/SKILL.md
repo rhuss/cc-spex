@@ -23,13 +23,13 @@ This skill detects divergence, analyzes the mismatch, recommends resolution, and
 - Spec ambiguity discovered during implementation
 
 **Auto-triggered by:**
-- `sdd:review-code` (when deviations found)
-- `sdd:verification-before-completion` (when compliance fails)
+- `spex:review-code` (when deviations found)
+- `spex:verification-before-completion` (when compliance fails)
 
 **Don't use this skill when:**
 - No mismatch exists (everything compliant)
 - Spec doesn't exist yet → Use `/speckit.specify`
-- Multiple specs need consolidation → Use `sdd:spec-refactoring`
+- Multiple specs need consolidation → Use `spex:spec-refactoring`
 
 ## Prerequisites
 
@@ -64,7 +64,7 @@ Which spec needs evolution/reconciliation?
 No specs found in specs/ directory.
 
 Spec evolution requires an existing spec to evolve.
-Use `sdd:brainstorm` or `/speckit.specify` to create one first.
+Use `spex:brainstorm` or `/speckit.specify` to create one first.
 ```
 
 ## The Process
@@ -244,7 +244,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 [Adjust tests to match spec]
 
 # Verify compliance
-[Run sdd:verification-before-completion]
+[Run spex:verification-before-completion]
 
 # Commit
 git add [files]

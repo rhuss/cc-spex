@@ -79,7 +79,7 @@ Which spec should I verify implementation against?
 No specs found in specs/ directory.
 
 Verification requires a spec to validate against.
-Use `sdd:brainstorm` or `/speckit.specify` to create one first.
+Use `spex:brainstorm` or `/speckit.specify` to create one first.
 ```
 
 ## The Process
@@ -163,7 +163,7 @@ Spec Compliance: X/X requirements = XX%
 ```
 
 **If compliance < 100%:**
-- STOP: Use `sdd:evolve` to reconcile
+- STOP: Use `spex:evolve` to reconcile
 - Document all deviations
 - Do not proceed until resolved
 
@@ -182,7 +182,7 @@ Spec Compliance: X/X requirements = XX%
 
 **If drift detected:**
 - Document each instance
-- Use `sdd:evolve` to reconcile
+- Use `spex:evolve` to reconcile
 - Do not proceed with drift
 
 ### 5. Verify Success Criteria

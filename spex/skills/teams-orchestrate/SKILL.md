@@ -116,7 +116,7 @@ After spawning teammates:
 When a teammate reports completion, the lead reviews their changes:
 
 1. **Review changes**: Examine the teammate's commits and modified files
-2. **Run spec compliance check** via `{Skill: sdd:review-code}` against spec.md
+2. **Run spec compliance check** via `{Skill: spex:review-code}` against spec.md
 3. **If PASS**: Merge worktree changes, update tasks.md checkboxes to `[X]` for completed tasks
 4. **If FAIL**: Send feedback to the teammate with specific spec violations. The teammate fixes the issues and re-submits for review.
 5. **If 3+ failures on the same task**: Report to the user and pause. Do not continue retrying.

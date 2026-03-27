@@ -53,7 +53,7 @@ Which spec would you like to review?
 No specs found in specs/ directory.
 
 To create a spec first:
-- Use `sdd:brainstorm` to refine ideas into a spec
+- Use `spex:brainstorm` to refine ideas into a spec
 - Use `/speckit.specify` to create a spec from clear requirements
 
 Cannot review without a spec to review.
@@ -241,7 +241,7 @@ Invoke `/speckit.analyze` to check consistency between:
 
 **Spec:** specs/features/[feature].md
 **Date:** YYYY-MM-DD
-**Reviewer:** Claude (sdd:review-spec)
+**Reviewer:** Claude (spex:review-spec)
 
 ## Overall Assessment
 

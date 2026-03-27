@@ -9,7 +9,7 @@ description: Consolidate and improve evolved specs - identifies inconsistencies,
 
 Refactor specifications that have grown organically to improve clarity, consistency, and maintainability.
 
-As specs evolve through `sdd:evolve`, they can accumulate:
+As specs evolve through `spex:evolve`, they can accumulate:
 - Inconsistencies
 - Redundancies
 - Unclear sections
@@ -154,7 +154,7 @@ If implementation exists without spec coverage, ADD it during refactor.
 - [ ] Structure logical
 - [ ] No new ambiguities introduced
 
-**Use `sdd:review-spec`** on refactored version.
+**Use `spex:review-spec`** on refactored version.
 
 ### 7. Create Changelog
 
@@ -220,7 +220,7 @@ Old Section 3.4 → New Section 2.3
 
 ```bash
 # Check spec compliance with current code
-# Use sdd:review-code
+# Use spex:review-code
 ```
 
 **Ensure:**

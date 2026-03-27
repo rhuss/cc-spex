@@ -1,8 +1,8 @@
 ---
 name: teams-spec-guardian
-description: "DEPRECATED: Merged into sdd:teams-orchestrate. Use the consolidated 'teams' trait instead of 'teams-spec'."
+description: "DEPRECATED: Merged into spex:teams-orchestrate. Use the consolidated 'teams' trait instead of 'teams-spec'."
 deprecated: true
-replacement: sdd:teams-orchestrate
+replacement: spex:teams-orchestrate
 ---
 
 # Spec Guardian: Lead Reviews, Teammates Implement
@@ -17,11 +17,11 @@ This skill implements the spec guardian pattern for the `teams-spec` trait. The 
 4. Merges compliant changes, rejects non-compliant work with feedback
 5. Updates tasks.md with final state
 
-**This skill supersedes `sdd:teams-orchestrate`** when both `teams-vanilla` and `teams-spec` traits are active. Check `.specify/sdd-traits.json` for `teams-spec: true` to confirm this skill should run.
+**This skill supersedes `spex:teams-orchestrate`** when both `teams-vanilla` and `teams-spec` traits are active. Check `.specify/spex-traits.json` for `teams-spec: true` to confirm this skill should run.
 
 ## 1. Task Graph Analysis
 
-Same as `sdd:teams-orchestrate`: read tasks.md, identify independent task groups, determine parallel opportunities.
+Same as `spex:teams-orchestrate`: read tasks.md, identify independent task groups, determine parallel opportunities.
 
 - If no parallelism possible: execute sequentially (but the lead still acts as guardian, running review-code after each task completion).
 - If 2+ independent groups: proceed with worktree spawning.
@@ -69,7 +69,7 @@ The lead monitors teammates and reviews their work as they complete tasks.
 ### When a Teammate Reports Completion
 
 1. **Review the changes**: Examine the teammate's worktree diff against the working branch
-2. **Run spec compliance check**: Invoke `{Skill: sdd:review-code}` against the teammate's changes, checking compliance with spec.md
+2. **Run spec compliance check**: Invoke `{Skill: spex:review-code}` against the teammate's changes, checking compliance with spec.md
 3. **Decision**:
 
    **If review PASSES:**
