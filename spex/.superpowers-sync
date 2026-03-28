@@ -9,7 +9,7 @@
       "local_file": null,
       "sync_mode": "reference-only",
       "feeds_into": "skills/plan/SKILL.md",
-      "modification_summary": "No local copy. Upstream changes evaluated and adapted into sdd:plan post-generation quality gates (coverage matrix, red flag scanning, task quality standards, error/edge case coverage checks).",
+      "modification_summary": "No local copy. Upstream changes evaluated and adapted into spex:plan post-generation quality gates (coverage matrix, red flag scanning, task quality standards, error/edge case coverage checks).",
       "patterns_absorbed": [
         "Coverage Matrix (requirement -> task -> test mapping)",
         "Red Flag Scanning (vague language detection)",
@@ -24,7 +24,7 @@
     "review-code": {
       "upstream_file": null,
       "local_file": "skills/review-code/SKILL.md",
-      "modification_summary": "Spex-only skill - no upstream equivalent. Focused on spec compliance checking with compliance scoring and evolution triggering",
+      "modification_summary": "spex-only skill - no upstream equivalent. Focused on spec compliance checking with compliance scoring and evolution triggering",
       "note": "Upstream has 'requesting-code-review' and 'receiving-code-review' but no direct equivalent",
       "key_sections_modified": [
         "Overview: Spec compliance as primary focus",
@@ -34,7 +34,7 @@
         "Trigger Evolution: When mismatches found",
         "Anti-Rationalization: Added from superpowers patterns"
       ],
-      "sdd_additions": [
+      "spex_additions": [
         "## 1. Load Spec and Code",
         "## 2. Review Functional Requirements (with compliance matrix)",
         "## 6. Calculate Compliance Score",
@@ -51,11 +51,11 @@
         "The Iron Law: Integrated from upstream",
         "The Gate Function: Extended with spec compliance step",
         "The Process: Added steps 2-3 for spec validation",
-        "Common Failures: Integrated table from upstream with SDD additions",
-        "Rationalization Prevention: Integrated table from upstream with SDD additions",
+        "Common Failures: Integrated table from upstream with spex additions",
+        "Rationalization Prevention: Integrated table from upstream with spex additions",
         "Quality Gates: Added spec-specific gates (compliance, drift)"
       ],
-      "sdd_additions": [
+      "spex_additions": [
         "## 2. Validate Spec Compliance",
         "## 3. Check for Spec Drift",
         "Quality gate: 100% spec compliance required",
@@ -72,7 +72,7 @@
     "brainstorm": {
       "upstream_file": "skills/brainstorming/SKILL.md",
       "local_file": "skills/brainstorm/SKILL.md",
-      "modification_summary": "Output is spec (not design doc); WHAT/WHY focus. Merged upstream scope assessment, design-for-isolation, existing-codebase guidance, spec review loop (via sdd:review-spec), user review gate.",
+      "modification_summary": "Output is spec (not design doc); WHAT/WHY focus. Merged upstream scope assessment, design-for-isolation, existing-codebase guidance, spec review loop (via spex:review-spec), user review gate.",
       "key_sections_modified": [
         "Overview: Output is SPEC not design doc",
         "Creating the specification: New section with spec structure",
@@ -81,10 +81,10 @@
         "Scope assessment: Multi-subsystem detection and decomposition (from upstream v5.0.0+)",
         "Design for isolation: Clear boundaries, focused units (from upstream v5.0.0+)",
         "Working in existing codebases: Follow patterns, targeted improvements (from upstream v5.0.0+)",
-        "Spec review loop: Uses sdd:review-spec, max 3 iterations (adapted from upstream v5.0.0+)",
+        "Spec review loop: Uses spex:review-spec, max 3 iterations (adapted from upstream v5.0.0+)",
         "User review gate: User approves spec before planning (from upstream v5.0.0+)"
       ],
-      "sdd_additions": [
+      "spex_additions": [
         "## Prerequisites (calls spec-kit)",
         "## Creating the specification (spec structure template)",
         "## IMPORTANT: Capture implementation insights separately",
@@ -92,11 +92,11 @@
       ],
       "skipped_upstream": [
         "Visual companion (browser-based tool, superpowers-specific infrastructure)",
-        "docs/superpowers/specs/ path convention (SDD uses specs/NNN-feature/ via spec-kit)"
+        "docs/superpowers/specs/ path convention (spex uses specs/NNN-feature/ via spec-kit)"
       ]
     }
   },
-  "new_sdd_skills": [
+  "new_spex_skills": [
     "using-superpowers",
     "implement",
     "evolve",

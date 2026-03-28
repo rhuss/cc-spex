@@ -52,7 +52,7 @@ cat ~/.claude/plugins/cc-spex/spex/.claude-plugin/plugin.json | python3 -m json.
 
 In Claude Code, ask:
 ```
-What SDD skills are available?
+What spex skills are available?
 ```
 
 **Expected:** List of all 12 skills:
@@ -78,14 +78,14 @@ What SDD skills are available?
 
 **Steps:**
 1. In Claude Code, type: `What is specification-driven development?`
-2. Observe if Claude mentions using SDD skills
+2. Observe if Claude mentions using spex skills
 
 **Expected:**
 - [ ] Entry skill concepts mentioned
 - [ ] Workflow overview provided
 - [ ] Skill recommendations given
 
-**Pass Criteria:** Claude demonstrates awareness of SDD workflow
+**Pass Criteria:** Claude demonstrates awareness of spex workflow
 
 ---
 
@@ -296,7 +296,7 @@ Record any unclear questions or workflow issues.
 - [ ] Describes verification gates
 - [ ] Explains code review process
 
-**Pass Criteria:** Workflow matches SDD principles
+**Pass Criteria:** Workflow matches spex principles
 
 ---
 
@@ -487,7 +487,7 @@ Record any unclear questions or workflow issues.
 **Expected:**
 - [ ] Spec-kit detected
 - [ ] Spec-kit commands used
-- [ ] SDD validation added on top
+- [ ] spex validation added on top
 - [ ] Graceful operation
 
 **Pass Criteria:** Spec-kit integration seamless
@@ -507,7 +507,7 @@ Record any unclear questions or workflow issues.
 **Expected:**
 - [ ] Spec-kit absence noted (optional message)
 - [ ] Manual spec creation works
-- [ ] SDD validation still works
+- [ ] spex validation still works
 - [ ] No errors or blocking issues
 
 **Pass Criteria:** Plugin fully functional without spec-kit
@@ -556,7 +556,7 @@ Record any unclear questions or workflow issues.
 
 ### Test 10.1: Complete Feature Development
 
-**Objective:** Full SDD workflow from idea to verification
+**Objective:** Full spex workflow from idea to verification
 
 **Steps:**
 1. Start with rough idea

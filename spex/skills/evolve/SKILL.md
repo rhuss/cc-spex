@@ -184,7 +184,7 @@ User decides:
 
 ```json
 {
-  "sdd": {
+  "spex": {
     "auto_update_spec": {
       "enabled": true,
       "threshold": "minor",  // "none", "minor", "moderate"

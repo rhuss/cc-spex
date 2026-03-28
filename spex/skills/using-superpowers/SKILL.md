@@ -1,6 +1,6 @@
 ---
 name: using-superpowers
-description: Establishes SDD methodology - workflow routing, process discipline, spec-first principle, and skill discovery. Use when starting any SDD conversation to determine which workflow skill to invoke.
+description: Establishes spex methodology - workflow routing, process discipline, spec-first principle, and skill discovery. Use when starting any spex conversation to determine which workflow skill to invoke.
 ---
 
 <EXTREMELY-IMPORTANT>
@@ -11,13 +11,13 @@ IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
 This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
 
-# Getting Started with SDD
+# Getting Started with spex
 
-## What is SDD?
+## What is spex?
 
-**SDD = Specification-Driven Development**
+**SDD = Specification-Driven Development.** spex is the Claude Code plugin that implements it.
 
-A development methodology where specifications are the single source of truth:
+SDD is a development methodology where specifications are the single source of truth:
 - Specs created before code
 - Code validated against specs
 - Specs evolve with implementation reality
@@ -27,18 +27,18 @@ This plugin combines two upstream projects:
 - **Superpowers** (by Jesse Vincent): Process discipline, TDD enforcement, verification gates, anti-rationalization patterns, and foundational skills (debugging, git worktrees, parallel agents)
 - **Spec-Kit** (by GitHub): Specification templates, artifact management, and the `specify` CLI
 
-SDD extends these with spec-first enforcement, compliance scoring, drift detection, and evolution. Several upstream superpowers skills are modified with spec-awareness (verification, code review, brainstorming, plan review), while others are used unchanged.
+spex extends these with spec-first enforcement, compliance scoring, drift detection, and evolution. Several upstream superpowers skills are modified with spec-awareness (verification, code review, brainstorming, plan review), while others are used unchanged.
 
 ## Technical Prerequisites
 
-**All technical setup is automatic.** Every SDD workflow skill calls `{Skill: spec-kit}` first, which handles initialization, installation, and validation internally. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
+**All technical setup is automatic.** Every spex workflow skill calls `{Skill: spec-kit}` first, which handles initialization, installation, and validation internally. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
 
 ## MANDATORY FIRST RESPONSE PROTOCOL
 
 Before responding to ANY user message, you MUST complete this checklist:
 
-1. ☐ List available SDD skills in your mind
-2. ☐ Ask yourself: "Does ANY SDD skill match this request?"
+1. ☐ List available spex skills in your mind
+2. ☐ Ask yourself: "Does ANY spex skill match this request?"
 3. ☐ If yes → Use the Skill tool to read and run the skill file
 4. ☐ Announce which skill you're using
 5. ☐ Follow the skill exactly
@@ -61,11 +61,11 @@ Before ANY implementation work:
 
 1. **Spec-first, always.** No code without spec. No exceptions.
 2. **Follow mandatory workflows.** Brainstorm → Spec → Plan → TDD → Verify.
-3. **Check for relevant skills before ANY task.** SDD has skills for each phase.
+3. **Check for relevant skills before ANY task.** spex has skills for each phase.
 4. **Validate spec compliance.** Code review and verification check specs.
 5. **Handle spec/code drift.** Use spex:evolve when mismatches detected.
 
-## Available SDD Skills
+## Available spex Skills
 
 ### Primary Workflow (via spec-kit commands)
 - `/speckit.specify` - Create specifications (superpowers trait adds review gate)
@@ -74,7 +74,7 @@ Before ANY implementation work:
 
 **NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit.*` names above. The `spex:` namespace only contains helper skills (brainstorm, review-*, evolve, traits, init, help).
 
-### SDD Helper Skills
+### spex Helper Skills
 - **spex:brainstorm** - Rough idea → spec through collaborative dialogue
 - **spex:review-spec** - Validate spec soundness and completeness
 - **spex:review-plan** - Post-planning quality validation (coverage, red flags, task quality)
@@ -84,8 +84,8 @@ Before ANY implementation work:
 - **spex:spec-refactoring** - Consolidate and improve evolved specs
 
 ### Configuration
-- **spex:traits** - Enable/disable SDD discipline overlays (superpowers, teams)
-- **spex:init** - Initialize project with spec-kit and SDD configuration
+- **spex:traits** - Enable/disable spex discipline overlays (superpowers, teams)
+- **spex:init** - Initialize project with spec-kit and spex configuration
 
 ### Compatible Superpowers Skills
 These work as-is with spec context:
@@ -153,7 +153,7 @@ If you catch yourself thinking ANY of these thoughts, STOP. You are rationalizin
 - "This is too simple for a spec" → WRONG. Simple changes still need spec context.
 - "I'll just write the code quickly" → WRONG. Code without spec creates drift.
 - "The spec is obvious from the description" → WRONG. Make it explicit.
-- "We can spec it after implementation" → WRONG. That's documentation, not SDD.
+- "We can spec it after implementation" → WRONG. That's documentation, not spex.
 
 **Skill-avoidance rationalizations:**
 - "This is just a quick fix" → WRONG. Quick fixes need spec validation.
@@ -323,7 +323,7 @@ User: "The login endpoint returns different errors than the spec says"
 - The spec creator (that's spec-kit + brainstorm)
 
 **Your job:**
-Ensure the right skill gets used for the right task, and that SDD principles are followed.
+Ensure the right skill gets used for the right task, and that spex principles are followed.
 
 **The goal:**
 Specs that stay current. Code that matches intent. Quality through discipline.

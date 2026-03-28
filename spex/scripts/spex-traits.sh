@@ -1,5 +1,5 @@
 #!/bin/bash
-# spex-traits.sh - Manage SDD trait configuration and overlay application
+# spex-traits.sh - Manage spex trait configuration and overlay application
 #
 # Combines config management and overlay application into a single script.
 # All trait operations go through this script for reproducibility.
@@ -187,7 +187,7 @@ ensure_agent_teams_env() {
 
 do_list() {
   ensure_config
-  echo "SDD Traits:"
+  echo "spex Traits:"
   local shown_traits=""
   for trait in $VALID_TRAITS; do
     local canonical
@@ -559,12 +559,12 @@ do_apply() {
 
 SETTINGS_FILE=".claude/settings.local.json"
 
-# SDD-specific permission patterns
-SDD_PATTERN_INIT='Bash(*/scripts/spex-init.sh*)'
-SDD_PATTERN_TRAITS='Bash(*/scripts/spex-traits.sh*)'
-SDD_PATTERN_SPECIFY='Bash(specify *)'
+# spex-specific permission patterns
+SPEX_PATTERN_INIT='Bash(*/scripts/spex-init.sh*)'
+SPEX_PATTERN_TRAITS='Bash(*/scripts/spex-traits.sh*)'
+SPEX_PATTERN_SPECIFY='Bash(specify *)'
 # Broad tool patterns for YOLO level
-SDD_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "mcp__*")
+SPEX_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "mcp__*")
 
 ensure_settings() {
   if [ ! -f "$SETTINGS_FILE" ]; then
@@ -578,7 +578,7 @@ ensure_settings() {
 }
 
 # Remove all SPEX-managed patterns from the allow list
-remove_sdd_patterns() {
+remove_spex_patterns() {
   local tmp
   tmp=$(mktemp)
   jq '
@@ -599,7 +599,7 @@ remove_sdd_patterns() {
 }
 
 # Add patterns to the allow list
-add_sdd_patterns() {
+add_spex_patterns() {
   local tmp
   tmp=$(mktemp)
   # Build the pattern array from arguments
@@ -643,7 +643,7 @@ do_permissions() {
       ensure_settings
       local current
       current=$(detect_permission_level)
-      echo "SDD auto-approval: $current"
+      echo "spex auto-approval: $current"
       echo ""
       echo "Levels:"
       echo "  none       No auto-approvals (confirm every command)"
@@ -654,7 +654,7 @@ do_permissions() {
       ensure_settings
       local before
       before=$(detect_permission_level)
-      remove_sdd_patterns
+      remove_spex_patterns
       echo "Auto-approval set to: none"
       echo "All SPEX commands will require confirmation."
       [ "$before" != "none" ] && echo "CHANGED" || true
@@ -663,8 +663,8 @@ do_permissions() {
       ensure_settings
       local before
       before=$(detect_permission_level)
-      remove_sdd_patterns
-      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS"
+      remove_spex_patterns
+      add_spex_patterns "$SPEX_PATTERN_INIT" "$SPEX_PATTERN_TRAITS"
       echo "Auto-approval set to: standard"
       echo "Auto-approved:"
       echo "  spex-init.sh        Project initialization"
@@ -675,8 +675,8 @@ do_permissions() {
       ensure_settings
       local before
       before=$(detect_permission_level)
-      remove_sdd_patterns
-      add_sdd_patterns "$SDD_PATTERN_INIT" "$SDD_PATTERN_TRAITS" "$SDD_PATTERN_SPECIFY" "${SDD_YOLO_EXTRAS[@]}"
+      remove_spex_patterns
+      add_spex_patterns "$SPEX_PATTERN_INIT" "$SPEX_PATTERN_TRAITS" "$SPEX_PATTERN_SPECIFY" "${SPEX_YOLO_EXTRAS[@]}"
       echo "Auto-approval set to: yolo"
       echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SPEX scripts."
       [ "$before" != "yolo" ] && echo "CHANGED" || true

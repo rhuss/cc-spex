@@ -186,7 +186,7 @@ Specification directory settings:
   "bundled_resources": {
     "commands": {
       "path": "commands",
-      "description": "Slash commands for SDD workflows (spec-kit commands installed via specify init)",
+      "description": "Slash commands for spex workflows (spec-kit commands installed via specify init)",
       "files": [
         "brainstorm.md",
         "spec.md",
@@ -220,8 +220,8 @@ Specification directory settings:
 The plugin uses a custom `category` field in skill definitions to organize skills:
 
 - **core**: Entry skills that establish mandatory workflows
-- **workflow**: Main SDD workflow skills (brainstorm, spec, implement, evolve)
-- **modified-core**: Superpowers skills extended with SDD functionality
+- **workflow**: Main spex workflow skills (brainstorm, spec, implement, evolve)
+- **modified-core**: Superpowers skills extended with spex functionality
 - **spex-specific**: Skills unique to specification-driven development
 
 ## Schema Validation

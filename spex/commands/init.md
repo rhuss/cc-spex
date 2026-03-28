@@ -17,11 +17,11 @@ Run the command from `<spex-init-command>` in the `<spex-context>` system remind
 
 ## Step 1b: Beads Migration (only if BEADS_MIGRATION_NEEDED)
 
-The beads trait has been removed from SDD. Show the user this message and ask for confirmation:
+The beads trait has been removed from spex. Show the user this message and ask for confirmation:
 
 Use `AskUserQuestion` (`multiSelect: false`, header: "Beads Migration"):
 
-**Message**: "The beads trait has been removed from SDD. Task state is now tracked directly in tasks.md checkboxes, which is simpler and equally persistent via git. The beads integration added unnecessary complexity (Dolt database, bidirectional sync, fragile bd CLI piping) without meaningful benefit."
+**Message**: "The beads trait has been removed from spex. Task state is now tracked directly in tasks.md checkboxes, which is simpler and equally persistent via git. The beads integration added unnecessary complexity (Dolt database, bidirectional sync, fragile bd CLI piping) without meaningful benefit."
 
 **Options**:
 - "Migrate (recommended)": "Sync closed bd issues to tasks.md checkboxes, strip (bd-xxx) markers, disable beads trait"

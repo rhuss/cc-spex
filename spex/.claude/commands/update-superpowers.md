@@ -1,10 +1,10 @@
 ---
-description: "[Plugin Dev] Sync modified skills with upstream superpowers while preserving SDD enhancements"
+description: "[Plugin Dev] Sync modified skills with upstream superpowers while preserving spex enhancements"
 ---
 
 # Upstream Superpowers Sync Workflow
 
-**Purpose**: Sync modified skills with upstream superpowers while preserving SDD enhancements.
+**Purpose**: Sync modified skills with upstream superpowers while preserving spex enhancements.
 
 **Context**: This command is for maintaining the cc-spex plugin, not for end users.
 
@@ -90,7 +90,7 @@ Save the temp directory path for later: `echo $TEMP_DIR`
 
 ## AI-Assisted Merge Workflow
 
-For each modified skill, we'll use AI agents to merge upstream changes with SDD enhancements.
+For each modified skill, we'll use AI agents to merge upstream changes with spex enhancements.
 
 ### Per-Skill Merge Process
 
@@ -131,7 +131,7 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
    ```
    Prompt for agent:
 
-   You are merging upstream superpowers changes into a modified skill that has SDD enhancements.
+   You are merging upstream superpowers changes into a modified skill that has spex enhancements.
 
    **Context:**
    - Skill: [skill-name]
@@ -145,10 +145,10 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
    4. If not INITIAL sync, read upstream changes: /tmp/upstream-changes-[skill].patch
    5. Analyze:
       - What improved in upstream (better examples, new patterns, fixes)
-      - What SDD enhancements exist in local (from modification_summary)
+      - What spex enhancements exist in local (from modification_summary)
       - Where conflicts might occur
    6. Create merged version that:
-      - Preserves ALL SDD sections (listed in sdd_additions)
+      - Preserves ALL spex sections (listed in spex_additions)
       - Integrates upstream improvements (better wording, examples, anti-rationalization)
       - Maintains consistency in tone and structure
       - Keeps both superpowers discipline AND spec-awareness
@@ -159,7 +159,7 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
       - Recommendation: "READY TO APPLY" or "NEEDS REVIEW" with reasons
 
    **Critical rules:**
-   - DO NOT remove SDD-specific sections
+   - DO NOT remove spex-specific sections
    - DO NOT weaken spec-first principles
    - DO integrate better examples/wording from upstream
    - DO preserve quality gates from both sources
@@ -174,7 +174,7 @@ If the skill has `"sync_mode": "reference-only"` in `.superpowers-sync`:
    ```
 
 4. **Review agent output**:
-   - Check that SDD sections are preserved
+   - Check that spex sections are preserved
    - Verify upstream improvements are integrated
    - Confirm no conflicts or all conflicts resolved
    - If "NEEDS REVIEW", examine conflicts carefully
@@ -239,7 +239,7 @@ Create `docs/sync-reports/sync-YYYY-MM-DD.md`:
 
 - Modified skills synced: X/4
 - Skills needing manual review: X
-- SDD enhancements: All preserved ✅
+- spex enhancements: All preserved ✅
 - Upstream improvements: [count] integrated
 
 ## Next Steps
@@ -274,7 +274,7 @@ Add entry:
   - `review-code`: [summary]
   - `verification-before-completion`: [summary]
   - `brainstorm`: [summary]
-  - All SDD spec-compliance enhancements preserved
+  - All spex spec-compliance enhancements preserved
 ```
 
 ### 4. Cleanup
@@ -301,7 +301,7 @@ cat spex/skills/brainstorm/SKILL.md
 cat spex/skills/plan/SKILL.md
 
 # Check for:
-# - SDD sections still present (spec-first, compliance checking, etc.)
+# - spex sections still present (spec-first, compliance checking, etc.)
 # - Superpowers discipline maintained (anti-rationalization, quality gates)
 # - Improved examples/wording from upstream integrated
 # - No merge artifacts (<<<<<<, >>>>>>, etc.)
@@ -367,6 +367,6 @@ Please review and resolve before committing.
 - This command is **only for plugin maintainers**
 - It will fail if run outside cc-spex directory
 - Always review merged skills before committing
-- SDD enhancements should NEVER be removed
+- spex enhancements should NEVER be removed
 - Upstream improvements should be integrated when they don't conflict
 - When in doubt, mark for manual review

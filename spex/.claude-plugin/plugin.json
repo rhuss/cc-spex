@@ -1,14 +1,14 @@
 {
   "name": "spex",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Specification-Driven Development with Process Discipline for Claude Code",
   "author": {
     "name": "Roland Huss",
     "email": "rhuss@redhat.com"
   },
   "license": "MIT",
-  "repository": "https://github.com/rhuss/cc-sdd",
-  "homepage": "https://github.com/rhuss/cc-sdd",
+  "repository": "https://github.com/rhuss/cc-spex",
+  "homepage": "https://github.com/rhuss/cc-spex",
   "keywords": [
     "claude-code",
     "plugin",

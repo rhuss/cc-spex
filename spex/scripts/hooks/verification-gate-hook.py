@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: reminds about SDD verification before git commit.
+"""PreToolUse hook: reminds about spex verification before git commit.
 
-When an SDD project is active (.specify/ directory exists), this hook intercepts
+When a spex project is active (.specify/ directory exists), this hook intercepts
 git commit commands and checks whether verification was completed this session.
 
 The verification-before-completion skill writes a marker file on success.
@@ -27,8 +27,8 @@ def get_marker_path(session_id):
     return tmpdir / f'.claude-spex-verified-{session_id}'
 
 
-def is_sdd_project(cwd):
-    """Check if the working directory is an SDD-managed project."""
+def is_spex_project(cwd):
+    """Check if the working directory is a spex-managed project."""
     return (Path(cwd) / '.specify').is_dir()
 
 
@@ -91,8 +91,8 @@ def main():
     if not is_git_commit(tool_input):
         sys.exit(0)
 
-    # Only activate for SDD-managed projects
-    if not is_sdd_project(cwd):
+    # Only activate for spex-managed projects
+    if not is_spex_project(cwd):
         sys.exit(0)
 
     # Check if verification was completed this session
@@ -109,7 +109,7 @@ def main():
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                "SDD VERIFICATION REMINDER: Verification has not been run this session. "
+                "SPEX VERIFICATION REMINDER: Verification has not been run this session. "
                 "Consider running /spex:verify first, or confirm with the user that "
                 "they want to proceed without verification."
             )

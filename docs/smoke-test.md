@@ -1,15 +1,15 @@
-# SDD Smoke Test
+# spex Smoke Test
 
-A hands-on walkthrough that exercises every SDD command on a fresh repo. Follow these steps in order to verify the plugin works end-to-end and to get a feel for the workflow.
+A hands-on walkthrough that exercises every spex command on a fresh repo. Follow these steps in order to verify the plugin works end-to-end and to get a feel for the workflow.
 
-SDD builds on two upstream projects:
+spex builds on two upstream projects:
 - [Superpowers](https://github.com/obra/superpowers) by Jesse Vincent: process discipline, TDD, verification, anti-rationalization patterns
 - [Spec-Kit](https://github.com/github/spec-kit) by GitHub: specification templates, artifact management, and the `specify` CLI
 
 ## Prerequisites
 
 - [`specify` CLI](https://github.com/github/spec-kit) installed and on PATH (`uv pip install specify-cli`)
-- Claude Code with the SDD plugin loaded
+- Claude Code with the spex plugin loaded
 - `gh` CLI authenticated (for the PR step)
 
 
@@ -19,7 +19,7 @@ SDD builds on two upstream projects:
 cd /tmp
 mkdir spex-smoke && cd spex-smoke
 git init
-echo "# SDD Smoke Test" > README.md
+echo "# spex Smoke Test" > README.md
 git add README.md && git commit -m "Initial commit"
 claude
 ```
@@ -30,7 +30,7 @@ claude
 /spex:help
 ```
 
-You should see the workflow diagram, all spec-kit commands, trait descriptions, and the SDD command list.
+You should see the workflow diagram, all spec-kit commands, trait descriptions, and the spex command list.
 
 ## 3. Initialize the project
 

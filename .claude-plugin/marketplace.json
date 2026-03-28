@@ -5,12 +5,12 @@
     "email": "rhuss@redhat.com"
   },
   "metadata": {
-    "description": "Local development marketplace for the Specification-Driven Development (SDD) plugin. Provides spec-first workflows, TDD implementation, and spec/code reconciliation tools for Claude Code."
+    "description": "Local development marketplace for the cc-spex plugin. Extends Spec-Kit with composable traits and workflow commands for Claude Code."
   },
   "plugins": [
     {
       "name": "spex",
-      "version": "1.0.0",
+      "version": "3.0.0",
       "description": "Specification-Driven Development with Process Discipline for Claude Code",
       "author": {
         "name": "Roland Huss",

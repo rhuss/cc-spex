@@ -154,7 +154,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 
 <!-- SDD-TRAIT:superpowers -->
-## SDD Quality Gates for Planning
+## Spex Quality Gates for Planning
 
 **Before generating the plan:**
 1. Invoke {Skill: spex:review-spec} to validate the spec is sound

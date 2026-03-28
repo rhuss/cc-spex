@@ -1,13 +1,35 @@
 # Changelog
 
-All notable changes to the **sdd** plugin (repository: cc-sdd) will be documented in this file.
+All notable changes to the **spex** plugin (repository: [cc-spex](https://github.com/rhuss/cc-spex)) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Note**: The plugin name is `sdd` (for slash commands like `/sdd:brainstorm`), while the GitHub repository is `cc-sdd`.
-
 ## [Unreleased]
+
+## [3.0.0] - 2026-03-28
+
+### Changed (BREAKING)
+- **Plugin renamed from `sdd` to `spex`** with all commands, skills, and configuration updated
+  - Command prefix: `/sdd:*` changed to `/spex:*`
+  - Config file: `.specify/sdd-traits.json` changed to `.specify/spex-traits.json`
+  - Phase file: `.specify/.sdd-phase` changed to `.specify/.spex-phase`
+  - Script names: `sdd-init.sh`, `sdd-traits.sh` changed to `spex-init.sh`, `spex-traits.sh`
+  - Marketplace: `sdd-plugin-development` changed to `spex-plugin-development`
+- **Repository renamed from `cc-sdd` to `cc-spex`** (GitHub auto-redirects old URLs)
+- All documentation updated to use spex terminology
+
+### Added
+- **Automatic migration from sdd** in `make install` (removes old marketplace and plugin)
+- **Backward-compatible config migration** in `spex-init.sh` (renames old config files on init)
+
+### Migration from 2.x
+
+1. Run `make install` in the cc-spex repository (automatically removes old sdd plugin)
+2. In each project using spex, run `/spex:init` to migrate config files
+3. Update any scripts or aliases referencing `/sdd:*` commands to `/spex:*`
+
+Old `.specify/sdd-traits.json` files are automatically renamed to `spex-traits.json` on first `/spex:init`.
 
 ## [2.0.0] - 2026-03-16
 
@@ -37,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Task tracking simplified** - Direct `tasks.md` checkbox tracking replaces external state management
 
 ### Removed
-- **`sdd:constitution` skill** - Redundant wrapper; use `/speckit.constitution` directly
+- **`constitution` skill** - Redundant wrapper; use `/speckit.constitution` directly
 - **`beads` trait** - Removed entirely; task state tracked in `tasks.md` checkboxes
 - **`teams-vanilla` and `teams-spec` traits** - Consolidated into `teams` trait
 - **Bundled templates** - Removed `templates/` directory (use `specify init` instead)
@@ -111,24 +133,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Built on [superpowers](https://github.com/obra/superpowers) by Jesse Vincent for process discipline foundation
 - Integrates [spec-kit](https://github.com/github/spec-kit) by GitHub for specification workflows
 
-## [Unreleased]
-
-### Planned
-- Additional example projects
-- Video walkthrough of SDD workflow
-- Integration with CI/CD pipelines
-- Enhanced spec validation rules
-
 ---
 
-## Release Notes Format
-
-Each release will include:
-- **Added**: New features and capabilities
-- **Changed**: Changes to existing functionality
-- **Deprecated**: Soon-to-be removed features
-- **Removed**: Removed features
-- **Fixed**: Bug fixes
-- **Security**: Security vulnerability fixes
-
-For detailed commit history, see [GitHub Commits](https://github.com/rhuss/cc-sdd/commits/main)
+For detailed commit history, see [GitHub Commits](https://github.com/rhuss/cc-spex/commits/main)

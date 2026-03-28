@@ -1,4 +1,4 @@
-# Team Collaboration with SDD
+# Team Collaboration with spex
 
 ## The Core Principle
 
@@ -8,7 +8,7 @@ This lets the team align on WHAT before debating HOW.
 
 Traditional approach: Write code, create PR, debate implementation details, realize requirements were misunderstood, rewrite.
 
-SDD team approach: Create spec, get team alignment, then implement. The PR reviews the contract, not the code.
+spex team approach: Create spec, get team alignment, then implement. The PR reviews the contract, not the code.
 
 ## When to Create Spec PRs
 
@@ -157,14 +157,14 @@ When to use:
 
 ## Code Review with Specs
 
-With SDD, code review becomes simpler:
+With spex, code review becomes simpler:
 
 **Traditional code review questions:**
 - "What is this trying to do?"
 - "Why did you do it this way?"
 - "Should this handle X edge case?"
 
-**SDD code review questions:**
+**spex code review questions:**
 - "Does this match the spec?"
 - "Any deviations to discuss?"
 - "Tests cover the success criteria?"
@@ -197,7 +197,7 @@ Implementer: "The spec says X, but I discovered Y is better"
 
 ## Onboarding New Team Members
 
-SDD makes onboarding easier:
+spex makes onboarding easier:
 
 **New developer can:**
 1. Read constitution to understand project standards
@@ -216,7 +216,7 @@ SDD makes onboarding easier:
 
 ## Team Adoption Tips
 
-### Starting with SDD
+### Starting with spex
 
 **Week 1-2: Pilot**
 - Pick one feature
@@ -253,7 +253,7 @@ SDD makes onboarding easier:
 
 ## Summary
 
-**For teams, SDD provides:**
+**For teams, spex provides:**
 - Shared understanding before implementation
 - Clear contracts between team members
 - Faster code reviews

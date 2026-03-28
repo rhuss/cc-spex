@@ -1,5 +1,5 @@
 {
-  "description": "SDD plugin hooks for context injection and skill invocation enforcement",
+  "description": "spex plugin hooks for context injection and skill invocation enforcement",
   "hooks": {
     "UserPromptSubmit": [
       {

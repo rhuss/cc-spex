@@ -289,7 +289,7 @@ OR
 - Safe to commit/merge/deploy
 - **Write verification marker** so the commit gate hook allows the commit:
   ```bash
-  touch "${TMPDIR:-/tmp}/.claude-sdd-verified-${SESSION_ID}"
+  touch "${TMPDIR:-/tmp}/.claude-spex-verified-${SESSION_ID}"
   ```
   (The SESSION_ID is available from the hook context. If not, use a stable session identifier.)
 
@@ -520,9 +520,9 @@ Action: Update code or revert spec, re-verify
 
 1. **All tests must pass** (from superpowers)
 2. **Code hygiene review clean** (mechanical defects)
-3. **100% spec compliance required** (SDD)
-4. **No spec drift allowed** (SDD)
-5. **All success criteria must be met** (SDD)
+3. **100% spec compliance required** (spex)
+4. **No spec drift allowed** (spex)
+5. **All success criteria must be met** (spex)
 
 **No exceptions. No shortcuts.**
 

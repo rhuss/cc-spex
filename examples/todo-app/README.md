@@ -1,6 +1,6 @@
-# Todo App Example - Complete SDD Workflow
+# Todo App Example - Complete Spex Workflow
 
-This example demonstrates the complete Specification-Driven Development workflow using SDD.
+This example demonstrates the complete Specification-Driven Development (SDD) workflow using spex.
 
 ## What This Example Shows
 
@@ -164,6 +164,6 @@ After understanding this example:
 
 ## Resources
 
-- Full SDD documentation: `../../README.md`
+- Full spex documentation: `../../README.md`
 - Skill reference: `../../spex/skills/`
 - Design documentation: `../../docs/design.md`

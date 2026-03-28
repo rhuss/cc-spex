@@ -1,12 +1,12 @@
 # Quick Start Guide
 
-## What is SDD?
+## What is spex?
 
 **Specification-Driven Development** = Specs are your single source of truth.
 
 Traditional development: Code first, document later (if ever). Docs drift. Intent gets lost.
 
-SDD: Spec first, code validates against spec. Specs evolve with reality. Intent is preserved.
+spex: Spec first, code validates against spec. Specs evolve with reality. Intent is preserved.
 
 **The core loop:**
 ```
@@ -15,12 +15,12 @@ Idea → Spec → Code → Verify → (Drift? → Evolve)
 
 ## What's Inside
 
-SDD combines two foundations:
+spex combines two foundations:
 
 - **Superpowers** (by Jesse Vincent) provides process discipline: TDD, verification gates, anti-rationalization patterns, and skills like systematic debugging and parallel agent dispatch.
 - **Spec-Kit** (by GitHub) provides the specification workflow: templates, structured artifacts, and the `specify` CLI for project setup.
 
-SDD adds the glue: specs as single source of truth, spec-first enforcement, compliance scoring, spec/code drift detection, and the evolution workflow. Several upstream superpowers skills are extended with spec-awareness (verification, code review, brainstorming), while others are used unchanged (TDD, debugging, git worktrees).
+spex adds the glue: specs as single source of truth, spec-first enforcement, compliance scoring, spec/code drift detection, and the evolution workflow. Several upstream superpowers skills are extended with spec-awareness (verification, code review, brainstorming), while others are used unchanged (TDD, debugging, git worktrees).
 
 ## The Three Phases
 
@@ -135,7 +135,7 @@ Traits are optional. Start without them to learn the workflow, then enable them 
 - Skip specs for "simple" features (they still need spec context)
 - Put implementation details in specs (that's for code)
 - Ignore drift warnings (use `/spex:evolve`)
-- Write code then spec afterward (that's documentation, not SDD)
+- Write code then spec afterward (that's documentation, not Specification-Driven Development)
 
 **Do:**
 - Start every feature with a spec

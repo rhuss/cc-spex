@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Hook script for UserPromptSubmit event.
-Injects SDD plugin context as system reminder when spex commands detected.
+Injects spex plugin context as system reminder when spex commands detected.
 Also writes a marker file for the PreToolUse skill gate hook to enforce
 that the Skill tool is called before any other tool.
 """
@@ -50,11 +50,11 @@ def main():
     # Resolve script paths
     init_script = plugin_root / 'scripts' / 'spex-init.sh'
     traits_script = plugin_root / 'scripts' / 'spex-traits.sh'
-    # Check if SDD traits are configured
-    sdd_configured = (cwd / '.specify' / 'spex-traits.json').exists()
+    # Check if spex traits are configured
+    spex_configured = (cwd / '.specify' / 'spex-traits.json').exists()
 
     # Check if project is fully initialized (mirrors check_ready() in spex-init.sh)
-    sdd_initialized = (
+    spex_initialized = (
         (cwd / '.specify').is_dir()
         and (cwd / '.specify' / 'templates' / 'spec-template.md').exists()
         and any((cwd / '.claude' / 'commands').glob('speckit.*'))
@@ -64,7 +64,7 @@ def main():
     skill_name = prompt.split()[0].lstrip('/')
 
     # Guard against hallucinated commands (e.g., /spex:specify, /spex:plan)
-    KNOWN_SDD_COMMANDS = {
+    KNOWN_SPEX_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
         'review-code', 'review-plan', 'review-spec', 'traits', 'verify', 'worktree',
     }
@@ -75,7 +75,7 @@ def main():
         'implement': '/speckit.implement',
     }
     command_short_check = skill_name.split(':', 1)[1] if ':' in skill_name else skill_name
-    if command_short_check not in KNOWN_SDD_COMMANDS:
+    if command_short_check not in KNOWN_SPEX_COMMANDS:
         suggestion = COMMAND_CORRECTIONS.get(
             command_short_check,
             'Run /spex:help for valid commands'
@@ -87,7 +87,7 @@ def main():
                     f"<spex-error>"
                     f"ERROR: /{skill_name} does not exist. "
                     f"Did you mean {suggestion}? "
-                    f"SDD commands: brainstorm, review-*, evolve, traits, init, help, constitution. "
+                    f"spex commands: brainstorm, review-*, evolve, traits, init, help, constitution. "
                     f"Spec-kit commands: /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement."
                     f"</spex-error>"
                 )
@@ -146,8 +146,8 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 <plugin-root>{plugin_root}</plugin-root>
 <project-dir>{cwd}</project-dir>
 <session-id>{session_id}</session-id>
-<spex-configured>{str(sdd_configured).lower()}</spex-configured>
-<spex-initialized>{str(sdd_initialized).lower()}</spex-initialized>
+<spex-configured>{str(spex_configured).lower()}</spex-configured>
+<spex-initialized>{str(spex_initialized).lower()}</spex-initialized>
 <spex-init-command>{init_script}{init_args}</spex-init-command>
 <spex-traits-command>{traits_script}</spex-traits-command>
 </spex-context>{enforcement}"""

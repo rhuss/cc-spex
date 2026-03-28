@@ -1,12 +1,15 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
 [![Builds on Spec-Kit](https://img.shields.io/badge/builds%20on-Spec--Kit-blue)](https://github.com/github/spec-kit)
 
 > Extend Spec-Kit with composable traits and additional workflow commands for Claude Code.
+
+> [!NOTE]
+> This project was previously named **cc-sdd**. It has been renamed to **cc-spex** in v3.0.0 to avoid confusion with the unrelated [gotalab/cc-sdd](https://github.com/gotalab/cc-sdd) project. If you were using cc-sdd, see [Migrating from sdd](#migrating-from-sdd-v2x) below.
 
 ## Why cc-spex?
 
@@ -139,6 +142,35 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/spex:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
 | `/spex:traits` | Enable, disable, or list active traits |
 | `/spex:help` | Show a quick reference for all commands |
+
+## Migrating from sdd (v2.x)
+
+If you were using the previous `sdd` plugin, follow these steps:
+
+**1. Update the plugin:**
+
+```bash
+cd cc-spex       # (formerly cc-sdd)
+git pull
+make install     # automatically removes old sdd plugin and marketplace
+```
+
+**2. Migrate project config:**
+
+Run `/spex:init` in each project. This automatically renames `.specify/sdd-traits.json` to `spex-traits.json` and `.specify/.sdd-phase` to `.spex-phase`.
+
+**3. Update references:**
+
+| Before (v2.x) | After (v3.x) |
+|----------------|--------------|
+| `/sdd:brainstorm` | `/spex:brainstorm` |
+| `/sdd:review-spec` | `/spex:review-spec` |
+| `/sdd:evolve` | `/spex:evolve` |
+| `/sdd:init` | `/spex:init` |
+| `/sdd:traits` | `/spex:traits` |
+| `.specify/sdd-traits.json` | `.specify/spex-traits.json` |
+
+All `/speckit.*` commands remain unchanged.
 
 ## Acknowledgements
 

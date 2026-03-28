@@ -1,6 +1,6 @@
 
 <!-- SDD-TRAIT:superpowers -->
-## SDD Quality Gates for Implementation
+## Spex Quality Gates for Implementation
 
 **Before implementation begins:**
 1. Verify spec package exists: spec.md, plan.md, and tasks.md must all be present

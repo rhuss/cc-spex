@@ -3,7 +3,7 @@ name: init
 description: Initialize or update the project using the `specify` CLI (--refresh for templates, --update to upgrade CLI). Do NOT search for speckit or spec-kit binaries.
 ---
 
-# SDD Init
+# spex Init
 
 **Note:** The init workflow is defined in `spex/commands/init.md` directly (not via skill reference) for higher compliance. This skill file exists as documentation only.
 

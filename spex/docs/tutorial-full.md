@@ -1,4 +1,4 @@
-# Full Introduction to SDD
+# Full Introduction to spex
 
 ## What is Specification-Driven Development?
 
@@ -6,23 +6,23 @@
 
 **The Solution:** Make specifications the single source of truth. Code validates against specs. When they diverge, reconcile them through a deliberate process.
 
-**SDD = Specifications that stay current, enforced by process discipline.**
+**SDD (Specification-Driven Development)** = Specifications that stay current, enforced by process discipline. spex is the Claude Code plugin that implements this approach.
 
 ### Building Blocks
 
-SDD is built on two upstream projects:
+spex is built on two upstream projects:
 
 - **Superpowers** (by Jesse Vincent): Process discipline, quality gates, TDD enforcement, anti-rationalization patterns, and foundational skills for debugging, git worktrees, and parallel agents.
 - **Spec-Kit** (by GitHub): Specification templates, structured artifact management, and the `specify` CLI for project scaffolding.
 
-SDD extends these foundations with:
+spex extends these foundations with:
 - Specs as the single source of truth for all development
 - Spec-first enforcement across the entire workflow
 - Compliance scoring that validates code against spec requirements
 - Spec/code drift detection with deliberate evolution
 - Modified upstream skills (verification, code review, brainstorming) enhanced with spec-awareness
 
-## The SDD Workflow
+## The spex Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -152,7 +152,7 @@ Specs will drift from code. This is normal and healthy. The key is handling it d
 
 ## Quality Gates
 
-SDD enforces quality gates at key points:
+spex enforces quality gates at key points:
 
 | Gate | When | What's Checked |
 |------|------|----------------|
@@ -192,8 +192,8 @@ Traits are overlay modules that inject automated behavior into spec-kit commands
 
 ```
 /spex:traits list              # Show which traits are active
-/spex:traits enable superpowers        # Enable SDD quality gates
-/spex:traits disable superpowers       # Remove SDD quality gates
+/spex:traits enable superpowers        # Enable spex quality gates
+/spex:traits disable superpowers       # Remove spex quality gates
 ```
 
 You can also enable traits during `/spex:init`.
@@ -220,7 +220,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 
 **Modified from upstream Superpowers** (spec-awareness added):
 
-| Skill | Upstream Origin | What SDD Adds |
+| Skill | Upstream Origin | What spex Adds |
 |-------|----------------|---------------|
 | `verification-before-completion` | Verification gates, anti-rationalization | Spec compliance validation, drift checking |
 | `review-code` | Code review patterns | Compliance scoring against spec requirements |
@@ -230,7 +230,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 **Used unchanged from upstream Superpowers:**
 - `test-driven-development`, `systematic-debugging`, `using-git-worktrees`, `dispatching-parallel-agents`
 
-**SDD-only skills** (no upstream equivalent):
+**spex-only skills** (no upstream equivalent):
 - `using-superpowers`, `evolve`, `review-spec`, `spec-refactoring`, `spec-kit`
 
 ## Command Reference
@@ -295,4 +295,4 @@ A: Generally no. Each feature should have its own spec. Use the constitution for
 4. **If drift:** `/spex:evolve` to reconcile
 5. **For consistency:** `/speckit.constitution` to set project standards
 
-The best way to learn SDD is to use it on a real feature. Start small, follow the process, and see how it feels.
+The best way to learn spex is to use it on a real feature. Start small, follow the process, and see how it feels.

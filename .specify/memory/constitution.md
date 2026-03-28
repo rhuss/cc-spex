@@ -13,13 +13,13 @@ Templates validated:
 Follow-up TODOs: none
 -->
 
-# SDD Plugin Constitution
+# Spex Plugin Constitution
 
 ## Core Principles
 
 ### I. Spec-Guided Development
 
-SDD is the methodology for significant feature work. It is not a
+SDD (Specification-Driven Development) is the methodology for significant feature work. It is not a
 gate on every code change. Code can change without documentation.
 
 - New features and cross-cutting changes SHOULD follow the SDD
@@ -70,7 +70,7 @@ break another.
 
 ### IV. Quality Gates
 
-When working through the SDD workflow, quality gates provide
+When working through the spex workflow, quality gates provide
 valuable checkpoints. They apply to spec-driven feature work,
 not to every code change.
 
@@ -91,7 +91,7 @@ Tool and command names MUST follow established conventions exactly.
 - The CLI tool is `specify` (not speckit, not spec-kit).
 - The package is `specify-cli`.
 - Slash commands use the `/speckit.*` prefix (this is correct).
-- SDD skills use the `spex:` prefix.
+- spex skills use the `spex:` prefix.
 - Feature branches MUST match the pattern `NNN-feature-name`
   (three-digit prefix, hyphen, lowercase name).
 - Rationale: Naming inconsistency causes user confusion and breaks
@@ -115,14 +115,14 @@ Each skill MUST be self-contained with a clear, single purpose.
 
 ## Plugin Architecture Constraints
 
-These constraints govern the structure of the SDD plugin codebase.
+These constraints govern the structure of the spex plugin codebase.
 
 - **Plugin root detection**: Commands extract `$PLUGIN_ROOT` from the
   `<spex-context>` system reminder injected by the `UserPromptSubmit`
   hook. Commands MUST include a "Step 0: Resolve Plugin Root" section.
 - **Hook filtering**: The context hook (`context-hook.py`) MUST only
-  fire for `/spex:` prefixed commands. Non-SDD commands MUST NOT
-  receive SDD context injection.
+  fire for `/spex:` prefixed commands. Non-spex commands MUST NOT
+  receive spex context injection.
 - **File organization**: Commands live in `spex/commands/`, skills in
   `spex/skills/<name>/SKILL.md`, overlays in
   `spex/overlays/<trait>/{commands,templates}/`, scripts in

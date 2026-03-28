@@ -1,6 +1,6 @@
 
 <!-- SDD-TRAIT:superpowers -->
-## SDD Quality Gate
+## Spex Quality Gate
 
 After completing the specification, validate quality:
 1. Check constitution alignment (if `.specify/memory/constitution.md` exists)

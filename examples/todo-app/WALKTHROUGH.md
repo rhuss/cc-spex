@@ -1,4 +1,4 @@
-# Todo App SDD Workflow Walkthrough
+# Todo App Spex Workflow Walkthrough
 
 This document shows the step-by-step process of building the Todo CRUD feature using Specification-Driven Development.
 
@@ -301,7 +301,7 @@ Action: Auto-updating spec...
 
 **Total:** ~3 hours (including constitution)
 
-**Without SDD:** Estimated 4-5 hours with:
+**Without spex:** Estimated 4-5 hours with:
 - More back-and-forth on requirements
 - Edge cases discovered late
 - Inconsistent error handling
@@ -331,7 +331,7 @@ Action: Auto-updating spec...
 
 ## Conclusion
 
-Specification-Driven Development with SDD provides:
+Specification-Driven Development with spex provides:
 - **Clarity** through formal specs
 - **Consistency** through constitution
 - **Quality** through TDD and verification

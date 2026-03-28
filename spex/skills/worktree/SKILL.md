@@ -4,7 +4,7 @@ description: Manage git worktrees for isolated feature development - create afte
 argument-hint: "[list|cleanup]"
 ---
 
-# Git Worktree Management for SDD
+# Git Worktree Management for spex
 
 ## Overview
 
@@ -151,7 +151,7 @@ Print clear instructions for the user (FR-004):
 │   cd <worktree-path> && claude                              │
 │                                                             │
 │ In the new session, run /spex:init to set up spec-kit        │
-│ commands and SDD traits in the worktree.                    │
+│ commands and spex traits in the worktree.                   │
 │                                                             │
 │ The spec file contains all context from this session.       │
 └─────────────────────────────────────────────────────────────┘

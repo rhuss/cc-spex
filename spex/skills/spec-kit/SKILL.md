@@ -1,6 +1,6 @@
 ---
 name: spec-kit
-description: Technical integration layer for the `specify` CLI (not speckit, not spec-kit) - handles automatic initialization, installation validation, project setup, and ensures proper file/directory layout. Called by all SDD workflow skills.
+description: Technical integration layer for the `specify` CLI (not speckit, not spec-kit) - handles automatic initialization, installation validation, project setup, and ensures proper file/directory layout. Called by all spex workflow skills.
 ---
 
 # Spec-Kit Technical Integration

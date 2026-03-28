@@ -1,4 +1,4 @@
-# SDD Plugin Design
+# spex Plugin Design
 
 **Date**: 2025-11-10
 **Status**: Design Complete, Ready for Implementation
@@ -13,7 +13,7 @@ A Claude Code plugin that merges superpowers' process discipline with specificat
 - **Process discipline preserved** - All superpowers quality gates and workflow enforcement remain
 - **Evolving specs** - Specs can evolve based on implementation reality with AI guidance
 - **Intent before implementation** - "What" and "why" before "how"
-- **Hybrid tooling** - Spec-kit CLI handles spec operations; SDD adds workflow discipline
+- **Hybrid tooling** - Spec-kit CLI handles spec operations; spex adds workflow discipline
 - **Flexible entry points** - Phase-specific skills for different starting contexts
 
 ## Architecture
@@ -23,7 +23,7 @@ User Request
      ↓
 Phase-Specific Entry Point (/spex:brainstorm, /spex:spec, /spex:implement, /spex:evolve)
      ↓
-Superpowers-SDD Skill (workflow + validation + checklists)
+Superpowers-spex Skill (workflow + validation + checklists)
      ↓
 Spec-Kit CLI (for spec CRUD/validation) ← → Spec Files (specs/)
      ↓
@@ -98,7 +98,7 @@ Implementation (with TDD, code review, verification gates)
 - Step 3: Check for spec drift (new)
 - Blocks completion on failures
 
-### New SDD-Specific Skills
+### New spex-specific Skills
 
 **`spex:review-spec`** - Spec soundness review
 - Validates structure and clarity
@@ -122,7 +122,7 @@ Implementation (with TDD, code review, verification gates)
 
 ### Preserved Skills (From Superpowers)
 
-These work as-is, referenced by SDD skills:
+These work as-is, referenced by spex skills:
 - `test-driven-development`
 - `systematic-debugging`
 - `using-git-worktrees`
@@ -212,7 +212,7 @@ cc-spex/
 ### Spec-Kit as Means, Not End
 - Leverage spec-kit CLI where beneficial
 - Replace/bypass if it creates friction
-- Focus on SDD goals, not tool compliance
+- Focus on spex goals, not tool compliance
 
 ### User Control on Automation
 - AI makes recommendations with reasoning

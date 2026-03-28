@@ -1,6 +1,6 @@
 # Upstream Sync Strategy
 
-**Purpose**: Maintain sync with upstream superpowers while preserving SDD enhancements
+**Purpose**: Maintain sync with upstream superpowers while preserving spex enhancements
 
 **Upstream**: https://github.com/obra/superpowers by Jesse Vincent
 
@@ -8,7 +8,7 @@
 
 This plugin modifies 4 superpowers skills to add spec-awareness. We need a strategy to:
 1. Stay current with upstream improvements
-2. Preserve our SDD enhancements
+2. Preserve our spex enhancements
 3. Minimize manual merge conflicts
 
 **Chosen approach**: AI-Assisted Merge (Option 3)
@@ -108,9 +108,9 @@ To sync, run: /update-superpowers
    - Read upstream changes
    - Read local version
    - Read modification metadata
-   - Merge preserving SDD enhancements
+   - Merge preserving spex enhancements
    - Output merged version + report
-6. **Review outputs**: Check that SDD sections preserved
+6. **Review outputs**: Check that spex sections preserved
 7. **Apply changes**: Write merged files
 8. **Generate report**: Create `docs/sync-reports/sync-YYYY-MM-DD.md`
 9. **Update tracking**: Update `.superpowers-sync` with new commit
@@ -136,7 +136,7 @@ git add .
 git commit -m "Sync with superpowers@xyz7890
 
 - Integrated upstream improvements to review-code
-- Preserved all SDD spec-compliance enhancements
+- Preserved all spex spec-compliance enhancements
 - See docs/sync-reports/sync-2025-12-01.md for details"
 
 # Update CHANGELOG
@@ -162,10 +162,10 @@ You are merging upstream superpowers changes into a modified skill.
 4. Read upstream changes patch (if not initial sync)
 5. Analyze:
    - Upstream improvements (examples, patterns, fixes)
-   - SDD enhancements (from modification_summary)
+   - spex enhancements (from modification_summary)
    - Potential conflicts
 6. Create merged version:
-   - Preserve ALL SDD sections
+   - Preserve ALL spex sections
    - Integrate upstream improvements
    - Maintain consistency
    - Keep both superpowers discipline AND spec-awareness
@@ -176,7 +176,7 @@ You are merging upstream superpowers changes into a modified skill.
    - Status: READY TO APPLY or NEEDS REVIEW
 
 **Critical rules**:
-- DO NOT remove SDD sections
+- DO NOT remove spex sections
 - DO NOT weaken spec-first principles
 - DO integrate better examples/wording
 - DO preserve quality gates from both
@@ -207,7 +207,7 @@ Begin merge analysis.
         "Section name: what changed"
       ],
       "spex_additions": [
-        "New sections added for SDD"
+        "New sections added for spex"
       ]
     }
   },
@@ -259,7 +259,7 @@ Begin merge analysis.
 
 After syncing, verify:
 
-1. **SDD sections present**:
+1. **spex sections present**:
    ```bash
    # Check for spec-first language
    grep -n "spec" spex/skills/writing-plans/SKILL.md
@@ -370,14 +370,14 @@ cd /path/to/cc-spex
 4. Apply or reject proposed version
 5. Document resolution in sync report
 
-### "SDD sections seem to be missing"
+### "spex sections seem to be missing"
 
 **Cause**: Merge agent removed important sections
 
 **Fix**:
 1. **Do not commit**
 2. Review `.superpowers-sync` modification_summary
-3. Re-read local version for SDD sections
+3. Re-read local version for spex sections
 4. Manually restore missing sections
 5. Update merge agent prompt if pattern identified
 
@@ -414,7 +414,7 @@ Potential enhancements:
 
 **Never**:
 - Auto-commit without review
-- Remove SDD enhancements
+- Remove spex enhancements
 - Skip testing after merge
 - Ignore NEEDS REVIEW status
 

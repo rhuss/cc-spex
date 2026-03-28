@@ -1,4 +1,4 @@
-                          SDD Quick Reference
+                          spex Quick Reference
 
 WORKFLOW
 
@@ -55,11 +55,11 @@ BUILT ON
                                 anti-rationalization patterns
   Spec-Kit (GitHub):            Specification templates, artifacts,
                                 `specify` CLI
-  SDD adds:                     Spec-first enforcement, compliance
+  spex adds:                    Spec-first enforcement, compliance
                                 scoring, drift detection, evolution
 
 
-SDD TRAITS (quality gates for spec-kit commands)
+SPEX TRAITS (quality gates for spec-kit commands)
 
   Traits inject automated quality gates into the spec-kit workflow.
   Enable them with /spex:init or /spex:traits enable <trait>.
