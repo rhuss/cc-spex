@@ -43,7 +43,7 @@ Overlay files MUST delegate to skills. They MUST NOT inline
 discipline logic.
 
 - Each overlay file MUST be under 30 lines.
-- Overlays MUST contain a sentinel marker (`<!-- SDD-TRAIT:name -->`)
+- Overlays MUST contain a sentinel marker (`<!-- SPEX-TRAIT:name -->`)
   for idempotent application.
 - Overlays MUST use `{Skill: spex:skill-name}` references to invoke
   behavior, not embed the behavior directly.

@@ -1,5 +1,5 @@
 
-<!-- SDD-TRAIT:worktrees -->
+<!-- SPEX-TRAIT:worktrees -->
 ## Worktree Isolation
 
 After completing the specification and all quality gates:

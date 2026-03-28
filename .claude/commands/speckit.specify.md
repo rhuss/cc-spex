@@ -300,7 +300,7 @@ Success criteria must be:
 - "Redis cache hit rate above 80%" (technology-specific)
 
 
-<!-- SDD-TRAIT:superpowers -->
+<!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gate
 
 After completing the specification, validate quality:

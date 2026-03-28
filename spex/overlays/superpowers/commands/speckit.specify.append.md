@@ -1,5 +1,5 @@
 
-<!-- SDD-TRAIT:superpowers -->
+<!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gate
 
 After completing the specification, validate quality:

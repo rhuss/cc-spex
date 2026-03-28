@@ -508,12 +508,11 @@ do_apply() {
   fi
 
   # Cleanup stale trait blocks from target files
-  # Get list of all known trait sentinels and check which are disabled/aliased
+  # Check both legacy (SDD-TRAIT) and current (SPEX-TRAIT) markers
   local all_sentinels="superpowers beads teams worktrees"
   for target in $(printf '%s\n' "${target_files[@]}" | sort -u); do
     for sentinel_trait in $all_sentinels; do
-      local sentinel="<!-- SDD-TRAIT:${sentinel_trait} -->"
-      # Skip if this trait is enabled (its block should stay)
+      # Skip if this trait is enabled (its block will be re-applied fresh)
       local is_enabled=false
       for et in $enabled_traits; do
         [ "$et" = "$sentinel_trait" ] && is_enabled=true
@@ -521,18 +520,22 @@ do_apply() {
       $is_enabled && continue
 
       # Remove block from sentinel to next sentinel or EOF
-      if grep -q "$sentinel" "$target" 2>/dev/null; then
-        local tmp
-        tmp=$(mktemp)
-        awk -v sentinel="$sentinel" -v next_pat="<!-- SDD-TRAIT:" '
-          BEGIN { skip=0 }
-          $0 ~ sentinel { skip=1; next }
-          skip && $0 ~ next_pat { skip=0 }
-          !skip { print }
-        ' "$target" > "$tmp"
-        mv "$tmp" "$target"
-        echo "Cleaned up stale '$sentinel_trait' block from $target"
-      fi
+      # Check both old (SDD-TRAIT) and new (SPEX-TRAIT) markers
+      for marker_prefix in "SDD-TRAIT" "SPEX-TRAIT"; do
+        local sentinel="<!-- ${marker_prefix}:${sentinel_trait} -->"
+        if grep -q "$sentinel" "$target" 2>/dev/null; then
+          local tmp
+          tmp=$(mktemp)
+          awk -v sentinel="$sentinel" '
+            BEGIN { skip=0 }
+            $0 ~ sentinel { skip=1; next }
+            skip && /<!-- (SDD|SPEX)-TRAIT:/ { skip=0 }
+            !skip { print }
+          ' "$target" > "$tmp"
+          mv "$tmp" "$target"
+          echo "Cleaned up stale '$sentinel_trait' block from $target"
+        fi
+      done
     done
   done
 
@@ -540,9 +543,10 @@ do_apply() {
   local applied=0 skipped=0
 
   for i in "${!overlay_files[@]}"; do
-    local sentinel="<!-- SDD-TRAIT:${trait_names[$i]} -->"
+    local sentinel="<!-- SPEX-TRAIT:${trait_names[$i]} -->"
 
-    if grep -q "$sentinel" "${target_files[$i]}" 2>/dev/null; then
+    # Check for both old (SDD-TRAIT) and new (SPEX-TRAIT) markers
+    if grep -q "<!-- \(SDD\|SPEX\)-TRAIT:${trait_names[$i]} -->" "${target_files[$i]}" 2>/dev/null; then
       skipped=$((skipped + 1))
       continue
     fi

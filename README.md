@@ -72,7 +72,7 @@ cc-spex is built around traits. Instead of wrapping Spec-Kit commands with separ
 
 ### How It Works
 
-Each trait is a collection of small `.append.md` files. When you enable a trait, cc-spex appends these files to the corresponding Spec-Kit command files. A sentinel marker (an HTML comment like `<!-- SDD-TRAIT:superpowers -->`) prevents duplicate application. The process is idempotent: you can run it multiple times safely.
+Each trait is a collection of small `.append.md` files. When you enable a trait, cc-spex appends these files to the corresponding Spec-Kit command files. A sentinel marker (an HTML comment like `<!-- SPEX-TRAIT:superpowers -->`) prevents duplicate application. The process is idempotent: you can run it multiple times safely.
 
 When Spec-Kit updates wipe the command files (via `specify init --force`), running `/spex:init` reapplies all enabled trait overlays from scratch.
 

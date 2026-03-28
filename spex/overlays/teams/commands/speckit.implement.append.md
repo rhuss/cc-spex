@@ -1,5 +1,5 @@
 
-<!-- SDD-TRAIT:teams -->
+<!-- SPEX-TRAIT:teams -->
 ## Agent Teams: MANDATORY for Multi-Task Implementation
 
 **ENFORCEMENT**: This section is NON-NEGOTIABLE when implementing 2+ independent tasks.

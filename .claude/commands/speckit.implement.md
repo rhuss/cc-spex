@@ -198,7 +198,7 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
     - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 
-<!-- SDD-TRAIT:superpowers -->
+<!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gates for Implementation
 
 **Before implementation begins:**
@@ -210,7 +210,7 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
 2. Invoke {Skill: spex:verification-before-completion} for final verification
 
 
-<!-- SDD-TRAIT:teams -->
+<!-- SPEX-TRAIT:teams -->
 ## Agent Teams: MANDATORY for Multi-Task Implementation
 
 **ENFORCEMENT**: This section is NON-NEGOTIABLE when implementing 2+ independent tasks.

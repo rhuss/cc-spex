@@ -153,7 +153,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 - ERROR on gate failures or unresolved clarifications
 
 
-<!-- SDD-TRAIT:superpowers -->
+<!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gates for Planning
 
 **Before generating the plan:**
@@ -183,7 +183,7 @@ If any of these have NOT been run during this planning session, run them now bef
      in the spec directory for detailed review guidance
 
 
-<!-- SDD-TRAIT:teams -->
+<!-- SPEX-TRAIT:teams -->
 ## Agent Teams: Parallel Codebase Research for Planning
 
 When this trait is active, orchestrate the research phase of planning using

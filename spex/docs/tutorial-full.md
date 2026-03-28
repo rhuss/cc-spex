@@ -212,7 +212,7 @@ The spec PR flow is particularly useful for teams. After `/speckit.plan` complet
 
 ### How Traits Compose
 
-Traits are independent and can be enabled or disabled individually. Each trait uses sentinel markers (HTML comments like `<!-- SDD-TRAIT:superpowers -->`) in overlay files to prevent double-application. Enabling multiple traits stacks their additions on top of the base commands.
+Traits are independent and can be enabled or disabled individually. Each trait uses sentinel markers (HTML comments like `<!-- SPEX-TRAIT:superpowers -->`) in overlay files to prevent double-application. Enabling multiple traits stacks their additions on top of the base commands.
 
 ## Skill Lineage
 

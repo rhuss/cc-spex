@@ -1,7 +1,7 @@
 <!-- DEPRECATED: Replaced by spex/overlays/teams/commands/speckit.implement.append.md -->
 <!-- Use the consolidated 'teams' trait instead of 'teams-vanilla'. -->
 
-<!-- SDD-TRAIT:teams-vanilla -->
+<!-- SPEX-TRAIT:teams-vanilla -->
 ## Agent Teams: Parallel Implementation
 
 When this trait is active, orchestrate implementation using Claude Code Agent Teams

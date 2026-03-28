@@ -1,5 +1,5 @@
 
-<!-- SDD-TRAIT:teams -->
+<!-- SPEX-TRAIT:teams -->
 ## Agent Teams: Parallel Codebase Research for Planning
 
 When this trait is active, orchestrate the research phase of planning using

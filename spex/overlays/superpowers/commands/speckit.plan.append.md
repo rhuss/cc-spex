@@ -1,5 +1,5 @@
 
-<!-- SDD-TRAIT:superpowers -->
+<!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gates for Planning
 
 **Before generating the plan:**

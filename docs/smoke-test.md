@@ -44,7 +44,7 @@ Verify:
 - `.specify/` directory created (templates, scripts, config)
 - `.specify/spex-traits.json` shows `superpowers: true`
 - `.claude/commands/speckit.*.md` files exist
-- Overlay sentinels present: `grep SDD-TRAIT .claude/commands/speckit.*.md`
+- Overlay sentinels present: `grep SPEX-TRAIT .claude/commands/speckit.*.md`
 
 Restart Claude Code now (the init installs new commands that need a reload).
 

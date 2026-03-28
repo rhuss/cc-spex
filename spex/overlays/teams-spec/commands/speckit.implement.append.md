@@ -1,7 +1,7 @@
 <!-- DEPRECATED: Replaced by spex/overlays/teams/commands/speckit.implement.append.md -->
 <!-- Use the consolidated 'teams' trait instead of 'teams-spec'. -->
 
-<!-- SDD-TRAIT:teams-spec -->
+<!-- SPEX-TRAIT:teams-spec -->
 ## Spec Guardian: Lead Reviews, Teammates Implement
 
 When this trait is active, the lead acts as a **spec compliance guardian**.
