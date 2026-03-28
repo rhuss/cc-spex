@@ -132,9 +132,9 @@
 
 **Independent Test**: Create a test project with `.specify/sdd-traits.json`. Run `/spex:init`. Verify `spex-traits.json` is created with identical content.
 
-- [ ] T054 [US2] Add migration logic to `spex/scripts/spex-init.sh`: detect `.specify/sdd-traits.json`, copy to `.specify/spex-traits.json` if new file doesn't exist, print migration message
-- [ ] T055 [US2] Update `spex/scripts/spex-traits.sh` to check `spex-traits.json` first, fall back to `sdd-traits.json` for read-only access during transition
-- [ ] T056 [US2] Add `.spex-phase` / `.sdd-phase` transition awareness to `spex/scripts/spex-init.sh`: recognize old phase marker, write new one
+- [x] T054 [US2] Add migration logic to `spex/scripts/spex-init.sh`: detect `.specify/sdd-traits.json`, copy to `.specify/spex-traits.json` if new file doesn't exist, print migration message
+- [x] T055 [US2] Update `spex/scripts/spex-traits.sh` to check `spex-traits.json` first, fall back to `sdd-traits.json` for read-only access during transition
+- [x] T056 [US2] Add `.spex-phase` / `.sdd-phase` transition awareness to `spex/scripts/spex-init.sh`: recognize old phase marker, write new one
 
 **Checkpoint**: Migration works end-to-end. Old projects upgrade smoothly.
 
@@ -148,35 +148,35 @@
 
 ### Speckit Command Files
 
-- [ ] T057 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.implement.md`
-- [ ] T058 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.specify.md`
-- [ ] T059 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.plan.md`
+- [x] T057 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.implement.md`
+- [x] T058 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.specify.md`
+- [x] T059 [P] [US3] Update `{Skill: sdd:*}` to `{Skill: spex:*}` in `.claude/commands/speckit.plan.md`
 
 ### Build and Config Files
 
-- [ ] T060 [US3] Update `Makefile`: change `MARKETPLACE := sdd-plugin-development` to `spex-plugin-development`, `PLUGIN` variable, test command paths, `sdd/` directory refs to `spex/`
-- [ ] T061 [P] [US3] Update `.claude-plugin/marketplace.json`: change name `"sdd"` to `"spex"`, source `"./sdd"` to `"./spex"`, update URLs to `rhuss/cc-spex`
-- [ ] T062 [P] [US3] Update `.gitignore`: change `sdd/` path patterns to `spex/`, `.sdd-phase` to `.spex-phase`
+- [x] T060 [US3] Update `Makefile`: change `MARKETPLACE := sdd-plugin-development` to `spex-plugin-development`, `PLUGIN` variable, test command paths, `sdd/` directory refs to `spex/`
+- [x] T061 [P] [US3] Update `.claude-plugin/marketplace.json`: change name `"sdd"` to `"spex"`, source `"./sdd"` to `"./spex"`, update URLs to `rhuss/cc-spex`
+- [x] T062 [P] [US3] Update `.gitignore`: change `sdd/` path patterns to `spex/`, `.sdd-phase` to `.spex-phase`
 
 ### Project Documentation
 
-- [ ] T063 [US3] Update `CLAUDE.md`: project structure `sdd/` to `spex/`, command references, trait refs. Keep "SDD" methodology prose.
-- [ ] T064 [P] [US3] Update `README.md`: project name, command examples from `sdd:` to `spex:`
-- [ ] T065 [P] [US3] Update `TESTING.md`: test instructions from `sdd:` to `spex:`
+- [x] T063 [US3] Update `CLAUDE.md`: project structure `sdd/` to `spex/`, command references, trait refs. Keep "SDD" methodology prose.
+- [x] T064 [P] [US3] Update `README.md`: project name, command examples from `sdd:` to `spex:`
+- [x] T065 [P] [US3] Update `TESTING.md`: test instructions from `sdd:` to `spex:`
 
 ### Constitution and Memory
 
-- [ ] T066 [US3] Update `.specify/memory/constitution.md`: all `sdd:` prefix refs to `spex:`, `sdd/` path refs to `spex/`, `sdd-*.sh` to `spex-*.sh`, `sdd-traits.json` to `spex-traits.json`. Keep "SDD" as methodology name in titles and prose.
-- [ ] T067 [US3] Update memory files in `.claude/projects/.../memory/MEMORY.md` and individual memory files: tooling references from `sdd` to `spex`
+- [x] T066 [US3] Update `.specify/memory/constitution.md`: all `sdd:` prefix refs to `spex:`, `sdd/` path refs to `spex/`, `sdd-*.sh` to `spex-*.sh`, `sdd-traits.json` to `spex-traits.json`. Keep "SDD" as methodology name in titles and prose.
+- [x] T067 [US3] Update memory files in `.claude/projects/.../memory/MEMORY.md` and individual memory files: tooling references from `sdd` to `spex`
 
 ### Other Docs
 
-- [ ] T068 [P] [US3] Update `docs/smoke-test.md`: `sdd:` command refs to `spex:`
-- [ ] T069 [P] [US3] Update `docs/design.md`: `sdd` architecture refs to `spex`
-- [ ] T070 [P] [US3] Update `docs/plugin-schema.md`: `sdd` schema examples to `spex`
-- [ ] T071 [P] [US3] Update `docs/upstream-sync-strategy.md`: `sdd` sync refs to `spex`
-- [ ] T072 [P] [US3] Update `examples/todo-app/WALKTHROUGH.md`: `sdd:` command refs to `spex:`
-- [ ] T073 [P] [US3] Update `examples/todo-app/README.md`: `sdd:` command refs to `spex:`
+- [x] T068 [P] [US3] Update `docs/smoke-test.md`: `sdd:` command refs to `spex:`
+- [x] T069 [P] [US3] Update `docs/design.md`: `sdd` architecture refs to `spex`
+- [x] T070 [P] [US3] Update `docs/plugin-schema.md`: `sdd` schema examples to `spex`
+- [x] T071 [P] [US3] Update `docs/upstream-sync-strategy.md`: `sdd` sync refs to `spex`
+- [x] T072 [P] [US3] Update `examples/todo-app/WALKTHROUGH.md`: `sdd:` command refs to `spex:`
+- [x] T073 [P] [US3] Update `examples/todo-app/README.md`: `sdd:` command refs to `spex:`
 
 **Checkpoint**: `rg 'sdd:' --glob '!specs/**' --glob '!brainstorm/**' --glob '!CHANGELOG.md' .` returns zero command-prefix matches. Only "SDD" methodology prose remains.
 
@@ -188,7 +188,7 @@
 
 **Independent Test**: Old GitHub URL redirects. `make reinstall` works from new directory.
 
-- [ ] T074 [US4] Update all `rhuss/cc-sdd` URLs to `rhuss/cc-spex` in `spex/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `README.md`, and any other files with hardcoded repo URLs. Note: T004 and T061 update name/source fields in these same files; T074 specifically targets repository/homepage URL fields that should only change when the GitHub rename is imminent.
+- [x] T074 [US4] Update all `rhuss/cc-sdd` URLs to `rhuss/cc-spex` in `spex/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `README.md`, and any other files with hardcoded repo URLs. Note: T004 and T061 update name/source fields in these same files; T074 specifically targets repository/homepage URL fields that should only change when the GitHub rename is imminent.
 - [ ] T075 [US4] Rename GitHub repository via Settings: `rhuss/cc-sdd` to `rhuss/cc-spex` (manual action)
 - [ ] T076 [US4] Rename parent directory: `cc-superpowers-sdd` to `cc-superpowers-spex` (manual action)
 - [ ] T077 [US4] Update git remote URL if needed after repo rename
@@ -214,12 +214,12 @@
 
 **Purpose**: Final validation across all user stories
 
-- [ ] T082 Run automated verification: `rg 'sdd:' spex/` expects zero matches for command prefixes
-- [ ] T083 Run automated verification: `rg '<sdd-' spex/scripts/` expects zero matches for XML tags
-- [ ] T084 Run `make reinstall` and verify plugin loads with `/spex:*` commands
-- [ ] T085 Test `/spex:init` with old `sdd-traits.json` migration scenario
-- [ ] T086 Test `/spex:traits list` shows correct trait state
-- [ ] T087 Run a mini SDD workflow: `/spex:brainstorm`, verify skill delegation works
+- [x] T08 Run automated verification: `rg 'sdd:' spex/` expects zero matches for command prefixes
+- [x] T08 Run automated verification: `rg '<sdd-' spex/scripts/` expects zero matches for XML tags
+- [x] T08 Run `make reinstall` and verify plugin loads with `/spex:*` commands
+- [x] T08 Test `/spex:init` with old `sdd-traits.json` migration scenario
+- [x] T08 Test `/spex:traits list` shows correct trait state
+- [x] T08 Run a mini SDD workflow: `/spex:brainstorm`, verify skill delegation works
 
 ---
 
