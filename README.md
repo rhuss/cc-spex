@@ -50,7 +50,17 @@ flowchart TD
 1. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
 2. [Spec-Kit](https://github.com/github/spec-kit) installed (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git` or see their docs)
 
-**Install cc-spex:**
+**Install via Marketplace (recommended):**
+
+```bash
+# Add the marketplace (once)
+/plugin marketplace add rhuss/cc-rhuss-marketplace
+
+# Install the plugin
+/plugin install spex@cc-rhuss-marketplace
+```
+
+**Install from source:**
 
 ```bash
 git clone https://github.com/rhuss/cc-spex.git
