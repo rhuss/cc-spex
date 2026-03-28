@@ -42,15 +42,6 @@ flowchart TD
     Evolve -->|Update spec| Review
     Evolve -->|Fix code| Implement
 
-    style Start fill:#f5f5f5,stroke:#999
-    style Brainstorm fill:#e1f5ff,stroke:#0288d1
-    style Specify fill:#e1f5ff,stroke:#0288d1
-    style Review fill:#fff4e1,stroke:#f57c00
-    style Plan fill:#fff4e1,stroke:#f57c00
-    style Implement fill:#e8f5e9,stroke:#388e3c
-    style Verify fill:#fff4e1,stroke:#f57c00
-    style Evolve fill:#fce4ec,stroke:#c62828
-    style Done fill:#c8e6c9,stroke:#388e3c
 ```
 
 ## Quick Start
@@ -127,7 +118,7 @@ These are the commands you'll use day-to-day. The `/speckit.*` commands come fro
 | `/speckit.checklist` | Generate a quality validation checklist |
 | `/speckit.taskstoissues` | Convert tasks to GitHub issues |
 
-### SPEX Commands
+### Spex Commands
 
 These commands provide functionality beyond what Spec-Kit offers.
 
