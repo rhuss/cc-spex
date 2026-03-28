@@ -17,7 +17,7 @@ SDD builds on two upstream projects:
 
 ```bash
 cd /tmp
-mkdir sdd-smoke && cd sdd-smoke
+mkdir spex-smoke && cd spex-smoke
 git init
 echo "# SDD Smoke Test" > README.md
 git add README.md && git commit -m "Initial commit"
@@ -27,7 +27,7 @@ claude
 ## 2. Show the quick reference
 
 ```
-/sdd:help
+/spex:help
 ```
 
 You should see the workflow diagram, all spec-kit commands, trait descriptions, and the SDD command list.
@@ -35,14 +35,14 @@ You should see the workflow diagram, all spec-kit commands, trait descriptions, 
 ## 3. Initialize the project
 
 ```
-/sdd:init
+/spex:init
 ```
 
 Claude runs `specify init`, then asks you to pick traits and a permission level. For this test, enable the **superpowers** trait and choose **Standard** permissions.
 
 Verify:
 - `.specify/` directory created (templates, scripts, config)
-- `.specify/sdd-traits.json` shows `superpowers: true`
+- `.specify/spex-traits.json` shows `superpowers: true`
 - `.claude/commands/speckit.*.md` files exist
 - Overlay sentinels present: `grep SDD-TRAIT .claude/commands/speckit.*.md`
 
@@ -66,7 +66,7 @@ Verify:
 ## 5. Brainstorm a feature from a rough idea
 
 ```
-/sdd:brainstorm
+/spex:brainstorm
 ```
 
 Give Claude a vague idea:
@@ -83,7 +83,7 @@ Verify:
 ## 6. Review the spec
 
 ```
-/sdd:review-spec
+/spex:review-spec
 ```
 
 Claude reads the spec and checks it for completeness, clarity, implementability, and constitution alignment.
@@ -102,7 +102,7 @@ With the superpowers trait enabled, this command runs the full planning pipeline
 1. Spec review (pre-planning gate)
 2. Plan generation from the spec
 3. Task generation (`/speckit.tasks`)
-4. Plan review (`/sdd:review-plan`) producing `REVIEWERS.md`
+4. Plan review (`/spex:review-plan`) producing `REVIEWERS.md`
 5. Commits spec artifacts to a feature branch
 6. Offers to create a spec PR (accept or decline)
 
@@ -117,7 +117,7 @@ Verify:
 You already got an automatic plan review in step 7, but you can also run it manually:
 
 ```
-/sdd:review-plan
+/spex:review-plan
 ```
 
 Verify:
@@ -134,7 +134,7 @@ Verify:
 With the superpowers trait, Claude:
 1. Verifies the spec package exists (spec, plan, tasks)
 2. Implements using TDD (tests first, then code)
-3. Runs `/sdd:review-code` after implementation
+3. Runs `/spex:review-code` after implementation
 4. Runs verification (tests + spec compliance) before claiming completion
 
 Verify:
@@ -148,7 +148,7 @@ Verify:
 Run this independently to see the compliance check in isolation:
 
 ```
-/sdd:review-code
+/spex:review-code
 ```
 
 Verify:
@@ -163,7 +163,7 @@ Manually introduce a deviation. For example, edit the implementation to add a `-
 Then run:
 
 ```
-/sdd:evolve
+/spex:evolve
 ```
 
 Claude detects the mismatch and recommends either updating the spec (to accept the new flag) or removing the code (to match the spec). Pick one and let Claude restore alignment.
@@ -178,13 +178,13 @@ Verify:
 List current traits:
 
 ```
-/sdd:traits list
+/spex:traits list
 ```
 
 Disable the superpowers trait:
 
 ```
-/sdd:traits disable superpowers
+/spex:traits disable superpowers
 ```
 
 Claude warns about resetting spec-kit files and asks for confirmation. Confirm.
@@ -192,7 +192,7 @@ Claude warns about resetting spec-kit files and asks for confirmation. Confirm.
 Re-enable it:
 
 ```
-/sdd:traits enable superpowers
+/spex:traits enable superpowers
 ```
 
 Verify:
@@ -223,7 +223,7 @@ Generates a custom QA checklist for the feature.
 ## 14. Clean up
 
 ```bash
-rm -rf /tmp/sdd-smoke
+rm -rf /tmp/spex-smoke
 ```
 
 ## Quick pass vs full pass

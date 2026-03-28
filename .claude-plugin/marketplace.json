@@ -1,5 +1,5 @@
 {
-  "name": "sdd-plugin-development",
+  "name": "spex-plugin-development",
   "owner": {
     "name": "Roland Huss",
     "email": "rhuss@redhat.com"
@@ -9,16 +9,16 @@
   },
   "plugins": [
     {
-      "name": "sdd",
+      "name": "spex",
       "version": "1.0.0",
       "description": "Specification-Driven Development with Process Discipline for Claude Code",
       "author": {
         "name": "Roland Huss",
         "email": "rhuss@redhat.com"
       },
-      "source": "./sdd",
-      "homepage": "https://github.com/rhuss/cc-sdd",
-      "repository": "https://github.com/rhuss/cc-sdd.git"
+      "source": "./spex",
+      "homepage": "https://github.com/rhuss/cc-spex",
+      "repository": "https://github.com/rhuss/cc-spex.git"
     }
   ]
 }

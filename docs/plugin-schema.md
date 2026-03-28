@@ -1,6 +1,6 @@
 # Plugin Schema Extensions
 
-This document describes the schema used in `sdd/.claude-plugin/plugin.json` for the cc-sdd plugin.
+This document describes the schema used in `spex/.claude-plugin/plugin.json` for the cc-spex plugin.
 
 ## Standard Claude Code Fields
 
@@ -8,7 +8,7 @@ The plugin uses all standard Claude Code plugin.json fields as specified in the 
 
 ### Required Fields
 
-- **name**: `"cc-sdd"` - Unique plugin identifier (kebab-case)
+- **name**: `"cc-spex"` - Unique plugin identifier (kebab-case)
 - **version**: `"1.0.0"` - Semantic version string
 - **description**: Brief description of plugin purpose
 
@@ -36,7 +36,7 @@ The plugin uses all standard Claude Code plugin.json fields as specified in the 
     "name": "skill-name",
     "path": "skills/skill-name/SKILL.md",
     "description": "What the skill does",
-    "category": "workflow|core|sdd-specific|modified-core"
+    "category": "workflow|core|spex-specific|modified-core"
   }
   ```
 
@@ -57,7 +57,7 @@ The following fields extend the standard schema to provide additional functional
     "schema": {
       "type": "object",
       "properties": {
-        "sdd": {
+        "spex": {
           "type": "object",
           "properties": {
             "auto_update_spec": { ... },
@@ -74,23 +74,23 @@ The following fields extend the standard schema to provide additional functional
 
 **Available Settings**:
 
-#### sdd.auto_update_spec
+#### spex.auto_update_spec
 Controls automatic spec updates:
 - `enabled` (boolean, default: true) - Enable automatic spec updates
 - `threshold` (enum: "none"|"minor"|"moderate", default: "minor") - Update threshold
 - `notify` (boolean, default: true) - Notify user when auto-updates occur
 
-#### sdd.spec_kit
+#### spex.spec_kit
 Spec-kit CLI integration:
 - `enabled` (boolean, default: true) - Use spec-kit CLI if available
 - `path` (string, default: "specify") - Path to spec-kit binary
 
-#### sdd.constitution
+#### spex.constitution
 Constitution file settings:
 - `path` (string, default: ".specify/memory/constitution.md") - Path to constitution file
 - `required` (boolean, default: false) - Require constitution before spec work
 
-#### sdd.specs
+#### spex.specs
 Specification directory settings:
 - `directory` (string, default: "specs/features") - Directory for feature specifications
 - `format` (string, default: "markdown") - Specification file format
@@ -98,7 +98,7 @@ Specification directory settings:
 **Usage in .claude/settings.json**:
 ```json
 {
-  "sdd": {
+  "spex": {
     "auto_update_spec": {
       "enabled": true,
       "threshold": "minor"
@@ -222,7 +222,7 @@ The plugin uses a custom `category` field in skill definitions to organize skill
 - **core**: Entry skills that establish mandatory workflows
 - **workflow**: Main SDD workflow skills (brainstorm, spec, implement, evolve)
 - **modified-core**: Superpowers skills extended with SDD functionality
-- **sdd-specific**: Skills unique to specification-driven development
+- **spex-specific**: Skills unique to specification-driven development
 
 ## Schema Validation
 

@@ -45,7 +45,7 @@ discipline logic.
 - Each overlay file MUST be under 30 lines.
 - Overlays MUST contain a sentinel marker (`<!-- SDD-TRAIT:name -->`)
   for idempotent application.
-- Overlays MUST use `{Skill: sdd:skill-name}` references to invoke
+- Overlays MUST use `{Skill: spex:skill-name}` references to invoke
   behavior, not embed the behavior directly.
 - Overlays append to spec-kit command or template files. They do not
   replace content.
@@ -59,11 +59,11 @@ Traits MUST be independent and combinable. Enabling one trait MUST NOT
 break another.
 
 - Each trait operates through its own overlay directory
-  (`sdd/overlays/<trait>/`).
+  (`spex/overlays/<trait>/`).
 - Traits MUST NOT modify each other's overlay files.
 - Multiple overlays targeting the same command file coexist via
   sequential appending, each behind its own sentinel marker.
-- Trait enablement and disablement MUST go through `sdd-traits.sh`.
+- Trait enablement and disablement MUST go through `spex-traits.sh`.
   Direct file editing is not supported.
 - Rationale: Users enable traits based on their workflow needs.
   Independence ensures predictable behavior regardless of combination.
@@ -91,7 +91,7 @@ Tool and command names MUST follow established conventions exactly.
 - The CLI tool is `specify` (not speckit, not spec-kit).
 - The package is `specify-cli`.
 - Slash commands use the `/speckit.*` prefix (this is correct).
-- SDD skills use the `sdd:` prefix.
+- SDD skills use the `spex:` prefix.
 - Feature branches MUST match the pattern `NNN-feature-name`
   (three-digit prefix, hyphen, lowercase name).
 - Rationale: Naming inconsistency causes user confusion and breaks
@@ -104,7 +104,7 @@ Each skill MUST be self-contained with a clear, single purpose.
 
 - Skills MUST declare their purpose in frontmatter.
 - Skills MUST NOT duplicate logic that belongs in another skill.
-  Use `{Skill: sdd:other-skill}` for delegation.
+  Use `{Skill: spex:other-skill}` for delegation.
 - Infrastructure skills (spec-kit, init) handle setup.
   Workflow skills handle process. Review skills handle validation.
   These roles MUST NOT be mixed.
@@ -118,16 +118,16 @@ Each skill MUST be self-contained with a clear, single purpose.
 These constraints govern the structure of the SDD plugin codebase.
 
 - **Plugin root detection**: Commands extract `$PLUGIN_ROOT` from the
-  `<sdd-context>` system reminder injected by the `UserPromptSubmit`
+  `<spex-context>` system reminder injected by the `UserPromptSubmit`
   hook. Commands MUST include a "Step 0: Resolve Plugin Root" section.
 - **Hook filtering**: The context hook (`context-hook.py`) MUST only
-  fire for `/sdd:` prefixed commands. Non-SDD commands MUST NOT
+  fire for `/spex:` prefixed commands. Non-SDD commands MUST NOT
   receive SDD context injection.
-- **File organization**: Commands live in `sdd/commands/`, skills in
-  `sdd/skills/<name>/SKILL.md`, overlays in
-  `sdd/overlays/<trait>/{commands,templates}/`, scripts in
-  `sdd/scripts/`.
-- **Overlay application**: The `sdd-traits.sh apply` function handles
+- **File organization**: Commands live in `spex/commands/`, skills in
+  `spex/skills/<name>/SKILL.md`, overlays in
+  `spex/overlays/<trait>/{commands,templates}/`, scripts in
+  `spex/scripts/`.
+- **Overlay application**: The `spex-traits.sh apply` function handles
   all overlay application. It validates target files exist before
   appending, uses sentinel markers for idempotency, and reports
   applied vs. skipped counts.
@@ -166,7 +166,7 @@ Implementation plans SHOULD include a "Constitution Check" section.
   Larger governance changes SHOULD be discussed before applying.
 - **Violations** encountered during planning SHOULD be noted in the
   plan's "Complexity Tracking" table with brief justification.
-- **Compliance reviews** happen during `sdd:review-spec` and
-  `sdd:review-plan` invocations when those gates are used.
+- **Compliance reviews** happen during `spex:review-spec` and
+  `spex:review-plan` invocations when those gates are used.
 
 **Version**: 1.1.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-02-13

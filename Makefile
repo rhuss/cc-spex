@@ -1,11 +1,11 @@
 .PHONY: validate install uninstall reinstall check-upstream test-hook help
 
-MARKETPLACE := sdd-plugin-development
-PLUGIN := sdd@$(MARKETPLACE)
+MARKETPLACE := spex-plugin-development
+PLUGIN := spex@$(MARKETPLACE)
 
 validate:
 	claude plugin validate ./
-	claude plugin validate ./sdd/
+	claude plugin validate ./spex/
 
 install:
 	@# Add or update marketplace
@@ -32,11 +32,11 @@ reinstall: uninstall install
 
 test-hook:
 	@echo "Testing context-hook.py..."
-	@echo '{"prompt":"/sdd:init","session_id":"test","cwd":"/tmp","hook_event_name":"UserPromptSubmit"}' | \
-		python3 sdd/scripts/hooks/context-hook.py
+	@echo '{"prompt":"/spex:init","session_id":"test","cwd":"/tmp","hook_event_name":"UserPromptSubmit"}' | \
+		python3 spex/scripts/hooks/context-hook.py
 
 check-upstream:
-	cd sdd && ./scripts/check-upstream-changes.sh
+	cd spex && ./scripts/check-upstream-changes.sh
 
 help:
 	@echo "Available targets:"

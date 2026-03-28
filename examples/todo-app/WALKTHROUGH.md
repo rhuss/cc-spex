@@ -31,7 +31,7 @@ This document shows the step-by-step process of building the Todo CRUD feature u
 
 ### Step 2: Create Feature Spec
 
-**Command:** `/sdd:spec` (clear requirements, skipped brainstorming)
+**Command:** `/spex:spec` (clear requirements, skipped brainstorming)
 
 **Input:**
 ```
@@ -59,7 +59,7 @@ I need a REST API for todo CRUD operations:
 
 ### Step 3: Review Spec for Soundness
 
-**Command:** (Automatic via `/sdd:spec`, or manual `/sdd:review-spec`)
+**Command:** (Automatic via `/spex:spec`, or manual `/spex:review-spec`)
 
 **Checks:**
 - ✓ All sections complete
@@ -76,7 +76,7 @@ I need a REST API for todo CRUD operations:
 
 ### Step 4: Generate Implementation Plan
 
-**Command:** `/sdd:implement` → calls `/sdd:writing-plans`
+**Command:** `/spex:implement` → calls `/spex:writing-plans`
 
 **Process:**
 1. Read spec completely
@@ -100,7 +100,7 @@ I need a REST API for todo CRUD operations:
 
 ### Step 5: Implement with TDD
 
-**Command:** (Automatic via `/sdd:implement`, uses `test-driven-development`)
+**Command:** (Automatic via `/spex:implement`, uses `test-driven-development`)
 
 **For each requirement:**
 
@@ -148,7 +148,7 @@ router.get('/todos', async (req, res) => {
 
 ### Step 6: Code Review Against Spec
 
-**Command:** `/sdd:review-code`
+**Command:** `/spex:review-code`
 
 **Review Process:**
 1. Load spec: `specs/features/todo-crud.md`
@@ -172,7 +172,7 @@ Recommendation: Proceed to verification
 
 ### Step 7: Verification
 
-**Command:** `/sdd:verification-before-completion`
+**Command:** `/spex:verification-before-completion`
 
 **Verification Steps:**
 
@@ -228,7 +228,7 @@ All criteria met ✅
 - Adding `updated_at` timestamp would be helpful
 - Spec doesn't mention it
 
-**Command:** `/sdd:evolve`
+**Command:** `/spex:evolve`
 
 **Process:**
 

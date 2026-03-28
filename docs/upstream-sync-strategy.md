@@ -18,8 +18,8 @@ This plugin modifies 4 superpowers skills to add spec-awareness. We need a strat
 ### Files Involved
 
 ```
-cc-sdd/
-├── sdd/                           # Nested plugin directory
+cc-spex/
+├── spex/                           # Nested plugin directory
 │   ├── .superpowers-sync          # Tracking file (committed to git)
 │   ├── .claude/commands/
 │   │   └── update-superpowers.md  # Slash command for AI-assisted sync
@@ -55,11 +55,11 @@ cc-sdd/
 # Option A: Run via Makefile
 make check-upstream
 
-# Option B: Run helper script from sdd/
-cd sdd && ./scripts/check-upstream-changes.sh
+# Option B: Run helper script from spex/
+cd spex && ./scripts/check-upstream-changes.sh
 
 # Option C: Manual check
-cat sdd/.superpowers-sync | jq -r '.last_sync_commit'
+cat spex/.superpowers-sync | jq -r '.last_sync_commit'
 # Visit: https://github.com/obra/superpowers/commits/main
 # Compare against last_sync_commit
 ```
@@ -92,7 +92,7 @@ To sync, run: /update-superpowers
 
 ### 2. Run AI-Assisted Sync
 
-**In cc-sdd directory**, run:
+**In cc-spex directory**, run:
 
 ```bash
 /update-superpowers
@@ -120,13 +120,13 @@ To sync, run: /update-superpowers
 
 ```bash
 # Review changes
-git diff sdd/skills/
+git diff spex/skills/
 
 # Read through merged skills
-cat sdd/skills/writing-plans/SKILL.md
-cat sdd/skills/review-code/SKILL.md
-cat sdd/skills/verification-before-completion/SKILL.md
-cat sdd/skills/brainstorm/SKILL.md
+cat spex/skills/writing-plans/SKILL.md
+cat spex/skills/review-code/SKILL.md
+cat spex/skills/verification-before-completion/SKILL.md
+cat spex/skills/brainstorm/SKILL.md
 
 # Check sync report
 cat docs/sync-reports/sync-2025-12-01.md
@@ -206,12 +206,12 @@ Begin merge analysis.
       "key_sections_modified": [
         "Section name: what changed"
       ],
-      "sdd_additions": [
+      "spex_additions": [
         "New sections added for SDD"
       ]
     }
   },
-  "new_sdd_skills": ["list", "of", "sdd-only", "skills"],
+  "new_spex_skills": ["list", "of", "spex-only", "skills"],
   "referenced_skills": ["list", "of", "used-as-is", "skills"]
 }
 ```
@@ -262,16 +262,16 @@ After syncing, verify:
 1. **SDD sections present**:
    ```bash
    # Check for spec-first language
-   grep -n "spec" sdd/skills/writing-plans/SKILL.md
-   grep -n "compliance" sdd/skills/review-code/SKILL.md
-   grep -n "drift" sdd/skills/verification-before-completion/SKILL.md
+   grep -n "spec" spex/skills/writing-plans/SKILL.md
+   grep -n "compliance" spex/skills/review-code/SKILL.md
+   grep -n "drift" spex/skills/verification-before-completion/SKILL.md
    ```
 
 2. **No merge artifacts**:
    ```bash
-   grep -r "<<<<<<" sdd/skills/
-   grep -r ">>>>>>" sdd/skills/
-   grep -r "======" sdd/skills/
+   grep -r "<<<<<<" spex/skills/
+   grep -r ">>>>>>" spex/skills/
+   grep -r "======" spex/skills/
    ```
 
 3. **Consistency**:
@@ -281,7 +281,7 @@ After syncing, verify:
    - Confirm quality gates intact
 
 4. **Functionality** (manual):
-   - Try using `/sdd:implement` with a test spec
+   - Try using `/spex:implement` with a test spec
    - Verify it still generates plans from specs
    - Check review-code still does spec compliance
    - Confirm verification checks spec drift
@@ -349,13 +349,13 @@ Next steps:
 
 ## Troubleshooting
 
-### "This command only works in cc-sdd"
+### "This command only works in cc-spex"
 
 **Cause**: You're not in the plugin directory
 
 **Fix**:
 ```bash
-cd /path/to/cc-sdd
+cd /path/to/cc-spex
 /update-superpowers
 ```
 
@@ -421,7 +421,7 @@ Potential enhancements:
 ## References
 
 - Upstream: https://github.com/obra/superpowers
-- Plugin repo: https://github.com/rhuss/cc-sdd
-- Sync command: `sdd/.claude/commands/update-superpowers.md`
-- Check script: `sdd/scripts/check-upstream-changes.sh`
-- Tracking file: `sdd/.superpowers-sync`
+- Plugin repo: https://github.com/rhuss/cc-spex
+- Sync command: `spex/.claude/commands/update-superpowers.md`
+- Check script: `spex/scripts/check-upstream-changes.sh`
+- Tracking file: `spex/.superpowers-sync`

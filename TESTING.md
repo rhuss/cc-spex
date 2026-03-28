@@ -1,11 +1,11 @@
-# Testing Guide for cc-sdd
+# Testing Guide for cc-spex
 
-This document provides a comprehensive testing plan to validate that the cc-sdd plugin works as intended.
+This document provides a comprehensive testing plan to validate that the cc-spex plugin works as intended.
 
 ## Prerequisites
 
 - [ ] Claude Code installed and working
-- [ ] Plugin symlinked to `~/.claude/plugins/cc-sdd`
+- [ ] Plugin symlinked to `~/.claude/plugins/cc-spex`
 - [ ] Fresh Claude Code instance started
 - [ ] Test project available (existing or new)
 
@@ -15,14 +15,14 @@ This document provides a comprehensive testing plan to validate that the cc-sdd 
 
 **Step 1: Check plugin directory**
 ```bash
-ls -la ~/.claude/plugins/cc-sdd
+ls -la ~/.claude/plugins/cc-spex
 ```
 
 **Expected:** Symlink pointing to development directory
 
 **Step 2: Verify plugin structure**
 ```bash
-ls ~/.claude/plugins/cc-sdd/
+ls ~/.claude/plugins/cc-spex/
 ```
 
 **Expected output:**
@@ -32,12 +32,12 @@ Makefile
 README.md
 docs/
 examples/
-sdd/
+spex/
 ```
 
 **Step 3: Check plugin.json is valid**
 ```bash
-cat ~/.claude/plugins/cc-sdd/sdd/.claude-plugin/plugin.json | python3 -m json.tool
+cat ~/.claude/plugins/cc-spex/spex/.claude-plugin/plugin.json | python3 -m json.tool
 ```
 
 **Expected:** Valid JSON output with no errors
@@ -56,17 +56,17 @@ What SDD skills are available?
 ```
 
 **Expected:** List of all 12 skills:
-- sdd:using-superpowers
-- sdd:brainstorm
-- sdd:spec
-- sdd:implement
-- sdd:evolve
-- sdd:writing-plans
-- sdd:review-code
-- sdd:verification-before-completion
-- sdd:review-spec
-- sdd:spec-refactoring
-- sdd:spec-kit
+- spex:using-superpowers
+- spex:brainstorm
+- spex:spec
+- spex:implement
+- spex:evolve
+- spex:writing-plans
+- spex:review-code
+- spex:verification-before-completion
+- spex:review-spec
+- spex:spec-refactoring
+- spex:spec-kit
 
 ---
 
@@ -94,7 +94,7 @@ What SDD skills are available?
 **Objective:** Verify skills are discoverable and invokable
 
 **Steps:**
-1. Ask: `Show me how to use /sdd:brainstorm`
+1. Ask: `Show me how to use /spex:brainstorm`
 
 **Expected:**
 - [ ] Skill purpose explained
@@ -159,7 +159,7 @@ Standards: ESLint, Prettier
 **Objective:** Create spec from rough idea using brainstorming
 
 **Steps:**
-1. Invoke: `/sdd:brainstorm`
+1. Invoke: `/spex:brainstorm`
 2. Provide rough idea: "I want to add user authentication to the app"
 3. Answer questions as they're asked
 4. Verify spec created
@@ -186,7 +186,7 @@ Record any unclear questions or workflow issues.
 **Objective:** Create spec directly from clear requirements
 
 **Steps:**
-1. Invoke: `/sdd:spec`
+1. Invoke: `/spex:spec`
 2. Provide clear requirements:
    ```
    Create a spec for a REST API endpoint:
@@ -214,7 +214,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Create a spec (via brainstorm or direct)
-2. Invoke: `/sdd:review-spec` or ask: "Review the spec for soundness"
+2. Invoke: `/spex:review-spec` or ask: "Review the spec for soundness"
 3. Review the feedback
 
 **Expected:**
@@ -245,7 +245,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Ensure spec exists and is validated
-2. Invoke: `/sdd:implement` or ask: "Create implementation plan from spec"
+2. Invoke: `/spex:implement` or ask: "Create implementation plan from spec"
 3. Observe plan generation
 
 **Expected:**
@@ -309,7 +309,7 @@ Record any unclear questions or workflow issues.
 **Steps:**
 1. Create a spec with specific requirement (e.g., "Return 422 for validation errors")
 2. Describe implementation that differs (e.g., "Code returns 400 instead of 422")
-3. Invoke: `/sdd:evolve` or ask: "There's a mismatch between spec and code"
+3. Invoke: `/spex:evolve` or ask: "There's a mismatch between spec and code"
 
 **Expected:**
 - [ ] Mismatch detected and described
@@ -358,7 +358,7 @@ Record any unclear questions or workflow issues.
 1. Create `.claude/settings.json` with:
    ```json
    {
-     "sdd": {
+     "spex": {
        "auto_update_spec": {
          "enabled": true,
          "threshold": "minor",
@@ -388,7 +388,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Provide spec and implementation code
-2. Invoke: `/sdd:review-code`
+2. Invoke: `/spex:review-code`
 3. Review compliance report
 
 **Expected:**
@@ -414,7 +414,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Describe implementation state (tests + spec compliance)
-2. Invoke: `/sdd:verification-before-completion`
+2. Invoke: `/spex:verification-before-completion`
 3. Review verification report
 
 **Expected:**
@@ -439,7 +439,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Create spec with some redundancy or inconsistency
-2. Invoke: `/sdd:spec-refactoring`
+2. Invoke: `/spex:spec-refactoring`
 3. Review refactored spec
 
 **Expected:**
@@ -481,7 +481,7 @@ Record any unclear questions or workflow issues.
 **Prerequisites:** spec-kit installed (`which specify` succeeds)
 
 **Steps:**
-1. Create spec using `/sdd:spec`
+1. Create spec using `/spex:spec`
 2. Observe if spec-kit is used
 
 **Expected:**
@@ -501,7 +501,7 @@ Record any unclear questions or workflow issues.
 **Prerequisites:** spec-kit not installed
 
 **Steps:**
-1. Create spec using `/sdd:spec`
+1. Create spec using `/spex:spec`
 2. Observe fallback behavior
 
 **Expected:**
@@ -521,7 +521,7 @@ Record any unclear questions or workflow issues.
 **Objective:** Verify TodoWrite used for skill checklists
 
 **Steps:**
-1. Invoke skill with checklist (e.g., `/sdd:implement`)
+1. Invoke skill with checklist (e.g., `/spex:implement`)
 2. Observe TodoWrite usage
 
 **Expected:**
@@ -560,12 +560,12 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Start with rough idea
-2. `/sdd:brainstorm` → create spec
-3. `/sdd:review-spec` → validate spec
-4. `/sdd:implement` → generate plan
+2. `/spex:brainstorm` → create spec
+3. `/spex:review-spec` → validate spec
+4. `/spex:implement` → generate plan
 5. Describe implementation
-6. `/sdd:review-code` → check compliance
-7. `/sdd:verification-before-completion` → verify complete
+6. `/spex:review-code` → check compliance
+7. `/spex:verification-before-completion` → verify complete
 
 **Expected:**
 - [ ] Smooth progression through all phases
@@ -624,7 +624,7 @@ Record any unclear questions or workflow issues.
 
 **Steps:**
 1. Present spec and code with major differences
-2. Invoke `/sdd:evolve`
+2. Invoke `/spex:evolve`
 
 **Expected:**
 - [ ] Severity correctly identified as major

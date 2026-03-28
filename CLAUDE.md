@@ -1,16 +1,18 @@
-# cc-sdd Development Guidelines
+# cc-spex Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-12
+Auto-generated from all feature plans. Last updated: 2026-03-27
 
 ## Active Technologies
 - Bash (POSIX-compatible), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep`/`rg` (sentinel detection)
-- JSON (`.specify/sdd-traits.json`), Markdown files
-- Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `sdd-traits.sh`, Claude Code Agent Teams
+- JSON (`.specify/spex-traits.json`), Markdown files
+- Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `spex-traits.sh`, Claude Code Agent Teams
+- Bash (POSIX-compatible), Python 3 (hooks), Markdown (commands/skills) + `jq` (JSON parsing), `specify` CLI (spec-kit), Claude Code plugin system (008-rename-to-cc-spex)
+- File-based (JSON config, Markdown documents) (008-rename-to-cc-spex)
 
 ## Project Structure
 
 ```text
-sdd/
+spex/
   commands/        # Slash command definitions
   skills/          # Skill prompt files
   overlays/        # Trait overlay files
@@ -32,3 +34,6 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
+
+## Recent Changes
+- 008-rename-to-cc-spex: Added Bash (POSIX-compatible), Python 3 (hooks), Markdown (commands/skills) + `jq` (JSON parsing), `specify` CLI (spec-kit), Claude Code plugin system

@@ -159,11 +159,11 @@ After understanding this example:
 
 1. **Try it yourself**: Create a small feature using this workflow
 2. **Adapt the templates**: Use the constitution and spec as starting points
-3. **Practice the skills**: Use `/sdd:brainstorm`, `/sdd:spec`, `/sdd:implement`
-4. **Experience evolution**: When code diverges from spec, use `/sdd:evolve`
+3. **Practice the skills**: Use `/spex:brainstorm`, `/spex:spec`, `/spex:implement`
+4. **Experience evolution**: When code diverges from spec, use `/spex:evolve`
 
 ## Resources
 
 - Full SDD documentation: `../../README.md`
-- Skill reference: `../../sdd/skills/`
+- Skill reference: `../../spex/skills/`
 - Design documentation: `../../docs/design.md`

@@ -3,7 +3,7 @@
 .claude/history/
 .claude/*.json
 .claude/settings.local.json
-sdd/.claude/settings.local.json
+spex/.claude/settings.local.json
 # BUT: Keep .claude/commands/ for plugin maintenance commands
 
 # Editor swap files
@@ -61,7 +61,7 @@ build/
 *.log
 
 # SDD transient phase marker
-.specify/.sdd-phase
+.specify/.spex-phase
 
 # Sync-related temporary files
 skills/**/SKILL.md.proposed

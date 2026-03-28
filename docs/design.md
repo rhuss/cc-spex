@@ -21,7 +21,7 @@ A Claude Code plugin that merges superpowers' process discipline with specificat
 ```
 User Request
      ↓
-Phase-Specific Entry Point (/sdd:brainstorm, /sdd:spec, /sdd:implement, /sdd:evolve)
+Phase-Specific Entry Point (/spex:brainstorm, /spex:spec, /spex:implement, /spex:evolve)
      ↓
 Superpowers-SDD Skill (workflow + validation + checklists)
      ↓
@@ -32,25 +32,25 @@ Implementation (with TDD, code review, verification gates)
 
 ## Workflow Phases
 
-### 1. Brainstorm Phase (`sdd:brainstorm`)
+### 1. Brainstorm Phase (`spex:brainstorm`)
 - Starting point: Rough idea
 - Process: Collaborative dialogue to refine concept
 - Output: Formal spec created via `specify specify`
 - Recommendation: Suggests constitution if none exists
 
-### 2. Spec Phase (`sdd:spec`)
+### 2. Spec Phase (`spex:spec`)
 - Starting point: Clear idea, need formal spec
 - Process: Interactive spec creation with validation
 - Output: Spec file with soundness validation
 - Validation: Auto-validates against constitution if present
 
-### 3. Implementation Phase (`sdd:implement`)
+### 3. Implementation Phase (`spex:implement`)
 - Starting point: Spec exists and validated
 - Process: Plan → TDD → Code Review → Verify
 - Key difference: Plans generated FROM spec, not from scratch
 - Verification: Includes spec compliance checking
 
-### 4. Evolution Phase (`sdd:evolve`)
+### 4. Evolution Phase (`spex:evolve`)
 - Starting point: Code/spec mismatch detected
 - Process: AI analyzes, recommends, user decides
 - Options: Update spec, fix code, or clarify spec
@@ -60,39 +60,39 @@ Implementation (with TDD, code review, verification gates)
 
 ### Phase Entry Points
 
-**`sdd:brainstorm`** - Modified `superpowers:brainstorming`
+**`spex:brainstorm`** - Modified `superpowers:brainstorming`
 - Guides collaborative refinement
 - Outputs spec instead of design doc
 - Recommends constitution creation
 
-**`sdd:spec`** - Direct spec creation
+**`spex:spec`** - Direct spec creation
 - Bypasses brainstorming for clear requirements
 - Interactive spec authoring
 - Calls spec-kit CLI validation
 
-**`sdd:implement`** - Spec-to-code workflow
+**`spex:implement`** - Spec-to-code workflow
 - Generates plan from spec
 - Applies TDD during implementation
 - Validates code-to-spec compliance
 
-**`sdd:evolve`** - Spec/code reconciliation
+**`spex:evolve`** - Spec/code reconciliation
 - Detects divergence
 - AI-recommended resolution
 - Configurable automation
 
 ### Modified Core Skills
 
-**`sdd:writing-plans`** - Plan generation from specs
+**`spex:writing-plans`** - Plan generation from specs
 - Input: Spec file (not blank slate)
 - Output: Implementation tasks with file paths
 - Validation: Plan completeness against spec
 
-**`sdd:review-code`** - Code-to-spec review
+**`spex:review-code`** - Code-to-spec review
 - Checks spec compliance
 - Reports: compliance score + mismatches
 - Triggers evolution workflow if needed
 
-**`sdd:verification-before-completion`** - Extended verification
+**`spex:verification-before-completion`** - Extended verification
 - Step 1: Run tests (existing)
 - Step 2: Validate spec compliance (new)
 - Step 3: Check for spec drift (new)
@@ -100,22 +100,22 @@ Implementation (with TDD, code review, verification gates)
 
 ### New SDD-Specific Skills
 
-**`sdd:review-spec`** - Spec soundness review
+**`spex:review-spec`** - Spec soundness review
 - Validates structure and clarity
 - Checks implementability
 - Identifies ambiguities and gaps
 
-**`sdd:spec-refactoring`** - Spec consolidation
+**`spex:spec-refactoring`** - Spec consolidation
 - For organically grown specs
 - Identifies inconsistencies
 - Maintains feature coverage
 
-**`sdd:spec-kit`** - CLI wrapper
+**`spex:spec-kit`** - CLI wrapper
 - Intelligent delegation to spec-kit
 - TodoWrite integration
 - Error handling with context
 
-**`sdd:using-superpowers`** - Entry skill
+**`spex:using-superpowers`** - Entry skill
 - Mandatory workflow establishment
 - Skill discovery and usage
 - Process enforcement
@@ -147,7 +147,7 @@ These work as-is, referenced by SDD skills:
 ### Configuration
 ```json
 {
-  "sdd": {
+  "spex": {
     "auto_update_spec": {
       "enabled": true,
       "threshold": "minor",
@@ -169,10 +169,10 @@ These work as-is, referenced by SDD skills:
 ## Repository Structure
 
 ```
-cc-sdd/
+cc-spex/
 ├── README.md                          # In-depth guide with examples
 ├── Makefile                           # Build and install targets
-├── sdd/                               # Nested plugin directory
+├── spex/                               # Nested plugin directory
 │   ├── .claude-plugin/
 │   │   └── plugin.json
 │   ├── skills/
@@ -258,7 +258,7 @@ cc-sdd/
 
 ## Next Steps
 
-1. Create GitHub repository: `rhuss/cc-sdd`
+1. Create GitHub repository: `rhuss/cc-spex`
 2. Implement all skill files
 3. Create comprehensive README with practical examples
 4. Build example todo-app demonstrating full workflow

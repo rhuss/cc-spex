@@ -1,4 +1,4 @@
-# cc-sdd
+# cc-spex
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -8,13 +8,13 @@
 
 > Extend Spec-Kit with composable traits and additional workflow commands for Claude Code.
 
-## Why cc-sdd?
+## Why cc-spex?
 
-[Spec-Kit](https://github.com/github/spec-kit) is a great foundation for specification-driven development. cc-sdd is a Claude Code plugin that stays as close to upstream Spec-Kit as possible while adding orthogonal features through **traits**, a composable overlay mechanism similar to aspect-oriented programming for Claude Code plugins.
+[Spec-Kit](https://github.com/github/spec-kit) is a great foundation for specification-driven development. cc-spex is a Claude Code plugin that stays as close to upstream Spec-Kit as possible while adding orthogonal features through **traits**, a composable overlay mechanism similar to aspect-oriented programming for Claude Code plugins.
 
 Each trait injects cross-cutting behavior into Spec-Kit's existing commands without modifying them. Quality gates, git worktree isolation, parallel agent execution: these concerns live outside the core workflow. Traits let you opt into them selectively, and Spec-Kit's commands remain the same underneath.
 
-cc-sdd also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. The workflow diagram below is a guide, not an automated pipeline. You call each step yourself, in the order that fits your situation.
+cc-spex also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. The workflow diagram below is a guide, not an automated pipeline. You call each step yourself, in the order that fits your situation.
 
 ## Workflow
 
@@ -22,19 +22,19 @@ cc-sdd also adds its own commands for things Spec-Kit doesn't cover, like intera
 flowchart TD
     Start([Idea]) --> HasClarity{Clear<br>requirements?}
 
-    HasClarity -->|Not yet| Brainstorm["/sdd:brainstorm<br>Refine idea"]
+    HasClarity -->|Not yet| Brainstorm["/spex:brainstorm<br>Refine idea"]
     HasClarity -->|Yes| Specify["/speckit.specify<br>Create spec"]
 
     Brainstorm --> Specify
 
-    Specify --> Review["/sdd:review-spec<br>Validate spec"]
+    Specify --> Review["/spex:review-spec<br>Validate spec"]
     Review --> Plan["/speckit.plan<br>Generate plan + tasks"]
     Plan --> Implement["/speckit.implement<br>Build with TDD"]
 
     Implement --> Verify{Tests pass?<br>Spec compliant?}
 
     Verify -->|Yes| Done([Complete])
-    Verify -->|Drift detected| Evolve["/sdd:evolve<br>Reconcile"]
+    Verify -->|Drift detected| Evolve["/spex:evolve<br>Reconcile"]
 
     Evolve -->|Update spec| Review
     Evolve -->|Fix code| Implement
@@ -56,31 +56,31 @@ flowchart TD
 1. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
 2. [Spec-Kit](https://github.com/github/spec-kit) installed (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git` or see their docs)
 
-**Install cc-sdd:**
+**Install cc-spex:**
 
 ```bash
-git clone https://github.com/rhuss/cc-sdd.git
-cd cc-sdd
+git clone https://github.com/rhuss/cc-spex.git
+cd cc-spex
 make install
 ```
 
 **Initialize your project:**
 
 ```
-/sdd:init
+/spex:init
 ```
 
 This runs Spec-Kit's `specify init`, asks which traits to enable, and configures permission auto-approval. After initialization, your selected traits extend all `/speckit.*` commands.
 
 ## The Traits System
 
-cc-sdd is built around traits. Instead of wrapping Spec-Kit commands with separate `/sdd:*` versions, traits modify the commands directly by appending overlay content.
+cc-spex is built around traits. Instead of wrapping Spec-Kit commands with separate `/spex:*` versions, traits modify the commands directly by appending overlay content.
 
 ### How It Works
 
-Each trait is a collection of small `.append.md` files. When you enable a trait, cc-sdd appends these files to the corresponding Spec-Kit command files. A sentinel marker (an HTML comment like `<!-- SDD-TRAIT:superpowers -->`) prevents duplicate application. The process is idempotent: you can run it multiple times safely.
+Each trait is a collection of small `.append.md` files. When you enable a trait, cc-spex appends these files to the corresponding Spec-Kit command files. A sentinel marker (an HTML comment like `<!-- SDD-TRAIT:superpowers -->`) prevents duplicate application. The process is idempotent: you can run it multiple times safely.
 
-When Spec-Kit updates wipe the command files (via `specify init --force`), running `/sdd:init` reapplies all enabled trait overlays from scratch.
+When Spec-Kit updates wipe the command files (via `specify init --force`), running `/spex:init` reapplies all enabled trait overlays from scratch.
 
 ### Available Traits
 
@@ -94,17 +94,17 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 
 **`worktrees`** adds git worktree isolation for feature development:
 - `/speckit.specify` creates a sibling worktree for the feature branch and restores `main` in the original repo
-- `/sdd:worktree` lists active worktrees or cleans up merged ones
+- `/spex:worktree` lists active worktrees or cleans up merged ones
 
 ### Managing Traits
 
 ```
-/sdd:traits list                  # Show which traits are active
-/sdd:traits enable superpowers    # Enable a trait
-/sdd:traits disable superpowers   # Disable a trait
+/spex:traits list                  # Show which traits are active
+/spex:traits enable superpowers    # Enable a trait
+/spex:traits disable superpowers   # Disable a trait
 ```
 
-Trait configuration is stored in `.specify/sdd-traits.json`, which survives Spec-Kit updates.
+Trait configuration is stored in `.specify/spex-traits.json`, which survives Spec-Kit updates.
 
 ## Commands Reference
 
@@ -124,25 +124,25 @@ These are the commands you'll use day-to-day. The `/speckit.*` commands come fro
 | `/speckit.checklist` | Generate a quality validation checklist |
 | `/speckit.taskstoissues` | Convert tasks to GitHub issues |
 
-### SDD Commands
+### SPEX Commands
 
 These commands provide functionality beyond what Spec-Kit offers.
 
 | Command | Purpose |
 |---------|---------|
-| `/sdd:init` | Initialize Spec-Kit, select traits, configure permissions |
-| `/sdd:brainstorm` | Refine a rough idea into a spec through dialogue |
-| `/sdd:evolve` | Reconcile spec/code drift with guided resolution |
-| `/sdd:review-spec` | Validate a spec for soundness, completeness, and clarity |
-| `/sdd:review-code` | Review code against its spec for compliance |
-| `/sdd:review-plan` | Review a plan for feasibility and spec alignment |
-| `/sdd:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
-| `/sdd:traits` | Enable, disable, or list active traits |
-| `/sdd:help` | Show a quick reference for all commands |
+| `/spex:init` | Initialize Spec-Kit, select traits, configure permissions |
+| `/spex:brainstorm` | Refine a rough idea into a spec through dialogue |
+| `/spex:evolve` | Reconcile spec/code drift with guided resolution |
+| `/spex:review-spec` | Validate a spec for soundness, completeness, and clarity |
+| `/spex:review-code` | Review code against its spec for compliance |
+| `/spex:review-plan` | Review a plan for feasibility and spec alignment |
+| `/spex:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
+| `/spex:traits` | Enable, disable, or list active traits |
+| `/spex:help` | Show a quick reference for all commands |
 
 ## Acknowledgements
 
-cc-sdd builds on two projects:
+cc-spex builds on two projects:
 
 - **[Superpowers](https://github.com/obra/superpowers)** by Jesse Vincent, which provides quality gates and verification workflows for Claude Code.
 - **[Spec-Kit](https://github.com/github/spec-kit)** by GitHub, which provides specification-driven development templates and the `specify` CLI.
