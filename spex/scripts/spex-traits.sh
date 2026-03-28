@@ -14,8 +14,8 @@
 #
 # Permission levels:
 #   none       - No auto-approvals (confirm every command)
-#   standard   - Auto-approve SPEX plugin scripts
-#   yolo       - Auto-approve SPEX scripts + specify CLI
+#   standard   - Auto-approve spex plugin scripts
+#   yolo       - Auto-approve spex scripts + specify CLI
 #
 # Must be run from the project root (where .specify/ and .claude/ exist).
 #
@@ -581,7 +581,7 @@ ensure_settings() {
   fi
 }
 
-# Remove all SPEX-managed patterns from the allow list
+# Remove all spex-managed patterns from the allow list
 remove_spex_patterns() {
   local tmp
   tmp=$(mktemp)
@@ -590,7 +590,7 @@ remove_spex_patterns() {
       .permissions.allow = [
         .permissions.allow[] |
         select(
-          # SPEX script patterns
+          # spex script patterns
           (test("spex-init\\.sh|spex-traits\\.sh|^Bash\\(specify ") | not)
           and
           # YOLO broad patterns (exact matches only)
@@ -651,7 +651,7 @@ do_permissions() {
       echo ""
       echo "Levels:"
       echo "  none       No auto-approvals (confirm every command)"
-      echo "  standard   Auto-approve SPEX plugin scripts"
+      echo "  standard   Auto-approve spex plugin scripts"
       echo "  yolo       Auto-approve all tools (Bash, Read, Edit, Write, MCP, specify)"
       ;;
     none)
@@ -660,7 +660,7 @@ do_permissions() {
       before=$(detect_permission_level)
       remove_spex_patterns
       echo "Auto-approval set to: none"
-      echo "All SPEX commands will require confirmation."
+      echo "All spex commands will require confirmation."
       [ "$before" != "none" ] && echo "CHANGED" || true
       ;;
     standard)
@@ -682,7 +682,7 @@ do_permissions() {
       remove_spex_patterns
       add_spex_patterns "$SPEX_PATTERN_INIT" "$SPEX_PATTERN_TRAITS" "$SPEX_PATTERN_SPECIFY" "${SPEX_YOLO_EXTRAS[@]}"
       echo "Auto-approval set to: yolo"
-      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, SPEX scripts."
+      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, spex scripts."
       [ "$before" != "yolo" ] && echo "CHANGED" || true
       ;;
     *)

@@ -109,7 +109,7 @@ def main():
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                "SPEX VERIFICATION REMINDER: Verification has not been run this session. "
+                "spex verification reminder: Verification has not been run this session. "
                 "Consider running /spex:verify first, or confirm with the user that "
                 "they want to proceed without verification."
             )

@@ -7,5 +7,5 @@
   "offline": false,
   "preset": null,
   "script": "sh",
-  "speckit_version": "0.3.2"
+  "speckit_version": "0.4.3"
 }

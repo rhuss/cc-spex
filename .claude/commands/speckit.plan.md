@@ -196,5 +196,3 @@ that a restart is needed.
 
 **Execution**: Delegate to {Skill: spex:teams-research} for research topic
 identification, agent spawning, findings consolidation, and plan generation.
-
-

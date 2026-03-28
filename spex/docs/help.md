@@ -59,7 +59,7 @@ BUILT ON
                                 scoring, drift detection, evolution
 
 
-SPEX TRAITS (quality gates for spec-kit commands)
+spex TRAITS (quality gates for spec-kit commands)
 
   Traits inject automated quality gates into the spec-kit workflow.
   Enable them with /spex:init or /spex:traits enable <trait>.
@@ -82,7 +82,7 @@ SPEX TRAITS (quality gates for spec-kit commands)
     /spex:worktree     → list active worktrees, cleanup merged ones
 
 
-SPEX COMMANDS (helpers and configuration)
+spex COMMANDS (helpers and configuration)
 
   /spex:init           Initialize spec-kit + configure traits and permissions
   /spex:traits         Enable/disable traits (superpowers, teams, worktrees)
@@ -103,5 +103,5 @@ COMMON MISTAKES (do NOT use these)
   /spex:tasks     ✗  Does not exist → use /speckit.tasks
   /spex:implement ✗  Does not exist → use /speckit.implement
 
-  Rule: SPEX commands are helpers (brainstorm, review, evolve).
+  Rule: spex commands are helpers (brainstorm, review, evolve).
         Spec-kit commands are the workflow (specify, plan, implement).

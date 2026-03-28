@@ -29,7 +29,7 @@ These commands DO NOT EXIST. They will fail with "Unknown skill". When proposing
 - To generate tasks: `/speckit.tasks` (NOT `/spex:tasks`)
 - To implement: `/speckit.implement` (NOT `/spex:implement`)
 
-SPEX namespace only has: brainstorm, review-*, evolve, traits, init, help.
+spex namespace only has: brainstorm, review-*, evolve, traits, init, help.
 All spec workflow commands live in the `speckit.*` namespace.
 </HARD-GATE>
 

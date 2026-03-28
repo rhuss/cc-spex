@@ -41,15 +41,15 @@ Then continue to Step 2.
 
 You MUST ask the user these two questions using AskUserQuestion before doing anything else:
 
-1. (`multiSelect: true`, header: "Traits"): "Which SPEX traits do you want to enable?"
+1. (`multiSelect: true`, header: "Traits"): "Which spex traits do you want to enable?"
    - "superpowers": "Quality gates on speckit commands (review-spec, review-code, verification)"
    - "teams": "Parallel implementation with spec guardian review via Claude Code Agent Teams (experimental, requires: superpowers)"
    - "worktrees": "Git worktree isolation after speckit.specify (creates sibling worktree, restores main)"
 
-2. (`multiSelect: false`, header: "Permissions"): "How should SPEX commands handle permission prompts?"
-   - "Standard (Recommended)": "Auto-approve SPEX plugin scripts (spex-init.sh, spex-traits.sh)"
+2. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
+   - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, spex-traits.sh)"
    - "YOLO": "Auto-approve everything: Bash, Read, Edit, Write, MCP, specify CLI"
-   - "None": "Confirm every SPEX command before execution"
+   - "None": "Confirm every spex command before execution"
 
 Then apply using `<spex-traits-command>` from `<spex-context>`:
 
