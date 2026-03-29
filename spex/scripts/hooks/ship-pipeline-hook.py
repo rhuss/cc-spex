@@ -27,7 +27,7 @@ STAGE_SKILLS = {
     4: "speckit.tasks",
     5: "spex:review-plan",
     6: "speckit.implement",
-    7: "spex:deep-review",
+    7: "spex:review-code",
     8: "spex:verification-before-completion",
 }
 
@@ -39,7 +39,7 @@ STAGE_NAMES = {
     4: "tasks",
     5: "review-plan",
     6: "implement",
-    7: "deep-review",
+    7: "review-code",
     8: "verify",
 }
 

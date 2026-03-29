@@ -138,11 +138,11 @@ ERROR: Cannot specify a brainstorm file with --resume. The brainstorm file is re
 
 ### Valid Stage Names for --start-from
 
-The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `deep-review`, `verify`.
+The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `verify`.
 
 If an invalid stage name is provided, fail with:
 ```
-ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, deep-review, verify
+ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, verify
 ```
 
 ## Brainstorm File Resolution
@@ -281,7 +281,7 @@ When `--start-from <stage>` is set:
 
 ### Rule 1: Every stage runs, in order, no exceptions
 
-When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify.
+When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, verify.
 
 You MUST NOT:
 - Skip a stage because its output artifact already exists
@@ -315,7 +315,7 @@ If a stage fails or is interrupted, the pipeline MUST NOT silently proceed to th
 Do NOT apply "smart" behavior to the pipeline flow itself:
 - Do NOT decide that a brainstorm file is "clear enough" to skip clarify
 - Do NOT decide that a spec is "simple enough" to skip review-spec
-- Do NOT decide that implementation is "straightforward enough" to skip deep-review
+- Do NOT decide that implementation is "straightforward enough" to skip review-code
 - Do NOT skip verify because all prior reviews passed
 
 The `--ask` flag controls oversight within review stages (how findings are handled). It does NOT control which stages run. ALL stages run regardless of the ask level.
@@ -333,7 +333,7 @@ The pipeline executes 9 stages in fixed order:
 | 4 | `tasks` | `/speckit.tasks` | Generate task breakdown |
 | 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEWERS.md |
 | 6 | `implement` | `/speckit.implement` | Execute implementation |
-| 7 | `deep-review` | `{Skill: spex:deep-review}` | Multi-perspective code review |
+| 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEWERS.md update |
 | 8 | `verify` | `{Skill: spex:verification-before-completion}` | Final verification |
 
 ### Stage 0: Specify (ALWAYS runs unless --start-from or --resume skips it)
@@ -404,15 +404,15 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 3. This is typically the longest stage. Implementation follows the task plan.
 4. After implementation completes, proceed to Stage 7.
 
-### Stage 7: Deep Review
+### Stage 7: Review Code
 
-1. Update state file: `stage: "deep-review"`, `stage_index: 7`.
-2. Invoke `{Skill: spex:deep-review}` with the resolved external tool settings:
-   - Pass `coderabbit: true/false` and `copilot: true/false` from flag resolution.
-   - Pass spec path and feature directory.
-   - Pass invocation context as `superpowers`.
-3. The deep-review skill dispatches 5 review agents and runs the autonomous fix loop.
-4. Apply **Oversight Decision Logic** to any remaining findings after the fix loop.
+1. Update state file: `stage: "review-code"`, `stage_index: 7`.
+2. Invoke `{Skill: spex:review-code}`.
+3. This skill runs the full review chain:
+   a. Spec compliance check (compliance score and deviation list)
+   b. Code Review Guide appended to REVIEWERS.md
+   c. Deep review (if trait enabled): 5 review agents, fix loop, Deep Review Report appended to REVIEWERS.md
+4. Apply **Oversight Decision Logic** to any remaining findings.
 5. After findings are resolved, proceed to Stage 8.
 
 ### Stage 8: Verify
@@ -425,7 +425,7 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 ## Oversight Decision Logic
 
-After each review stage (review-spec, review-plan, deep-review, verify), evaluate the findings:
+After each review stage (review-spec, review-plan, review-code, verify), evaluate the findings:
 
 ### Finding Classification
 
@@ -482,7 +482,7 @@ When auto-fixing findings:
 5. **Max 2 retry cycles per stage.** After 2 retries with remaining findings, pause regardless of oversight level:
 
 ```
-Pipeline paused after 2 fix cycles for stage "deep-review".
+Pipeline paused after 2 fix cycles for stage "review-code".
 Remaining findings could not be auto-resolved.
 
 [Present remaining findings here]
@@ -555,7 +555,7 @@ All stages passed successfully:
   4. tasks      - tasks.md generated
   5. review-plan - plan validated, REVIEWERS.md generated
   6. implement  - code implemented
-  7. deep-review - code reviewed
+  7. review-code - code reviewed, REVIEWERS.md updated
   8. verify     - verification passed
 ```
 
@@ -632,7 +632,7 @@ Next steps:
 - `/speckit.tasks` (Stage 4)
 - `{Skill: spex:review-plan}` (Stage 5)
 - `/speckit.implement` (Stage 6)
-- `{Skill: spex:deep-review}` (Stage 7)
+- `{Skill: spex:review-code}` (Stage 7)
 - `{Skill: spex:verification-before-completion}` (Stage 8)
 
 **Required traits:** `superpowers`, `deep-review`
