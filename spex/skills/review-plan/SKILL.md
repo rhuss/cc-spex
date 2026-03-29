@@ -105,206 +105,150 @@ If any NFR lacks a measurement method, flag it.
 
 Generating `REVIEWERS.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEWERS.md`.
 
-**CRITICAL: This file is for HUMAN reviewers, not a self-assessment.**
+### Purpose
 
-`REVIEWERS.md` guides human reviewers through the spec and plan. It is NOT a place to write your own quality scores, verdicts, coverage matrices, or validation results. Those go to console output in step 6.
+REVIEWERS.md is a **reviewer's companion**: a document that helps a human reviewer start and complete a meaningful spec review within 30 minutes. It is NOT a self-assessment, not a validation report, and not a dump of spec contents.
 
-Do NOT output coverage matrices, quality scores, or pass/fail verdicts as REVIEWERS.md. Those are internal validation artifacts (step 6 console output), not reviewer documentation.
+### Mindset
 
-Do NOT include in `REVIEWERS.md`:
-- Your quality scores or pass/fail verdicts
-- Coverage matrix tables (those are step 6 console output)
-- Red flag scan results
+Write this document as if you are briefing a colleague who has 30 minutes and no prior context. Your job is to:
+
+1. Orient them quickly (what is this, what's in scope, what's not)
+2. Guide them to the parts that most need human judgment
+3. Ask honest questions where you are uncertain or where the spec could go either way
+4. Surface the bigger picture: how does this spec fit into the project's trajectory?
+
+### What does NOT belong in REVIEWERS.md
+
+- Quality scores, pass/fail verdicts, coverage matrices, red flag scan results (those go to console output in step 6)
 - Phrases like "Quality Score: X/Y", "Verdict: PASS", "Recommendation: proceed to..."
+- Lists of what the spec contains (the reviewer can read the spec themselves)
+- PR artifact inventories (except in rare cases where non-obvious artifacts need explanation)
 
-DO include in `REVIEWERS.md`:
-- Executive Summary explaining the feature for a non-specialist
-- Review Recipe guiding a human through a 30-minute review
-- Technical Decisions with alternatives and trade-offs for humans to evaluate
-- Critical References pointing humans to sections that need their attention
-- Reviewer Checklist with concrete items for humans to verify
+### Writing principles
+
+- **Questions over statements.** Guide the review through questions that point to specific spec sections. "Does the retry limit in FR-007 make sense for large features?" is better than "The retry limit is 2."
+- **Honesty over confidence.** Be transparent about your own certainty level. If a spec section felt unclear or could be interpreted multiple ways, say so. "I interpreted section 3.2 as requiring X, but it could also mean Y" is valuable.
+- **Bigger picture over local detail.** Help the reviewer understand how this spec relates to the rest of the project, adjacent systems, or ongoing work. Do web research if the spec touches external technologies or patterns to provide relevant context.
+- **Exceptions only.** Only describe spec contents when something is surprising, counterintuitive, or easily missed. Don't summarize what a reader would learn from scanning the headings.
+
+### Template
 
 ```markdown
-# Review Summary: [Feature Name]
+# Review Guide: [Feature Name]
 
 **Spec:** specs/[feature-name]/spec.md | **Plan:** specs/[feature-name]/plan.md
 **Generated:** YYYY-MM-DD
 
 ---
 
-## Executive Summary
+## What This Spec Does
 
-[0.5 to 1 page (roughly 200-400 words) written in plain, accessible language that a
-non-specialist can follow. Cover: what problem this feature solves, how it works at a
-high level, what changes it introduces, and why it matters. Avoid jargon where possible;
-where technical terms are necessary, explain them briefly. This section should give a
-reviewer enough context to understand the feature without reading the full spec.]
+[2-4 sentences in plain language. What problem does this solve, and for whom?
+A non-specialist should understand this paragraph.]
 
-## Review Recipe (30 minutes)
+**In scope:** [Concise list of what this spec covers]
 
-> Step-by-step guide to review this spec efficiently. Focus on the most critical
-> parts first. The full review should take no longer than 30 minutes.
+**Out of scope:** [What is explicitly excluded, and why. Be specific. These
+boundaries are often where reviewers have the most useful feedback.]
 
-### Step 1: Understand the problem (5 min)
-- Read the Executive Summary above
-- Skim `spec.md` Section 1 (Problem Statement / Motivation)
-- Ask yourself: Is this problem worth solving? Is the scope right?
+## Bigger Picture
 
-### Step 2: Check critical references (10 min)
-- Review each item in the **Critical References** table below
-- These are the sections that carry the most risk or define key contracts
-- For each: read the referenced section, check the reasoning, flag concerns
+[How does this spec fit into the project's overall direction? What came before it,
+what depends on it, what might follow? If this spec touches external technologies
+or patterns, include relevant context from research.
 
-### Step 3: Evaluate technical decisions (8 min)
-- Review the **Technical Decisions** section below
-- For each decision: Are the rejected alternatives valid? Is the trade-off acceptable?
-- Pay special attention to decisions marked with a "Reviewer question"
+Be honest: if the spec's relationship to adjacent work is unclear, say so.]
 
-### Step 4: Validate coverage and risks (5 min)
-- Scan the **Risk Areas** table: Are mitigations sufficient for high-impact risks?
-- Check **Scope Boundaries**: Is anything missing that should be in scope?
-- Glance at the coverage matrix in the review output to spot gaps
+## Review Guide (30 minutes)
 
-### Step 5: Complete the checklist (2 min)
-- Work through the **Reviewer Checklist** below
-- Mark items as checked, flag concerns as PR comments
+> This guide helps you focus your 30 minutes on the parts that need human
+> judgment most. Each section points to specific spec locations and frames
+> the review as questions.
 
-## Review Response Matrix (conditional)
+### Understanding the approach (8 min)
 
-> Include this section ONLY when the spec revision addresses feedback from a prior
-> PR or review. Skip entirely for first-time specs.
+Read `spec.md` sections [X] and [Y] for the core approach. As you read, consider:
 
-**Detection:** Check if any of these indicators are present:
-- spec.md contains a "Clarifications" section referencing prior reviews
-- research.md mentions "revised after PR #NNN review"
-- Commit messages reference prior PR numbers
-- Open Questions reference prior PR discussions
+- [Question about whether the problem framing is right]
+- [Question about whether the chosen approach fits the project context]
+- [Question about an assumption the spec makes]
 
-**If prior review feedback exists:**
+### Key decisions that need your eyes (12 min)
 
-1. Collect all original reviewer comments from the referenced PR(s)
-   using `gh api repos/{owner}/{repo}/pulls/{number}/comments`
-2. Build a 1:1 mapping from each reviewer comment to its resolution
-3. Group by reviewer (not by theme) so each reviewer can verify their
-   specific concerns were addressed
-4. Never collapse multiple distinct reviewer comments into one row,
-   even if they address the same underlying concept
+**[Decision 1 title]** (spec.md section [X.Y])
 
-| # | Reviewer | Original Comment | Resolution | Spec Location |
-|---|----------|-----------------|------------|---------------|
-| 1 | @reviewer | [Paraphrased concern with link] | [How resolved] | FR-XXX, section Y |
-| 2 | @reviewer | [Another concern with link] | [Resolution] | FR-YYY |
+[1-2 sentences on what was decided and what alternatives were considered.]
+- Question for reviewer: [Specific question, e.g. "Is the performance trade-off
+  acceptable given our current load patterns?"]
 
-For any unaddressed comments, mark explicitly as:
-- **Deferred** (with rationale and link to tracking issue)
-- **Disagreed** (with justification visible to the original reviewer)
-- **Out of scope** (with explanation of why)
+**[Decision 2 title]** (spec.md section [X.Y])
 
-Never silently omit a reviewer comment.
+[Same pattern. Focus on decisions where alternatives were genuinely viable.]
 
-## PR Contents
+[Repeat for 3-5 key decisions. Only include decisions where reviewer input
+could change the outcome.]
 
-This spec PR includes the following artifacts:
+### Areas where I'm less certain (5 min)
 
-| Artifact | Description |
-|----------|-------------|
-| `spec.md` | [One-line summary of what the spec defines] |
-| `plan.md` | [One-line summary of the implementation approach] |
-| `tasks.md` | [Number of tasks across N phases] |
-| `REVIEWERS.md` | This file |
-| [Other artifacts if any, e.g. checklist.md, diagrams] | [Description] |
+[Be honest about parts of the spec where the AI's interpretation may be wrong,
+where requirements are ambiguous, or where the spec could reasonably go a
+different direction. Point to specific sections.]
 
-## Technical Decisions
+- `spec.md` section [X]: [What's unclear and why it matters]
+- `plan.md` phase [N]: [What assumption might not hold]
 
-> Key technical choices made during design, including alternatives that were considered and why they were rejected.
+### Risks and open questions (5 min)
 
-### [Decision Title]
-- **Chosen approach:** [What was decided]
-- **Alternatives considered:**
-  - [Alternative 1]: [Why rejected, e.g. "adds unnecessary complexity", "poor scaling characteristics"]
-  - [Alternative 2]: [Why rejected]
-- **Trade-off:** [What we gain and what we give up]
-- **Reviewer question:** [Specific question for the reviewer, if any]
+[Frame risks as questions, not as a risk register. Point to specific sections.]
 
-[Repeat for each significant decision]
+- [Risk framed as question, e.g. "If the external API changes its response
+  format (spec.md FR-012), is our fallback strategy sufficient?"]
+- [Another risk-question with spec reference]
 
-## Critical References
+## Prior Review Feedback
 
-> Specific sections in the spec or plan that need elevated human attention. Reviewers should prioritize reading these sections and discuss them on the PR.
+> Include this section ONLY when the spec revision addresses feedback from a
+> prior PR or review. Skip entirely for first-time specs.
 
-| Reference | Why it needs attention |
-|-----------|----------------------|
-| `spec.md` Section [X.Y]: [Section title] | [Why this is critical, e.g. "defines the public API contract", "contains security-sensitive logic"] |
-| `plan.md` Phase [N]: [Phase title] | [Why this needs review, e.g. "complex migration strategy", "touches shared infrastructure"] |
-| `spec.md` [NFR-N]: [NFR title] | [Why, e.g. "performance threshold may be too aggressive"] |
-| ... | ... |
+[If prior review feedback exists, map each reviewer comment to how it was
+addressed. Group by reviewer so each person can find their concerns. Never
+silently omit a comment. Mark unaddressed items as Deferred, Disagreed, or
+Out of scope with justification.]
 
-## Reviewer Checklist
-
-> Things the reviewer should actively verify, question, or potentially reject.
-
-### Verify
-- [ ] [Concrete thing to check, e.g. "Schema fields cover all use cases listed in FR-003"]
-- [ ] [Another verification item]
-
-### Question
-- [ ] [Area where reviewer input is needed, e.g. "Is the flat directory structure sufficient as the project grows?"]
-- [ ] [Another open question needing stakeholder input]
-
-### Watch out for
-- [ ] [Potential issue, e.g. "Skill file may become too large with added sections"]
-- [ ] [Risk or concern, e.g. "No backward compatibility path if naming convention changes"]
-
-## Scope Boundaries
-- **In scope:** [What this includes]
-- **Out of scope:** [What this explicitly excludes]
-- **Why these boundaries:** [Brief justification]
-
-## Naming & Schema Decisions
-
-| Item | Name | Context |
-|------|------|---------|
-| ... | ... | ... |
-
-[If schemas are defined, include condensed key-fields-only summaries here]
-
-## Risk Areas
-
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| ... | High/Med/Low | ... |
+| # | Reviewer | Original Concern | How Addressed | Spec Location |
+|---|----------|-----------------|---------------|---------------|
+| 1 | @reviewer | [Paraphrased concern] | [Resolution] | section X.Y |
 
 ---
-*Share this with reviewers. Full context in linked spec and plan.*
+*Full context in linked spec and plan.*
 ```
 
-**Constraints:**
-- Target length: ~1000-1500 words (the executive summary alone should be 200-400 words)
-- Prioritize: Executive Summary > Technical Decisions > Critical References > Reviewer Checklist > Scope
-- The executive summary MUST be understandable by someone who has not read the spec
-- Technical Decisions MUST include rejected alternatives with reasoning
-- Critical References MUST point to specific sections (with section numbers or anchors) in spec.md and plan.md
-- Reviewer Checklist items should be concrete and actionable, not vague
-- Summarize, don't transcribe
-- When a Review Response Matrix is present, the Technical Decisions section MUST be derived from the matrix entries (not authored independently). This ensures every reviewer concern maps to a visible spec change and nothing is lost in thematic summarization.
-- Each distinct reviewer comment gets its own row in the matrix, even if multiple comments address the same architectural concept. Reviewers scan for their name and need to find every comment they made.
+### Constraints
 
-**Structural validation (run after writing REVIEWERS.md):**
+- **Target length:** ~800-1200 words. Concise beats comprehensive.
+- **Question density:** Aim for 8-15 specific questions throughout the document. Each question should point to a spec section and be answerable by reading that section.
+- **Honesty requirement:** The "Areas where I'm less certain" section is mandatory. If you are fully confident about everything, you are not being honest enough. Every spec has ambiguities.
+- **Bigger picture:** Do web research if the spec touches external technologies, APIs, or patterns that a reviewer might want context on. Don't assume the reviewer knows the ecosystem.
+- **No spec transcription.** If you find yourself writing "The spec defines X, Y, and Z," stop. Instead ask "Does the approach in section 3.2 handle the edge case where...?"
+- **Prior feedback handling:** When a Review Response Matrix is present, each distinct reviewer comment gets its own row. Group by reviewer (not by theme). Never collapse multiple comments into one row.
 
-REVIEWERS.md MUST contain at least 5 of these 8 headings: Executive Summary, Review Recipe, Technical Decisions, Critical References, Reviewer Checklist, Scope Boundaries, Risk Areas, PR Contents.
+### Structural validation (run after writing REVIEWERS.md)
+
+REVIEWERS.md MUST contain at least 3 of these 5 headings: What This Spec Does, Bigger Picture, Review Guide, Areas where I'm less certain, Risks and open questions.
 
 After writing the file, verify:
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
-REQUIRED_HEADINGS="Executive Summary|Review Recipe|Technical Decisions|Critical References|Reviewer Checklist|Scope Boundaries|Risk Areas|PR Contents"
-HEADING_COUNT=$(grep -cE "^##\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEWERS.md" 2>/dev/null || echo 0)
-if [ "$HEADING_COUNT" -lt 5 ]; then
-  echo "ERROR: REVIEWERS.md has only $HEADING_COUNT of 8 expected sections. Regenerate with the template from step 5."
+REQUIRED_HEADINGS="What This Spec Does|Bigger Picture|Review Guide|Areas where|Risks and open"
+HEADING_COUNT=$(grep -cE "^##[#]?\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEWERS.md" 2>/dev/null || echo 0)
+if [ "$HEADING_COUNT" -lt 3 ]; then
+  echo "ERROR: REVIEWERS.md has only $HEADING_COUNT of 5 expected sections. Regenerate with the template from step 5."
 fi
 ```
 
-If the check fails, the file was likely generated as a self-review instead of a reviewer guide. Delete it and regenerate using the template above.
+If the check fails, the file was likely generated as a summary/self-review instead of a question-driven reviewer guide. Delete it and regenerate using the template above.
 
 ## 6. Present Results
 
