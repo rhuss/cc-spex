@@ -138,11 +138,11 @@ ERROR: Cannot specify a brainstorm file with --resume. The brainstorm file is re
 
 ### Valid Stage Names for --start-from
 
-The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `review-plan`, `tasks`, `implement`, `deep-review`, `verify`.
+The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `deep-review`, `verify`.
 
 If an invalid stage name is provided, fail with:
 ```
-ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify
+ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, deep-review, verify
 ```
 
 ## Brainstorm File Resolution
@@ -260,7 +260,8 @@ When `--start-from <stage>` is set:
 2. Verify that expected artifacts exist for stages that depend on prior output:
    - Stages `clarify` and later need `spec.md` to exist
    - Stages `plan` and later need `spec.md`
-   - Stages `review-plan` and later need `plan.md`
+   - Stages `tasks` and later need `plan.md`
+   - Stages `review-plan` and later need `plan.md` and `tasks.md`
    - Stages `implement` and later need `tasks.md`
 
 3. If expected artifacts are missing, **warn** (do not fail):
@@ -329,8 +330,8 @@ The pipeline executes 9 stages in fixed order:
 | 1 | `clarify` | `/speckit.clarify` | Resolve spec ambiguities |
 | 2 | `review-spec` | `{Skill: spex:review-spec}` | Validate spec quality |
 | 3 | `plan` | `/speckit.plan` | Generate implementation plan |
-| 4 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan and tasks |
-| 5 | `tasks` | `/speckit.tasks` | Generate task breakdown |
+| 4 | `tasks` | `/speckit.tasks` | Generate task breakdown |
+| 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEWERS.md |
 | 6 | `implement` | `/speckit.implement` | Execute implementation |
 | 7 | `deep-review` | `{Skill: spex:deep-review}` | Multi-perspective code review |
 | 8 | `verify` | `{Skill: spex:verification-before-completion}` | Final verification |
@@ -380,20 +381,21 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 3. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
 4. After plan generation completes, proceed to Stage 4.
 
-### Stage 4: Review Plan
+### Stage 4: Tasks
 
-1. Update state file: `stage: "review-plan"`, `stage_index: 4`.
-2. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
-3. This generates `REVIEWERS.md`.
-4. Capture findings and apply **Oversight Decision Logic**.
-5. After findings are resolved, proceed to Stage 5.
-
-### Stage 5: Tasks
-
-1. Update state file: `stage: "tasks"`, `stage_index: 5`.
+1. Update state file: `stage: "tasks"`, `stage_index: 4`.
 2. Invoke `/speckit.tasks` to generate the task breakdown.
 3. This produces `tasks.md`.
-4. After task generation completes, proceed to Stage 6.
+4. After task generation completes, proceed to Stage 5.
+
+### Stage 5: Review Plan
+
+1. Update state file: `stage: "review-plan"`, `stage_index: 5`.
+2. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
+3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
+4. This generates `REVIEWERS.md`.
+5. Capture findings and apply **Oversight Decision Logic**.
+6. After findings are resolved, proceed to Stage 6.
 
 ### Stage 6: Implement
 
@@ -550,8 +552,8 @@ All stages passed successfully:
   1. clarify    - spec clarified
   2. review-spec - spec validated
   3. plan       - plan.md generated
-  4. review-plan - plan validated, REVIEWERS.md generated
-  5. tasks      - tasks.md generated
+  4. tasks      - tasks.md generated
+  5. review-plan - plan validated, REVIEWERS.md generated
   6. implement  - code implemented
   7. deep-review - code reviewed
   8. verify     - verification passed
@@ -627,8 +629,8 @@ Next steps:
 - `/speckit.clarify` (Stage 1)
 - `{Skill: spex:review-spec}` (Stage 2)
 - `/speckit.plan` (Stage 3)
-- `{Skill: spex:review-plan}` (Stage 4)
-- `/speckit.tasks` (Stage 5)
+- `/speckit.tasks` (Stage 4)
+- `{Skill: spex:review-plan}` (Stage 5)
 - `/speckit.implement` (Stage 6)
 - `{Skill: spex:deep-review}` (Stage 7)
 - `{Skill: spex:verification-before-completion}` (Stage 8)
