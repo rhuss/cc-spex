@@ -66,7 +66,7 @@ def main():
     # Guard against hallucinated commands (e.g., /spex:specify, /spex:plan)
     KNOWN_SPEX_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
-        'review-code', 'review-plan', 'review-spec', 'traits', 'verify', 'worktree',
+        'review-code', 'review-plan', 'review-spec', 'ship', 'traits', 'verify', 'worktree',
     }
     COMMAND_CORRECTIONS = {
         'specify': '/speckit.specify',
