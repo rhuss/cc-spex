@@ -64,7 +64,7 @@ This spec PR includes the following artifacts:
   - Command file + skill file: Rejected because yolo is not a speckit command. Overlays don't append to skills, so the command file would serve no purpose.
   - Shell script orchestrator: Rejected because autonomy decisions require Claude's judgment (classifying findings as ambiguous vs. clear), which can't be done in Bash.
 - **Trade-off:** Simpler structure (one file) at the cost of a potentially large skill file
-- **Reviewer question:** Will a single SKILL.md become too large? The 27 tasks all write sections into one file.
+- **Reviewer question:** Will a single SKILL.md become too large? The 29 tasks all write sections into one file.
 
 ### Yolo as a Skill, Not a Trait
 - **Chosen approach:** `spex:yolo` is a standalone skill, not registered as a trait in `spex-traits.json`
@@ -107,7 +107,7 @@ This spec PR includes the following artifacts:
 
 ### Question
 - [ ] Is the single SKILL.md approach sustainable, or should sections be split into helper files?
-- [ ] Should yolo support partial pipeline runs (e.g., "start from plan stage")?
+- [ ] Is the `--start-from` implementation sufficient, or does it need artifact validation beyond warnings?
 - [ ] Is "no cross-session resume" acceptable, or do users expect to resume after Ctrl+C?
 
 ### Watch out for

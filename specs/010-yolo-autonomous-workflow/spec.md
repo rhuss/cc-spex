@@ -35,7 +35,7 @@ A developer wants to control how aggressively the pipeline auto-fixes issues. Th
 **Acceptance Scenarios**:
 
 1. **Given** the user invokes `/spex:yolo --autonomy cautious`, **When** review-spec finds any issue (even minor), **Then** the pipeline stops and presents the finding before proceeding.
-2. **Given** the user invokes `/spex:yolo --autonomy autopilot`, **When** review-code finds fixable issues, **Then** the skill auto-fixes all of them and only stops if implementation is genuinely blocked.
+2. **Given** the user invokes `/spex:yolo --autonomy autopilot`, **When** deep-review finds fixable issues, **Then** the skill auto-fixes all of them and only stops if implementation is genuinely blocked.
 3. **Given** no `--autonomy` flag is provided, **Then** the default `balanced` mode is used.
 
 ---

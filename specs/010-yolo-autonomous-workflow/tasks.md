@@ -186,7 +186,7 @@
 
 - T002-T007 (foundational) can be written in parallel since they are independent sections of the same file
 - US3, US4, US5 can be implemented in parallel after US1 is complete
-- T025 (status line script) can run in parallel with any user story work
+- T027 (status line script) can run in parallel with any user story work
 
 ---
 

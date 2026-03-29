@@ -64,7 +64,7 @@ Ordered sequence of stages. Not persisted as a separate entity; encoded in the s
 
 ### ReviewFinding (referenced, not owned)
 
-Review findings are produced by review-spec, review-plan, review-code, and deep-review stages. The yolo skill does not define a new finding format; it classifies existing findings for autonomy decisions.
+Review findings are produced by review-spec, review-plan, and deep-review stages. The yolo skill does not define a new finding format; it classifies existing findings for autonomy decisions.
 
 **Classification for autonomy:**
 - **Unambiguous** (auto-fixable in `balanced`+): formatting, typos, missing imports, style violations, unused variables

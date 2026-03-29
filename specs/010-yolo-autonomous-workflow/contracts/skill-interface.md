@@ -42,7 +42,7 @@ External tool flags default to values in `.specify/spex-traits.json` under `exte
 1. Feature branch exists with spec artifacts and implementation
 2. All review stages passed (within retry limits)
 3. Verification completed successfully
-4. `.specify/.spex-yolo-phase` has `status: "completed"`
+4. `.specify/.spex-yolo-phase` is deleted (clean state)
 5. If `--create-pr`: PR created targeting main branch
 
 ## Error Conditions
