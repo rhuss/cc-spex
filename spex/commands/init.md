@@ -43,6 +43,7 @@ You MUST ask the user these two questions using AskUserQuestion before doing any
 
 1. (`multiSelect: true`, header: "Traits"): "Which spex traits do you want to enable?"
    - "superpowers": "Quality gates on speckit commands (review-spec, review-code, verification)"
+   - "deep-review": "Multi-perspective code review with autonomous fix loop (5 agents: correctness, architecture, security, production-readiness, test-quality)"
    - "teams": "Parallel implementation with spec guardian review via Claude Code Agent Teams (experimental, requires: superpowers)"
    - "worktrees": "Git worktree isolation after speckit.specify (creates sibling worktree, restores main)"
 
