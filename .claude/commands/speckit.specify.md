@@ -313,3 +313,14 @@ After completing the specification, validate quality:
 1. Check constitution alignment (if `.specify/memory/constitution.md` exists)
 2. Invoke {Skill: spex:review-spec} to validate completeness and clarity
 3. Ensure spec contains WHAT/WHY only, no implementation details
+
+
+<!-- SPEX-TRAIT:worktrees -->
+## Worktree Isolation
+
+After completing the specification and all quality gates:
+
+1. Invoke {Skill: spex:worktree} with action "create" to:
+   - Create a git worktree for the feature branch in a sibling directory
+   - Restore `main` in the original repo
+   - Print instructions for switching to the worktree
