@@ -227,7 +227,22 @@ Overall: 16/18 = 89%
 
 ### 8. Deep Review Enhancement (if trait enabled)
 
-**First, parse flags from the invocation arguments:**
+**First, ensure all changes are committed:**
+
+External review tools (CodeRabbit with `--type committed`) need changes to be committed to see them. Before proceeding with deep review, check for uncommitted changes and commit them:
+
+```bash
+# Check for uncommitted changes (staged or unstaged)
+if ! git diff --quiet HEAD 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+  echo "Uncommitted changes detected. Staging and committing before deep review..."
+  git add -A
+  git commit -m "WIP: stage changes for deep review"
+fi
+```
+
+This ensures CodeRabbit and internal agents review the same code. The WIP commit can be amended or squashed later.
+
+**Next, parse flags from the invocation arguments:**
 
 When `/spex:review-code` is invoked with arguments, extract flags before treating the remainder as hint text:
 
