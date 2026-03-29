@@ -1,4 +1,4 @@
-# Quickstart: spex:yolo
+# Quickstart: spex:ship
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@
 ## Basic Usage
 
 ```
-/spex:yolo brainstorm/05-my-feature.md
+/spex:ship brainstorm/05-my-feature.md
 ```
 
 This runs the full pipeline: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify.
@@ -20,40 +20,40 @@ This runs the full pipeline: specify, clarify, review-spec, plan, review-plan, t
 ## Auto-detect Brainstorm
 
 ```
-/spex:yolo
+/spex:ship
 ```
 
 Automatically picks the highest-numbered brainstorm file.
 
-## Autonomy Levels
+## Ask Levels
 
 ```
 # Stop at every review finding (learning/critical features)
-/spex:yolo --autonomy cautious
+/spex:ship --ask always
 
 # Auto-fix clear issues, pause on ambiguous ones (default)
-/spex:yolo --autonomy balanced
+/spex:ship --ask balanced
 
 # Fix everything, only stop on blockers
-/spex:yolo --autonomy autopilot
+/spex:ship --ask never
 ```
 
 ## With PR Creation
 
 ```
-/spex:yolo --create-pr --autonomy autopilot
+/spex:ship --create-pr --ask never
 ```
 
 ## Skip External Reviews
 
 ```
-/spex:yolo --no-external
+/spex:ship --no-external
 ```
 
 ## Development Workflow
 
-1. Create a new SKILL.md at `spex/skills/yolo/SKILL.md`
+1. Create a new SKILL.md at `spex/skills/ship/SKILL.md`
 2. Register the skill in the plugin's skill manifest
 3. Implement argument parsing following the `review-code` pattern
 4. Implement pipeline orchestration with state tracking
-5. Test with a brainstorm document in each autonomy mode
+5. Test with a brainstorm document in each ask mode

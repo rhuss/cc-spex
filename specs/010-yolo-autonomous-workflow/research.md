@@ -1,4 +1,4 @@
-# Research: Autonomous Full-Cycle Workflow (spex:yolo)
+# Research: Autonomous Full-Cycle Workflow (spex:ship)
 
 **Date:** 2026-03-29
 **Feature:** 010-yolo-autonomous-workflow
@@ -7,10 +7,10 @@
 
 **Decision:** Single SKILL.md file with inline pipeline orchestration (no separate command file).
 
-**Rationale:** The yolo skill is a self-contained orchestrator that chains existing skills. Unlike speckit commands (which are extended by trait overlays), yolo itself IS the trait-aware workflow. Adding a separate command file would create an unnecessary layer since no overlays need to append to it.
+**Rationale:** The ship skill is a self-contained orchestrator that chains existing skills. Unlike speckit commands (which are extended by trait overlays), ship itself IS the trait-aware workflow. Adding a separate command file would create an unnecessary layer since no overlays need to append to it.
 
 **Alternatives considered:**
-- Command file + skill file: Rejected because yolo is not a speckit command, it's a spex skill. Overlays don't append to skills.
+- Command file + skill file: Rejected because ship is not a speckit command, it's a spex skill. Overlays don't append to skills.
 - Shell script orchestrator: Rejected because the pipeline needs Claude's judgment for autonomy decisions (when to pause, what to auto-fix).
 
 ## Decision 2: Skill-to-Skill Invocation Pattern
@@ -25,14 +25,14 @@
 
 ## Decision 3: State File Format
 
-**Decision:** JSON state file at `.specify/.spex-yolo-phase` with the following schema:
+**Decision:** JSON state file at `.specify/.spex-ship-phase` with the following schema:
 
 ```json
 {
   "stage": "implement",
   "stage_index": 6,
   "total_stages": 9,
-  "autonomy": "balanced",
+  "ask": "smart",
   "started_at": "2026-03-29T10:00:00Z",
   "retries": 0,
   "status": "running"
@@ -42,7 +42,7 @@
 **Rationale:** Follows existing `.specify/` state file patterns. JSON matches `spex-traits.json` format. The `stage` field uses the skill/command name for readability. A separate `stage_index` provides numeric progress for status line scripts.
 
 **Alternatives considered:**
-- Plain text (like `.spex-phase`): Rejected because yolo needs more fields (autonomy, retries, timing).
+- Plain text (like `.spex-phase`): Rejected because ship needs more fields (autonomy, retries, timing).
 - YAML: Rejected because the codebase uses JSON exclusively for machine-readable config.
 
 ## Decision 4: Argument Parsing Pattern
@@ -55,15 +55,15 @@
 - Shell script for argument parsing: Rejected because skills run in Claude's context, not as shell scripts.
 - Configuration file for defaults: Already used via `.specify/spex-traits.json` for external_tools defaults.
 
-## Decision 5: Autonomy Level Implementation
+## Decision 5: Ask Level Implementation
 
-**Decision:** Autonomy level is a parameter passed to review stages that controls their pause/continue behavior. The yolo skill evaluates review findings and decides whether to auto-fix or pause based on the level.
+**Decision:** Autonomy level is a parameter passed to review stages that controls their pause/continue behavior. The ship skill evaluates review findings and decides whether to auto-fix or pause based on the level.
 
-- `cautious`: Pause on every finding, present to user
-- `balanced`: Auto-fix findings where the fix is unambiguous (formatting, style, minor issues). Pause when the fix requires judgment (architecture, design, ambiguous requirements).
-- `autopilot`: Auto-fix everything. Only pause on genuine blockers (compilation errors, missing dependencies, test failures that can't be auto-resolved).
+- `always`: Pause on every finding, present to user
+- `smart`: Auto-fix findings where the fix is unambiguous (formatting, style, minor issues). Pause when the fix requires judgment (architecture, design, ambiguous requirements).
+- `never`: Auto-fix everything. Only pause on genuine blockers (compilation errors, missing dependencies, test failures that can't be auto-resolved).
 
-**Rationale:** The classification happens at the yolo skill level, not inside individual review skills. This keeps review skills unchanged and makes the autonomy decision transparent.
+**Rationale:** The classification happens at the ship skill level, not inside individual review skills. This keeps review skills unchanged and makes the autonomy decision transparent.
 
 **Alternatives considered:**
 - Push autonomy logic into each review skill: Rejected because it would require modifying 4+ existing skills.
@@ -71,7 +71,7 @@
 
 ## Decision 6: Retry Mechanism
 
-**Decision:** Max 2 retry cycles per review stage. After applying fixes, re-run the same review. If findings persist after 2 cycles, pause and present to user regardless of autonomy level.
+**Decision:** Max 2 retry cycles per review stage. After applying fixes, re-run the same review. If findings persist after 2 cycles, pause and present to user regardless of ask level.
 
 **Rationale:** Prevents infinite fix loops. Two cycles is enough for most auto-fixable issues (first pass catches obvious issues, second pass catches issues introduced by fixes).
 
@@ -91,21 +91,21 @@
 
 ## Decision 8: Worktree Integration
 
-**Decision:** The yolo skill does NOT handle worktree creation directly. Instead, it invokes `/speckit.specify` which, with the worktrees trait enabled, creates the worktree via its overlay. Subsequent stages run in whatever directory the session is in after specify completes.
+**Decision:** The ship skill does NOT handle worktree creation directly. Instead, it invokes `/speckit.specify` which, with the worktrees trait enabled, creates the worktree via its overlay. Subsequent stages run in whatever directory the session is in after specify completes.
 
-**Rationale:** The worktrees trait already handles this through its overlay on `speckit.specify`. Duplicating this logic in yolo would violate the trait composability principle.
+**Rationale:** The worktrees trait already handles this through its overlay on `speckit.specify`. Duplicating this logic in ship would violate the trait composability principle.
 
 **Alternatives considered:**
-- Yolo manages worktree directly: Rejected because it would bypass the overlay system and break trait composability.
+- Ship manages worktree directly: Rejected because it would bypass the overlay system and break trait composability.
 
 ## Decision 9: Trait Registration
 
-**Decision:** Yolo does NOT need to be registered as a trait in `spex-traits.json`. It is a standalone skill that requires other traits (superpowers, deep-review) but is always available when the spex plugin is installed.
+**Decision:** Ship does NOT need to be registered as a trait in `spex-traits.json`. It is a standalone skill that requires other traits (superpowers, deep-review) but is always available when the spex plugin is installed.
 
-**Rationale:** Yolo is a workflow orchestrator, not a behavioral modifier. Traits modify how existing commands behave (via overlays). Yolo is a new entry point that composes existing behaviors.
+**Rationale:** Ship is a workflow orchestrator, not a behavioral modifier. Traits modify how existing commands behave (via overlays). Ship is a new entry point that composes existing behaviors.
 
 **Alternatives considered:**
-- Register as a trait: Rejected because yolo has no overlays to apply to existing commands. It's a skill, not a trait.
+- Register as a trait: Rejected because ship has no overlays to apply to existing commands. It's a skill, not a trait.
 
 ## Decision 10: Resume and Start-From
 

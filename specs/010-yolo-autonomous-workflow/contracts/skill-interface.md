@@ -1,9 +1,9 @@
-# Skill Interface Contract: spex:yolo
+# Skill Interface Contract: spex:ship
 
 ## Invocation
 
 ```
-/spex:yolo [brainstorm-file] [options]
+/spex:ship [brainstorm-file] [options]
 ```
 
 ### Arguments
@@ -16,7 +16,7 @@
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--autonomy <level>` | `balanced` | Autonomy level: `cautious`, `balanced`, `autopilot` |
+| `--ask <level>` | `smart` | Autonomy level: `always`, `smart`, `never` |
 | `--create-pr` | off | Create a pull request after successful completion |
 | `--no-external` | (from config) | Skip all external review tools |
 | `--external` | (from config) | Enable all external review tools |
@@ -42,7 +42,7 @@ External tool flags default to values in `.specify/spex-traits.json` under `exte
 1. Feature branch exists with spec artifacts and implementation
 2. All review stages passed (within retry limits)
 3. Verification completed successfully
-4. `.specify/.spex-yolo-phase` is deleted (clean state)
+4. `.specify/.spex-ship-phase` is deleted (clean state)
 5. If `--create-pr`: PR created targeting main branch
 
 ## Error Conditions
@@ -60,14 +60,14 @@ External tool flags default to values in `.specify/spex-traits.json` under `exte
 
 ## State File Contract
 
-**Path:** `.specify/.spex-yolo-phase`
+**Path:** `.specify/.spex-ship-phase`
 **Format:** JSON (see data-model.md for schema)
 
 Written at each stage transition. Consumers (status line scripts) may read this file at any time. The file is deleted on successful completion or left in place on interruption/failure.
 
 ## Downstream Skill Contracts
 
-The yolo skill invokes these skills/commands with these expectations:
+The ship skill invokes these skills/commands with these expectations:
 
 | Stage | Invocation | Expected Input | Expected Output |
 |-------|-----------|----------------|-----------------|

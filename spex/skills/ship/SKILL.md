@@ -1,14 +1,14 @@
 ---
-name: yolo
-description: Autonomous full-cycle workflow - chains specify through verify with configurable autonomy levels, auto-fix, and optional PR creation
-argument-hint: "[brainstorm-file] [--autonomy cautious|balanced|autopilot] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]"
+name: ship
+description: Autonomous full-cycle workflow - chains specify through verify with configurable oversight levels, auto-fix, and optional PR creation
+argument-hint: "[brainstorm-file] [--ask cautious|balanced|autopilot] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]"
 ---
 
-# Autonomous Full-Cycle Workflow (spex:yolo)
+# Autonomous Full-Cycle Workflow (spex:ship)
 
 ## Overview
 
-This skill chains the entire spex workflow autonomously: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, and verify. Point it at a brainstorm document and choose an autonomy level to control how much human oversight the pipeline requires.
+This skill chains the entire spex workflow autonomously: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, and verify. Point it at a brainstorm document and choose an oversight level to control how much human oversight the pipeline requires.
 
 **This skill requires both `superpowers` and `deep-review` traits to be enabled.**
 
@@ -23,7 +23,7 @@ SUPERPOWERS=$(jq -r '.traits.superpowers // false' .specify/spex-traits.json 2>/
 DEEP_REVIEW=$(jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null)
 
 if [ "$SUPERPOWERS" != "true" ] || [ "$DEEP_REVIEW" != "true" ]; then
-  echo "ERROR: spex:yolo requires both superpowers and deep-review traits."
+  echo "ERROR: spex:ship requires both superpowers and deep-review traits."
   echo ""
   echo "Enable them with:"
   echo "  /spex:traits enable superpowers deep-review"
@@ -44,10 +44,10 @@ Before starting the pipeline, verify the working tree is clean:
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
   echo "ERROR: Working tree has uncommitted changes."
   echo ""
-  echo "Please commit or stash your changes before running spex:yolo:"
+  echo "Please commit or stash your changes before running spex:ship:"
   echo "  git stash"
   echo "  # or"
-  echo "  git add -A && git commit -m 'WIP: save before yolo'"
+  echo "  git add -A && git commit -m 'WIP: save before ship'"
 fi
 ```
 
@@ -83,7 +83,7 @@ Parse the invocation arguments. The skill accepts:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--autonomy <level>` | `balanced` | One of: `cautious`, `balanced`, `autopilot` |
+| `--ask <level>` | `smart` | One of: `always`, `smart`, `never` |
 | `--create-pr` | off | Create a pull request after successful completion |
 | `--resume` | off | Resume an interrupted pipeline from state file |
 | `--start-from <stage>` | (none) | Start from a specific stage (skips prior stages) |
@@ -96,9 +96,9 @@ Parse the invocation arguments. The skill accepts:
 
 ### Flag Resolution
 
-**Autonomy level**: Validate that the value is one of `cautious`, `balanced`, `autopilot`. If invalid, fail with:
+**Oversight level**: Validate that the value is one of `always`, `smart`, `never`. If invalid, fail with:
 ```
-ERROR: Invalid autonomy level "X". Must be one of: cautious, balanced, autopilot
+ERROR: Invalid oversight level "X". Must be one of: always, smart, never
 ```
 
 **External tool flags**: Follow the same resolution pattern as the `review-code` skill:
@@ -171,7 +171,7 @@ Create a brainstorm document first with /spex:brainstorm
 
 ## State File Management
 
-The pipeline tracks its progress in `.specify/.spex-yolo-phase` as JSON.
+The pipeline tracks its progress in `.specify/.spex-ship-phase` as JSON.
 
 ### Writing State
 
@@ -179,12 +179,12 @@ At each stage transition, write the state file:
 
 ```bash
 # Write to temp file first, then atomic rename
-cat > .specify/.spex-yolo-phase.tmp << 'STATEEOF'
+cat > .specify/.spex-ship-phase.tmp << 'STATEEOF'
 {
   "stage": "<current-stage-name>",
   "stage_index": <0-8>,
   "total_stages": 9,
-  "autonomy": "<cautious|balanced|autopilot>",
+  "ask": "<cautious|balanced|autopilot>",
   "started_at": "<ISO-8601 timestamp from pipeline start>",
   "retries": <0-2>,
   "status": "<running|paused|completed|failed>",
@@ -192,7 +192,7 @@ cat > .specify/.spex-yolo-phase.tmp << 'STATEEOF'
   "feature_branch": "<branch-name-or-null>"
 }
 STATEEOF
-mv .specify/.spex-yolo-phase.tmp .specify/.spex-yolo-phase
+mv .specify/.spex-ship-phase.tmp .specify/.spex-ship-phase
 ```
 
 Write the state file:
@@ -208,7 +208,7 @@ The `feature_branch` field is set after the specify stage completes (it may be n
 
 On successful completion, remove the state file:
 ```bash
-rm -f .specify/.spex-yolo-phase
+rm -f .specify/.spex-ship-phase
 ```
 
 On failure or interruption, leave the state file in place so `--resume` can use it.
@@ -219,19 +219,19 @@ When `--resume` is set:
 
 1. Read the state file:
    ```bash
-   if [ ! -f .specify/.spex-yolo-phase ]; then
+   if [ ! -f .specify/.spex-ship-phase ]; then
      echo "ERROR: No interrupted pipeline found."
-     echo "Start a new pipeline with: /spex:yolo <brainstorm-file>"
+     echo "Start a new pipeline with: /spex:ship <brainstorm-file>"
      exit 1
    fi
-   STATE=$(cat .specify/.spex-yolo-phase)
+   STATE=$(cat .specify/.spex-ship-phase)
    ```
 
 2. Extract the last stage and its index:
    ```bash
    LAST_STAGE=$(echo "$STATE" | jq -r '.stage')
    LAST_INDEX=$(echo "$STATE" | jq -r '.stage_index')
-   AUTONOMY=$(echo "$STATE" | jq -r '.autonomy')
+   AUTONOMY=$(echo "$STATE" | jq -r '.ask')
    BRAINSTORM=$(echo "$STATE" | jq -r '.brainstorm_file')
    ```
 
@@ -245,7 +245,7 @@ When `--resume` is set:
 5. Reset `retries` to 0 in the state file before resuming (so the resumed stage gets fresh retry attempts).
 
 6. Re-validate values from the state file before proceeding:
-   - Validate `autonomy` is one of `cautious`, `balanced`, `autopilot`
+   - Validate `ask` is one of `always`, `smart`, `never`
    - Validate `brainstorm_file` exists (if resuming the specify stage)
    - Validate `stage_index` is in range 0-8
 
@@ -304,14 +304,14 @@ The pipeline executes 9 stages in fixed order:
 5. Update state file with `feature_branch`.
 6. Proceed to Stage 1.
 
-**Worktree integration**: If the `worktrees` trait is enabled, the specify command's overlay will create a worktree automatically. The session will be in the worktree after this stage. All subsequent stages run inside the worktree without any special handling by yolo.
+**Worktree integration**: If the `worktrees` trait is enabled, the specify command's overlay will create a worktree automatically. The session will be in the worktree after this stage. All subsequent stages run inside the worktree without any special handling by ship.
 
 ### Stage 1: Clarify
 
 1. Update state file: `stage: "clarify"`, `stage_index: 1`.
 2. Invoke `/speckit.clarify` on the generated spec.
 3. The clarify command will ask up to 5 questions to resolve ambiguities.
-4. **Autonomy interaction**: In `autopilot` mode, accept recommended answers automatically. In `balanced` mode, accept recommended answers. In `cautious` mode, present each question to the user.
+4. **Oversight interaction**: In `never` mode, accept recommended answers automatically. In `smart` mode, accept recommended answers. In `always` mode, present each question to the user.
 5. After clarification completes, proceed to Stage 2.
 
 ### Stage 2: Review Spec
@@ -319,7 +319,7 @@ The pipeline executes 9 stages in fixed order:
 1. Update state file: `stage: "review-spec"`, `stage_index: 2`.
 2. Invoke `{Skill: spex:review-spec}` to validate spec quality.
 3. Capture the review findings and overall assessment.
-4. Apply **Autonomy Decision Logic** (see below) to handle findings.
+4. Apply **Oversight Decision Logic** (see below) to handle findings.
 5. After findings are resolved (or pipeline pauses), proceed to Stage 3.
 
 ### Stage 3: Plan
@@ -334,7 +334,7 @@ The pipeline executes 9 stages in fixed order:
 1. Update state file: `stage: "review-plan"`, `stage_index: 4`.
 2. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
 3. This generates `REVIEWERS.md`.
-4. Capture findings and apply **Autonomy Decision Logic**.
+4. Capture findings and apply **Oversight Decision Logic**.
 5. After findings are resolved, proceed to Stage 5.
 
 ### Stage 5: Tasks
@@ -359,7 +359,7 @@ The pipeline executes 9 stages in fixed order:
    - Pass spec path and feature directory.
    - Pass invocation context as `superpowers`.
 3. The deep-review skill dispatches 5 review agents and runs the autonomous fix loop.
-4. Apply **Autonomy Decision Logic** to any remaining findings after the fix loop.
+4. Apply **Oversight Decision Logic** to any remaining findings after the fix loop.
 5. After findings are resolved, proceed to Stage 8.
 
 ### Stage 8: Verify
@@ -368,9 +368,9 @@ The pipeline executes 9 stages in fixed order:
 2. Invoke `{Skill: spex:verification-before-completion}` for final verification.
 3. This runs tests, validates spec compliance, and checks for drift.
 4. If verification passes, proceed to Pipeline Completion.
-5. If verification fails, apply **Autonomy Decision Logic**.
+5. If verification fails, apply **Oversight Decision Logic**.
 
-## Autonomy Decision Logic
+## Oversight Decision Logic
 
 After each review stage (review-spec, review-plan, deep-review, verify), evaluate the findings:
 
@@ -378,14 +378,14 @@ After each review stage (review-spec, review-plan, deep-review, verify), evaluat
 
 Classify each finding into one of three categories:
 
-**Unambiguous** (auto-fixable in `balanced` and `autopilot`):
+**Unambiguous** (auto-fixable in `smart` and `never`):
 - Formatting issues (indentation, whitespace, line length)
 - Style violations (naming conventions, import ordering)
 - Typos in comments or documentation
 - Missing imports or unused variables
 - Minor spec wording improvements
 
-**Ambiguous** (requires judgment, pauses in `balanced`):
+**Ambiguous** (requires judgment, pauses in `smart`):
 - Architecture or design changes
 - API contract modifications
 - Requirement interpretation questions
@@ -393,7 +393,7 @@ Classify each finding into one of three categories:
 - Missing functionality that could be intentional
 - Unclear whether a finding is a bug or a feature
 
-**Blocker** (always pauses, even in `autopilot`):
+**Blocker** (always pauses, even in `never`):
 - Compilation errors or syntax errors
 - Missing critical dependencies
 - Failing tests that cannot be auto-resolved
@@ -401,19 +401,19 @@ Classify each finding into one of three categories:
 - Security vulnerabilities
 - Data loss risks
 
-### Autonomy Rules
+### Oversight Rules
 
-| Autonomy Level | Unambiguous | Ambiguous | Blocker |
+| Oversight Level | Unambiguous | Ambiguous | Blocker |
 |----------------|-------------|-----------|---------|
-| `cautious` | Pause | Pause | Pause |
-| `balanced` | Auto-fix | Pause | Pause |
-| `autopilot` | Auto-fix | Auto-fix | Pause |
+| `always` | Pause | Pause | Pause |
+| `smart` | Auto-fix | Pause | Pause |
+| `never` | Auto-fix | Auto-fix | Pause |
 
 ### Applying the Rules
 
 1. After a review stage completes, collect all findings.
 2. Classify each finding using the categories above.
-3. Based on the autonomy level:
+3. Based on the oversight level:
    - **Auto-fix**: Apply the fix, increment retry count, re-run the review stage.
    - **Pause**: Present findings to user (see Pause and Resume below).
 4. If no findings need attention, proceed to the next stage.
@@ -422,11 +422,11 @@ Classify each finding into one of three categories:
 
 When auto-fixing findings:
 
-1. Apply fixes for all findings classified as auto-fixable under the current autonomy level.
+1. Apply fixes for all findings classified as auto-fixable under the current oversight level.
 2. Increment `retries` in the state file.
 3. Re-run the same review stage to verify fixes.
 4. If new findings appear, classify and handle them.
-5. **Max 2 retry cycles per stage.** After 2 retries with remaining findings, pause regardless of autonomy level:
+5. **Max 2 retry cycles per stage.** After 2 retries with remaining findings, pause regardless of oversight level:
 
 ```
 Pipeline paused after 2 fix cycles for stage "deep-review".
@@ -491,7 +491,7 @@ After all stages complete successfully:
 
 **Feature branch:** <branch-name>
 **Stages completed:** 9/9
-**Autonomy mode:** <mode>
+**Oversight mode:** <mode>
 **Elapsed time:** <duration>
 
 All stages passed successfully:
@@ -506,7 +506,7 @@ All stages passed successfully:
   8. verify     - verification passed
 ```
 
-4. Clean up: `rm -f .specify/.spex-yolo-phase`
+4. Clean up: `rm -f .specify/.spex-ship-phase`
 
 ### PR Creation (if --create-pr)
 
@@ -544,7 +544,7 @@ If `--create-pr` is set and all stages passed:
    - Tasks: \`$SPEC_DIR/tasks.md\`
    - Review Guide: \`$SPEC_DIR/REVIEWERS.md\`
 
-   Generated by \`/spex:yolo\` in $AUTONOMY mode.
+   Generated by \`/spex:ship\` in $AUTONOMY mode.
 
    Assisted-By: Claude Code
    PREOF
@@ -569,7 +569,7 @@ Next steps:
 ## Integration
 
 **This skill is invoked by:**
-- Users directly via `/spex:yolo`
+- Users directly via `/spex:ship`
 
 **This skill invokes:**
 - `/speckit.specify` (Stage 0)
@@ -583,4 +583,4 @@ Next steps:
 - `{Skill: spex:verification-before-completion}` (Stage 8)
 
 **Required traits:** `superpowers`, `deep-review`
-**Optional trait integration:** `worktrees` (handled by specify overlay, no yolo-specific logic)
+**Optional trait integration:** `worktrees` (handled by specify overlay, no ship-specific logic)

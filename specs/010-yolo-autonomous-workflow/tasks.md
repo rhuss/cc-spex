@@ -1,4 +1,4 @@
-# Tasks: Autonomous Full-Cycle Workflow (spex:yolo)
+# Tasks: Autonomous Full-Cycle Workflow (spex:ship)
 
 **Input**: Design documents from `/specs/010-yolo-autonomous-workflow/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
@@ -25,7 +25,7 @@
 
 **Purpose**: Create skill file structure and frontmatter
 
-- [x] T001 Create skill directory and SKILL.md with frontmatter (name, description, argument-hint) at `spex/skills/yolo/SKILL.md`
+- [x] T001 Create skill directory and SKILL.md with frontmatter (name, description, argument-hint) at `spex/skills/ship/SKILL.md`
 
 ---
 
@@ -35,12 +35,12 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T002 Write Prerequisites section in `spex/skills/yolo/SKILL.md`: validate superpowers and deep-review traits are enabled by reading `.specify/spex-traits.json` with `jq`; fail with clear enable instructions if missing
-- [x] T003 Write Argument Parsing section in `spex/skills/yolo/SKILL.md`: parse brainstorm file path (positional), `--autonomy` flag with validation (cautious/balanced/autopilot, default balanced), `--create-pr` flag, `--resume` flag, `--start-from <stage>` flag with stage name validation, and external tool flags (`--no-external`, `--[no-]coderabbit`, `--[no-]copilot`) following the review-code skill's flag resolution pattern with config defaults from `.specify/spex-traits.json`
-- [x] T004 Write Brainstorm File Resolution section in `spex/skills/yolo/SKILL.md`: if path provided, validate it exists; if omitted, auto-detect highest-numbered file in `brainstorm/` directory; fail with error listing available brainstorm files if none found
-- [x] T005 Write State File Management section in `spex/skills/yolo/SKILL.md`: define helper instructions for writing `.specify/.spex-yolo-phase` JSON (stage, stage_index, total_stages, autonomy, started_at, retries, status, brainstorm_file, feature_branch) at each stage transition; include cleanup on completion
-- [x] T006 Write Dirty Worktree Check section in `spex/skills/yolo/SKILL.md`: check `git status --porcelain` before starting; if dirty, fail with message to commit or stash changes
-- [x] T007 Write External Tool Auth Validation section in `spex/skills/yolo/SKILL.md`: if `--coderabbit` is explicitly set, validate CodeRabbit authentication at startup before any pipeline work; fail with clear error if auth check fails
+- [x] T002 Write Prerequisites section in `spex/skills/ship/SKILL.md`: validate superpowers and deep-review traits are enabled by reading `.specify/spex-traits.json` with `jq`; fail with clear enable instructions if missing
+- [x] T003 Write Argument Parsing section in `spex/skills/ship/SKILL.md`: parse brainstorm file path (positional), `--ask` flag with validation (always/smart/never, default smart), `--create-pr` flag, `--resume` flag, `--start-from <stage>` flag with stage name validation, and external tool flags (`--no-external`, `--[no-]coderabbit`, `--[no-]copilot`) following the review-code skill's flag resolution pattern with config defaults from `.specify/spex-traits.json`
+- [x] T004 Write Brainstorm File Resolution section in `spex/skills/ship/SKILL.md`: if path provided, validate it exists; if omitted, auto-detect highest-numbered file in `brainstorm/` directory; fail with error listing available brainstorm files if none found
+- [x] T005 Write State File Management section in `spex/skills/ship/SKILL.md`: define helper instructions for writing `.specify/.spex-ship-phase` JSON (stage, stage_index, total_stages, autonomy, started_at, retries, status, brainstorm_file, feature_branch) at each stage transition; include cleanup on completion
+- [x] T006 Write Dirty Worktree Check section in `spex/skills/ship/SKILL.md`: check `git status --porcelain` before starting; if dirty, fail with message to commit or stash changes
+- [x] T007 Write External Tool Auth Validation section in `spex/skills/ship/SKILL.md`: if `--coderabbit` is explicitly set, validate CodeRabbit authentication at startup before any pipeline work; fail with clear error if auth check fails
 
 **Checkpoint**: Foundation ready - skill has all validation, parsing, and state management infrastructure
 
@@ -50,39 +50,39 @@
 
 **Goal**: Execute the full 9-stage pipeline autonomously from a brainstorm document
 
-**Independent Test**: Create a brainstorm document, run `/spex:yolo brainstorm/05-test-feature.md`, verify all 9 stages execute in sequence producing spec, plan, tasks, implementation, review, and verification
+**Independent Test**: Create a brainstorm document, run `/spex:ship brainstorm/05-test-feature.md`, verify all 9 stages execute in sequence producing spec, plan, tasks, implementation, review, and verification
 
 ### Implementation for User Story 1
 
-- [x] T008 [US1] Write Pipeline Stages section in `spex/skills/yolo/SKILL.md`: define the ordered stage list (specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify) with stage indices 0-8 and the invocation method for each (slash commands for speckit stages, `{Skill:}` references for spex skills)
-- [x] T009 [US1] Write Stage 0 (specify) orchestration in `spex/skills/yolo/SKILL.md`: read brainstorm document content, invoke `/speckit.specify` passing brainstorm content as feature description, update state file after completion
-- [x] T010 [US1] Write Stage 1 (clarify) orchestration in `spex/skills/yolo/SKILL.md`: invoke `/speckit.clarify` on the generated spec, update state file
-- [x] T011 [US1] Write Stage 2 (review-spec) orchestration in `spex/skills/yolo/SKILL.md`: invoke `{Skill: spex:review-spec}`, capture review findings, update state file
-- [x] T012 [US1] Write Stage 3 (plan) orchestration in `spex/skills/yolo/SKILL.md`: invoke `/speckit.plan`, update state file after plan artifacts generated
-- [x] T013 [US1] Write Stage 4 (review-plan) orchestration in `spex/skills/yolo/SKILL.md`: invoke `{Skill: spex:review-plan}`, capture findings, update state file
-- [x] T014 [US1] Write Stage 5 (tasks) orchestration in `spex/skills/yolo/SKILL.md`: invoke `/speckit.tasks`, update state file
-- [x] T015 [US1] Write Stage 6 (implement) orchestration in `spex/skills/yolo/SKILL.md`: invoke `/speckit.implement`, update state file after implementation completes
-- [x] T016 [US1] Write Stage 7 (deep-review) orchestration in `spex/skills/yolo/SKILL.md`: invoke `{Skill: spex:deep-review}` with resolved external tool flags passed through, update state file
-- [x] T017 [US1] Write Stage 8 (verify) orchestration in `spex/skills/yolo/SKILL.md`: invoke `{Skill: spex:verification-before-completion}`, update state file, mark pipeline as completed
-- [x] T018 [US1] Write Pipeline Completion section in `spex/skills/yolo/SKILL.md`: report completion summary (stages completed, time elapsed, branch name), clean up state file, inform user of next steps
+- [x] T008 [US1] Write Pipeline Stages section in `spex/skills/ship/SKILL.md`: define the ordered stage list (specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify) with stage indices 0-8 and the invocation method for each (slash commands for speckit stages, `{Skill:}` references for spex skills)
+- [x] T009 [US1] Write Stage 0 (specify) orchestration in `spex/skills/ship/SKILL.md`: read brainstorm document content, invoke `/speckit.specify` passing brainstorm content as feature description, update state file after completion
+- [x] T010 [US1] Write Stage 1 (clarify) orchestration in `spex/skills/ship/SKILL.md`: invoke `/speckit.clarify` on the generated spec, update state file
+- [x] T011 [US1] Write Stage 2 (review-spec) orchestration in `spex/skills/ship/SKILL.md`: invoke `{Skill: spex:review-spec}`, capture review findings, update state file
+- [x] T012 [US1] Write Stage 3 (plan) orchestration in `spex/skills/ship/SKILL.md`: invoke `/speckit.plan`, update state file after plan artifacts generated
+- [x] T013 [US1] Write Stage 4 (review-plan) orchestration in `spex/skills/ship/SKILL.md`: invoke `{Skill: spex:review-plan}`, capture findings, update state file
+- [x] T014 [US1] Write Stage 5 (tasks) orchestration in `spex/skills/ship/SKILL.md`: invoke `/speckit.tasks`, update state file
+- [x] T015 [US1] Write Stage 6 (implement) orchestration in `spex/skills/ship/SKILL.md`: invoke `/speckit.implement`, update state file after implementation completes
+- [x] T016 [US1] Write Stage 7 (deep-review) orchestration in `spex/skills/ship/SKILL.md`: invoke `{Skill: spex:deep-review}` with resolved external tool flags passed through, update state file
+- [x] T017 [US1] Write Stage 8 (verify) orchestration in `spex/skills/ship/SKILL.md`: invoke `{Skill: spex:verification-before-completion}`, update state file, mark pipeline as completed
+- [x] T018 [US1] Write Pipeline Completion section in `spex/skills/ship/SKILL.md`: report completion summary (stages completed, time elapsed, branch name), clean up state file, inform user of next steps
 
-**Checkpoint**: Full pipeline executes end-to-end in default balanced mode with no review findings
+**Checkpoint**: Full pipeline executes end-to-end in default smart mode with no review findings
 
 ---
 
-## Phase 4: User Story 2 - Control Autonomy Level (Priority: P2)
+## Phase 4: User Story 2 - Control Ask Level (Priority: P2)
 
-**Goal**: Implement three autonomy levels that control when the pipeline pauses vs auto-fixes
+**Goal**: Implement three ask levels that control when the pipeline pauses vs auto-fixes
 
-**Independent Test**: Run `/spex:yolo --autonomy cautious` and verify it stops at each review finding. Run `/spex:yolo --autonomy autopilot` and verify it only stops on blockers.
+**Independent Test**: Run `/spex:ship --ask always` and verify it stops at each review finding. Run `/spex:ship --ask never` and verify it only stops on blockers.
 
 ### Implementation for User Story 2
 
-- [x] T019 [US2] Write Autonomy Decision Logic section in `spex/skills/yolo/SKILL.md`: after each review stage (review-spec, review-plan, deep-review), classify findings as unambiguous (formatting, style, minor), ambiguous (architecture, design, requirements), or blocker (compilation, missing deps, test failures); apply autonomy rules: cautious pauses on all, balanced auto-fixes unambiguous and pauses on ambiguous, autopilot fixes all and pauses only on blockers
-- [x] T020 [US2] Write Auto-Fix and Re-run section in `spex/skills/yolo/SKILL.md`: when auto-fixing, apply fixes then re-run the same review stage; track retry count in state file; max 2 retry cycles per stage; after 2 retries with remaining findings, pause regardless of autonomy level
-- [x] T021 [US2] Write Pause and Resume section in `spex/skills/yolo/SKILL.md`: when pausing, present all findings to user with context; update state file status to "paused"; after user responds with guidance, update state to "running" and resume from current stage
+- [x] T019 [US2] Write Autonomy Decision Logic section in `spex/skills/ship/SKILL.md`: after each review stage (review-spec, review-plan, deep-review), classify findings as unambiguous (formatting, style, minor), ambiguous (architecture, design, requirements), or blocker (compilation, missing deps, test failures); apply autonomy rules: cautious pauses on all, balanced auto-fixes unambiguous and pauses on ambiguous, autopilot fixes all and pauses only on blockers
+- [x] T020 [US2] Write Auto-Fix and Re-run section in `spex/skills/ship/SKILL.md`: when auto-fixing, apply fixes then re-run the same review stage; track retry count in state file; max 2 retry cycles per stage; after 2 retries with remaining findings, pause regardless of ask level
+- [x] T021 [US2] Write Pause and Resume section in `spex/skills/ship/SKILL.md`: when pausing, present all findings to user with context; update state file status to "paused"; after user responds with guidance, update state to "running" and resume from current stage
 
-**Checkpoint**: All three autonomy modes work correctly with appropriate pause/continue behavior
+**Checkpoint**: All three ask modes work correctly with appropriate pause/continue behavior
 
 ---
 
@@ -90,11 +90,11 @@
 
 **Goal**: Pass review tool flags through to the deep-review stage
 
-**Independent Test**: Run `/spex:yolo --no-coderabbit` and verify CodeRabbit is skipped during deep-review. Run `/spex:yolo --coderabbit` with invalid auth and verify startup failure.
+**Independent Test**: Run `/spex:ship --no-coderabbit` and verify CodeRabbit is skipped during deep-review. Run `/spex:ship --coderabbit` with invalid auth and verify startup failure.
 
 ### Implementation for User Story 3
 
-- [x] T022 [US3] Write External Tool Flag Pass-through in `spex/skills/yolo/SKILL.md`: in Stage 7 (deep-review), pass resolved external tool settings (coderabbit: true/false, copilot: true/false) to the deep-review skill invocation; ensure flags from CLI override config defaults following the same resolution order as review-code
+- [x] T022 [US3] Write External Tool Flag Pass-through in `spex/skills/ship/SKILL.md`: in Stage 7 (deep-review), pass resolved external tool settings (coderabbit: true/false, copilot: true/false) to the deep-review skill invocation; ensure flags from CLI override config defaults following the same resolution order as review-code
 
 **Checkpoint**: External tool flags correctly control deep-review behavior
 
@@ -104,11 +104,11 @@
 
 **Goal**: Integrate with the worktrees trait so specify creates the worktree and subsequent stages run inside it
 
-**Independent Test**: Enable worktrees trait, run `/spex:yolo`. Verify specify creates the worktree and subsequent stages run inside it.
+**Independent Test**: Enable worktrees trait, run `/spex:ship`. Verify specify creates the worktree and subsequent stages run inside it.
 
 ### Implementation for User Story 4
 
-- [x] T023 [US4] Write Worktree Integration note in `spex/skills/yolo/SKILL.md`: document that worktree creation is handled by the worktrees trait's overlay on `/speckit.specify`; yolo does not need to manage worktrees directly; after specify completes, the session is already in the worktree context and subsequent stages inherit it automatically
+- [x] T023 [US4] Write Worktree Integration note in `spex/skills/ship/SKILL.md`: document that worktree creation is handled by the worktrees trait's overlay on `/speckit.specify`; ship does not need to manage worktrees directly; after specify completes, the session is already in the worktree context and subsequent stages inherit it automatically
 
 **Checkpoint**: Pipeline runs correctly with worktrees trait enabled, all stages execute in the worktree
 
@@ -118,11 +118,11 @@
 
 **Goal**: Create a pull request after successful pipeline completion when `--create-pr` is specified
 
-**Independent Test**: Run `/spex:yolo --create-pr` and verify a PR is created after verify succeeds.
+**Independent Test**: Run `/spex:ship --create-pr` and verify a PR is created after verify succeeds.
 
 ### Implementation for User Story 5
 
-- [x] T024 [US5] Write PR Creation section in `spex/skills/yolo/SKILL.md`: after verify succeeds and `--create-pr` is set, push feature branch to remote (upstream if configured, otherwise origin) and create PR using `gh pr create` with title from feature name and body summarizing the feature with link to spec; if `--create-pr` is not set, inform user of successful completion without creating PR
+- [x] T024 [US5] Write PR Creation section in `spex/skills/ship/SKILL.md`: after verify succeeds and `--create-pr` is set, push feature branch to remote (upstream if configured, otherwise origin) and create PR using `gh pr create` with title from feature name and body summarizing the feature with link to spec; if `--create-pr` is not set, inform user of successful completion without creating PR
 
 **Checkpoint**: PR creation works when flag is set; no PR created when flag is omitted
 
@@ -132,12 +132,12 @@
 
 **Goal**: Resume interrupted pipelines and start from a specific stage
 
-**Independent Test**: Interrupt a pipeline with Ctrl+C, then run `/spex:yolo --resume` and verify it picks up from the next stage. Run `/spex:yolo --start-from plan` and verify it skips specify/clarify/review-spec.
+**Independent Test**: Interrupt a pipeline with Ctrl+C, then run `/spex:ship --resume` and verify it picks up from the next stage. Run `/spex:ship --start-from plan` and verify it skips specify/clarify/review-spec.
 
 ### Implementation for User Story 6
 
-- [x] T025 [US6] Write Resume Logic section in `spex/skills/yolo/SKILL.md`: when `--resume` is set, read `.specify/.spex-yolo-phase` JSON, validate state file exists and contains a valid pipeline state (status: paused or running), extract the last completed stage, and begin execution from the next stage in the pipeline sequence; fail with clear error if no state file exists
-- [x] T026 [US6] Write Start-From Logic section in `spex/skills/yolo/SKILL.md`: when `--start-from <stage>` is set, validate stage name against the 9 defined stages, skip all prior stages (assuming their artifacts already exist), and begin pipeline execution from the named stage; warn if expected artifacts (spec.md, plan.md, tasks.md) are missing for stages that depend on them
+- [x] T025 [US6] Write Resume Logic section in `spex/skills/ship/SKILL.md`: when `--resume` is set, read `.specify/.spex-ship-phase` JSON, validate state file exists and contains a valid pipeline state (status: paused or running), extract the last completed stage, and begin execution from the next stage in the pipeline sequence; fail with clear error if no state file exists
+- [x] T026 [US6] Write Start-From Logic section in `spex/skills/ship/SKILL.md`: when `--start-from <stage>` is set, validate stage name against the 9 defined stages, skip all prior stages (assuming their artifacts already exist), and begin pipeline execution from the named stage; warn if expected artifacts (spec.md, plan.md, tasks.md) are missing for stages that depend on them
 
 **Checkpoint**: `--resume` correctly picks up interrupted pipelines; `--start-from` skips stages as expected
 
@@ -147,7 +147,7 @@
 
 **Purpose**: Status line integration, documentation, and validation
 
-- [x] T027 [P] Create status line script at `spex/scripts/spex-yolo-statusline.sh` that reads `.specify/.spex-yolo-phase` JSON and outputs a compact status string (e.g., "yolo: implement [6/9] balanced") for Claude Code status line integration
+- [x] T027 [P] Create status line script at `spex/scripts/spex-ship-statusline.sh` that reads `.specify/.spex-ship-phase` JSON and outputs a compact status string (e.g., "ship: implement [6/9] balanced") for Claude Code status line integration
 - [x] T028 Run `make reinstall` and validate the skill appears in Claude Code's skill list; test with a sample brainstorm document in balanced mode
 - [x] T029 Verify all edge cases from spec: missing brainstorm file error, missing traits error, dirty worktree error, max retry behavior, Ctrl+C state file persistence, `--resume` with no state file, `--start-from` with invalid stage name
 
@@ -223,7 +223,7 @@ Task: "Create status line script" (T027, polish)
 1. Complete Phase 1: Setup (T001)
 2. Complete Phase 2: Foundational (T002-T007)
 3. Complete Phase 3: User Story 1 (T008-T018)
-4. **STOP and VALIDATE**: Run `/spex:yolo brainstorm/05-test.md` end-to-end
+4. **STOP and VALIDATE**: Run `/spex:ship brainstorm/05-test.md` end-to-end
 5. The pipeline works in balanced mode with full stage execution
 
 ### Incremental Delivery
@@ -241,7 +241,7 @@ Task: "Create status line script" (T027, polish)
 ## Notes
 
 - Total: 29 tasks across 9 phases
-- All tasks write to a single file: `spex/skills/yolo/SKILL.md`
+- All tasks write to a single file: `spex/skills/ship/SKILL.md`
 - The skill is pure Markdown (instructions for Claude), not executable code
 - State file management is via `jq` commands embedded in the skill instructions
 - No new hooks, commands, or overlays needed for this feature
