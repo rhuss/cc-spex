@@ -1,6 +1,6 @@
 # cc-spex Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-28
+Auto-generated from all feature plans. Last updated: 2026-03-29
 
 ## Active Technologies
 - Bash (POSIX-compatible), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep`/`rg` (sentinel detection)
@@ -10,6 +10,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-28
 - File-based (JSON config, Markdown documents) (008-rename-to-cc-spex)
 - Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), spex plugin infrastructure, Claude Code Agent Teams (parallel mode) (009-deep-review-trait)
 - File-based (`.specify/spex-traits.json` for config, Markdown for artifacts) (009-deep-review-trait)
+- Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), existing spex skills and speckit commands (010-yolo-autonomous-workflow)
+- JSON state file (`.specify/.spex-yolo-phase`), Markdown artifacts (010-yolo-autonomous-workflow)
 
 ## Project Structure
 
@@ -38,5 +40,6 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 <!-- MANUAL ADDITIONS END -->
 
 ## Recent Changes
+- 010-yolo-autonomous-workflow: Added Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), existing spex skills and speckit commands
 - 009-deep-review-trait: Added Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), spex plugin infrastructure, Claude Code Agent Teams (parallel mode)
 - 008-rename-to-cc-spex: Added Bash (POSIX-compatible), Python 3 (hooks), Markdown (commands/skills) + `jq` (JSON parsing), `specify` CLI (spec-kit), Claude Code plugin system

@@ -90,7 +90,9 @@ A developer wants the pipeline to create a pull request after successful complet
 
 - What happens when the brainstorm document cannot be found? The skill fails with a clear error listing the expected location and available brainstorm files.
 - What happens when a stage fails after max retries (2 cycles)? The pipeline stops, presents all findings, and asks the user for guidance. The user's response triggers automatic resume.
-- What happens when the user interrupts the pipeline (Ctrl+C)? The state file (`.specify/.spex-yolo-phase`) remains with the last completed stage, but no automatic resume is attempted on next invocation.
+- What happens when the user interrupts the pipeline (Ctrl+C)? The state file (`.specify/.spex-yolo-phase`) remains with the last completed stage. The user can resume with `/spex:yolo --resume`.
+- What happens when the user runs `--resume` but no state file exists? The skill fails with a clear error: "No interrupted pipeline found. Start a new pipeline with `/spex:yolo <brainstorm-file>`."
+- What happens when the user runs `--start-from` with an invalid stage name? The skill fails listing all valid stage names.
 - What happens when `superpowers` or `deep-review` trait is not enabled? The skill fails at startup with a message listing the missing traits and how to enable them (`/spex:traits enable superpowers deep-review`).
 - What happens when an external tool (CodeRabbit) is explicitly requested but not authenticated? The skill fails at startup before any pipeline work begins.
 - What happens when the worktree is dirty before specify? The skill warns and asks the user to commit or stash changes before proceeding.
@@ -112,6 +114,8 @@ A developer wants the pipeline to create a pull request after successful complet
 - **FR-011**: System MUST validate external tool authentication at startup when external tools are explicitly requested
 - **FR-012**: System MUST produce full verbose output from each stage so the user can follow progress in real time
 - **FR-013**: System MUST integrate with the worktrees trait: specify creates the worktree, subsequent stages run inside it
+- **FR-014**: System MUST support a `--resume` flag that reads `.specify/.spex-yolo-phase`, validates the state file exists and contains a valid interrupted pipeline, and resumes execution from the next uncompleted stage
+- **FR-015**: System MUST support a `--start-from <stage>` flag that skips all stages before the named stage, validates the stage name is one of the 9 defined stages, and begins execution from that stage (assumes prior artifacts exist)
 
 ### Key Entities
 
@@ -128,6 +132,18 @@ A developer wants the pipeline to create a pull request after successful complet
 - **SC-003**: The pipeline correctly identifies and pauses on genuinely ambiguous issues that require human judgment
 - **SC-004**: The status file (`.specify/.spex-yolo-phase`) accurately reflects the current pipeline state at all times during execution
 - **SC-005**: All existing trait behaviors (superpowers quality gates, worktree creation, deep-review dispatch) function identically when invoked through yolo vs. manual invocation
+
+## Clarifications
+
+### Session 2026-03-29
+
+- Q: What should be explicitly out of scope? → A: Exclude custom stage ordering, parallelizing stages, and new trait registration. Include `--resume` and `--start-from` as in-scope features (FR-014, FR-015).
+
+## Out of Scope
+
+- **Custom stage ordering**: The 9 stages always run in the same fixed order. No way to reorder them.
+- **Parallelizing stages**: Stages run sequentially. No concurrent execution of stages.
+- **New trait registration**: Yolo is a skill, not a trait. It has no overlays and does not appear in `/spex:traits list`.
 
 ## Assumptions
 
