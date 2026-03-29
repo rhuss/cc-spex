@@ -227,11 +227,13 @@ Overall: 16/18 = 89%
 
 ### 8. Append Code Review Guide to REVIEWERS.md (MANDATORY)
 
-After generating the compliance report (step 7), append a **Code Review Guide** section to the existing `REVIEWERS.md`. This section helps human reviewers focus their code review in 30 minutes, just as the Spec Review Guide (written during planning) helps with spec review.
+After generating the compliance report (step 7), append or update a **Code Review Guide** section in the existing `REVIEWERS.md`. This section helps human reviewers focus their code review in 30 minutes, using the same structure as the Spec Review Guide.
 
-**If REVIEWERS.md does not exist**, create it with just the Code Review Guide section (the spec review section was skipped or the file was lost).
+**If REVIEWERS.md does not exist**, create it with just the Code Review Guide section.
 
-**CRITICAL:** This follows the same philosophy as the Spec Review Guide: question-driven, honest about uncertainty, focused on what needs human judgment. Do NOT dump compliance scores, requirement checklists, or verification results into REVIEWERS.md. Those belong in the console report (step 7).
+**If a Code Review Guide section already exists** (from a prior implementation phase), append a new dated subsection under it rather than replacing it. Incremental PRs build up the review guide over time, and reviewers need context from all phases.
+
+**CRITICAL:** This follows the exact same philosophy as the Spec Review Guide: time-boxed, question-driven, honest about uncertainty, focused on high-level questions that need human judgment. Do NOT dump compliance scores, requirement checklists, or verification results into REVIEWERS.md. Those belong in the console report (step 7).
 
 **Append the following to REVIEWERS.md:**
 
@@ -241,61 +243,69 @@ After generating the compliance report (step 7), append a **Code Review Guide** 
 
 ## Code Review Guide (30 minutes)
 
-> This section was added after implementation. It guides a code reviewer through
-> the changes, focusing on areas that need human judgment.
+> [If this is the first code review entry, use this intro:]
+> This section guides a code reviewer through the implementation changes,
+> focusing on high-level questions that need human judgment.
+>
+> [If appending to an existing code review guide, add a dated subsection:]
+> ### Phase N: [brief description] (YYYY-MM-DD)
 
 **Changed files:** [N files changed, summary of which areas: e.g. "3 source files,
 2 config files, 1 script"]
 
-### Where to start (5 min)
+### Understanding the changes (8 min)
 
-[Point the reviewer to the 1-2 files that form the core of the change. Briefly
-explain the reading order and why.]
+[Point the reviewer to the 1-2 files that form the core of the change.
+Explain the reading order. Frame as questions.]
 
 - Start with `[main-file]`: [Why this is the entry point for understanding]
 - Then `[second-file]`: [What it does in relation to the first]
+- Question: [High-level question about the overall approach, e.g. "Does this
+  decomposition make sense, or would a single module be clearer?"]
 
-### Implementation choices worth questioning (15 min)
+### Key decisions that need your eyes (12 min)
 
-[For each notable implementation choice, point to the code and frame as a question.
-Only include choices where alternatives existed or the reviewer's domain knowledge
-could improve the outcome.]
+[For each notable implementation decision, point to the code and frame as a
+question. Mirror the spec review structure: decision title, brief context,
+question for the reviewer. Only include decisions where human expertise or
+domain knowledge could change the outcome.]
 
-**[Choice 1 title]** (`path/to/file:line`)
+**[Decision 1 title]** (`path/to/file:line`, relates to [FR-NNN](spec.md#anchor))
 
-[1-2 sentences on what was done and why.]
+[1-2 sentences on what was decided and what alternatives existed.]
 - Question: [e.g. "Is this the right data structure given our expected scale?"]
 
-**[Choice 2 title]** (`path/to/file:line`)
+**[Decision 2 title]** (`path/to/file:line`)
 
-[Same pattern. Focus on choices where human expertise adds value.]
+[Same pattern. Focus on decisions where reviewer input adds value.]
 
-### Deviations from the plan (5 min)
+### Areas where I'm less certain (5 min)
 
-[List any places where the implementation diverged from [plan.md](plan.md) or
-[spec.md](spec.md). Be specific about what changed and why. Link to the
-relevant spec/plan section. If there are no deviations, say so explicitly:
-"No deviations from [plan.md](plan.md) were identified."]
+[Be honest about implementation areas where the AI's interpretation may be
+wrong, the approach may not be idiomatic, or edge cases may not be covered.
+Link to relevant spec sections where the requirement was ambiguous.]
 
-- `[file:line]`: [What differs from [plan section](plan.md#anchor), and the reason]
-
-### What I'm less confident about (5 min)
-
-[Be honest about implementation areas where you are uncertain. Maybe you
-chose an approach that works but might not be idiomatic. Maybe error handling
-covers the spec but you're unsure about real-world edge cases. Maybe a
-dependency's behavior is assumed but not verified.]
-
-- `[file:line]`: [What's uncertain and why it matters]
+- `[file:line]` ([spec context](spec.md#anchor)): [What's uncertain and why]
 - `[file:line]`: [Another area of uncertainty]
+
+### Deviations and risks (5 min)
+
+[List deviations from [plan.md](plan.md) and open risks, framed as questions.
+If there are no deviations, state explicitly: "No deviations from
+[plan.md](plan.md) were identified."]
+
+- `[file:line]`: [What differs from [plan section](plan.md#anchor), and why.
+  Question: "Is this deviation acceptable?"]
+- [Risk framed as question with spec reference]
 ```
 
 **Constraints for the Code Review Guide:**
-- **Target length:** ~400-800 words. Shorter than the spec guide because code speaks for itself.
-- **Question density:** Aim for 5-10 questions, each pointing to a specific file and line.
-- **Honesty requirement:** The "What I'm less confident about" section is mandatory. If you implemented everything perfectly, you are not being honest enough.
-- **No compliance dumps.** Don't list requirements and their status. Don't paste the compliance matrix. The reviewer can run the review themselves.
-- **Deviations are signal, not noise.** Every deviation from the plan is valuable context for a reviewer. Don't hide them, and don't apologize for them. Just explain what changed and why.
+- **Same structure as Spec Review Guide.** Time-boxed sections (8+12+5+5 = 30 min), question-driven, high-level focus.
+- **Target length:** ~400-800 words per entry. For incremental phases, each new subsection can be shorter (200-400 words).
+- **Question density:** Aim for 5-10 questions, each pointing to a specific file/line and framed at the level a senior reviewer cares about (not code style, but architectural choices).
+- **Honesty requirement:** The "Areas where I'm less certain" section is mandatory. If you implemented everything perfectly, you are not being honest enough.
+- **No compliance dumps.** Don't list requirements and their status. Don't paste the compliance matrix.
+- **Incremental builds.** If a Code Review Guide section already exists in REVIEWERS.md, add a new dated subsection (e.g., `### Phase 2: API endpoints (2026-03-29)`) rather than replacing the existing content. Each phase adds context for the reviewer.
 - **Hyperlink all references.** Every mention of a spec section, plan phase, or spec artifact MUST be a markdown hyperlink using relative paths (e.g., `[FR-003](spec.md#fr-003)`, `[Phase 2](plan.md#phase-2)`). Never use bare backtick references without a link.
 
 ### 9. Deep Review Enhancement (if trait enabled)
