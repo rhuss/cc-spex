@@ -62,10 +62,14 @@ case "$ASK" in
   *)      ASK_ICON="";;
 esac
 
+PREFIX="🧬 ${COLOR}${BOLD}spex:ship${RESET}"
+STAGE_DISPLAY="${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET}"
+PROGRESS="${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET}"
+
 if [ "$STATUS" = "paused" ]; then
-  printf "🔮 ${BOLD}spex:${RESET}${COLOR}ship${RESET} ${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET} ${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
+  printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
 elif [ "$STATUS" = "failed" ]; then
-  printf "🔮 ${BOLD}spex:${RESET}${COLOR}ship${RESET} ${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET} ${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET} ${ASK_ICON} ${RED}${BOLD}✗ failed${RESET}"
+  printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}✗ failed${RESET}"
 else
-  printf "🔮 ${BOLD}spex:${RESET}${COLOR}ship${RESET} ${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET} ${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET} ${ASK_ICON}"
+  printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON}"
 fi
