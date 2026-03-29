@@ -274,6 +274,51 @@ When `--start-from <stage>` is set:
 
 5. The brainstorm file is not needed when starting from a stage after `specify`. If starting from `specify`, a brainstorm file is required (auto-detect or fail).
 
+## Pipeline Discipline (MANDATORY)
+
+**These rules are non-negotiable. They override any judgment about efficiency or convenience.**
+
+### Rule 1: Every stage runs, in order, no exceptions
+
+When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, verify.
+
+You MUST NOT:
+- Skip a stage because its output artifact already exists
+- Skip a stage because you believe its output would be trivial
+- Skip a stage because a previous conversation already produced its artifact
+- Merge two stages into one (e.g., running plan and tasks together)
+- Reorder stages for any reason
+
+### Rule 2: Fresh start means fresh artifacts
+
+When running from stage 0 (specify), the pipeline creates all artifacts from scratch. If `spec.md`, `plan.md`, or `tasks.md` already exist from a prior run, they are overwritten by the new pipeline run. Do NOT reuse artifacts from previous runs unless resuming with `--resume` or explicitly starting later with `--start-from`.
+
+### Rule 3: Only `--start-from` and `--resume` allow skipping
+
+These are the ONLY two mechanisms for starting at a stage other than specify:
+- `--start-from <stage>`: User's explicit choice to skip prior stages. The user takes responsibility for ensuring prior artifacts exist and are valid.
+- `--resume`: Continues from where a previous run was interrupted, using the state file.
+
+If neither flag is set, the pipeline starts at stage 0 and runs through stage 8. No automatic detection of "oh, we can skip ahead because artifacts exist."
+
+### Rule 4: Stage gate validation
+
+Before executing each stage, verify that:
+1. The previous stage's state file entry shows it completed (stage_index is one less than current, or this is the first stage)
+2. The state file status was updated to `running` for the current stage
+
+If a stage fails or is interrupted, the pipeline MUST NOT silently proceed to the next stage. It must either pause (for findings), fail (for errors), or retry (within the 2-retry limit).
+
+### Rule 5: No implicit intelligence
+
+Do NOT apply "smart" behavior to the pipeline flow itself:
+- Do NOT decide that a brainstorm file is "clear enough" to skip clarify
+- Do NOT decide that a spec is "simple enough" to skip review-spec
+- Do NOT decide that implementation is "straightforward enough" to skip deep-review
+- Do NOT skip verify because all prior reviews passed
+
+The `--ask` flag controls oversight within review stages (how findings are handled). It does NOT control which stages run. ALL stages run regardless of the ask level.
+
 ## Pipeline Stages
 
 The pipeline executes 9 stages in fixed order:
@@ -290,7 +335,9 @@ The pipeline executes 9 stages in fixed order:
 | 7 | `deep-review` | `{Skill: spex:deep-review}` | Multi-perspective code review |
 | 8 | `verify` | `{Skill: spex:verification-before-completion}` | Final verification |
 
-### Stage 0: Specify
+### Stage 0: Specify (ALWAYS runs unless --start-from or --resume skips it)
+
+**Even if spec.md already exists**, this stage re-creates it from the brainstorm document. A fresh pipeline means fresh artifacts.
 
 1. Read the brainstorm document content.
 2. Update state file: `stage: "specify"`, `stage_index: 0`, `status: "running"`.
@@ -306,7 +353,9 @@ The pipeline executes 9 stages in fixed order:
 
 **Worktree integration**: If the `worktrees` trait is enabled, the specify command's overlay will create a worktree automatically. The session will be in the worktree after this stage. All subsequent stages run inside the worktree without any special handling by ship.
 
-### Stage 1: Clarify
+### Stage 1: Clarify (ALWAYS runs, even if the spec "looks clear")
+
+Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious from reading the spec.
 
 1. Update state file: `stage: "clarify"`, `stage_index: 1`.
 2. Invoke `/speckit.clarify` on the generated spec.
@@ -314,7 +363,9 @@ The pipeline executes 9 stages in fixed order:
 4. **Oversight interaction**: In `never` mode, accept recommended answers automatically. In `smart` mode, accept recommended answers. In `always` mode, present each question to the user.
 5. After clarification completes, proceed to Stage 2.
 
-### Stage 2: Review Spec
+### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
+
+Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities.
 
 1. Update state file: `stage: "review-spec"`, `stage_index: 2`.
 2. Invoke `{Skill: spex:review-spec}` to validate spec quality.
