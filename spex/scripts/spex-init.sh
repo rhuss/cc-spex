@@ -44,6 +44,50 @@ migrate_phase_marker() {
   fi
 }
 
+# --- Configure status line for ship pipeline ---
+configure_statusline() {
+  local settings_file=".claude/settings.json"
+  local script_dir
+  script_dir="$(dirname "$0")"
+  local statusline_script="$script_dir/spex-ship-statusline.sh"
+
+  # Only configure if the statusline script exists
+  [ -f "$statusline_script" ] || return 0
+
+  # Make it executable
+  chmod +x "$statusline_script" 2>/dev/null || true
+
+  # Resolve absolute path for the statusline command
+  local abs_script
+  abs_script="$(cd "$(dirname "$statusline_script")" && pwd)/$(basename "$statusline_script")"
+
+  mkdir -p .claude
+
+  if [ -f "$settings_file" ]; then
+    # Check if statusLine is already configured
+    if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
+      # Already has a statusLine config, don't overwrite
+      return 0
+    fi
+    # Merge statusLine into existing settings
+    local tmp
+    tmp=$(mktemp)
+    jq --arg cmd "$abs_script" '. + {"statusLine": {"type": "command", "command": $cmd}}' "$settings_file" > "$tmp"
+    mv "$tmp" "$settings_file"
+  else
+    # Create new settings file with statusLine
+    cat > "$settings_file" << EOF
+{
+  "statusLine": {
+    "type": "command",
+    "command": "$abs_script"
+  }
+}
+EOF
+  fi
+  echo "  Status line configured for ship pipeline progress"
+}
+
 # --- Apply trait overlays if configured ---
 apply_traits() {
   local script_dir
@@ -199,6 +243,7 @@ do_init() {
     migrate_phase_marker
     migrate_from_beads
     apply_traits
+    configure_statusline
     echo ""
     echo "READY"
   else
@@ -270,6 +315,7 @@ case "${1:-}" in
       fix_constitution
       migrate_from_beads
       apply_traits >/dev/null 2>&1 || true
+      configure_statusline 2>/dev/null || true
       echo "READY"
       exit 0
     fi
