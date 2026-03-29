@@ -251,3 +251,22 @@ When the implement skill is invoked with multiple tasks:
 - Using `Agent` tool with `run_in_background` instead of Agent Teams
 - Implementing tasks directly when 2+ independent tasks exist
 - Skipping the pre-flight check
+
+
+<!-- SPEX-TRAIT:worktrees -->
+## Worktree Context
+
+You are likely running in a worktree created by the `worktrees` trait. The spec and plan files in this worktree contain all context needed for implementation. No separate handoff file is needed.
+
+
+<!-- SPEX-TRAIT:deep-review -->
+## Deep Review Enhancement
+
+When `deep-review` trait is active, `spex:review-code` automatically runs
+multi-perspective review agents after spec compliance passes. Five agents
+(correctness, architecture, security, production-readiness, test-quality)
+analyze code independently, followed by an autonomous fix loop for Critical
+and Important findings (up to 3 rounds).
+
+No additional commands needed. The enhancement activates within the
+existing `spex:review-code` flow. See {Skill: spex:deep-review} for details.

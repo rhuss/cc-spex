@@ -225,14 +225,90 @@ Overall: 16/18 = 89%
 - If compliance = 100%: Proceed to verification
 ```
 
-### 8. Trigger Evolution if Needed
+### 8. Deep Review Enhancement (if trait enabled)
 
-**If deviations found:**
+**First, parse flags from the invocation arguments:**
+
+When `/spex:review-code` is invoked with arguments, extract flags before treating the remainder as hint text:
+
+- `--no-external`: disable all external tools
+- `--no-coderabbit`: disable CodeRabbit only
+- `--no-copilot`: disable Copilot only
+- `--external`: enable all external tools
+- `--coderabbit`: enable CodeRabbit only
+- `--copilot`: enable Copilot only
+
+Flags are consumed and removed from the argument string. The remaining text (if any) becomes the hint text.
+
+Example: `/spex:review-code --no-copilot check mutation safety` results in:
+- Flags: copilot disabled
+- Hint text: "check mutation safety"
+
+**Resolve external tool settings (defaults + flag overrides):**
+
+```bash
+# 1. Read defaults from config (all default to true if key is missing)
+DEFAULT_ENABLED=$(jq -r '.external_tools.enabled // true' .specify/spex-traits.json 2>/dev/null)
+DEFAULT_CODERABBIT=$(jq -r '.external_tools.coderabbit // true' .specify/spex-traits.json 2>/dev/null)
+DEFAULT_COPILOT=$(jq -r '.external_tools.copilot // true' .specify/spex-traits.json 2>/dev/null)
+
+# 2. If global "enabled" is false, individual tools default to false too
+#    (unless individually overridden to true in config)
+```
+
+```
+Resolution logic:
+
+1. Start with config defaults:
+   coderabbit = DEFAULT_ENABLED && DEFAULT_CODERABBIT
+   copilot    = DEFAULT_ENABLED && DEFAULT_COPILOT
+
+2. Apply flag overrides (flags always win over defaults):
+   --external       → coderabbit = true,  copilot = true
+   --no-external    → coderabbit = false, copilot = false
+   --coderabbit     → coderabbit = true
+   --no-coderabbit  → coderabbit = false
+   --copilot        → copilot = true
+   --no-copilot     → copilot = false
+
+3. Flags are applied in order. Later flags override earlier ones:
+   --external --no-copilot → coderabbit = true, copilot = false
+   --no-external --coderabbit → coderabbit = true, copilot = false
+```
+
+**After spec compliance is calculated, check for the deep-review trait:**
+
+```bash
+# Check if deep-review trait is enabled
+jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null
+```
+
+**If `deep-review` is enabled AND spec compliance >= 95% (or no spec exists):**
+- Invoke `{Skill: spex:deep-review}` with:
+  - Stage 1 compliance score (or null if no spec)
+  - Invocation context: `superpowers` if called from quality gate, `manual` if called directly
+  - Hint text: remaining argument text after flag extraction
+  - External tool settings: `{coderabbit: true/false, copilot: true/false}` (resolved from defaults + flags)
+  - Spec path and feature directory
+- The deep-review skill handles Stage 2 (multi-perspective review), the fix loop, and `review-findings.md` generation
+- Wait for the deep-review skill to complete before proceeding
+
+**If `deep-review` is enabled AND spec compliance < 95%:**
+- Do NOT invoke deep review
+- Report the compliance score and non-compliant requirements
+- Instruct the user to fix spec compliance issues first
+
+**If `deep-review` is NOT enabled:**
+- Continue with standard review behavior (steps 8b and 9 below)
+
+### 8b. Trigger Evolution if Needed
+
+**If deviations found (standard review path, no deep-review):**
 - Present review results to user
 - Recommend using `spex:evolve`
 - Don't proceed to verification until resolved
 
-**If 100% compliant:**
+**If 100% compliant (standard review path):**
 - Approve for verification
 - Proceed to `spex:verification-before-completion`
 

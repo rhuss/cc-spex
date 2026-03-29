@@ -1,14 +1,14 @@
 ---
 name: spex:traits
 description: Manage spex trait overlays - enable, disable, or list active traits
-argument-hint: "[list | enable <superpowers|teams|worktrees> | disable <superpowers|teams|worktrees>]"
+argument-hint: "[list | enable <superpowers|deep-review|teams|worktrees> | disable <superpowers|deep-review|teams|worktrees>]"
 ---
 
 # Spex Traits Management
 
 Manage which spex traits are active. Traits inject discipline overlays into spec-kit command and template files.
 
-**Valid traits**: `superpowers`, `teams`, `worktrees`
+**Valid traits**: `superpowers`, `deep-review`, `teams`, `worktrees`
 
 ### Step 0: Resolve Script Path
 

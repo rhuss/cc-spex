@@ -32,7 +32,7 @@ TRAITS_CONFIG=".specify/spex-traits.json"
 if [ ! -f "$TRAITS_CONFIG" ] && [ -f ".specify/sdd-traits.json" ]; then
   TRAITS_CONFIG=".specify/sdd-traits.json"
 fi
-VALID_TRAITS="superpowers teams worktrees"
+VALID_TRAITS="superpowers teams worktrees deep-review"
 
 # --- Helpers ---
 
@@ -119,7 +119,9 @@ ensure_config() {
   "version": 1,
   "traits": {
     "superpowers": false,
-    "teams": false
+    "deep-review": false,
+    "teams": false,
+    "worktrees": false
   },
   "applied_at": "$(now_iso)"
 }
@@ -355,7 +357,7 @@ do_init() {
   done
 
   # Build the traits JSON object
-  local superpowers_val="false" teams_val="false" worktrees_val="false"
+  local superpowers_val="false" teams_val="false" worktrees_val="false" deep_review_val="false"
 
   if [ -n "$enable_list" ]; then
     IFS=',' read -ra traits_arr <<< "$enable_list"
@@ -378,6 +380,7 @@ do_init() {
       fi
       case "$t" in
         superpowers) superpowers_val="true" ;;
+        deep-review) deep_review_val="true" ;;
         teams) teams_val="true" ;;
         worktrees) worktrees_val="true" ;;
       esac
@@ -400,14 +403,24 @@ do_init() {
     "base_path": ".."
   }'
   fi
+  local external_tools_config=""
+  if [ "$deep_review_val" = "true" ]; then
+    external_tools_config=',
+  "external_tools": {
+    "enabled": true,
+    "coderabbit": true,
+    "copilot": true
+  }'
+  fi
   cat > "$TRAITS_CONFIG" <<EOF
 {
   "version": 1,
   "traits": {
     "superpowers": $superpowers_val,
+    "deep-review": $deep_review_val,
     "teams": $teams_val,
     "worktrees": $worktrees_val
-  }${worktrees_config},
+  }${worktrees_config}${external_tools_config},
   "applied_at": "$(now_iso)"
 }
 EOF

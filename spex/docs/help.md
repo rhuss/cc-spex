@@ -76,6 +76,17 @@ spex TRAITS (quality gates for spec-kit commands)
     /speckit.implement → parallel task execution via Claude Code
                          Agent Teams with spec guardian review
 
+  deep-review trait:
+    /spex:review-code → runs 5 specialized review agents (correctness,
+                        architecture, security, production-readiness,
+                        test-quality) after spec compliance passes,
+                        auto-fixes Critical/Important findings (up to
+                        3 rounds), writes review-findings.md
+                        Combines with teams trait for parallel execution.
+                        Optionally includes CodeRabbit + Copilot CLIs.
+                        Flags: --no-external, --no-coderabbit, --no-copilot
+                               --external, --coderabbit, --copilot
+
   worktrees trait:
     /speckit.specify  → creates git worktree for feature branch,
                         restores main
@@ -85,7 +96,7 @@ spex TRAITS (quality gates for spec-kit commands)
 spex COMMANDS (helpers and configuration)
 
   /spex:init           Initialize spec-kit + configure traits and permissions
-  /spex:traits         Enable/disable traits (superpowers, teams, worktrees)
+  /spex:traits         Enable/disable traits (superpowers, teams, worktrees, deep-review)
   /spex:worktree       List active worktrees or cleanup merged ones
   /spex:brainstorm     Rough idea into formal spec (interactive dialogue)
   /spex:review-spec    Check spec quality and completeness
