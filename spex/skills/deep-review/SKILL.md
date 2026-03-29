@@ -323,9 +323,9 @@ imports (architecture agent)."]
 ### What still needs human attention
 
 [If gate PASSED with zero remaining: "All Critical and Important findings
-were resolved. N Minor findings remain (see review-findings.md for details).
-No further review action needed, but reviewers may want to check the Minor
-findings during code review."]
+were resolved. N Minor findings remain (see [review-findings.md](review-findings.md)
+for details). No further review action needed, but reviewers may want to check
+the Minor findings during code review."]
 
 [If gate FAILED or Minor findings remain, list what needs attention as
 questions:]
@@ -346,15 +346,17 @@ security, production readiness, and test quality across N changed files."
 - "N Minor findings remain. Consider reviewing them during code review but they
   are not blocking."
 - "N Critical/Important findings could not be auto-fixed. Human review and manual
-  fixes are recommended before merging. See `review-findings.md` for details."
+  fixes are recommended before merging. See [review-findings.md](review-findings.md)
+  for details."
 ```
 
 **Constraints:**
 - Keep this section factual and concise (200-400 words max)
 - The "What was fixed" section should summarize, not list every finding
 - The "What still needs human attention" section should frame remaining items as questions where possible
-- Do NOT repeat the full findings here (that's what `review-findings.md` is for)
+- Do NOT repeat the full findings here (that's what [review-findings.md](review-findings.md) is for)
 - Include external tools in the agent table even if skipped (mark as "skipped" with reason)
+- **Hyperlink all references.** Link to [review-findings.md](review-findings.md), [spec.md](spec.md), and [plan.md](plan.md) using relative paths. Reference specific code files with backtick paths.
 
 ### Step 10: Report Gate Outcome
 

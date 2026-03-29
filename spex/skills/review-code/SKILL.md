@@ -272,11 +272,12 @@ could improve the outcome.]
 
 ### Deviations from the plan (5 min)
 
-[List any places where the implementation diverged from plan.md or spec.md.
-Be specific about what changed and why. If there are no deviations, say so
-explicitly: "No deviations from plan.md were identified."]
+[List any places where the implementation diverged from [plan.md](plan.md) or
+[spec.md](spec.md). Be specific about what changed and why. Link to the
+relevant spec/plan section. If there are no deviations, say so explicitly:
+"No deviations from [plan.md](plan.md) were identified."]
 
-- `[file:line]`: [What differs from the plan, and the reason]
+- `[file:line]`: [What differs from [plan section](plan.md#anchor), and the reason]
 
 ### What I'm less confident about (5 min)
 
@@ -295,6 +296,7 @@ dependency's behavior is assumed but not verified.]
 - **Honesty requirement:** The "What I'm less confident about" section is mandatory. If you implemented everything perfectly, you are not being honest enough.
 - **No compliance dumps.** Don't list requirements and their status. Don't paste the compliance matrix. The reviewer can run the review themselves.
 - **Deviations are signal, not noise.** Every deviation from the plan is valuable context for a reviewer. Don't hide them, and don't apologize for them. Just explain what changed and why.
+- **Hyperlink all references.** Every mention of a spec section, plan phase, or spec artifact MUST be a markdown hyperlink using relative paths (e.g., `[FR-003](spec.md#fr-003)`, `[Phase 2](plan.md#phase-2)`). Never use bare backtick references without a link.
 
 ### 9. Deep Review Enhancement (if trait enabled)
 

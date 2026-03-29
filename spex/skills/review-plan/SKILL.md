@@ -137,7 +137,7 @@ Write this document as if you are briefing a colleague who has 30 minutes and no
 ```markdown
 # Review Guide: [Feature Name]
 
-**Spec:** specs/[feature-name]/spec.md | **Plan:** specs/[feature-name]/plan.md
+**Spec:** [spec.md](spec.md) | **Plan:** [plan.md](plan.md) | **Tasks:** [tasks.md](tasks.md)
 **Generated:** YYYY-MM-DD
 
 ---
@@ -170,7 +170,8 @@ Be honest: if the spec's relationship to adjacent work is unclear, say so.]
 
 ### Understanding the approach (8 min)
 
-Read `spec.md` sections [X] and [Y] for the core approach. As you read, consider:
+Read [spec.md section X](spec.md#section-anchor) and
+[section Y](spec.md#section-anchor) for the core approach. As you read, consider:
 
 - [Question about whether the problem framing is right]
 - [Question about whether the chosen approach fits the project context]
@@ -178,13 +179,13 @@ Read `spec.md` sections [X] and [Y] for the core approach. As you read, consider
 
 ### Key decisions that need your eyes (12 min)
 
-**[Decision 1 title]** (spec.md section [X.Y])
+**[Decision 1 title]** ([spec.md section X.Y](spec.md#section-anchor))
 
 [1-2 sentences on what was decided and what alternatives were considered.]
 - Question for reviewer: [Specific question, e.g. "Is the performance trade-off
   acceptable given our current load patterns?"]
 
-**[Decision 2 title]** (spec.md section [X.Y])
+**[Decision 2 title]** ([spec.md section X.Y](spec.md#section-anchor))
 
 [Same pattern. Focus on decisions where alternatives were genuinely viable.]
 
@@ -195,18 +196,18 @@ could change the outcome.]
 
 [Be honest about parts of the spec where the AI's interpretation may be wrong,
 where requirements are ambiguous, or where the spec could reasonably go a
-different direction. Point to specific sections.]
+different direction. Link to specific sections.]
 
-- `spec.md` section [X]: [What's unclear and why it matters]
-- `plan.md` phase [N]: [What assumption might not hold]
+- [spec.md section X](spec.md#section-anchor): [What's unclear and why it matters]
+- [plan.md phase N](plan.md#section-anchor): [What assumption might not hold]
 
 ### Risks and open questions (5 min)
 
-[Frame risks as questions, not as a risk register. Point to specific sections.]
+[Frame risks as questions, not as a risk register. Link to specific sections.]
 
 - [Risk framed as question, e.g. "If the external API changes its response
-  format (spec.md FR-012), is our fallback strategy sufficient?"]
-- [Another risk-question with spec reference]
+  format ([FR-012](spec.md#fr-012)), is our fallback strategy sufficient?"]
+- [Another risk-question with linked spec reference]
 
 ## Prior Review Feedback
 
@@ -220,10 +221,10 @@ Out of scope with justification.]
 
 | # | Reviewer | Original Concern | How Addressed | Spec Location |
 |---|----------|-----------------|---------------|---------------|
-| 1 | @reviewer | [Paraphrased concern] | [Resolution] | section X.Y |
+| 1 | @reviewer | [Paraphrased concern] | [Resolution] | [section X.Y](spec.md#anchor) |
 
 ---
-*Full context in linked spec and plan.*
+*Full context in linked [spec](spec.md) and [plan](plan.md).*
 ```
 
 **Note:** The Code Review Guide section is appended later by `spex:review-code` after implementation completes. See the review-code skill for that template.
@@ -235,6 +236,7 @@ Out of scope with justification.]
 - **Honesty requirement:** The "Areas where I'm less certain" section is mandatory. If you are fully confident about everything, you are not being honest enough. Every spec has ambiguities.
 - **Bigger picture:** Do web research if the spec touches external technologies, APIs, or patterns that a reviewer might want context on. Don't assume the reviewer knows the ecosystem.
 - **No spec transcription.** If you find yourself writing "The spec defines X, Y, and Z," stop. Instead ask "Does the approach in section 3.2 handle the edge case where...?"
+- **Hyperlink all references.** Every mention of a spec section, requirement, plan phase, or artifact MUST be a markdown hyperlink using relative paths within the spec directory. Use `[section title](spec.md#anchor)` format. The anchor is the lowercase, hyphenated heading (e.g., `## Functional Requirements` becomes `#functional-requirements`). Never use bare backtick references like `` `spec.md` section 3 `` without a link.
 - **Prior feedback handling:** When a Review Response Matrix is present, each distinct reviewer comment gets its own row. Group by reviewer (not by theme). Never collapse multiple comments into one row.
 
 ### Structural validation (run after writing REVIEWERS.md)
