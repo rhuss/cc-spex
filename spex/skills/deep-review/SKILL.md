@@ -125,18 +125,21 @@ Read `.specify/spex-traits.json` and check if `teams` is enabled.
 **CodeRabbit** (if available):
 ```bash
 # Initial review (Stage 2): review all changes (committed branch diff + uncommitted work)
-coderabbit review --prompt-only --type all --no-color 2>&1
+coderabbit review --agent --type all --no-color 2>&1
 
 # Fix loop re-review rounds: review only uncommitted fixes
-coderabbit review --prompt-only --type uncommitted --no-color 2>&1
+coderabbit review --agent --type uncommitted --no-color 2>&1
 ```
+The `--agent` flag produces structured, detailed findings with rationale (preferred over `--prompt-only` which only shows prompts).
+
 Parse output:
 1. Check for "Review completed" (no issues found)
 2. Split on `=============` delimiters
-3. For each block: extract file, line, severity keyword, description
+3. For each block: extract file, line, severity keyword, description, and **rationale/explanation**
 4. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
 5. Map severity: critical -> Critical, major -> Important, minor -> Minor
 6. Set category = "external", source_agent = "coderabbit", confidence = 75
+7. **Preserve the full rationale** from CodeRabbit output for inclusion in review-findings.md
 
 **Copilot CLI** (if available):
 ```bash
@@ -182,6 +185,7 @@ If a tool times out, crashes, or returns an error:
      fix: "how to fix it",
      source_agent: "agent-name",
      also_reported_by: [],
+     external_rationale: "full rationale from external tool (CodeRabbit/Copilot), or null",
      resolution: "pending",
      round_found: N
    }
@@ -253,25 +257,48 @@ Write `specs/<feature>/review-findings.md` (overwrite if exists):
 **Agents completed:** 5/5 (+ N external tools)
 **Agents failed:** [list if any]
 
-## Round 1
+## Findings
 
 ### FINDING-1
 - **Severity:** Critical
 - **Confidence:** 85
 - **File:** path/to/file.go:142-148
 - **Category:** correctness
-- **Source:** correctness-agent (also: coderabbit)
-- **Description:** [what is wrong]
+- **Source:** correctness-agent (also reported by: coderabbit)
+- **Round found:** 1
 - **Resolution:** fixed (round 1)
 
+**What is wrong:**
+[Describe the issue clearly. What specific code pattern, logic error, or
+vulnerability was found? Include the relevant code snippet if it helps
+understanding.]
+
+**Why this matters:**
+[Explain the impact. What could go wrong if this is not fixed? Is it a
+runtime error, data corruption risk, security exposure, or maintenance
+burden? Be specific about the failure scenario.]
+
+**How it was resolved:**
+[If fixed: explain what was changed and why this fix is correct.
+If remaining: explain what needs to happen to resolve it.]
+
+[If CodeRabbit or Copilot reported this finding, include their analysis:]
+
+**External tool analysis (CodeRabbit):**
+> [Preserve the full rationale from CodeRabbit's output. This gives
+> reviewers the external AI's perspective, which may differ from or
+> complement the internal agent's analysis.]
+
 ### FINDING-2
+[Same structure. Every finding gets the full treatment.]
+
 ...
 
-## Round 2 (if applicable)
-...
+## Remaining Findings
 
-## Remaining Findings (if gate failed)
-...
+[If gate failed, list unresolved findings here with the same detailed
+format. Explain why they could not be auto-fixed and what human action
+is needed.]
 ```
 
 ### Step 9: Append Deep Review Report to REVIEWERS.md
