@@ -17,7 +17,7 @@
 
 Each trait injects cross-cutting behavior into Spec-Kit's existing commands without modifying them. Quality gates, git worktree isolation, parallel agent execution: these concerns live outside the core workflow. Traits let you opt into them selectively, and Spec-Kit's commands remain the same underneath.
 
-cc-spex also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. The workflow diagram below is a guide, not an automated pipeline. You call each step yourself, in the order that fits your situation.
+cc-spex also adds its own commands for things Spec-Kit doesn't cover, like interactive brainstorming, spec/code drift detection, and review workflows. For hands-on work, you call each step yourself in the order that fits your situation. For full automation, `/spex:ship` chains the entire workflow from brainstorm to verification with configurable oversight.
 
 ## Workflow
 
@@ -29,6 +29,7 @@ flowchart TD
     HasClarity -->|Yes| Specify["/speckit.specify<br>Create spec"]
 
     Brainstorm --> Specify
+    Brainstorm -->|Full auto| Ship["/spex:ship<br>Autonomous pipeline"]
 
     Specify --> Review["/spex:review-spec<br>Validate spec"]
     Review --> Plan["/speckit.plan<br>Generate plan + tasks"]
@@ -41,6 +42,8 @@ flowchart TD
 
     Evolve -->|Update spec| Review
     Evolve -->|Fix code| Implement
+
+    Ship -->|Chains all stages| Done
 
 ```
 
@@ -142,6 +145,7 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/spex:review-plan` | Review a plan for feasibility and spec alignment |
 | `/spex:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
 | `/spex:traits` | Enable, disable, or list active traits |
+| `/spex:ship` | Run the full workflow autonomously (requires `superpowers` + `deep-review` traits) |
 | `/spex:help` | Show a quick reference for all commands |
 
 ## Migrating from sdd (v2.x)

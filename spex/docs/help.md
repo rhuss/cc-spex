@@ -8,26 +8,29 @@ WORKFLOW
            │                │                   │
            │  /spex:brainstorm  /speckit.specify    /speckit.plan
            │                │                   │
-           │                ▼                   ▼
-           │         ┌──────────┐      ┌──────────────┐
-           │         │  REVIEW  │      │  REVIEW PLAN │
-           │         └──────────┘      └──────────────┘
-           │      (auto with superpowers trait) (auto with superpowers trait)
-           │                                   │
-           │                                   ▼
-           │                            ┌──────────┐
-           │                            │IMPLEMENT │
-           │                            └──────────┘
-           │                                   │  /speckit.implement
-           │                                   ▼
-           │                            ┌──────────┐
-           │                            │  VERIFY  │
-           │                            └──────────┘
-           │                        (auto with superpowers trait)
-           │                                   ▼
-           │                            ╔══════════╗
-           │                            ║ COMPLETE ║
-           │                            ╚══════════╝
+           │    ┌───────────┤                   │
+           │    │  OR       │                   │
+           │    ▼           ▼                   ▼
+           │  ┌──────┐  ┌──────────┐      ┌──────────────┐
+           │  │ SHIP │  │  REVIEW  │      │  REVIEW PLAN │
+           │  └──┬───┘  └──────────┘      └──────────────┘
+           │     │   (auto with superpowers trait) (auto with superpowers trait)
+           │     │                                 │
+           │     │   /spex:ship                    │
+           │     │   (chains all                   ▼
+           │     │    stages)              ┌──────────┐
+           │     │                         │IMPLEMENT │
+           │     │                         └──────────┘
+           │     │                                 │  /speckit.implement
+           │     │                                 ▼
+           │     │                         ┌──────────┐
+           │     │                         │  VERIFY  │
+           │     │                         └──────────┘
+           │     │                     (auto with superpowers trait)
+           │     │                                 ▼
+           │     │                         ╔══════════╗
+           │     └────────────────────────▶║ COMPLETE ║
+           │                               ╚══════════╝
            │                                   ▲
            │                            ┌──────┴─────┐
            │                            │   EVOLVE   │ /spex:evolve
@@ -99,6 +102,10 @@ spex COMMANDS (helpers and configuration)
   /spex:traits         Enable/disable traits (superpowers, teams, worktrees, deep-review)
   /spex:worktree       List active worktrees or cleanup merged ones
   /spex:brainstorm     Rough idea into formal spec (interactive dialogue)
+  /spex:ship           Autonomous full-cycle pipeline (brainstorm to verify)
+                         Requires: superpowers + deep-review traits
+                         Flags: --ask always|smart|never, --create-pr,
+                                --resume, --start-from <stage>
   /spex:review-spec    Check spec quality and completeness
   /spex:review-plan    Validate plan coverage, task quality, red flags
   /spex:review-code    Check code compliance against spec
