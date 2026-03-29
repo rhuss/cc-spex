@@ -352,7 +352,12 @@ The pipeline executes 9 stages in fixed order:
 5. Update state file with `feature_branch`.
 6. Proceed to Stage 1.
 
-**Worktree integration**: If the `worktrees` trait is enabled, the specify command's overlay will create a worktree automatically. The session will be in the worktree after this stage. All subsequent stages run inside the worktree without any special handling by ship.
+**Worktree compatibility:** The `worktrees` trait is NOT recommended with `spex:ship`. The worktrees overlay creates a sibling worktree during specify, which requires restarting the Claude Code session in the new directory, breaking the autonomous pipeline. Ship works best by creating a feature branch in-place. If you want main isolation, create a worktree manually before starting ship:
+```bash
+git worktree add ../project-wip main
+cd ../project-wip && claude
+# then: /spex:ship brainstorm/NNN-feature.md
+```
 
 ### Stage 1: Clarify (ALWAYS runs, even if the spec "looks clear")
 
@@ -636,4 +641,4 @@ Next steps:
 - `{Skill: spex:verification-before-completion}` (Stage 8)
 
 **Required traits:** `superpowers`, `deep-review`
-**Optional trait integration:** `worktrees` (handled by specify overlay, no ship-specific logic)
+**Not recommended:** `worktrees` trait (creates a session restart mid-pipeline; use manual worktree setup instead)
