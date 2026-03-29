@@ -104,9 +104,8 @@ Read `.specify/spex-traits.json` and check if `teams` is enabled.
 
 **CodeRabbit** (if available):
 ```bash
-# Initial review (Stage 2): review full branch diff against main
-MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
-coderabbit review --prompt-only --type committed --base "$MAIN_BRANCH" --no-color 2>&1
+# Initial review (Stage 2): review all changes (committed branch diff + uncommitted work)
+coderabbit review --prompt-only --type all --no-color 2>&1
 
 # Fix loop re-review rounds: review only uncommitted fixes
 coderabbit review --prompt-only --type uncommitted --no-color 2>&1
