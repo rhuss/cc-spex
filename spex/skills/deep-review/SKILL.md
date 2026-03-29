@@ -13,13 +13,33 @@ This skill orchestrates a multi-perspective code review using five specialized r
 
 ## Prerequisites
 
-Before running deep review, the caller (review-code) must provide:
+The caller (review-code or ship) may provide these values. When not provided, the deep-review skill resolves them itself:
+
 1. **Stage 1 result**: spec compliance score (or null if no spec)
 2. **Invocation context**: `superpowers` or `manual`
 3. **Hint text**: optional focus area from user (or null)
-4. **External tool settings**: `{coderabbit: true/false, copilot: true/false}` (resolved from config defaults + CLI flags)
+4. **External tool settings**: `{coderabbit: true/false, copilot: true/false}` (see resolution below)
 5. **Spec path**: path to spec.md (or null)
 6. **Feature directory**: path to the spec directory for artifact output
+
+### External Tool Settings Resolution
+
+If external tool settings are provided by the caller, use them directly. If not (e.g., when invoked directly by `spex:ship` or manually), resolve from config:
+
+```bash
+# Read config defaults (all default to true if key is missing)
+DEFAULT_ENABLED=$(jq -r '.external_tools.enabled // true' .specify/spex-traits.json 2>/dev/null)
+DEFAULT_CODERABBIT=$(jq -r '.external_tools.coderabbit // true' .specify/spex-traits.json 2>/dev/null)
+DEFAULT_COPILOT=$(jq -r '.external_tools.copilot // true' .specify/spex-traits.json 2>/dev/null)
+```
+
+```
+Resolution:
+  coderabbit = DEFAULT_ENABLED && DEFAULT_CODERABBIT
+  copilot    = DEFAULT_ENABLED && DEFAULT_COPILOT
+```
+
+This ensures CodeRabbit and Copilot are enabled by default regardless of how deep-review is invoked.
 
 ## Orchestration Flow
 
@@ -61,7 +81,7 @@ which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 ```
 
 **External tool resolution:**
-1. Check the `external_tools` settings passed by the caller (already resolved from config defaults + CLI flags)
+1. Use the external tool settings from Prerequisites (either caller-provided or self-resolved from config)
 2. If `coderabbit` is `false`, skip CodeRabbit detection entirely
 3. If `copilot` is `false`, skip Copilot detection entirely
 4. If a tool is enabled in settings but not installed, proceed silently without it
