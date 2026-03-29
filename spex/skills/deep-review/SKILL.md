@@ -39,7 +39,7 @@ git diff --name-only HEAD 2>/dev/null
 git diff --name-only --cached 2>/dev/null
 ```
 
-Combine all results into a deduplicated list. Filter to only source code files (exclude binary, images, lock files).
+Combine all results into a deduplicated list. Filter to only source code files (exclude binary, images, lock files). **Exclude files under `specs/` and `brainstorm/`** as these are spec artifacts, not implementation code.
 
 **For re-review rounds (fix loop):** narrow scope to only files modified by the most recent fix round:
 ```bash
@@ -114,8 +114,9 @@ Parse output:
 1. Check for "Review completed" (no issues found)
 2. Split on `=============` delimiters
 3. For each block: extract file, line, severity keyword, description
-4. Map severity: critical -> Critical, major -> Important, minor -> Minor
-5. Set category = "external", source_agent = "coderabbit", confidence = 75
+4. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
+5. Map severity: critical -> Critical, major -> Important, minor -> Minor
+6. Set category = "external", source_agent = "coderabbit", confidence = 75
 
 **Copilot CLI** (if available):
 ```bash
@@ -134,7 +135,8 @@ $(git diff HEAD)" 2>&1
 Parse output:
 1. Split on "### FINDING" markers
 2. For each block: extract Severity, File, Line, Description fields
-3. Set category = "external", source_agent = "copilot", confidence = 75
+3. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
+4. Set category = "external", source_agent = "copilot", confidence = 75
 
 **Error handling for external tools:**
 If a tool times out, crashes, or returns an error:
