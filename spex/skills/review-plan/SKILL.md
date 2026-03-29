@@ -160,11 +160,13 @@ or patterns, include relevant context from research.
 
 Be honest: if the spec's relationship to adjacent work is unclear, say so.]
 
-## Review Guide (30 minutes)
+---
 
-> This guide helps you focus your 30 minutes on the parts that need human
-> judgment most. Each section points to specific spec locations and frames
-> the review as questions.
+## Spec Review Guide (30 minutes)
+
+> This guide helps you focus your 30 minutes on the parts of the spec and plan
+> that need human judgment most. Each section points to specific locations and
+> frames the review as questions.
 
 ### Understanding the approach (8 min)
 
@@ -224,6 +226,8 @@ Out of scope with justification.]
 *Full context in linked spec and plan.*
 ```
 
+**Note:** The Code Review Guide section is appended later by `spex:review-code` after implementation completes. See the review-code skill for that template.
+
 ### Constraints
 
 - **Target length:** ~800-1200 words. Concise beats comprehensive.
@@ -235,13 +239,13 @@ Out of scope with justification.]
 
 ### Structural validation (run after writing REVIEWERS.md)
 
-REVIEWERS.md MUST contain at least 3 of these 5 headings: What This Spec Does, Bigger Picture, Review Guide, Areas where I'm less certain, Risks and open questions.
+REVIEWERS.md MUST contain at least 3 of these 5 headings: What This Spec Does, Bigger Picture, Spec Review Guide, Areas where I'm less certain, Risks and open questions.
 
 After writing the file, verify:
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
-REQUIRED_HEADINGS="What This Spec Does|Bigger Picture|Review Guide|Areas where|Risks and open"
+REQUIRED_HEADINGS="What This Spec Does|Bigger Picture|Spec Review Guide|Areas where|Risks and open"
 HEADING_COUNT=$(grep -cE "^##[#]?\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEWERS.md" 2>/dev/null || echo 0)
 if [ "$HEADING_COUNT" -lt 3 ]; then
   echo "ERROR: REVIEWERS.md has only $HEADING_COUNT of 5 expected sections. Regenerate with the template from step 5."

@@ -225,7 +225,80 @@ Overall: 16/18 = 89%
 - If compliance = 100%: Proceed to verification
 ```
 
-### 8. Deep Review Enhancement (if trait enabled)
+### 8. Append Code Review Guide to REVIEWERS.md (MANDATORY)
+
+After generating the compliance report (step 7), append a **Code Review Guide** section to the existing `REVIEWERS.md`. This section helps human reviewers focus their code review in 30 minutes, just as the Spec Review Guide (written during planning) helps with spec review.
+
+**If REVIEWERS.md does not exist**, create it with just the Code Review Guide section (the spec review section was skipped or the file was lost).
+
+**CRITICAL:** This follows the same philosophy as the Spec Review Guide: question-driven, honest about uncertainty, focused on what needs human judgment. Do NOT dump compliance scores, requirement checklists, or verification results into REVIEWERS.md. Those belong in the console report (step 7).
+
+**Append the following to REVIEWERS.md:**
+
+```markdown
+
+---
+
+## Code Review Guide (30 minutes)
+
+> This section was added after implementation. It guides a code reviewer through
+> the changes, focusing on areas that need human judgment.
+
+**Changed files:** [N files changed, summary of which areas: e.g. "3 source files,
+2 config files, 1 script"]
+
+### Where to start (5 min)
+
+[Point the reviewer to the 1-2 files that form the core of the change. Briefly
+explain the reading order and why.]
+
+- Start with `[main-file]`: [Why this is the entry point for understanding]
+- Then `[second-file]`: [What it does in relation to the first]
+
+### Implementation choices worth questioning (15 min)
+
+[For each notable implementation choice, point to the code and frame as a question.
+Only include choices where alternatives existed or the reviewer's domain knowledge
+could improve the outcome.]
+
+**[Choice 1 title]** (`path/to/file:line`)
+
+[1-2 sentences on what was done and why.]
+- Question: [e.g. "Is this the right data structure given our expected scale?"]
+
+**[Choice 2 title]** (`path/to/file:line`)
+
+[Same pattern. Focus on choices where human expertise adds value.]
+
+### Deviations from the plan (5 min)
+
+[List any places where the implementation diverged from plan.md or spec.md.
+Be specific about what changed and why. If there are no deviations, say so
+explicitly: "No deviations from plan.md were identified."]
+
+- `[file:line]`: [What differs from the plan, and the reason]
+
+### What I'm less confident about (5 min)
+
+[Be honest about implementation areas where you are uncertain. Maybe you
+chose an approach that works but might not be idiomatic. Maybe error handling
+covers the spec but you're unsure about real-world edge cases. Maybe a
+dependency's behavior is assumed but not verified.]
+
+- `[file:line]`: [What's uncertain and why it matters]
+- `[file:line]`: [Another area of uncertainty]
+```
+
+**Constraints for the Code Review Guide:**
+- **Target length:** ~400-800 words. Shorter than the spec guide because code speaks for itself.
+- **Question density:** Aim for 5-10 questions, each pointing to a specific file and line.
+- **Honesty requirement:** The "What I'm less confident about" section is mandatory. If you implemented everything perfectly, you are not being honest enough.
+- **No compliance dumps.** Don't list requirements and their status. Don't paste the compliance matrix. The reviewer can run the review themselves.
+- **Deviations are signal, not noise.** Every deviation from the plan is valuable context for a reviewer. Don't hide them, and don't apologize for them. Just explain what changed and why.
+
+### 9. Deep Review Enhancement (if trait enabled)
+
+**Note:** When deep review runs and produces fixes, re-evaluate the Code Review Guide (step 8) and update it if the fixes changed the areas of concern.
 
 **First, parse flags from the invocation arguments:**
 
@@ -301,7 +374,7 @@ jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null
 **If `deep-review` is NOT enabled:**
 - Continue with standard review behavior (steps 8b and 9 below)
 
-### 8b. Trigger Evolution if Needed
+### 9b. Trigger Evolution if Needed
 
 **If deviations found (standard review path, no deep-review):**
 - Present review results to user
