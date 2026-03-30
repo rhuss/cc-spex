@@ -188,47 +188,36 @@ Create a brainstorm document first with /spex:brainstorm
 
 ## State File Management
 
-The pipeline tracks its progress in `.specify/.spex-ship-phase` as JSON.
+The pipeline tracks its progress in `.specify/.spex-ship-phase` as JSON. **All state file operations use the `spex-ship-state.sh` script. Never write the state file directly.**
 
-### Writing State
-
-The state file is created during Pipeline Initialization (see above). At each stage transition, update it by running:
-
+Locate the script:
 ```bash
-cat > .specify/.spex-ship-phase << STATEEOF
-{
-  "stage": "<current-stage-name>",
-  "stage_index": <0-8>,
-  "total_stages": 9,
-  "ask": "<ask-level>",
-  "started_at": "<original-started_at-value>",
-  "retries": <0-2>,
-  "status": "<running|paused|completed|failed>",
-  "brainstorm_file": "<brainstorm-path>",
-  "feature_branch": "$(git branch --show-current)"
-}
-STATEEOF
+SHIP_STATE="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")/scripts/spex-ship-state.sh"
+# Or find it via the plugin:
+SHIP_STATE="$(find ~/.claude -path '*/spex/scripts/spex-ship-state.sh' 2>/dev/null | head -1)"
 ```
 
-Update the state file at each transition:
-- **When a stage finishes and the next stage begins**: Set `stage` to the NEXT stage name, `stage_index` to the NEXT stage's index, `status` to `running`, `retries` to 0. **Do NOT set status to `completed` for individual stages.** Simply advance to the next stage.
-- **When pausing for user input**: Set `status` to `paused`.
-- **When resuming**: Set `status` back to `running`.
-- **When ALL 9 stages have finished** (pipeline done): Set `status` to `completed`, then delete the state file.
-- **On failure**: Set `status` to `failed`, leave the state file in place.
+### Available Commands
 
-**IMPORTANT:** The `completed` status means the ENTIRE PIPELINE is done, not that a single stage finished. When stage 1 (clarify) finishes, you write stage 2 (review-spec) with status `running`. You never write stage 1 with status `completed`.
+| Command | What it does |
+|---------|-------------|
+| `spex-ship-state.sh create <brainstorm> [--ask <level>] [--start-from <stage>]` | Create state file at pipeline start |
+| `spex-ship-state.sh advance` | Advance to the next stage (auto-cleans up after stage 8) |
+| `spex-ship-state.sh status` | Show current stage and status |
+| `spex-ship-state.sh pause` | Set status to paused |
+| `spex-ship-state.sh fail` | Set status to failed |
+| `spex-ship-state.sh cleanup` | Remove state file (pipeline done) |
 
-The `feature_branch` field is set after the specify stage completes (it may be null during the specify stage itself).
+### Stage Transitions
 
-### Cleanup
-
-On successful completion, remove the state file:
+**After every stage completes**, run:
 ```bash
-rm -f .specify/.spex-ship-phase
+"$SHIP_STATE" advance
 ```
 
-On failure or interruption, leave the state file in place so `--resume` can use it.
+This advances `stage` and `stage_index` to the next stage with `status: running`. After the final stage (verify), `advance` automatically removes the state file and outputs `PIPELINE_COMPLETE`.
+
+**Do NOT manually write JSON to the state file. Always use the script.**
 
 ## Resume Logic
 
@@ -341,33 +330,22 @@ The `--ask` flag controls oversight within review stages (how findings are handl
 
 **You MUST complete these steps before invoking ANY speckit command or skill.** Do not skip ahead to stage execution.
 
-### Step 1: Create the state file
-
-Run this Bash command immediately. Replace the placeholder values with resolved arguments:
+### Step 1: Locate the state script
 
 ```bash
-cat > .specify/.spex-ship-phase << STATEEOF
-{
-  "stage": "$([ -n "$START_FROM" ] && echo "$START_FROM" || echo "specify")",
-  "stage_index": $([ -n "$START_FROM_INDEX" ] && echo "$START_FROM_INDEX" || echo "0"),
-  "total_stages": 9,
-  "ask": "${ASK_LEVEL:-smart}",
-  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "retries": 0,
-  "status": "running",
-  "brainstorm_file": "${BRAINSTORM_FILE}",
-  "feature_branch": "$(git branch --show-current)"
-}
-STATEEOF
+SHIP_STATE="$(find ~/.claude -path '*/spex/scripts/spex-ship-state.sh' 2>/dev/null | head -1)"
+[ -x "$SHIP_STATE" ] && echo "SCRIPT_OK: $SHIP_STATE" || echo "SCRIPT_MISSING"
 ```
 
-### Step 2: Verify the state file exists
+If `SCRIPT_MISSING`: **STOP**. The spex plugin may not be installed correctly.
+
+### Step 2: Create the state file
 
 ```bash
-[ -f .specify/.spex-ship-phase ] && echo "STATE_FILE_OK" || echo "STATE_FILE_MISSING"
+"$SHIP_STATE" create "<brainstorm-file>" --ask "<ask-level>" --start-from "<start-stage>"
 ```
 
-If `STATE_FILE_MISSING`: **STOP**. Something went wrong. Do not proceed to any pipeline stage.
+The output will confirm: `CREATED stage=<stage> index=<N> ask=<level>`. If it fails, **STOP**.
 
 ### Step 3: Announce pipeline start
 
@@ -419,8 +397,7 @@ Trait overlays (e.g., `superpowers` adding review after specify) may run their r
 **Even if spec.md already exists**, this stage re-creates it from the brainstorm document. A fresh pipeline means fresh artifacts.
 
 1. Read the brainstorm document content.
-2. Update state file: `stage: "specify"`, `stage_index: 0`, `status: "running"`.
-3. Invoke `/speckit.specify` passing the brainstorm content as the feature description.
+2. Invoke `/speckit.specify` passing the brainstorm content as the feature description.
    - The brainstorm content provides the problem statement, approaches considered, and decisions made.
    - Pass it as the user input to the specify command.
    - **Do not pause** after specify completes, even if a trait overlay runs a review or asks for confirmation. Proceed directly to step 4.
@@ -428,8 +405,7 @@ Trait overlays (e.g., `superpowers` adding review after specify) may run their r
    ```bash
    FEATURE_BRANCH=$(git branch --show-current)
    ```
-5. Update state file with `feature_branch`.
-6. **Immediately** begin Stage 1 (do not stop).
+5. Run `"$SHIP_STATE" advance` to move to Stage 1, then **immediately** begin it (do not stop).
 
 **Worktree compatibility:** The `worktrees` trait is NOT recommended with `spex:ship`. The worktrees overlay creates a sibling worktree during specify, which requires restarting the Claude Code session in the new directory, breaking the autonomous pipeline. Ship works best by creating a feature branch in-place. If you want main isolation, create a worktree manually before starting ship:
 ```bash
@@ -442,73 +418,65 @@ cd ../project-wip && claude
 
 Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious from reading the spec.
 
-1. Update state file: `stage: "clarify"`, `stage_index: 1`.
-2. Read the `ask` level from the state file (default: `smart`).
+1. Read the `ask` level from the state file (default: `smart`).
 3. **BEFORE invoking clarify**, determine the interaction mode:
    - If `ask` is `smart` or `never`: You are the decision-maker. Do NOT use `AskUserQuestion` or present options to the user. When the clarify process identifies ambiguities, YOU select the recommended option for each question. If no recommendation exists, use your best judgment based on the spec context. Answer all questions yourself, then encode the answers into the spec.
    - If `ask` is `always`: Present each question to the user interactively.
 
 4. Invoke `/speckit.clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
-5. After clarification completes, **immediately** begin Stage 2 (do not stop).
+5. After clarification completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 2 (do not stop).
 
 ### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
 
 Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities.
 
-1. Update state file: `stage: "review-spec"`, `stage_index: 2`.
-2. Invoke `{Skill: spex:review-spec}` to validate spec quality.
-3. Capture the review findings and overall assessment.
-4. Apply **Oversight Decision Logic** (see below) to handle findings.
-5. After findings are resolved (or pipeline pauses), **immediately** begin Stage 3 (do not stop).
+1. Invoke `{Skill: spex:review-spec}` to validate spec quality.
+2. Capture the review findings and overall assessment.
+3. Apply **Oversight Decision Logic** (see below) to handle findings.
+4. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 3 (do not stop).
 
 ### Stage 3: Plan
 
-1. Update state file: `stage: "plan"`, `stage_index: 3`.
-2. Invoke `/speckit.plan` to generate the implementation plan.
-3. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
-4. After plan generation completes, **immediately** begin Stage 4 (do not stop).
+1. Invoke `/speckit.plan` to generate the implementation plan.
+2. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
+3. After plan generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 4 (do not stop).
 
 ### Stage 4: Tasks
 
-1. Update state file: `stage: "tasks"`, `stage_index: 4`.
-2. Invoke `/speckit.tasks` to generate the task breakdown.
-3. This produces `tasks.md`.
-4. After task generation completes, **immediately** begin Stage 5 (do not stop).
+1. Invoke `/speckit.tasks` to generate the task breakdown.
+2. This produces `tasks.md`.
+3. After task generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 5 (do not stop).
 
 ### Stage 5: Review Plan
 
-1. Update state file: `stage: "review-plan"`, `stage_index: 5`.
-2. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
+1. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
 3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
 4. This generates `REVIEWERS.md`.
 5. Capture findings and apply **Oversight Decision Logic**.
-6. After findings are resolved, **immediately** begin Stage 6 (do not stop).
+6. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement
 
-1. Update state file: `stage: "implement"`, `stage_index: 6`.
-2. Invoke `/speckit.implement` to execute the implementation plan.
-3. This is typically the longest stage. Implementation follows the task plan.
-4. After implementation completes, **immediately** begin Stage 7 (do not stop).
+1. Invoke `/speckit.implement` to execute the implementation plan.
+2. This is typically the longest stage. Implementation follows the task plan.
+3. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
 
 ### Stage 7: Review Code
 
-1. Update state file: `stage: "review-code"`, `stage_index: 7`.
-2. Invoke `{Skill: spex:review-code}`.
+1. Invoke `{Skill: spex:review-code}`.
 3. This skill runs the full review chain:
    a. Spec compliance check (compliance score and deviation list)
    b. Code Review Guide appended to REVIEWERS.md
    c. Deep review (if trait enabled): 5 review agents, fix loop, Deep Review Report appended to REVIEWERS.md
 4. Apply **Oversight Decision Logic** to any remaining findings.
-5. After findings are resolved, **immediately** begin Stage 8 (do not stop).
+5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
 ### Stage 8: Verify
 
-1. Update state file: `stage: "verify"`, `stage_index: 8`.
-2. Invoke `{Skill: spex:verification-before-completion}` for final verification.
-3. This runs tests, validates spec compliance, and checks for drift.
-4. If verification passes, **immediately** proceed to Pipeline Completion (do not stop).
-5. If verification fails, apply **Oversight Decision Logic**.
+1. Invoke `{Skill: spex:verification-before-completion}` for final verification.
+2. This runs tests, validates spec compliance, and checks for drift.
+3. If verification passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
+4. If verification fails, apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic
 
