@@ -197,7 +197,7 @@ These commands provide functionality beyond what Spec-Kit offers.
 `/spex:ship` is the autonomous full-cycle workflow that chains all stages from specification through verification. It requires both the `superpowers` and `deep-review` traits to be enabled.
 
 ```
-/spex:ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--create-pr]
+/spex:ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]
 ```
 
 The pipeline runs nine stages in strict order:

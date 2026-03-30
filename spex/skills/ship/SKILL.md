@@ -1,7 +1,7 @@
 ---
 name: ship
 description: Autonomous full-cycle workflow - chains specify through verify with configurable oversight levels, auto-fix, and optional PR creation
-argument-hint: "[brainstorm-file] [--ask cautious|balanced|autopilot] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]"
+argument-hint: "[brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]"
 ---
 
 # Autonomous Full-Cycle Workflow (spex:ship)
@@ -184,7 +184,7 @@ cat > .specify/.spex-ship-phase.tmp << 'STATEEOF'
   "stage": "<current-stage-name>",
   "stage_index": <0-8>,
   "total_stages": 9,
-  "ask": "<cautious|balanced|autopilot>",
+  "ask": "<always|smart|never>",
   "started_at": "<ISO-8601 timestamp from pipeline start>",
   "retries": <0-2>,
   "status": "<running|paused|completed|failed>",
@@ -195,7 +195,28 @@ STATEEOF
 mv .specify/.spex-ship-phase.tmp .specify/.spex-ship-phase
 ```
 
-Write the state file:
+**MANDATORY: Create the state file immediately at pipeline start**, before any stage runs. This is the FIRST action after parsing arguments and resolving the brainstorm file:
+
+```bash
+cat > .specify/.spex-ship-phase.tmp << 'STATEEOF'
+{
+  "stage": "specify",
+  "stage_index": 0,
+  "total_stages": 9,
+  "ask": "<resolved-ask-level>",
+  "started_at": "<ISO-8601 timestamp>",
+  "retries": 0,
+  "status": "running",
+  "brainstorm_file": "<resolved-brainstorm-path>",
+  "feature_branch": null
+}
+STATEEOF
+mv .specify/.spex-ship-phase.tmp .specify/.spex-ship-phase
+```
+
+If this file is not created, the status line will not display pipeline progress and `--resume` will not work after interruptions.
+
+Then update the state file at each transition:
 - **Before each stage begins**: Set `stage` to the new stage name, `stage_index` to its position, `status` to `running`, `retries` to 0.
 - **When pausing for user input**: Set `status` to `paused`.
 - **When resuming**: Set `status` back to `running`.
@@ -336,6 +357,12 @@ The pipeline executes 9 stages in fixed order:
 | 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEWERS.md update |
 | 8 | `verify` | `{Skill: spex:verification-before-completion}` | Final verification |
 
+### Suppressing trait overlay gates
+
+When running inside the ship pipeline, **trait overlay gates on `/speckit.*` commands must not pause for user input or ask confirmation questions**. The ship pipeline manages its own stage transitions and has dedicated review stages (review-spec at stage 2, review-plan at stage 5, review-code at stage 7). Trait overlays that add review or confirmation prompts (e.g., the `superpowers` overlay on `speckit.specify` that runs spec review and asks "Shall I proceed?") must be treated as informational only: run the review if the overlay triggers it, capture findings, but do NOT pause or ask the user before proceeding to the next ship stage. The ship pipeline's own stage gate logic handles all oversight decisions.
+
+This applies to all `/speckit.*` invocations within the pipeline: `speckit.specify`, `speckit.clarify`, `speckit.plan`, `speckit.tasks`, and `speckit.implement`.
+
 ### Stage 0: Specify (ALWAYS runs unless --start-from or --resume skips it)
 
 **Even if spec.md already exists**, this stage re-creates it from the brainstorm document. A fresh pipeline means fresh artifacts.
@@ -345,6 +372,7 @@ The pipeline executes 9 stages in fixed order:
 3. Invoke `/speckit.specify` passing the brainstorm content as the feature description.
    - The brainstorm content provides the problem statement, approaches considered, and decisions made.
    - Pass it as the user input to the specify command.
+   - **Do not pause** after specify completes, even if a trait overlay runs a review or asks for confirmation. Proceed directly to step 4.
 4. After specify completes, extract the feature branch name from the git branch:
    ```bash
    FEATURE_BRANCH=$(git branch --show-current)

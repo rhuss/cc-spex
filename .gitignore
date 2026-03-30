@@ -60,8 +60,9 @@ build/
 *.bak
 *.log
 
-# SDD transient phase marker
+# Transient phase markers
 .specify/.spex-phase
+.specify/.spex-ship-phase
 
 # Sync-related temporary files
 skills/**/SKILL.md.proposed
