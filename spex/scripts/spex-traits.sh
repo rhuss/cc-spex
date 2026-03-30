@@ -436,11 +436,53 @@ EOF
   do_apply
 }
 
+apply_internal_overlays() {
+  # Apply overlays from _ship-guard (and any future internal overlays).
+  # These are always applied unconditionally, not user-configurable.
+  local guard_dir="$PLUGIN_ROOT/overlays/_ship-guard"
+  [ -d "$guard_dir" ] || return 0
+
+  local applied=0 skipped=0
+  while IFS= read -r -d '' overlay_file; do
+    local rel_path="${overlay_file#"$guard_dir"/}"
+    local overlay_subdir
+    overlay_subdir=$(dirname "$rel_path")
+    local overlay_basename
+    overlay_basename=$(basename "$rel_path")
+    local target_basename="${overlay_basename%.append.md}.md"
+
+    local target_file=""
+    case "$overlay_subdir" in
+      commands) target_file=".claude/commands/$target_basename" ;;
+      *) continue ;;
+    esac
+
+    [ -f "$target_file" ] || continue
+
+    # Check sentinel (SPEX-GUARD:ship)
+    if grep -q "<!-- SPEX-GUARD:ship -->" "$target_file" 2>/dev/null; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    printf '\n' >> "$target_file"
+    cat "$overlay_file" >> "$target_file"
+    applied=$((applied + 1))
+  done < <(find "$guard_dir" -name "*.append.md" -print0 2>/dev/null)
+
+  if [ $applied -gt 0 ]; then
+    echo "Ship pipeline guard: $applied overlay(s) applied, $skipped already present."
+  fi
+}
+
 do_apply() {
   ensure_config
 
   # Ensure agent teams env var matches current trait state on every apply
   ensure_agent_teams_env
+
+  # Always apply internal _ship-guard overlays (not user-configurable)
+  apply_internal_overlays
 
   # Collect enabled traits
   enabled_traits=$(jq -r '.traits | to_entries[] | select(.value == true) | .key' "$TRAITS_CONFIG")
@@ -542,7 +584,7 @@ do_apply() {
           awk -v sentinel="$sentinel" '
             BEGIN { skip=0 }
             $0 ~ sentinel { skip=1; next }
-            skip && /<!-- (SDD|SPEX)-TRAIT:/ { skip=0 }
+            skip && /<!-- (SDD|SPEX)-(TRAIT|GUARD):/ { skip=0 }
             !skip { print }
           ' "$target" > "$tmp"
           mv "$tmp" "$target"
