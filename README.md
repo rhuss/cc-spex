@@ -1,7 +1,7 @@
 # cc-spex
 
 ![Version](https://img.shields.io/badge/version-3.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
 [![Builds on Spec-Kit](https://img.shields.io/badge/builds%20on-Spec--Kit-blue)](https://github.com/github/spec-kit)
@@ -286,4 +286,4 @@ cc-spex builds on two projects:
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Apache License 2.0. See [LICENSE](LICENSE) for details.
