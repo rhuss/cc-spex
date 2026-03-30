@@ -6,6 +6,23 @@ argument-hint: "[brainstorm-file] [--ask always|smart|never] [--resume] [--start
 
 # Autonomous Full-Cycle Workflow (spex:ship)
 
+## CONTINUOUS EXECUTION RULE (READ THIS FIRST)
+
+**This pipeline runs ALL stages without stopping.** After completing any stage, you MUST immediately begin the next stage. There are no natural stopping points between stages.
+
+- Do NOT say "Ready for the next stage" and wait.
+- Do NOT say "Shall I proceed?" and wait.
+- Do NOT say "Proceeding to..." and wait.
+- Do NOT treat a stage completion as a task completion.
+- Do NOT output a summary and stop.
+
+The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
+1. `ask` is `always` AND a review stage has findings requiring user input.
+2. A blocker error occurs (test failure, syntax error, security issue).
+3. All 9 stages have completed.
+
+**After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
+
 ## Overview
 
 This skill chains the entire spex workflow autonomously: specify, clarify, review-spec, plan, review-plan, tasks, implement, deep-review, and verify. Point it at a brainstorm document and choose an oversight level to control how much human oversight the pipeline requires.
@@ -410,7 +427,7 @@ Trait overlays (e.g., `superpowers` adding review after specify) may run their r
    FEATURE_BRANCH=$(git branch --show-current)
    ```
 5. Update state file with `feature_branch`.
-6. Proceed to Stage 1.
+6. **Immediately** begin Stage 1 (do not stop).
 
 **Worktree compatibility:** The `worktrees` trait is NOT recommended with `spex:ship`. The worktrees overlay creates a sibling worktree during specify, which requires restarting the Claude Code session in the new directory, breaking the autonomous pipeline. Ship works best by creating a feature branch in-place. If you want main isolation, create a worktree manually before starting ship:
 ```bash
@@ -430,7 +447,7 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
    - If `ask` is `always`: Present each question to the user interactively.
 
 4. Invoke `/speckit.clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
-5. After clarification completes, proceed to Stage 2.
+5. After clarification completes, **immediately** begin Stage 2 (do not stop).
 
 ### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
 
@@ -440,21 +457,21 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 2. Invoke `{Skill: spex:review-spec}` to validate spec quality.
 3. Capture the review findings and overall assessment.
 4. Apply **Oversight Decision Logic** (see below) to handle findings.
-5. After findings are resolved (or pipeline pauses), proceed to Stage 3.
+5. After findings are resolved (or pipeline pauses), **immediately** begin Stage 3 (do not stop).
 
 ### Stage 3: Plan
 
 1. Update state file: `stage: "plan"`, `stage_index: 3`.
 2. Invoke `/speckit.plan` to generate the implementation plan.
 3. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
-4. After plan generation completes, proceed to Stage 4.
+4. After plan generation completes, **immediately** begin Stage 4 (do not stop).
 
 ### Stage 4: Tasks
 
 1. Update state file: `stage: "tasks"`, `stage_index: 4`.
 2. Invoke `/speckit.tasks` to generate the task breakdown.
 3. This produces `tasks.md`.
-4. After task generation completes, proceed to Stage 5.
+4. After task generation completes, **immediately** begin Stage 5 (do not stop).
 
 ### Stage 5: Review Plan
 
@@ -463,14 +480,14 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
 4. This generates `REVIEWERS.md`.
 5. Capture findings and apply **Oversight Decision Logic**.
-6. After findings are resolved, proceed to Stage 6.
+6. After findings are resolved, **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement
 
 1. Update state file: `stage: "implement"`, `stage_index: 6`.
 2. Invoke `/speckit.implement` to execute the implementation plan.
 3. This is typically the longest stage. Implementation follows the task plan.
-4. After implementation completes, proceed to Stage 7.
+4. After implementation completes, **immediately** begin Stage 7 (do not stop).
 
 ### Stage 7: Review Code
 
@@ -481,14 +498,14 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
    b. Code Review Guide appended to REVIEWERS.md
    c. Deep review (if trait enabled): 5 review agents, fix loop, Deep Review Report appended to REVIEWERS.md
 4. Apply **Oversight Decision Logic** to any remaining findings.
-5. After findings are resolved, proceed to Stage 8.
+5. After findings are resolved, **immediately** begin Stage 8 (do not stop).
 
 ### Stage 8: Verify
 
 1. Update state file: `stage: "verify"`, `stage_index: 8`.
 2. Invoke `{Skill: spex:verification-before-completion}` for final verification.
 3. This runs tests, validates spec compliance, and checks for drift.
-4. If verification passes, proceed to Pipeline Completion.
+4. If verification passes, **immediately** proceed to Pipeline Completion (do not stop).
 5. If verification fails, apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic
