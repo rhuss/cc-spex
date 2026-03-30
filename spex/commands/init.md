@@ -63,7 +63,11 @@ If no traits selected, run `init` without `--enable`.
 
 ## Step 3: Detect companion plugins and seed memory
 
-Check if the prose plugin is available by testing for the `prose:check` skill (look for it in the available skills list from the system reminder). If found, write a reminder to auto-memory so future sessions know to use it:
+Scan the available skills list from the system reminder for companion plugins:
+
+### 3a: Prose plugin
+
+Check for the `prose:check` skill. If found, write a reminder to auto-memory so future sessions know to use it:
 
 Write to the auto-memory `MEMORY.md` (create the file if it doesn't exist, or append a new section if it does). Only add this section if it isn't already present:
 
@@ -76,6 +80,21 @@ Write to the auto-memory `MEMORY.md` (create the file if it doesn't exist, or ap
 
 If the prose plugin is not detected, skip this step silently.
 
+### 3b: Superpowers plugin
+
+Check for any of these upstream superpowers skills: `test-driven-development`, `systematic-debugging`, `brainstorming`, `writing-plans`. These are skills from [obra/superpowers](https://github.com/obra/superpowers) that complement spex but are NOT bundled with it.
+
+- If **found**: record "superpowers" as a detected companion plugin in the Step 4 report. No further action needed.
+- If **not found** and the user enabled the `superpowers` trait in Step 2: show a recommendation in the Step 4 report (see below). Do NOT block init or make it an error.
+
 ## Step 4: Report
 
 Summarize: traits enabled, permission level, and companion plugins detected. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
+
+If superpowers companion plugin was NOT detected (Step 3b), append this to the report:
+
+> **Recommended companion:** The [Superpowers](https://github.com/obra/superpowers) plugin by Jesse Vincent adds TDD discipline and systematic debugging skills that complement spex's spec-first workflow. spex absorbs superpowers' quality gates and anti-rationalization patterns, but does not bundle these standalone skills:
+> - **test-driven-development**: strict RED-GREEN-REFACTOR, no production code without failing test
+> - **systematic-debugging**: 4-phase root cause analysis with defense-in-depth
+>
+> Install with: `claude plugin add obra/superpowers`

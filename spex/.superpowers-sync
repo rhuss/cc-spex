@@ -1,7 +1,7 @@
 {
   "upstream_repo": "https://github.com/obra/superpowers",
-  "last_sync_commit": "8ea39819eed74fe2a0338e71789f06b30e953041",
-  "last_sync_date": "2026-03-20",
+  "last_sync_commit": "eafe962b18f6c5dc70fb7c8cc7e83e61f4cdde06",
+  "last_sync_date": "2026-03-30",
   "note": "Synced via /update-superpowers",
   "modified_skills": {
     "writing-plans": {
@@ -12,13 +12,16 @@
       "modification_summary": "No local copy. Upstream changes evaluated and adapted into spex:plan post-generation quality gates (coverage matrix, red flag scanning, task quality standards, error/edge case coverage checks).",
       "patterns_absorbed": [
         "Coverage Matrix (requirement -> task -> test mapping)",
-        "Red Flag Scanning (vague language detection)",
+        "Red Flag Scanning (vague language detection, expanded placeholder patterns)",
         "Task Quality Standards (Actionable, Testable, Atomic, Ordered)",
         "Error/Edge Case Coverage Checks",
         "NFR Validation Approach",
         "Success Criteria Reference",
         "Scope Check (multi-subsystem plan detection)",
-        "File Structure Mapping validation"
+        "File Structure Mapping validation",
+        "Type and Name Consistency (cross-task consistency validation)",
+        "No Placeholders (explicit plan failure patterns)",
+        "Self-Review replacing subagent dispatch (inline checklist)"
       ]
     },
     "review-code": {
@@ -72,7 +75,7 @@
     "brainstorm": {
       "upstream_file": "skills/brainstorming/SKILL.md",
       "local_file": "skills/brainstorm/SKILL.md",
-      "modification_summary": "Output is spec (not design doc); WHAT/WHY focus. Merged upstream scope assessment, design-for-isolation, existing-codebase guidance, spec review loop (via spex:review-spec), user review gate.",
+      "modification_summary": "Output is spec (not design doc); WHAT/WHY focus. Merged upstream scope assessment, design-for-isolation, existing-codebase guidance, inline self-review pre-check + spec review loop (via spex:review-spec), user review gate.",
       "key_sections_modified": [
         "Overview: Output is SPEC not design doc",
         "Creating the specification: New section with spec structure",
@@ -106,10 +109,12 @@
     "constitution",
     "spec"
   ],
-  "referenced_skills": [
+  "companion_skills": [
     "test-driven-development",
-    "systematic-debugging",
-    "using-git-worktrees",
-    "dispatching-parallel-agents"
-  ]
+    "systematic-debugging"
+  ],
+  "dropped_references": {
+    "using-git-worktrees": "Overlaps with spex:worktree (spec-workflow-aware)",
+    "dispatching-parallel-agents": "Overlaps with spex:teams-orchestrate (spec-guardian pattern)"
+  }
 }

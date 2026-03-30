@@ -48,7 +48,7 @@ You MUST create a task for each of these items and complete them in order:
 5. **Propose 2-3 approaches** - with trade-offs and your recommendation
 6. **Present spec sections** - scaled to their complexity, get user approval after each section
 7. **Create specification** - invoke `/speckit.specify` (or create manually), validate and commit
-8. **Spec review loop** - use `spex:review-spec` to validate soundness; fix issues and re-review until approved (max 3 iterations, then surface to human)
+8. **Spec self-review + review loop** - quick inline check (placeholders, consistency, scope, ambiguity), then `spex:review-spec` for formal validation; fix and re-review until approved (max 3 iterations, then surface to human)
 9. **User reviews written spec** - ask user to review the spec file before proceeding
 10. **Generate review brief** - synthesize spec into reviewer-friendly summary
 11. **Transition** - offer next steps via `/speckit.plan` or `/speckit.implement`
@@ -294,9 +294,20 @@ and template formatting. Bypassing it is a process violation.
 
 ### After spec creation
 
+**Spec Self-Review (quick inline check before formal review):**
+
+Before dispatching the formal review, do a quick inline pass:
+
+1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
+2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
+3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
+4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+
+Fix any issues inline before proceeding to the formal review.
+
 **Spec Review Loop:**
 
-After creating the spec, run the review loop:
+After the self-review pass, run the formal review loop:
 
 1. Use `spex:review-spec` to validate the spec for soundness and completeness
 2. If issues are found: fix them, re-run `spex:review-spec`, repeat until approved

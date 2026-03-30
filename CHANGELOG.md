@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Synced with superpowers@eafe962 (2026-03-25)
+  - `writing-plans`: Evaluated, 3 patterns adapted into `spex:review-plan` (expanded red flag patterns, type/name consistency check, no-placeholder enforcement)
+  - `brainstorming`: Adapted inline self-review as pre-check before `spex:review-spec` dispatch
+  - `verification-before-completion`: No upstream changes
+  - `review-code`: No upstream equivalent (spex-only)
+  - All spex spec-compliance enhancements preserved
+
 ## [3.0.0] - 2026-03-28
 
 ### Changed (BREAKING)

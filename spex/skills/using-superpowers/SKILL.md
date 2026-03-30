@@ -87,12 +87,10 @@ Before ANY implementation work:
 - **spex:traits** - Enable/disable spex discipline overlays (superpowers, teams)
 - **spex:init** - Initialize project with spec-kit and spex configuration
 
-### Compatible Superpowers Skills
-These work as-is with spec context:
-- **test-driven-development** - Use AFTER spec, during implementation
-- **systematic-debugging** - Use spec as reference during debugging
-- **using-git-worktrees** - For isolated feature development
-- **dispatching-parallel-agents** - For independent parallel work
+### Companion: Superpowers Plugin
+These skills require [obra/superpowers](https://github.com/obra/superpowers) to be installed separately (`claude plugin add obra/superpowers`). They complement spex but are not bundled:
+- **test-driven-development** - Strict RED-GREEN-REFACTOR discipline, use AFTER spec during implementation
+- **systematic-debugging** - 4-phase root cause analysis, use spec as reference during debugging
 
 ## Workflow Decision Tree
 
