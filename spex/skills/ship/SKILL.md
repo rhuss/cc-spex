@@ -175,48 +175,25 @@ The pipeline tracks its progress in `.specify/.spex-ship-phase` as JSON.
 
 ### Writing State
 
-At each stage transition, write the state file:
+The state file is created during Pipeline Initialization (see above). At each stage transition, update it by running:
 
 ```bash
-# Write to temp file first, then atomic rename
-cat > .specify/.spex-ship-phase.tmp << 'STATEEOF'
+cat > .specify/.spex-ship-phase << STATEEOF
 {
   "stage": "<current-stage-name>",
   "stage_index": <0-8>,
   "total_stages": 9,
-  "ask": "<always|smart|never>",
-  "started_at": "<ISO-8601 timestamp from pipeline start>",
+  "ask": "<ask-level>",
+  "started_at": "<original-started_at-value>",
   "retries": <0-2>,
   "status": "<running|paused|completed|failed>",
-  "brainstorm_file": "<path-to-brainstorm-doc>",
-  "feature_branch": "<branch-name-or-null>"
+  "brainstorm_file": "<brainstorm-path>",
+  "feature_branch": "$(git branch --show-current)"
 }
 STATEEOF
-mv .specify/.spex-ship-phase.tmp .specify/.spex-ship-phase
 ```
 
-**MANDATORY: Create the state file immediately at pipeline start**, before any stage runs. This is the FIRST action after parsing arguments and resolving the brainstorm file:
-
-```bash
-cat > .specify/.spex-ship-phase.tmp << 'STATEEOF'
-{
-  "stage": "specify",
-  "stage_index": 0,
-  "total_stages": 9,
-  "ask": "<resolved-ask-level>",
-  "started_at": "<ISO-8601 timestamp>",
-  "retries": 0,
-  "status": "running",
-  "brainstorm_file": "<resolved-brainstorm-path>",
-  "feature_branch": null
-}
-STATEEOF
-mv .specify/.spex-ship-phase.tmp .specify/.spex-ship-phase
-```
-
-If this file is not created, the status line will not display pipeline progress and `--resume` will not work after interruptions.
-
-Then update the state file at each transition:
+Update the state file at each transition:
 - **Before each stage begins**: Set `stage` to the new stage name, `stage_index` to its position, `status` to `running`, `retries` to 0.
 - **When pausing for user input**: Set `status` to `paused`.
 - **When resuming**: Set `status` back to `running`.
@@ -341,6 +318,53 @@ Do NOT apply "smart" behavior to the pipeline flow itself:
 
 The `--ask` flag controls oversight within review stages (how findings are handled). It does NOT control which stages run. ALL stages run regardless of the ask level.
 
+## Pipeline Initialization (BLOCKING - DO THIS FIRST)
+
+**You MUST complete these steps before invoking ANY speckit command or skill.** Do not skip ahead to stage execution.
+
+### Step 1: Create the state file
+
+Run this Bash command immediately. Replace the placeholder values with resolved arguments:
+
+```bash
+cat > .specify/.spex-ship-phase << STATEEOF
+{
+  "stage": "$([ -n "$START_FROM" ] && echo "$START_FROM" || echo "specify")",
+  "stage_index": $([ -n "$START_FROM_INDEX" ] && echo "$START_FROM_INDEX" || echo "0"),
+  "total_stages": 9,
+  "ask": "${ASK_LEVEL:-smart}",
+  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "retries": 0,
+  "status": "running",
+  "brainstorm_file": "${BRAINSTORM_FILE}",
+  "feature_branch": "$(git branch --show-current)"
+}
+STATEEOF
+```
+
+### Step 2: Verify the state file exists
+
+```bash
+[ -f .specify/.spex-ship-phase ] && echo "STATE_FILE_OK" || echo "STATE_FILE_MISSING"
+```
+
+If `STATE_FILE_MISSING`: **STOP**. Something went wrong. Do not proceed to any pipeline stage.
+
+### Step 3: Announce pipeline start
+
+Output a brief status message confirming the pipeline configuration before running any stage:
+
+```
+## spex:ship starting
+
+- **Brainstorm**: <file>
+- **Starting stage**: <stage> (<index>/9)
+- **Oversight**: <ask-level>
+- **State file**: .specify/.spex-ship-phase (created)
+```
+
+Only after all three steps complete successfully, proceed to Pipeline Stages below.
+
 ## Pipeline Stages
 
 The pipeline executes 9 stages in fixed order:
@@ -394,7 +418,12 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
 1. Update state file: `stage: "clarify"`, `stage_index: 1`.
 2. Invoke `/speckit.clarify` on the generated spec.
 3. The clarify command will ask up to 5 questions to resolve ambiguities.
-4. **Oversight interaction**: In `never` mode, accept recommended answers automatically. In `smart` mode, accept recommended answers. In `always` mode, present each question to the user.
+4. **Oversight interaction** (read the `ask` field from the state file, default is `smart`):
+   - `never`: Accept all recommended answers automatically. Do NOT present questions to the user.
+   - `smart`: Accept all recommended answers automatically. Do NOT present questions to the user. Only pause if a question has no recommended answer.
+   - `always`: Present each question to the user and wait for their answer.
+
+   **CRITICAL: In `smart` and `never` modes, do NOT stop to ask the user. Select the recommended option yourself and continue.** If the clarify command presents a question with a recommended answer (e.g., "Recommended: Option A"), immediately select that option without user interaction.
 5. After clarification completes, proceed to Stage 2.
 
 ### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
