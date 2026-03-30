@@ -21,6 +21,38 @@ cc-spex also adds its own commands for things Spec-Kit doesn't cover, like inter
 
 ## Workflow
 
+The recommended workflow has two phases, each producing a pull request:
+
+### Phase 1: Specification
+
+Start with an idea, refine it through brainstorming, then create a formal spec and implementation plan. The output is a PR containing `spec.md`, `plan.md`, `tasks.md`, and a `REVIEWERS.md` that guides reviewers through what to look for during spec review.
+
+```
+/spex:brainstorm          # Refine the idea through dialogue
+/speckit.specify           # Create formal spec
+/spex:review-spec          # Validate spec quality
+/speckit.plan              # Generate implementation plan + tasks
+/spex:review-plan          # Validate plan, generate REVIEWERS.md
+```
+
+Open a PR with these artifacts. Reviewers use `REVIEWERS.md` as a starting point to understand the spec's scope, key decisions, and areas that need scrutiny.
+
+### Phase 2: Implementation
+
+After the spec PR is reviewed and merged, implementation can proceed in one or more PRs (one per logical phase is ideal). Each implementation PR updates `REVIEWERS.md` with code-specific review hints, compliance notes, and areas where the reviewer should focus.
+
+```
+/speckit.implement         # Build following the plan
+/spex:review-code          # Spec compliance + deep review
+/spex:verify               # Final verification
+```
+
+If spec/code drift is detected during implementation, use `/spex:evolve` to reconcile: either update the spec or fix the code, then continue.
+
+### One-Shot: `/spex:ship`
+
+For smaller features or solo projects, `/spex:ship` chains the entire workflow from brainstorm through verification in a single session, without intermediate PRs. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`) and can optionally create a PR at the end with `--create-pr`. See [Ship Command](#ship-command) below for details.
+
 ```mermaid
 flowchart TD
     Start([Idea]) --> HasClarity{Clear<br>requirements?}
@@ -31,19 +63,24 @@ flowchart TD
     Brainstorm --> Specify
     Brainstorm -->|Full auto| Ship["/spex:ship<br>Autonomous pipeline"]
 
-    Specify --> Review["/spex:review-spec<br>Validate spec"]
-    Review --> Plan["/speckit.plan<br>Generate plan + tasks"]
-    Plan --> Implement["/speckit.implement<br>Build with TDD"]
+    Specify --> ReviewSpec["/spex:review-spec<br>Validate spec"]
+    ReviewSpec --> Plan["/speckit.plan<br>Generate plan + tasks"]
+    Plan --> ReviewPlan["/spex:review-plan<br>Create REVIEWERS.md"]
 
-    Implement --> Verify{Tests pass?<br>Spec compliant?}
+    ReviewPlan -->|PR #1: Spec| SpecPR([Spec Review & Merge])
 
-    Verify -->|Yes| Done([Complete])
+    SpecPR --> Implement["/speckit.implement<br>Build with TDD"]
+    Implement --> ReviewCode["/spex:review-code<br>Spec compliance +<br>deep review"]
+
+    ReviewCode --> Verify{Tests pass?<br>Spec compliant?}
+
+    Verify -->|Yes| ImplPR([PR #2+: Implementation])
     Verify -->|Drift detected| Evolve["/spex:evolve<br>Reconcile"]
 
-    Evolve -->|Update spec| Review
+    Evolve -->|Update spec| ReviewSpec
     Evolve -->|Fix code| Implement
 
-    Ship -->|Chains all stages| Done
+    Ship -->|Chains all stages| ImplPR
 
 ```
 
@@ -91,12 +128,19 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 
 ### Available Traits
 
-**`superpowers`** adds quality gates to Spec-Kit commands:
+**`superpowers`** adds quality gates to Spec-Kit commands. Requires the [Superpowers](https://github.com/obra/superpowers) companion plugin to be installed alongside cc-spex:
 - `/speckit.specify` gets automatic spec review after creation
 - `/speckit.plan` gets spec validation before planning and consistency checks after
 - `/speckit.implement` gets code review and verification gates
 
-**`teams`** (experimental, requires `superpowers`) adds parallel implementation via Claude Code Agent Teams:
+**`deep-review`** adds multi-perspective code review with autonomous fix capabilities. Requires `superpowers`. Benefits significantly from having the [Superpowers](https://github.com/obra/superpowers) plugin installed, which provides the quality gate infrastructure that triggers deep review automatically after implementation:
+- `/spex:review-code` runs a two-stage pipeline: first spec compliance scoring, then (if compliance passes at 95%+) five specialized review agents analyze the code
+- Review agents cover correctness, architecture/idioms, security, production readiness, and test quality
+- Critical and Important findings trigger an autonomous fix loop (up to 3 rounds) where fixes are applied and re-reviewed
+- Findings are written to `review-findings.md` and a summary is appended to `REVIEWERS.md` for human reviewers
+- Optionally integrates with external tools (CodeRabbit CLI, GitHub Copilot CLI) when configured in `.specify/spex-traits.json`
+
+**`teams`** (experimental, requires `superpowers`) adds parallel implementation via Claude Code Agent Teams. When combined with `deep-review`, the five review agents run in parallel instead of sequentially:
 - `/speckit.implement` delegates to team orchestration with spec guardian review
 
 **`worktrees`** adds git worktree isolation for feature development:
@@ -147,6 +191,62 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/spex:traits` | Enable, disable, or list active traits |
 | `/spex:ship` | Run the full workflow autonomously (requires `superpowers` + `deep-review` traits) |
 | `/spex:help` | Show a quick reference for all commands |
+
+## Ship Command
+
+`/spex:ship` is the autonomous full-cycle workflow that chains all stages from specification through verification. It requires both the `superpowers` and `deep-review` traits to be enabled.
+
+```
+/spex:ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--create-pr]
+```
+
+The pipeline runs nine stages in strict order:
+
+| # | Stage | What happens |
+|---|-------|-------------|
+| 0 | specify | Generate spec from brainstorm document |
+| 1 | clarify | Resolve spec ambiguities (up to 5 questions) |
+| 2 | review-spec | Validate spec quality and structure |
+| 3 | plan | Generate implementation plan with research |
+| 4 | tasks | Generate dependency-ordered task breakdown |
+| 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
+| 6 | implement | Execute implementation following task plan |
+| 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
+| 8 | verify | Final verification (tests, hygiene, drift check) |
+
+**Oversight levels** control how findings are handled:
+
+| Level | Unambiguous fixes | Ambiguous fixes | Blockers |
+|-------|-------------------|-----------------|----------|
+| `always` | Pause for approval | Pause | Pause |
+| `smart` (default) | Auto-fix | Pause | Pause |
+| `never` | Auto-fix | Auto-fix | Pause |
+
+Pipeline state is persisted to `.specify/.spex-ship-phase`, so interrupted runs can be resumed with `--resume`. Use `--start-from <stage>` to begin at a specific stage when artifacts from earlier stages already exist.
+
+## Deep Review
+
+The deep-review process is a two-stage code review pipeline triggered by `/spex:review-code` when the `deep-review` trait is enabled.
+
+**Stage 1: Spec Compliance.** The code is checked against functional and non-functional requirements from the spec. If the compliance score is below 95%, the pipeline stops and reports gaps before proceeding.
+
+**Stage 2: Multi-Perspective Review.** Five specialized agents analyze the codebase, each focused on a distinct concern:
+
+| Agent | Focus |
+|-------|-------|
+| **Correctness** | Mutation safety, shared references, logic errors, resource cleanup, null safety |
+| **Architecture & Idioms** | Dead code, unnecessary complexity, duplication, misleading naming, YAGNI violations |
+| **Security** | Input validation, injection risks, secret handling, authentication, RBAC scope |
+| **Production Readiness** | Goroutine leaks, unbounded channels, memory patterns, observability gaps, graceful shutdown |
+| **Test Quality** | Coverage gaps, weak assertions, wrong-reason passes, missing edge cases, test isolation |
+
+When the `teams` trait is also enabled, all five agents run in parallel via Claude Code Agent Teams. Otherwise they run sequentially.
+
+**Autonomous Fix Loop.** After all agents report their findings, Critical and Important issues are collected and fixed automatically (up to 3 rounds). Each round applies fixes and re-reviews only the modified files. The loop ends when no Critical or Important findings remain, or when the maximum rounds are reached.
+
+**Output.** The process produces two artifacts:
+- `review-findings.md` with detailed findings including severity, confidence, file/line, and resolution status
+- An appended section in `REVIEWERS.md` summarizing what was found, what was fixed automatically, and what still needs human attention
 
 ## Migrating from sdd (v2.x)
 
