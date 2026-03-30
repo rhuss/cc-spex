@@ -88,7 +88,7 @@ Before ANY implementation work:
 - **spex:init** - Initialize project with spec-kit and spex configuration
 
 ### Companion: Superpowers Plugin
-These skills require [obra/superpowers](https://github.com/obra/superpowers) to be installed separately (`claude plugin add obra/superpowers`). They complement spex but are not bundled:
+These skills require [obra/superpowers](https://github.com/obra/superpowers) to be installed separately (`/plugin install superpowers@claude-plugins-official` or `claude plugin install superpowers@claude-plugins-official`). They complement spex but are not bundled:
 - **test-driven-development** - Strict RED-GREEN-REFACTOR discipline, use AFTER spec during implementation
 - **systematic-debugging** - 4-phase root cause analysis, use spec as reference during debugging
 

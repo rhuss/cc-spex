@@ -97,4 +97,4 @@ If superpowers companion plugin was NOT detected (Step 3b), append this to the r
 > - **test-driven-development**: strict RED-GREEN-REFACTOR, no production code without failing test
 > - **systematic-debugging**: 4-phase root cause analysis with defense-in-depth
 >
-> Install with: `claude plugin add obra/superpowers`
+> Install with: `/plugin install superpowers@claude-plugins-official` (or `claude plugin install superpowers@claude-plugins-official` from the terminal)
