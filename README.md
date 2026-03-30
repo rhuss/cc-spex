@@ -224,6 +224,46 @@ The pipeline runs nine stages in strict order:
 
 Pipeline state is persisted to `.specify/.spex-ship-phase`, so interrupted runs can be resumed with `--resume`. Use `--start-from <stage>` to begin at a specific stage when artifacts from earlier stages already exist.
 
+### Recommended setup with worktrees
+
+The `worktrees` trait can interfere with `/spex:ship` because Spec-Kit's branch creation during the `specify` stage conflicts with the trait's own worktree switching. Disable the `worktrees` trait when using `/spex:ship`:
+
+```
+/spex:traits disable worktrees
+```
+
+Instead, create a worktree manually before starting the pipeline. This gives you an isolated workspace where the full pipeline can run unattended without session restarts:
+
+```bash
+# Create a worktree from main with a working name
+git worktree add ../myproject-new-feature main
+
+# Switch to it
+cd ../myproject-new-feature
+```
+
+Then start your workflow there:
+
+```
+/spex:brainstorm              # Capture the idea
+/spex:ship --ask smart        # Run the full pipeline
+```
+
+During the `specify` stage, Spec-Kit creates a feature-specific branch (e.g., `feature/012-auth-redesign`) and the pipeline continues on that branch through implementation and verification. Since the worktree is isolated, nothing interrupts your main workspace.
+
+When the pipeline finishes, you can either rename the worktree directory to match the feature branch, or merge and remove it:
+
+```bash
+# Option A: Rename to match the branch
+cd ..
+mv myproject-new-feature myproject-auth-redesign
+
+# Option B: Merge and clean up
+cd ../myproject
+git merge feature/012-auth-redesign
+git worktree remove ../myproject-new-feature
+```
+
 ## Deep Review
 
 The deep-review process is a two-stage code review pipeline triggered by `/spex:review-code` when the `deep-review` trait is enabled.
