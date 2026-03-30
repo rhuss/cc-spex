@@ -383,9 +383,17 @@ The pipeline executes 9 stages in fixed order:
 
 ### Suppressing trait overlay gates
 
-When running inside the ship pipeline, **trait overlay gates on `/speckit.*` commands must not pause for user input or ask confirmation questions**. The ship pipeline manages its own stage transitions and has dedicated review stages (review-spec at stage 2, review-plan at stage 5, review-code at stage 7). Trait overlays that add review or confirmation prompts (e.g., the `superpowers` overlay on `speckit.specify` that runs spec review and asks "Shall I proceed?") must be treated as informational only: run the review if the overlay triggers it, capture findings, but do NOT pause or ask the user before proceeding to the next ship stage. The ship pipeline's own stage gate logic handles all oversight decisions.
+When running inside the ship pipeline, **no `/speckit.*` command may pause for user input unless the `ask` level is `always`**. This overrides any instruction in the speckit command prompts themselves. Specifically:
 
-This applies to all `/speckit.*` invocations within the pipeline: `speckit.specify`, `speckit.clarify`, `speckit.plan`, `speckit.tasks`, and `speckit.implement`.
+- **`speckit.specify`**: Do not ask "Shall I proceed?" after spec creation. Proceed to the next stage.
+- **`speckit.clarify`**: Do not present questions interactively in `smart` or `never` mode. Auto-select recommended answers.
+- **`speckit.plan`**: Do not ask for confirmation before or after planning. Proceed to the next stage.
+- **`speckit.tasks`**: Do not ask for confirmation. Proceed to the next stage.
+- **`speckit.implement`**: Do not pause at trait overlay gates. Proceed to the next stage.
+
+Trait overlays (e.g., `superpowers` adding review after specify) may run their reviews, but their results are informational. Do NOT pause or ask the user before proceeding. The ship pipeline's own stage gate logic handles all oversight decisions.
+
+**This is a hard override. If a speckit command prompt says "present to user" or "wait for answer", and `ask` is `smart` or `never`, you answer it yourself and continue.**
 
 ### Stage 0: Specify (ALWAYS runs unless --start-from or --resume skips it)
 
@@ -416,14 +424,12 @@ cd ../project-wip && claude
 Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious from reading the spec.
 
 1. Update state file: `stage: "clarify"`, `stage_index: 1`.
-2. Invoke `/speckit.clarify` on the generated spec.
-3. The clarify command will ask up to 5 questions to resolve ambiguities.
-4. **Oversight interaction** (read the `ask` field from the state file, default is `smart`):
-   - `never`: Accept all recommended answers automatically. Do NOT present questions to the user.
-   - `smart`: Accept all recommended answers automatically. Do NOT present questions to the user. Only pause if a question has no recommended answer.
-   - `always`: Present each question to the user and wait for their answer.
+2. Read the `ask` level from the state file (default: `smart`).
+3. **BEFORE invoking clarify**, determine the interaction mode:
+   - If `ask` is `smart` or `never`: You are the decision-maker. Do NOT use `AskUserQuestion` or present options to the user. When the clarify process identifies ambiguities, YOU select the recommended option for each question. If no recommendation exists, use your best judgment based on the spec context. Answer all questions yourself, then encode the answers into the spec.
+   - If `ask` is `always`: Present each question to the user interactively.
 
-   **CRITICAL: In `smart` and `never` modes, do NOT stop to ask the user. Select the recommended option yourself and continue.** If the clarify command presents a question with a recommended answer (e.g., "Recommended: Option A"), immediately select that option without user interaction.
+4. Invoke `/speckit.clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
 5. After clarification completes, proceed to Stage 2.
 
 ### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
