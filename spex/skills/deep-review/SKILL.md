@@ -118,6 +118,7 @@ Read `.specify/spex-traits.json` and check if `teams` is enabled.
 - `subagent_type: "general-purpose"`
 - The full agent prompt (from the Agent Prompts section below)
 - Include the list of changed files and their contents
+- **Include the spec text** (spec.md content, if available). Agents need the spec to check code behavior against requirements. Without it, they can only find code-level issues, not spec compliance gaps.
 - Include the hint text (if provided) as additional review focus
 
 ### Step 4: Dispatch External Tools (if available)
@@ -424,6 +425,8 @@ Each review agent MUST return findings in this exact format:
 - [ ] Confidence scores reflect my actual certainty, not padding
 - [ ] If I found zero issues, I re-read the code a second time to confirm
 - [ ] Every finding includes a concrete, implementable fix
+- [ ] If a spec was provided, I checked my findings against specific FR/NFR requirements
+- [ ] I checked boundary/last-iteration behavior in all loops and retry logic
 ```
 
 If an agent finds no issues after careful review, it MUST return:
@@ -486,6 +489,15 @@ IMPORTANT INSTRUCTIONS - READ BEFORE REVIEWING:
 
 8. OUTPUT FORMAT: Use the Finding Output Schema exactly as specified. Do not
    deviate from the format. Your output will be parsed programmatically.
+
+9. SPEC AWARENESS: If a spec (spec.md) is provided, cross-check the code
+   against specific requirements. For each functional requirement (FR-NNN),
+   verify the code implements exactly what the spec says, not more, not less.
+   Flag mismatches as findings. Common spec compliance gaps:
+   - Code handles a broader or narrower set of cases than the spec defines
+   - Metrics or observability the spec requires but code doesn't expose
+   - Error codes or status codes that differ from the spec
+   - Behavioral differences on edge cases (last iteration, empty input, etc.)
 ```
 
 ### Agent 1: Correctness
@@ -516,6 +528,13 @@ For all languages:
       properly closed? In the right order? In defer/finally blocks?
 - [ ] Concurrency: Are shared variables protected? Can race conditions occur?
       Are channels properly drained on cancellation?
+- [ ] Last-iteration behavior: In loops with retries, attempts, or pagination,
+      does the final iteration behave correctly? Common bugs: sleeping after the
+      last attempt, returning a generic error instead of the original, off-by-one
+      in attempt counting, unnecessary work on the last pass.
+- [ ] Boundary correctness: Does the code match the spec's exact boundaries?
+      If the spec says "retry on 502/503/504", does the code retry exactly
+      those, not all 5xx? If the spec says "max 3 attempts", is it 3 not 4?
 
 For Go specifically:
 - [ ] Slice append in loops: Does `append` modify a shared backing array?
@@ -577,6 +596,15 @@ CHECKLIST - Check each item against the code:
 - [ ] Convention adherence: Does the new code follow the patterns established
       in the existing codebase? Or does it introduce a new pattern where one
       already exists?
+- [ ] State machine completeness: For any state machine (circuit breaker,
+      retry state, connection lifecycle, etc.), are ALL transitions covered?
+      Check both success and failure paths. Every transition should be
+      observable (logged, metriced, or tested). Missing transitions on the
+      success path are a common blind spot.
+- [ ] Observability completeness: If the spec requires specific metrics,
+      counters, or log entries, verify they are actually exposed. Check that
+      every metric the spec names has a corresponding implementation, not
+      just the ones on the error path.
 ```
 
 ### Agent 3: Security
@@ -711,6 +739,9 @@ CHECKLIST - Check each item against the code:
       Tests that mock too aggressively, tests that check implementation details
       rather than behavior, tests that verify the test setup rather than the
       code under test.
+- [ ] Empty test stubs: Are there test functions with no assertions, only
+      setup code, or just `t.Skip()`/`t.Pending()`? These give false coverage
+      and hide untested code paths. An empty test is worse than no test.
 - [ ] Missing edge cases: Based on the implementation, what edge cases should
       be tested? Empty input, nil/null values, maximum values, concurrent
       access, timeout scenarios, malformed input.
