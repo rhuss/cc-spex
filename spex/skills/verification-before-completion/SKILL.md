@@ -318,6 +318,7 @@ OR
 - Thinking "just this once"
 - Tired and wanting work over
 - **ANY wording implying success without having run verification**
+- **Modified CLAUDE.md without explicit user request** (CLAUDE.md is user-maintained, never auto-update)
 
 ## Rationalization Prevention
 
@@ -341,6 +342,7 @@ Use TodoWrite to track:
 - [ ] Code hygiene: check copy/mutation safety
 - [ ] Code hygiene: check cleanup consistency (no orphans)
 - [ ] Code hygiene: check for unnecessary operations
+- [ ] Code hygiene: verify CLAUDE.md was not modified (revert if auto-modified)
 - [ ] Load specification
 - [ ] Validate spec compliance for all requirements
 - [ ] Check for spec drift

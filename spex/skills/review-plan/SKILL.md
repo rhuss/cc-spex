@@ -83,16 +83,31 @@ Search plan.md and tasks.md for vague or incomplete language:
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
-rg -i "figure out|tbd|todo|implement later|somehow|somewhere|not sure|maybe|probably" "$SPEC_DIR/plan.md" "$SPEC_DIR/tasks.md" || echo "No red flags found"
+rg -i "figure out|tbd|todo|implement later|somehow|somewhere|not sure|maybe|probably|add appropriate|add validation|handle edge cases|similar to task" "$SPEC_DIR/plan.md" "$SPEC_DIR/tasks.md" || echo "No red flags found"
 ```
 
 Review any matches:
 - "Figure out..." = missing research, needs concrete approach
-- "TBD" = incomplete planning, must be resolved
+- "TBD" / "TODO" = incomplete planning, must be resolved
 - "Implement later" = deferred work, scope explicitly
+- "Add appropriate error handling" / "add validation" / "handle edge cases" = vague placeholders, must show actual code
+- "Write tests for the above" (without actual test code) = test code must be included
+- "Similar to Task N" = repeat the code, the engineer may read tasks out of order
+- Steps that describe what to do without showing how = code blocks required for code steps
 - Missing file paths = tasks are not actionable
 
-## 4. NFR Validation
+## 4. Type and Name Consistency
+
+Check that types, method signatures, property names, and function names used across tasks are consistent:
+
+- If a function is called `clearLayers()` in Task 3, it must not be called `clearFullLayers()` in Task 7
+- If a type is defined in an early task, later tasks must reference the same type name
+- If a constant or config key is introduced, verify spelling is consistent across all tasks
+- If an API endpoint path is defined, verify all references use the same path
+
+Inconsistencies between tasks are plan bugs that will become code bugs during implementation.
+
+## 5. NFR Validation
 
 For each non-functional requirement in the spec, verify the plan includes:
 - A concrete measurement method (not just "should be fast")
@@ -101,7 +116,7 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 5. Generate REVIEWERS.md (MANDATORY)
+## 6. Generate REVIEWERS.md (MANDATORY)
 
 Generating `REVIEWERS.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEWERS.md`.
 
@@ -120,7 +135,7 @@ Write this document as if you are briefing a colleague who has 30 minutes and no
 
 ### What does NOT belong in REVIEWERS.md
 
-- Quality scores, pass/fail verdicts, coverage matrices, red flag scan results (those go to console output in step 6)
+- Quality scores, pass/fail verdicts, coverage matrices, red flag scan results (those go to console output in step 7)
 - Phrases like "Quality Score: X/Y", "Verdict: PASS", "Recommendation: proceed to..."
 - Lists of what the spec contains (the reviewer can read the spec themselves)
 - PR artifact inventories (except in rare cases where non-obvious artifacts need explanation)
@@ -256,7 +271,7 @@ fi
 
 If the check fails, the file was likely generated as a summary/self-review instead of a question-driven reviewer guide. Delete it and regenerate using the template above.
 
-## 6. Present Results
+## 7. Present Results
 
 Report to the user:
 - Task quality check results (pass/issues)
@@ -265,7 +280,7 @@ Report to the user:
 - NFR validation results
 - Path to generated REVIEWERS.md
 
-## 7. Offer Remediation
+## 8. Offer Remediation
 
 After presenting results, collect ALL findings from steps 0-4 into a numbered list. Include both blocking and non-blocking issues. Present them as a consolidated findings summary:
 
