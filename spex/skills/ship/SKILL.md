@@ -211,11 +211,13 @@ STATEEOF
 ```
 
 Update the state file at each transition:
-- **Before each stage begins**: Set `stage` to the new stage name, `stage_index` to its position, `status` to `running`, `retries` to 0.
+- **When a stage finishes and the next stage begins**: Set `stage` to the NEXT stage name, `stage_index` to the NEXT stage's index, `status` to `running`, `retries` to 0. **Do NOT set status to `completed` for individual stages.** Simply advance to the next stage.
 - **When pausing for user input**: Set `status` to `paused`.
 - **When resuming**: Set `status` back to `running`.
-- **On completion**: Set `status` to `completed`, then delete the state file.
+- **When ALL 9 stages have finished** (pipeline done): Set `status` to `completed`, then delete the state file.
 - **On failure**: Set `status` to `failed`, leave the state file in place.
+
+**IMPORTANT:** The `completed` status means the ENTIRE PIPELINE is done, not that a single stage finished. When stage 1 (clarify) finishes, you write stage 2 (review-spec) with status `running`. You never write stage 1 with status `completed`.
 
 The `feature_branch` field is set after the specify stage completes (it may be null during the specify stage itself).
 
