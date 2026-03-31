@@ -90,8 +90,9 @@ do_advance() {
   local next_index=$((current_index + 1))
 
   if [ "$next_index" -ge "${#STAGES[@]}" ]; then
+    # Write a "done" state for the statusline to display briefly
+    write_state "done" "$next_index" "completed" "$ask" "$started" "$brainstorm"
     echo "PIPELINE_COMPLETE"
-    do_cleanup
     return 0
   fi
 

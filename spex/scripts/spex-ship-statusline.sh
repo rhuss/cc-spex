@@ -44,6 +44,7 @@ case "$STAGE" in
   implement)    EMOJI="🔨"; COLOR="$YELLOW";;
   review-code)  EMOJI="🔎"; COLOR="$MAGENTA";;
   verify)       EMOJI="🏁"; COLOR="$GREEN";;
+  done)         EMOJI="✅"; COLOR="$GREEN";;
   *)            EMOJI="⚙️";  COLOR="$WHITE";;
 esac
 
@@ -66,7 +67,9 @@ PREFIX="🧬 ${COLOR}${BOLD}spex:ship${RESET}"
 STAGE_DISPLAY="${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET}"
 PROGRESS="${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET}"
 
-if [ "$STATUS" = "paused" ]; then
+if [ "$STAGE" = "done" ]; then
+  printf "🧬 ${GREEN}${BOLD}spex:ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
+elif [ "$STATUS" = "paused" ]; then
   printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
 elif [ "$STATUS" = "failed" ]; then
   printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}✗ failed${RESET}"

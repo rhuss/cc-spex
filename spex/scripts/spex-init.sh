@@ -86,6 +86,34 @@ configure_statusline() {
 EOF
   fi
   echo "  Status line configured for ship pipeline progress"
+
+  # Configure ship-done-cleanup hook
+  local cleanup_hook="$script_dir/hooks/ship-done-cleanup.sh"
+  if [ -f "$cleanup_hook" ]; then
+    chmod +x "$cleanup_hook" 2>/dev/null || true
+    local abs_hook
+    abs_hook="$(cd "$(dirname "$cleanup_hook")" && pwd)/$(basename "$cleanup_hook")"
+
+    # Add PreToolUse hook if not already present
+    local has_hook
+    has_hook=$(jq --arg cmd "$abs_hook" '
+      .hooks // [] | map(select(.event == "PreToolUse")) |
+      map(select(.command == $cmd)) | length
+    ' "$settings_file" 2>/dev/null || echo "0")
+
+    if [ "$has_hook" = "0" ]; then
+      local tmp
+      tmp=$(mktemp)
+      jq --arg cmd "$abs_hook" '
+        .hooks = (.hooks // []) + [{
+          "event": "PreToolUse",
+          "command": $cmd
+        }]
+      ' "$settings_file" > "$tmp"
+      mv "$tmp" "$settings_file"
+      echo "  Ship done cleanup hook configured"
+    fi
+  fi
 }
 
 # --- Apply trait overlays if configured ---
