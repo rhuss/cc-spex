@@ -461,6 +461,10 @@ IMPORTANT INSTRUCTIONS - READ BEFORE REVIEWING:
    Verify EVERYTHING by reading the actual code. Comments may be wrong. Variable
    names may be misleading. Test names may not match what they test.
 
+   ISOLATION: Do NOT read git log, commit messages, brainstorm documents, or
+   plan.md/tasks.md. These reveal implementation intent and bias your review.
+   Review the CODE and the SPEC only. Judge what was built, not what was intended.
+
 3. DO NOT trust test results as proof of correctness. Read the actual assertions.
    A passing test with weak assertions proves nothing. Verify what is actually
    being tested, not what the test name claims.
