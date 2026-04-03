@@ -15,7 +15,7 @@ set -euo pipefail
 
 STATE_FILE=".specify/.spex-ship-phase"
 
-STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "verify")
+STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "stamp")
 
 stage_index() {
   local name="$1"
@@ -72,6 +72,72 @@ do_create() {
   echo "CREATED stage=$start_stage index=$idx ask=$ask"
 }
 
+find_spec_dir() {
+  # Find the spec directory from the brainstorm file path or by looking for recent specs
+  local brainstorm="$1"
+  if [ -n "$brainstorm" ]; then
+    # Derive spec dir from brainstorm filename (e.g., brainstorm/030-foo.md -> specs/030-foo/)
+    local base
+    base=$(basename "$brainstorm" .md)
+    # Try common patterns
+    for dir in "specs/$base" "specs/${base%-*}" "specs/"*; do
+      [ -d "$dir" ] && echo "$dir" && return 0
+    done
+  fi
+  # Fallback: most recently modified spec dir
+  local latest
+  latest=$(ls -td specs/*/ 2>/dev/null | head -1)
+  [ -n "$latest" ] && echo "${latest%/}" && return 0
+  return 1
+}
+
+verify_stage_artifacts() {
+  # Verify expected artifacts exist for the completed stage before advancing.
+  # Returns 0 if OK, 1 if artifacts missing (with error message on stdout).
+  local stage_index="$1"
+  local brainstorm="$2"
+  local spec_dir
+  spec_dir=$(find_spec_dir "$brainstorm") || spec_dir=""
+
+  case "$stage_index" in
+    0) # specify -> must have spec.md
+      if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/spec.md" ]; then
+        echo "ARTIFACT_MISSING: spec.md not found. Stage 'specify' did not produce a specification."
+        return 1
+      fi
+      ;;
+    3) # plan -> must have plan.md
+      if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/plan.md" ]; then
+        echo "ARTIFACT_MISSING: plan.md not found. Stage 'plan' did not produce an implementation plan."
+        return 1
+      fi
+      ;;
+    4) # tasks -> must have tasks.md
+      if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/tasks.md" ]; then
+        echo "ARTIFACT_MISSING: tasks.md not found. Stage 'tasks' did not produce a task breakdown."
+        return 1
+      fi
+      ;;
+    5) # review-plan -> must have REVIEWERS.md
+      if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/REVIEWERS.md" ]; then
+        echo "ARTIFACT_MISSING: REVIEWERS.md not found. Stage 'review-plan' did not produce a review document."
+        return 1
+      fi
+      ;;
+    7) # review-code -> REVIEWERS.md must contain Deep Review Report
+      if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/REVIEWERS.md" ]; then
+        echo "ARTIFACT_MISSING: REVIEWERS.md not found. Stage 'review-code' requires REVIEWERS.md."
+        return 1
+      fi
+      if ! grep -q "Deep Review Report\|deep.review.report\|## Deep Review" "$spec_dir/REVIEWERS.md" 2>/dev/null; then
+        echo "ARTIFACT_MISSING: REVIEWERS.md lacks a Deep Review Report section. The deep-review agents must run before advancing past review-code."
+        return 1
+      fi
+      ;;
+  esac
+  return 0
+}
+
 do_advance() {
   if [ ! -f "$STATE_FILE" ]; then
     echo "ERROR: No state file found" >&2
@@ -86,6 +152,14 @@ do_advance() {
   started=$(jq -r '.started_at' "$STATE_FILE")
   local brainstorm
   brainstorm=$(jq -r '.brainstorm_file' "$STATE_FILE")
+
+  # Verify artifacts before advancing
+  local artifact_check
+  artifact_check=$(verify_stage_artifacts "$current_index" "$brainstorm" 2>/dev/null) || true
+  if [ -n "$artifact_check" ]; then
+    echo "$artifact_check"
+    exit 1
+  fi
 
   local next_index=$((current_index + 1))
 

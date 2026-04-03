@@ -80,7 +80,7 @@ Before ANY implementation work:
 - **spex:review-plan** - Post-planning quality validation (coverage, red flags, task quality)
 - **spex:review-code** - Review code-to-spec compliance
 - **spex:evolve** - Handle spec/code mismatches with AI guidance
-- **spex:verification-before-completion** - Tests + spec compliance validation
+- **spex:stamp** - Final gate: tests + spec compliance validation
 - **spex:spec-refactoring** - Consolidate and improve evolved specs
 
 ### Configuration
@@ -155,7 +155,7 @@ If you catch yourself thinking ANY of these thoughts, STOP. You are rationalizin
 
 **Skill-avoidance rationalizations:**
 - "This is just a quick fix" → WRONG. Quick fixes need spec validation.
-- "I can check the spec manually" → WRONG. Use spex:verification-before-completion.
+- "I can check the spec manually" → WRONG. Use spex:stamp.
 - "The spec is good enough" → WRONG. Use spex:review-spec before implementing.
 - "I remember this workflow" → WRONG. Skills evolve. Run the current version.
 

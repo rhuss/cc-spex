@@ -19,7 +19,10 @@ check_ready() {
   command -v specify &>/dev/null || return 1
   [ -d .specify ] || return 1
   [ -f .specify/templates/spec-template.md ] || return 1
-  ls .claude/commands/speckit.* &>/dev/null || return 1
+  # Verify all core command files exist (not just any speckit.* match)
+  for cmd in specify plan implement tasks clarify; do
+    [ -f ".claude/commands/speckit.${cmd}.md" ] || return 1
+  done
   return 0
 }
 
@@ -46,7 +49,7 @@ migrate_phase_marker() {
 
 # --- Configure status line for ship pipeline ---
 configure_statusline() {
-  local settings_file=".claude/settings.json"
+  local settings_file=".claude/settings.local.json"
   local script_dir
   script_dir="$(dirname "$0")"
   local statusline_script="$script_dir/spex-ship-statusline.sh"
@@ -64,18 +67,18 @@ configure_statusline() {
   mkdir -p .claude
 
   if [ -f "$settings_file" ]; then
-    # Check if statusLine is already configured
+    # Check if statusLine is already configured (in local or main settings)
     if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
       # Already has a statusLine config, don't overwrite
       return 0
     fi
-    # Merge statusLine into existing settings
+    # Merge statusLine into existing local settings
     local tmp
     tmp=$(mktemp)
     jq --arg cmd "$abs_script" '. + {"statusLine": {"type": "command", "command": $cmd}}' "$settings_file" > "$tmp"
     mv "$tmp" "$settings_file"
   else
-    # Create new settings file with statusLine
+    # Create new local settings file with statusLine
     cat > "$settings_file" << EOF
 {
   "statusLine": {
@@ -86,34 +89,25 @@ configure_statusline() {
 EOF
   fi
   echo "  Status line configured for ship pipeline progress"
+}
 
-  # Configure ship-done-cleanup hook
-  local cleanup_hook="$script_dir/hooks/ship-done-cleanup.sh"
-  if [ -f "$cleanup_hook" ]; then
-    chmod +x "$cleanup_hook" 2>/dev/null || true
-    local abs_hook
-    abs_hook="$(cd "$(dirname "$cleanup_hook")" && pwd)/$(basename "$cleanup_hook")"
+# --- Ensure .gitignore covers spex-generated files ---
+configure_gitignore() {
+  local gitignore=".gitignore"
+  local sentinel="# spex: generated/local files"
 
-    # Add PreToolUse hook if not already present
-    local has_hook
-    has_hook=$(jq --arg cmd "$abs_hook" '
-      .hooks // [] | map(select(.event == "PreToolUse")) |
-      map(select(.command == $cmd)) | length
-    ' "$settings_file" 2>/dev/null || echo "0")
+  # Skip if sentinel already present
+  [ -f "$gitignore" ] && grep -qF "$sentinel" "$gitignore" && return 0
 
-    if [ "$has_hook" = "0" ]; then
-      local tmp
-      tmp=$(mktemp)
-      jq --arg cmd "$abs_hook" '
-        .hooks = (.hooks // []) + [{
-          "event": "PreToolUse",
-          "command": $cmd
-        }]
-      ' "$settings_file" > "$tmp"
-      mv "$tmp" "$settings_file"
-      echo "  Ship done cleanup hook configured"
-    fi
-  fi
+  cat >> "$gitignore" <<'EOF'
+
+# spex: generated/local files
+.claude/commands/speckit.*
+.claude/settings.local.json
+.specify/.spex-phase
+.specify/.spex-ship-phase
+EOF
+  echo "  Updated .gitignore with spex patterns"
 }
 
 # --- Apply trait overlays if configured ---
@@ -272,6 +266,7 @@ do_init() {
     migrate_from_beads
     apply_traits
     configure_statusline
+    configure_gitignore
     echo ""
     echo "READY"
   else
@@ -344,6 +339,7 @@ case "${1:-}" in
       migrate_from_beads
       apply_traits >/dev/null 2>&1 || true
       configure_statusline 2>/dev/null || true
+      configure_gitignore 2>/dev/null || true
       echo "READY"
       exit 0
     fi

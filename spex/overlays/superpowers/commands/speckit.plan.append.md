@@ -1,5 +1,15 @@
 
 <!-- SPEX-TRAIT:superpowers -->
+## Protect User-Maintained Agent Files
+
+After Phase 1 runs `update-agent-context.sh`, immediately restore CLAUDE.md (and any other user-maintained agent file) to its pre-script state:
+
+```bash
+git checkout -- CLAUDE.md 2>/dev/null || true
+```
+
+The `update-agent-context.sh` script (from spec-kit) auto-generates "Active Technologies" and "Recent Changes" sections that overwrite user-curated content. CLAUDE.md is a user-maintained file, not an auto-generated one.
+
 ## Spex Quality Gates for Planning
 
 **Before generating the plan:**

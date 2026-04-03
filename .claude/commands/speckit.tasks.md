@@ -198,3 +198,14 @@ Every task MUST strictly follow this format:
   - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
   - Each phase should be a complete, independently testable increment
 - **Final Phase**: Polish & Cross-Cutting Concerns
+
+
+<!-- SPEX-GUARD:ship -->
+## Ship Pipeline Guard
+
+If `.specify/.spex-ship-phase` exists and its `status` is `running`, this command is part of an autonomous `/spex:ship` pipeline. You MUST:
+- Complete the task generation normally.
+- Do NOT output a completion summary.
+- Do NOT ask "Shall I proceed?" or suggest next steps.
+- Do NOT use AskUserQuestion.
+- Return immediately so the pipeline can advance to the next stage.

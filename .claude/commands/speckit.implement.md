@@ -198,6 +198,17 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
     - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 
+<!-- SPEX-GUARD:ship -->
+## Ship Pipeline Guard
+
+If `.specify/.spex-ship-phase` exists and its `status` is `running`, this command is part of an autonomous `/spex:ship` pipeline. You MUST:
+- Complete the implementation work normally.
+- Do NOT output a completion summary.
+- Do NOT ask "Shall I proceed?" or suggest next steps.
+- Do NOT use AskUserQuestion.
+- Return immediately so the pipeline can advance to the next stage.
+
+
 <!-- SPEX-TRAIT:superpowers -->
 ## Spex Quality Gates for Implementation
 
@@ -205,9 +216,25 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
 1. Verify spec package exists: spec.md, plan.md, and tasks.md must all be present
 2. If any are missing, stop and instruct the user to generate them first
 
+**During implementation:**
+- **NEVER modify CLAUDE.md automatically.** Do not append "Active Technologies", "Recent Changes", or any tracking sections. CLAUDE.md is for stable repo-level instructions maintained by the user. Only touch it when the user explicitly asks.
+
 **After implementation completes:**
 1. Invoke {Skill: spex:review-code} to check code compliance against spec
 2. Invoke {Skill: spex:verification-before-completion} for final verification
+
+
+<!-- SPEX-TRAIT:deep-review -->
+## Deep Review Enhancement
+
+When `deep-review` trait is active, `spex:review-code` automatically runs
+multi-perspective review agents after spec compliance passes. Five agents
+(correctness, architecture, security, production-readiness, test-quality)
+analyze code independently, followed by an autonomous fix loop for Critical
+and Important findings (up to 3 rounds).
+
+No additional commands needed. The enhancement activates within the
+existing `spex:review-code` flow. See {Skill: spex:deep-review} for details.
 
 
 <!-- SPEX-TRAIT:teams -->
@@ -251,16 +278,3 @@ When the implement skill is invoked with multiple tasks:
 - Using `Agent` tool with `run_in_background` instead of Agent Teams
 - Implementing tasks directly when 2+ independent tasks exist
 - Skipping the pre-flight check
-
-
-<!-- SPEX-TRAIT:deep-review -->
-## Deep Review Enhancement
-
-When `deep-review` trait is active, `spex:review-code` automatically runs
-multi-perspective review agents after spec compliance passes. Five agents
-(correctness, architecture, security, production-readiness, test-quality)
-analyze code independently, followed by an autonomous fix loop for Critical
-and Important findings (up to 3 rounds).
-
-No additional commands needed. The enhancement activates within the
-existing `spex:review-code` flow. See {Skill: spex:deep-review} for details.

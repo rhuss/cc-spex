@@ -43,7 +43,7 @@ case "$STAGE" in
   review-plan)  EMOJI="✅"; COLOR="$MAGENTA";;
   implement)    EMOJI="🔨"; COLOR="$YELLOW";;
   review-code)  EMOJI="🔎"; COLOR="$MAGENTA";;
-  verify)       EMOJI="🏁"; COLOR="$GREEN";;
+  stamp)        EMOJI="🏁"; COLOR="$GREEN";;
   done)         EMOJI="✅"; COLOR="$GREEN";;
   *)            EMOJI="⚙️";  COLOR="$WHITE";;
 esac

@@ -68,3 +68,9 @@ build/
 skills/**/SKILL.md.proposed
 /tmp/upstream-changes-*.patch
 /tmp/upstream-commits-*.txt
+
+# spex: generated/local files
+.claude/commands/speckit.*
+.claude/settings.local.json
+.specify/.spex-phase
+.specify/.spex-ship-phase

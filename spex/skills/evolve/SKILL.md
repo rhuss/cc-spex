@@ -24,7 +24,7 @@ This skill detects divergence, analyzes the mismatch, recommends resolution, and
 
 **Auto-triggered by:**
 - `spex:review-code` (when deviations found)
-- `spex:verification-before-completion` (when compliance fails)
+- `spex:stamp` (when compliance fails)
 
 **Don't use this skill when:**
 - No mismatch exists (everything compliant)
@@ -244,7 +244,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 [Adjust tests to match spec]
 
 # Verify compliance
-[Run spex:verification-before-completion]
+[Run spex:stamp]
 
 # Commit
 git add [files]

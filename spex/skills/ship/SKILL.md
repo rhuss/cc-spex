@@ -55,20 +55,18 @@ If either trait is missing, **STOP** with the error message above. Do not procee
 
 ### Dirty Worktree Check
 
-Before starting the pipeline, verify the working tree is clean:
+Before starting the pipeline, check for uncommitted changes that are NOT spex configuration files:
 
 ```bash
-if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-  echo "ERROR: Working tree has uncommitted changes."
-  echo ""
-  echo "Please commit or stash your changes before running spex:ship:"
-  echo "  git stash"
-  echo "  # or"
-  echo "  git add -A && git commit -m 'WIP: save before ship'"
+# Filter out spex-generated files from dirty check
+DIRTY=$(git status --porcelain 2>/dev/null | grep -v -E '^.{2} \.claude/(commands/speckit\.|settings)' | grep -v -E '^.{2} \.specify/(spex-traits\.json|\.spex-)' || true)
+if [ -n "$DIRTY" ]; then
+  echo "Working tree has uncommitted non-spex changes:"
+  echo "$DIRTY"
 fi
 ```
 
-If the worktree is dirty, **STOP** with the error message. Do not proceed.
+If there are dirty non-spex files, commit them automatically with a "WIP: save before ship" message, then proceed. Do NOT stop or ask the user. Spex config files (`.claude/commands/speckit.*`, `.claude/settings.*`, `.specify/spex-traits.json`) are expected to be dirty after init and should be ignored.
 
 ### External Tool Auth Validation
 
@@ -194,7 +192,7 @@ Locate the script:
 ```bash
 SHIP_STATE="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")/scripts/spex-ship-state.sh"
 # Or find it via the plugin:
-SHIP_STATE="$(find ~/.claude -path '*/spex/scripts/spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
 ```
 
 ### Available Commands
@@ -333,7 +331,7 @@ The `--ask` flag controls oversight within review stages (how findings are handl
 ### Step 1: Locate the state script
 
 ```bash
-SHIP_STATE="$(find ~/.claude -path '*/spex/scripts/spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
 [ -x "$SHIP_STATE" ] && echo "SCRIPT_OK: $SHIP_STATE" || echo "SCRIPT_MISSING"
 ```
 
@@ -376,7 +374,7 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEWERS.md |
 | 6 | `implement` | `/speckit.implement` | Execute implementation |
 | 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEWERS.md update |
-| 8 | `verify` | `{Skill: spex:verification-before-completion}` | Final verification |
+| 8 | `stamp` | `{Skill: spex:verification-before-completion}` | Final gate |
 
 ### Suppressing trait overlay gates
 
@@ -459,7 +457,8 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 1. Invoke `/speckit.implement` to execute the implementation plan.
 2. This is typically the longest stage. Implementation follows the task plan.
-3. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
+3. When marking tasks complete in `tasks.md`, use the **Edit tool** (not sed/sd/Bash). Edit is reliable for checkbox toggles.
+4. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
 
 ### Stage 7: Review Code
 
@@ -468,19 +467,20 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
    a. Spec compliance check (compliance score and deviation list)
    b. Code Review Guide appended to REVIEWERS.md
    c. Deep review (if trait enabled): 5 review agents, fix loop, Deep Review Report appended to REVIEWERS.md
+   d. External tools (CodeRabbit CLI via `coderabbit review --agent`, Copilot CLI) run locally against the working tree. No PR is needed.
 4. Apply **Oversight Decision Logic** to any remaining findings.
 5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
-### Stage 8: Verify
+### Stage 8: Stamp
 
 1. Invoke `{Skill: spex:verification-before-completion}` for final verification.
 2. This runs tests, validates spec compliance, and checks for drift.
-3. If verification passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
-4. If verification fails, apply **Oversight Decision Logic**.
+3. If stamp passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
+4. If stamp fails, apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic
 
-After each review stage (review-spec, review-plan, review-code, verify), evaluate the findings:
+After each review stage (review-spec, review-plan, review-code, stamp), evaluate the findings:
 
 ### Finding Classification
 
@@ -688,7 +688,7 @@ Next steps:
 - `{Skill: spex:review-plan}` (Stage 5)
 - `/speckit.implement` (Stage 6)
 - `{Skill: spex:review-code}` (Stage 7)
-- `{Skill: spex:verification-before-completion}` (Stage 8)
+- `{Skill: spex:verification-before-completion}` (Stage 8: Stamp)
 
 **Required traits:** `superpowers`, `deep-review`
 **Not recommended:** `worktrees` trait (creates a session restart mid-pipeline; use manual worktree setup instead)

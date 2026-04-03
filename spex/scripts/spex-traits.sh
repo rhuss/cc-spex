@@ -623,7 +623,7 @@ SPEX_PATTERN_INIT='Bash(*/scripts/spex-init.sh*)'
 SPEX_PATTERN_TRAITS='Bash(*/scripts/spex-traits.sh*)'
 SPEX_PATTERN_SPECIFY='Bash(specify *)'
 # Broad tool patterns for YOLO level
-SPEX_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "mcp__*")
+SPEX_YOLO_EXTRAS=("Bash" "Read" "Edit" "Write" "Glob" "Grep" "Agent" "Skill" "ToolSearch" "mcp__*")
 
 ensure_settings() {
   if [ ! -f "$SETTINGS_FILE" ]; then
@@ -649,7 +649,9 @@ remove_spex_patterns() {
           (test("spex-init\\.sh|spex-traits\\.sh|^Bash\\(specify ") | not)
           and
           # YOLO broad patterns (exact matches only)
-          (. != "Bash" and . != "Read" and . != "Edit" and . != "Write" and . != "mcp__*")
+          (. != "Bash" and . != "Read" and . != "Edit" and . != "Write"
+           and . != "Glob" and . != "Grep" and . != "Agent" and . != "Skill"
+           and . != "ToolSearch" and . != "mcp__*")
         )
       ]
     else . end
@@ -737,7 +739,7 @@ do_permissions() {
       remove_spex_patterns
       add_spex_patterns "$SPEX_PATTERN_INIT" "$SPEX_PATTERN_TRAITS" "$SPEX_PATTERN_SPECIFY" "${SPEX_YOLO_EXTRAS[@]}"
       echo "Auto-approval set to: yolo"
-      echo "All tools auto-approved: Bash, Read, Edit, Write, MCP, specify CLI, spex scripts."
+      echo "All tools auto-approved: Bash, Read, Edit, Write, Glob, Grep, Agent, Skill, ToolSearch, MCP, specify CLI, spex scripts."
       [ "$before" != "yolo" ] && echo "CHANGED" || true
       ;;
     *)

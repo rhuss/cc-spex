@@ -102,14 +102,14 @@ spex COMMANDS (helpers and configuration)
   /spex:traits         Enable/disable traits (superpowers, teams, worktrees, deep-review)
   /spex:worktree       List active worktrees or cleanup merged ones
   /spex:brainstorm     Rough idea into formal spec (interactive dialogue)
-  /spex:ship           Autonomous full-cycle pipeline (brainstorm to verify)
+  /spex:ship           Autonomous full-cycle pipeline (brainstorm to stamp)
                          Requires: superpowers + deep-review traits
                          Flags: --ask always|smart|never, --create-pr,
                                 --resume, --start-from <stage>
   /spex:review-spec    Check spec quality and completeness
   /spex:review-plan    Validate plan coverage, task quality, red flags
   /spex:review-code    Check code compliance against spec
-  /spex:verify         Run verification (tests, hygiene, spec compliance)
+  /spex:stamp          Final gate (tests, hygiene, spec compliance)
   /spex:evolve         Reconcile spec/code drift
   /spex:help           This quick reference
 

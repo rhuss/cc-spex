@@ -5,6 +5,16 @@ description: Review code against spec compliance - checks implementation matches
 
 # Code Review Against Specification
 
+## IMPORTANT: Deep Review Trait Check
+
+**Before starting any review work**, check if the `deep-review` trait is enabled:
+
+```bash
+jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null
+```
+
+If `deep-review` is `true`, this skill MUST invoke `{Skill: spex:deep-review}` after spec compliance passes (>= 95%). Do NOT produce only a basic compliance review when deep-review is active. The deep review dispatches 5 specialized agents, runs a fix loop, and generates a Deep Review Report. See step 9a below for details.
+
 ## Overview
 
 Review code implementation against specification to ensure compliance.
@@ -395,7 +405,7 @@ jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null
 
 **If 100% compliant (standard review path):**
 - Approve for verification
-- Proceed to `spex:verification-before-completion`
+- Proceed to `spex:stamp`
 
 ## Review Checklist
 

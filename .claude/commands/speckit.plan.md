@@ -153,7 +153,28 @@ You **MUST** consider the user input before proceeding (if not empty).
 - ERROR on gate failures or unresolved clarifications
 
 
+<!-- SPEX-GUARD:ship -->
+## Ship Pipeline Guard
+
+If `.specify/.spex-ship-phase` exists and its `status` is `running`, this command is part of an autonomous `/spex:ship` pipeline. You MUST:
+- Complete the planning work normally.
+- Do NOT output a completion summary.
+- Do NOT ask "Shall I proceed?" or "Ready for implementation."
+- Do NOT use AskUserQuestion.
+- Return immediately so the pipeline can advance to the next stage.
+
+
 <!-- SPEX-TRAIT:superpowers -->
+## Protect User-Maintained Agent Files
+
+After Phase 1 runs `update-agent-context.sh`, immediately restore CLAUDE.md (and any other user-maintained agent file) to its pre-script state:
+
+```bash
+git checkout -- CLAUDE.md 2>/dev/null || true
+```
+
+The `update-agent-context.sh` script (from spec-kit) auto-generates "Active Technologies" and "Recent Changes" sections that overwrite user-curated content. CLAUDE.md is a user-maintained file, not an auto-generated one.
+
 ## Spex Quality Gates for Planning
 
 **Before generating the plan:**
@@ -196,5 +217,3 @@ that a restart is needed.
 
 **Execution**: Delegate to {Skill: spex:teams-research} for research topic
 identification, agent spawning, findings consolidation, and plan generation.
-
-

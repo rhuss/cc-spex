@@ -11,4 +11,4 @@
 
 **After implementation completes:**
 1. Invoke {Skill: spex:review-code} to check code compliance against spec
-2. Invoke {Skill: spex:verification-before-completion} for final verification
+2. Invoke {Skill: spex:verification-before-completion} for the final stamp
