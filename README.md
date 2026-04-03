@@ -1,6 +1,6 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.0.1-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -44,7 +44,7 @@ After the spec PR is reviewed and merged, implementation can proceed in one or m
 ```
 /speckit.implement         # Build following the plan
 /spex:review-code          # Spec compliance + deep review
-/spex:verify               # Final verification
+/spex:stamp                # Final gate
 ```
 
 If spec/code drift is detected during implementation, use `/spex:evolve` to reconcile: either update the spec or fix the code, then continue.
@@ -189,6 +189,8 @@ These commands provide functionality beyond what Spec-Kit offers.
 | `/spex:review-plan` | Review a plan for feasibility and spec alignment |
 | `/spex:worktree` | List active worktrees or clean up merged ones (requires `worktrees` trait) |
 | `/spex:traits` | Enable, disable, or list active traits |
+| `/spex:stamp` | Final gate before completion (tests, hygiene, spec compliance) |
+| `/spex:deep-review` | Multi-perspective code review with 5 specialized agents |
 | `/spex:ship` | Run the full workflow autonomously (requires `superpowers` + `deep-review` traits) |
 | `/spex:help` | Show a quick reference for all commands |
 
@@ -212,7 +214,7 @@ The pipeline runs nine stages in strict order:
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
 | 6 | implement | Execute implementation following task plan |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | verify | Final verification (tests, hygiene, drift check) |
+| 8 | stamp | Final gate (tests, hygiene, drift check) |
 
 **Oversight levels** control how findings are handled:
 
@@ -316,6 +318,22 @@ Run `/spex:init` in each project. This automatically renames `.specify/sdd-trait
 | `.specify/sdd-traits.json` | `.specify/spex-traits.json` |
 
 All `/speckit.*` commands remain unchanged.
+
+## Development
+
+```bash
+make validate          # Validate plugin and marketplace schemas
+make test-install      # Integration test: install from local marketplace
+make test-install-remote  # Integration test: install from GitHub marketplace
+make release           # Pre-release checks (validate + test-install), then prints the release command
+```
+
+The release process:
+
+1. Update the version in `.claude-plugin/marketplace.json`
+2. Run `make release` to validate and run the full integration test
+3. If all checks pass, run the printed `gh release create` command
+4. Update the version in `cc-rhuss-marketplace` to match
 
 ## Acknowledgements
 

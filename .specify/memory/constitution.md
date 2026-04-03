@@ -1,11 +1,7 @@
 <!-- Sync Impact Report
-Version: 1.0.0 → 1.1.0 (MINOR: soften dogmatic language, allow code-first for small changes)
-Modified principles:
-  - I. Spec-First Development → I. Spec-Guided Development (pragmatic, not dogmatic)
-  - IV. Quality Gate Enforcement (gates apply to spec-driven work, not all changes)
+Version: 1.1.0 → 1.2.0 (MINOR: add release process, update verification to reflect integration tests)
 Modified sections:
-  - Development Workflow (added pragmatic code changes guidance)
-  - Governance (softened amendment process)
+  - Development Workflow (added release process, updated verification from manual to automated)
 Templates validated:
   - .specify/templates/plan-template.md ✅ (Constitution Check section present)
   - .specify/templates/spec-template.md ✅ (no changes needed)
@@ -149,9 +145,14 @@ The plugin's own development follows these workflow rules.
 - **Code can change without docs**: Bug fixes, refactors, small
   improvements, and exploratory changes do not require spec updates.
   Update docs when it helps, not because a process demands it.
-- **Manual verification**: Since this is a Markdown/Bash plugin with
-  no automated test suite, verification is done via `make reinstall`
-  followed by manual Claude Code session testing.
+- **Verification**: `make release` runs schema validation and a full
+  integration test that installs the plugin from the local marketplace,
+  checks all commands, skills, hooks, and overlays are present, then
+  cleans up. Run `make install` after testing to restore the plugin.
+- **Release process**: Bump the version in `.claude-plugin/marketplace.json`,
+  run `make release` to validate, then `gh release create v<version>
+  --generate-notes`. After the GitHub release, update the version in the
+  `cc-rhuss-marketplace` repository to match.
 - **Cross-reference maintenance**: When commands or skills are renamed,
   added, or removed, all cross-references in retained skills SHOULD
   be updated in the same change. `rg` verification helps catch stale
@@ -169,4 +170,4 @@ Implementation plans SHOULD include a "Constitution Check" section.
 - **Compliance reviews** happen during `spex:review-spec` and
   `spex:review-plan` invocations when those gates are used.
 
-**Version**: 1.1.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-02-13
+**Version**: 1.2.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-04-03

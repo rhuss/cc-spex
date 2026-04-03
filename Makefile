@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook migrate help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -50,6 +50,21 @@ test-hook:
 	@echo '{"prompt":"/spex:init","session_id":"test","cwd":"/tmp","hook_event_name":"UserPromptSubmit"}' | \
 		python3 spex/scripts/hooks/context-hook.py
 
+test-install:
+	@./tests/test_marketplace_install.sh --local
+
+test-install-remote:
+	@./tests/test_marketplace_install.sh
+
+release: validate test-install
+	@VERSION=$$(jq -r '.plugins[] | select(.name == "spex") | .version' .claude-plugin/marketplace.json); \
+	if git tag -l "v$$VERSION" | grep -q .; then \
+		echo "Error: Tag v$$VERSION already exists"; exit 1; \
+	fi; \
+	echo ""; \
+	echo "All checks passed. Ready to release v$$VERSION."; \
+	echo "Run:  gh release create v$$VERSION --generate-notes"
+
 check-upstream:
 	cd spex && ./scripts/check-upstream-changes.sh
 
@@ -61,4 +76,7 @@ help:
 	@echo "  reinstall      - Full uninstall and reinstall"
 	@echo "  migrate        - Remove old sdd plugin/marketplace (run automatically by install)"
 	@echo "  test-hook      - Test the context hook"
+	@echo "  test-install   - Integration test: install from local marketplace"
+	@echo "  test-install-remote - Integration test: install from GitHub marketplace"
+	@echo "  release        - Pre-release checks (validate + test-install)"
 	@echo "  check-upstream - Check for upstream superpowers changes"
