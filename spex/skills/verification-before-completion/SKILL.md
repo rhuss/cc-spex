@@ -1,6 +1,7 @@
 ---
 name: verification-before-completion
 description: Extended verification including tests AND spec compliance - runs tests, validates spec compliance, checks for drift, blocks completion on failures
+disable-model-invocation: true
 ---
 
 # Verification Before Completion (Spec-Aware)

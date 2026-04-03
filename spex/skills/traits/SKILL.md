@@ -1,7 +1,8 @@
 ---
-name: spex:traits
+name: traits
 description: Manage spex trait overlays - enable, disable, or list active traits
 argument-hint: "[list | enable <superpowers|deep-review|teams|worktrees> | disable <superpowers|deep-review|teams|worktrees>]"
+disable-model-invocation: true
 ---
 
 # Spex Traits Management

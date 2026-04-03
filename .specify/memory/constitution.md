@@ -119,10 +119,10 @@ These constraints govern the structure of the spex plugin codebase.
 - **Hook filtering**: The context hook (`context-hook.py`) MUST only
   fire for `/spex:` prefixed commands. Non-spex commands MUST NOT
   receive spex context injection.
-- **File organization**: Commands live in `spex/commands/`, skills in
-  `spex/skills/<name>/SKILL.md`, overlays in
-  `spex/overlays/<trait>/{commands,templates}/`, scripts in
-  `spex/scripts/`.
+- **File organization**: Skills live in `spex/skills/<name>/SKILL.md`,
+  overlays in `spex/overlays/<trait>/{commands,templates}/`, scripts in
+  `spex/scripts/`. There is no `spex/commands/` directory; all user-facing
+  and internal skills use the unified skills format.
 - **Overlay application**: The `spex-traits.sh apply` function handles
   all overlay application. It validates target files exist before
   appending, uses sentinel markers for idempotency, and reports
@@ -149,10 +149,12 @@ The plugin's own development follows these workflow rules.
   integration test that installs the plugin from the local marketplace,
   checks all commands, skills, hooks, and overlays are present, then
   cleans up. Run `make install` after testing to restore the plugin.
-- **Release process**: Bump the version in `.claude-plugin/marketplace.json`,
-  run `make release` to validate, then `gh release create v<version>
-  --generate-notes`. After the GitHub release, update the version in the
-  `cc-rhuss-marketplace` repository to match.
+- **Release process**: Bump the version in both
+  `.claude-plugin/marketplace.json` and `spex/.claude-plugin/plugin.json`
+  (plugin.json wins at install time). Run `make release` to validate,
+  then `gh release create v<version> --generate-notes`. After the
+  GitHub release, update the version in the `cc-rhuss-marketplace`
+  repository to match.
 - **Cross-reference maintenance**: When commands or skills are renamed,
   added, or removed, all cross-references in retained skills SHOULD
   be updated in the same change. `rg` verification helps catch stale

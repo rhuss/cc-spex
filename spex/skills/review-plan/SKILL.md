@@ -1,6 +1,7 @@
 ---
 name: review-plan
 description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEWERS.md generation
+argument-hint: "[spec-directory]"
 ---
 
 # Post-Planning Quality Validation

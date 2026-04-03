@@ -1,6 +1,7 @@
 ---
 name: spec-refactoring
 description: Consolidate and improve evolved specs - identifies inconsistencies, removes redundancy, improves structure while maintaining feature coverage
+user-invocable: false
 ---
 
 # Specification Refactoring

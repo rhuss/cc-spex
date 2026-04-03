@@ -3,6 +3,7 @@ name: teams-spec-guardian
 description: "DEPRECATED: Merged into spex:teams-orchestrate. Use the consolidated 'teams' trait instead of 'teams-spec'."
 deprecated: true
 replacement: spex:teams-orchestrate
+user-invocable: false
 ---
 
 # Spec Guardian: Lead Reviews, Teammates Implement
