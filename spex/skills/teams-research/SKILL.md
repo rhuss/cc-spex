@@ -1,7 +1,6 @@
 ---
 name: teams-research
 description: "Parallel codebase research for planning via Claude Code Agent Teams"
-user-invocable: false
 ---
 
 # Teams Research: Parallel Codebase Exploration for Planning

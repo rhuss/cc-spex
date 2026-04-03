@@ -1,7 +1,6 @@
 ---
 name: using-superpowers
 description: Establishes spex methodology - workflow routing, process discipline, spec-first principle, and skill discovery. Use when starting any spex conversation to determine which workflow skill to invoke.
-user-invocable: false
 ---
 
 <EXTREMELY-IMPORTANT>

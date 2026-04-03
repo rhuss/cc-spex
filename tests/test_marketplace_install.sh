@@ -186,54 +186,47 @@ else
 fi
 
 #==============================================================================
-# Test 5: Skills present (user-invocable)
+# Test 5: Commands present
 #==============================================================================
 echo ""
-echo "User-invocable skills:"
+echo "Command verification:"
 
-EXPECTED_USER_SKILLS=("brainstorm" "deep-review" "evolve" "help" "init" "review-code" "review-plan" "review-spec" "ship" "stamp" "traits" "worktree")
+EXPECTED_COMMANDS=("stamp" "deep-review" "ship" "init" "traits" "brainstorm" "evolve" "help" "review-code" "review-spec" "review-plan" "worktree")
+
+PLUGIN_CACHE="${PLUGIN_CACHE_BASE}/commands"
+
+if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$PLUGIN_CACHE" ]]; then
+  for cmd in "${EXPECTED_COMMANDS[@]}"; do
+    if [[ -f "$PLUGIN_CACHE/$cmd.md" ]]; then
+      pass "Command present: /spex:$cmd"
+    else
+      fail "Command missing: /spex:$cmd"
+    fi
+  done
+else
+  fail "Plugin cache directory not found"
+fi
+
+#==============================================================================
+# Test 6: Skills present
+#==============================================================================
+echo ""
+echo "Skill verification:"
+
+EXPECTED_SKILLS=("brainstorm" "deep-review" "evolve" "review-code" "review-plan" "review-spec" "ship" "using-superpowers" "verification-before-completion")
 
 SKILL_DIR="${PLUGIN_CACHE_BASE}/skills"
 
 if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$SKILL_DIR" ]]; then
-  for skill in "${EXPECTED_USER_SKILLS[@]}"; do
+  for skill in "${EXPECTED_SKILLS[@]}"; do
     if [[ -f "$SKILL_DIR/$skill/SKILL.md" ]]; then
-      pass "Skill present: /spex:$skill"
+      pass "Skill present: $skill"
     else
-      fail "Skill missing: /spex:$skill"
+      fail "Skill missing: $skill"
     fi
   done
 else
   fail "Skills directory not found"
-fi
-
-#==============================================================================
-# Test 6: Internal skills present
-#==============================================================================
-echo ""
-echo "Internal skills:"
-
-EXPECTED_INTERNAL_SKILLS=("using-superpowers" "spec-kit" "verification-before-completion" "spec-refactoring")
-
-SKILL_DIR="${PLUGIN_CACHE_BASE}/skills"
-
-if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$SKILL_DIR" ]]; then
-  for skill in "${EXPECTED_INTERNAL_SKILLS[@]}"; do
-    if [[ -f "$SKILL_DIR/$skill/SKILL.md" ]]; then
-      pass "Internal skill present: $skill"
-    else
-      fail "Internal skill missing: $skill"
-    fi
-  done
-else
-  fail "Skills directory not found"
-fi
-
-# Verify no commands directory exists (migrated to skills)
-if [[ -d "${PLUGIN_CACHE_BASE}/commands" ]]; then
-  fail "Legacy commands/ directory still exists (should be migrated to skills)"
-else
-  pass "No legacy commands/ directory"
 fi
 
 #==============================================================================

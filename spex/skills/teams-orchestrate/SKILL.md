@@ -1,7 +1,6 @@
 ---
 name: teams-orchestrate
 description: "Unified team orchestration: parallel task implementation with spec guardian review pattern via Claude Code Agent Teams"
-user-invocable: false
 ---
 
 # Teams Orchestration: Parallel Task Implementation

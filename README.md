@@ -175,9 +175,9 @@ These are the commands you'll use day-to-day. The `/speckit.*` commands come fro
 | `/speckit.checklist` | Generate a quality validation checklist |
 | `/speckit.taskstoissues` | Convert tasks to GitHub issues |
 
-### Spex Skills
+### Spex Commands
 
-These skills provide functionality beyond what Spec-Kit offers. They follow the [Agent Skills](https://agentskills.io) open standard.
+These commands provide functionality beyond what Spec-Kit offers.
 
 | Command | Purpose |
 |---------|---------|
@@ -192,7 +192,7 @@ These skills provide functionality beyond what Spec-Kit offers. They follow the 
 | `/spex:stamp` | Final gate before completion (tests, hygiene, spec compliance) |
 | `/spex:deep-review` | Multi-perspective code review with 5 specialized agents |
 | `/spex:ship` | Run the full workflow autonomously (requires `superpowers` + `deep-review` traits) |
-| `/spex:help` | Show a quick reference for all skills |
+| `/spex:help` | Show a quick reference for all commands |
 
 ## Ship Command
 
@@ -330,9 +330,9 @@ make release           # Pre-release checks (validate + test-install), then prin
 
 The release process:
 
-1. Bump the version in **both** `.claude-plugin/marketplace.json` and `spex/.claude-plugin/plugin.json` (plugin.json wins at install time)
+1. Update the version in `.claude-plugin/marketplace.json`
 2. Run `make release` to validate and run the full integration test
-3. If all checks pass, commit, push, and run the printed `gh release create` command
+3. If all checks pass, run the printed `gh release create` command
 4. Update the version in `cc-rhuss-marketplace` to match
 
 ## Acknowledgements
