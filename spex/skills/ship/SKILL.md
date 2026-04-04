@@ -453,22 +453,70 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 5. Capture findings and apply **Oversight Decision Logic**.
 6. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
-### Stage 6: Implement
+### Stage 6: Implement (Forked Subagent)
 
-1. Invoke `/speckit.implement` to execute the implementation plan.
-2. This is typically the longest stage. Implementation follows the task plan.
-3. When marking tasks complete in `tasks.md`, use the **Edit tool** (not sed/sd/Bash). Edit is reliable for checkbox toggles.
+This stage runs in an isolated subagent to prevent context accumulation in the orchestrator.
+
+1. Resolve the spec directory for the current branch:
+   ```bash
+   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
+   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   ```
+
+2. Spawn a subagent using the Agent tool with the following prompt. The subagent receives only file paths, not conversation history:
+
+   ```
+   You are executing the implementation stage of a spex:ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+   Plan: <FEATURE_DIR>/plan.md
+   Tasks: <FEATURE_DIR>/tasks.md
+
+   Read these files, then invoke /speckit.implement to execute the implementation.
+   The .specify/.spex-ship-phase file exists with status "running", so the
+   implement command will run in pipeline mode (no completion summary, no user questions).
+
+   When marking tasks complete in tasks.md, use the Edit tool.
+   Report a brief summary of completed tasks when done.
+   ```
+
+3. When the subagent returns, capture its summary. Do NOT carry the full implementation context into the orchestrator.
 4. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
 
-### Stage 7: Review Code
+### Stage 7: Review Code (Forked Subagent)
 
-1. Invoke `{Skill: spex:review-code}`.
-3. This skill runs the full review chain:
-   a. Spec compliance check (compliance score and deviation list)
-   b. Code Review Guide appended to REVIEWERS.md
-   c. Deep review (if trait enabled): 5 review agents, fix loop, Deep Review Report appended to REVIEWERS.md
-   d. External tools (CodeRabbit CLI via `coderabbit review --agent`, Copilot CLI) run locally against the working tree. No PR is needed.
-4. Apply **Oversight Decision Logic** to any remaining findings.
+This stage runs in an isolated subagent so the reviewer has no implementation context, enabling an unbiased review.
+
+1. Resolve the spec directory (same as Stage 6):
+   ```bash
+   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
+   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   ```
+
+2. Spawn a subagent using the Agent tool with the following prompt. Pass external tool settings resolved during argument parsing:
+
+   ```
+   You are executing the code review stage of a spex:ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+   Plan: <FEATURE_DIR>/plan.md
+   Tasks: <FEATURE_DIR>/tasks.md
+   External tools: coderabbit=<true/false>, copilot=<true/false>
+
+   Invoke {Skill: spex:review-code} to run the full review chain:
+   - Spec compliance check
+   - Code Review Guide (appended to REVIEWERS.md)
+   - Deep review (if deep-review trait is enabled): 5 review agents, fix loop,
+     Deep Review Report appended to REVIEWERS.md
+   - External tools (CodeRabbit, Copilot) if enabled
+
+   Report the compliance score, gate outcome, and a summary of findings when done.
+   ```
+
+3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
+4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
 ### Stage 8: Stamp

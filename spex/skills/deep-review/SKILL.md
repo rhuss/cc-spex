@@ -19,8 +19,18 @@ The caller (review-code or ship) may provide these values. When not provided, th
 2. **Invocation context**: `superpowers` or `manual`
 3. **Hint text**: optional focus area from user (or null)
 4. **External tool settings**: `{coderabbit: true/false, copilot: true/false}` (see resolution below)
-5. **Spec path**: path to spec.md (or null)
+5. **Spec path**: path to spec.md (or null, see Spec Resolution below)
 6. **Feature directory**: path to the spec directory for artifact output
+
+### Spec Resolution
+
+If the caller does not provide a spec path, attempt branch-based resolution:
+
+```bash
+.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null
+```
+
+If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path and feature directory. If this fails (not on a feature branch, no matching spec directory), proceed without a spec (spec compliance checks will be skipped).
 
 ### External Tool Settings Resolution
 

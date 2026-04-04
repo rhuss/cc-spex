@@ -69,4 +69,96 @@ Warnings go in the superpowers overlays for `speckit.plan` and `speckit.implemen
 - The spec puts US1 and US2 at equal priority (both P1) and the tasks combine them into a single phase. Is there value in being able to ship US1 (warnings) without US2 (branch resolution)?
 
 ---
+
+## Code Review Guide (30 minutes)
+
+> This section guides a code reviewer through the implementation changes,
+> focusing on high-level questions that need human judgment.
+
+**Changed files:** 8 files changed (2 overlay files, 4 skill files, 1 ship skill, 1 README)
+
+### Understanding the changes (8 min)
+
+- Start with `spex/skills/review-code/SKILL.md`: The "Spec Selection" section shows the new branch-based resolution pattern. This is the template all 4 skills follow.
+- Then `spex/skills/ship/SKILL.md`: Stages 6 and 7 now spawn subagents via the Agent tool. The prompts show what context the subagents receive.
+- Question: Does the branch resolution pattern feel natural when reading the skill? Would a reviewer invoking `/spex:review-code` after `/clear` understand why it "just works"?
+
+### Key decisions that need your eyes (12 min)
+
+**Branch resolution uses check-prerequisites.sh** (`spex/skills/review-code/SKILL.md:39-43`, relates to [FR-007](spec.md#functional-requirements))
+
+The implementation calls `check-prerequisites.sh --json --paths-only` and parses JSON for `FEATURE_SPEC` and `FEATURE_DIR`. This is the same script spec-kit uses internally. The coupling is intentional (reuse spec-kit's resolution rather than duplicating logic).
+- Question: Is the `2>/dev/null` suppression appropriate? If the script fails silently, the fallback to interactive selection works, but should we log that branch resolution was attempted and failed?
+
+**Subagent prompts in ship** (`spex/skills/ship/SKILL.md:462-520`, relates to [FR-011](spec.md#functional-requirements))
+
+The orchestrator resolves FEATURE_DIR before spawning the subagent and passes file paths in the prompt. The subagent re-resolves when it invokes the skill. This redundancy is intentional (explicit context in the prompt).
+- Question: Is the subagent prompt detailed enough for the implement stage? The subagent needs to run a full implementation cycle with only file paths as input.
+
+**Context clear wording** (`speckit.plan.append.md:41-43`, `speckit.implement.append.md:16-18`, relates to [FR-005](spec.md#functional-requirements))
+
+Both warnings use "consider running `/clear`" (advisory, not imperative). The plan warning emphasizes "fresh context window", the implement warning emphasizes "unbiased review".
+- Question: Is the tone right? Too soft ("consider") may be ignored. Too strong ("you must") contradicts [FR-004](spec.md#functional-requirements) (informational only).
+
+### Areas where I'm less certain (5 min)
+
+- `spex/skills/deep-review/SKILL.md:25-34` ([FR-007](spec.md#functional-requirements)): The Spec Resolution subsection is added under Prerequisites, not as a standalone section like the other 3 skills. This structural difference reflects the different invocation pattern (deep-review receives spec from its caller), but a reviewer might find it inconsistent.
+
+- `spex/skills/ship/SKILL.md:462-483`: The implement subagent prompt says "invoke /speckit.implement" but doesn't explicitly pass the `--ask` level or external tool settings. The implement skill picks these up from the state file, but is that reliable across a subagent boundary?
+
+### Deviations and risks (5 min)
+
+No deviations from [plan.md](plan.md) were identified. All three phases were implemented as planned:
+- Phase 1: Context clear warnings in 2 overlays (matches [plan Phase 1](plan.md#phase-1-context-clear-warnings-us1))
+- Phase 2: Branch resolution in 4 skills (matches [plan Phase 2](plan.md#phase-2-branch-based-spec-resolution-us2))
+- Phase 3: Forked subagents in ship stages 6-7 (matches [plan Phase 3](plan.md#phase-3-forked-subagent-stages-in-ship-us3))
+
+- Risk: The ship subagent approach has not been validated end-to-end. The [research.md](research.md) noted "prototype before committing" for US3. Manual validation (T011) is needed before shipping.
+
+---
+
+## Deep Review Report
+
+> Automated multi-perspective code review results. This section summarizes
+> what was checked, what was found, and what remains for human review.
+
+**Date:** 2026-04-04 | **Rounds:** 0/3 | **Gate:** PASS
+
+### Review Agents
+
+| Agent | Findings | Status |
+|-------|----------|--------|
+| Correctness | 0 (in-scope) | completed |
+| Architecture & Idioms | 4 | completed |
+| Security | 0 (in-scope) | completed |
+| Production Readiness | 0 | completed |
+| Test Quality | 0 (in-scope) | completed |
+| CodeRabbit (external) | 0 (in-scope) | completed |
+| Copilot (external) | 0 | skipped (not installed) |
+
+### Findings Summary
+
+| Severity | Found | Fixed | Remaining |
+|----------|-------|-------|-----------|
+| Critical | 0 | 0 | 0 |
+| Important | 0 | 0 | 0 |
+| Minor | 4 | - | 4 |
+
+### What was fixed automatically
+
+No fixes needed. All findings were Minor severity.
+
+### What still needs human attention
+
+All findings addressed. No Critical or Important findings remain. 4 Minor findings are documented in [review-findings.md](review-findings.md):
+- Naming inconsistency between "Spec Selection" and "Spec Resolution" across skills
+- Wording difference in deep-review's resolution preamble
+- Redundant FEATURE_DIR pre-resolution in ship subagent prompts
+- Architecture agent suggested adding context clear after specify (out of spec scope)
+
+### Recommendation
+
+All findings addressed. Code is ready for human review with no known blockers. The 4 Minor findings are documented design decisions, not issues to fix.
+
+---
 *Full context in linked [spec](spec.md) and [plan](plan.md).*

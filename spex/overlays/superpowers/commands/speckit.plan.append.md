@@ -37,3 +37,7 @@ If any of these have NOT been run during this planning session, run them now bef
    - PR title: feature name from spec
    - PR body: summarize the feature, then direct reviewers to REVIEWERS.md
      in the spec directory for detailed review guidance
+
+## Context Management
+
+**Before starting implementation**, consider running `/clear` to give the implementation stage a fresh context window. The planning conversation carries significant context that is no longer needed during implementation, and a fresh window lets the implementation agent work with full capacity. Spec-kit resolves all artifacts (spec, plan, tasks) from the branch name automatically, so no context is lost.
