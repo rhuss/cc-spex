@@ -45,7 +45,7 @@ You MUST ask the user these two questions using AskUserQuestion before doing any
    - "superpowers": "Quality gates on speckit commands (review-spec, review-code, verification)"
    - "deep-review": "Multi-perspective code review with autonomous fix loop (5 agents: correctness, architecture, security, production-readiness, test-quality)"
    - "teams": "Parallel implementation with spec guardian review via Claude Code Agent Teams (experimental, requires: superpowers)"
-   - "worktrees": "Git worktree isolation after speckit.specify (creates sibling worktree, restores main)"
+   - "worktrees": "Git worktree isolation after speckit-specify (creates sibling worktree, restores main)"
 
 2. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, spex-traits.sh)"

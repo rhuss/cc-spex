@@ -807,11 +807,11 @@ In parallel mode (teams trait), agents complete in non-deterministic order. Repo
 
 The gate outcome depends on the invocation context:
 
-**Superpowers context** (triggered as quality gate from `/speckit.implement`):
+**Superpowers context** (triggered as quality gate from `/speckit-implement`):
 - **PASS**: Allow proceeding to `spex:stamp`
 - **FAIL**: Block completion. The user must resolve remaining findings before the implementation can proceed.
 
 **Manual context** (user runs `/spex:review-code` directly):
 - **PASS** or **FAIL**: Advisory only. Report findings and let the user decide. Do NOT block further commands.
 
-The invocation context is determined by the caller. When invoked from the superpowers quality gate in `speckit.implement`, the context is `superpowers`. When invoked directly, the context is `manual`.
+The invocation context is determined by the caller. When invoked from the superpowers quality gate in `speckit-implement`, the context is `superpowers`. When invoked directly, the context is `manual`.

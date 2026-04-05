@@ -67,7 +67,7 @@ spex team approach: Create spec, get team alignment, then implement. The PR revi
    Developer now has approved contract
 
 5. IMPLEMENT IN SEPARATE PR
-   Developer runs /speckit.implement
+   Developer runs /speckit-implement
    Creates implementation PR
    Code review is faster: "Does this match the spec?"
 
@@ -103,7 +103,7 @@ For teams, enabling the **superpowers trait** is strongly recommended. It automa
 
 ### Automated Spec PRs
 
-With the superpowers trait enabled, `/speckit.plan` handles spec PR creation automatically:
+With the superpowers trait enabled, `/speckit-plan` handles spec PR creation automatically:
 
 1. Spec review runs before planning begins
 2. Plan, tasks, and review summary are generated

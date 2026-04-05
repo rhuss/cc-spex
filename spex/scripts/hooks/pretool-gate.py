@@ -174,13 +174,13 @@ def check_teams_enforce(tool_name, tool_input, cwd):
 # ---------------------------------------------------------------------------
 
 STAGE_SKILLS = {
-    0: "speckit.specify",
-    1: "speckit.clarify",
+    0: "speckit-specify",
+    1: "speckit-clarify",
     2: "spex:review-spec",
-    3: "speckit.plan",
-    4: "speckit.tasks",
+    3: "speckit-plan",
+    4: "speckit-tasks",
     5: "spex:review-plan",
-    6: "speckit.implement",
+    6: "speckit-implement",
     7: "spex:review-code",
     8: "spex:verification-before-completion",
 }

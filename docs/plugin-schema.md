@@ -212,7 +212,7 @@ Specification directory settings:
 **External Resources** (not bundled):
 - Templates: Provided by `specify init` in `.specify/templates/`
 - Scripts: Provided by `specify init` in `.specify/scripts/`
-- Spec-kit commands: Provided by `specify init` in `.claude/commands/speckit.*`
+- Spec-kit commands: Provided by `specify init` in `.claude/skills/speckit-*`
 - Source of truth: spec-kit repository
 
 ## Skill Categories

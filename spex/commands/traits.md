@@ -49,7 +49,7 @@ Report the result to the user.
 ## Subcommand: Disable
 
 1. Run `"<value from spex-traits-command>" list` and check if the trait is already disabled. If so, report that and STOP.
-2. **Warn the user**: Disabling a trait requires regenerating all spec-kit files, which resets any manual customizations to `.claude/commands/speckit.*.md` and `.specify/templates/*.md` files.
+2. **Warn the user**: Disabling a trait requires regenerating all spec-kit files, which resets any manual customizations to `.claude/skills/speckit-*/SKILL.md` and `.specify/templates/*.md` files.
 3. Use `AskUserQuestion` to confirm:
    - **Question**: "Disabling a trait will reset all spec-kit files to defaults (losing any manual customizations). Proceed?"
    - **Header**: "Confirm"

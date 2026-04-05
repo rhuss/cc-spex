@@ -67,12 +67,12 @@ Old `.specify/sdd-traits.json` files are automatically renamed to `spex-traits.j
 - **Task tracking simplified** - Direct `tasks.md` checkbox tracking replaces external state management
 
 ### Removed
-- **`constitution` skill** - Redundant wrapper; use `/speckit.constitution` directly
+- **`constitution` skill** - Redundant wrapper; use `/speckit-constitution` directly
 - **`beads` trait** - Removed entirely; task state tracked in `tasks.md` checkboxes
 - **`teams-vanilla` and `teams-spec` traits** - Consolidated into `teams` trait
 - **Bundled templates** - Removed `templates/` directory (use `specify init` instead)
 - **Bundled scripts** - Removed `scripts/` directory (use `specify init` instead)
-- **Bundled spec-kit commands** - Removed `commands/speckit.*` files (installed to `.claude/commands/` via `specify init`)
+- **Bundled spec-kit commands** - Removed `commands/speckit-*` files (installed to `.claude/commands/` via `specify init`)
 
 ### Migration Guide
 1. Ensure spec-kit CLI is installed and in your PATH
@@ -80,7 +80,7 @@ Old `.specify/sdd-traits.json` files are automatically renamed to `spex-traits.j
 3. Restart Claude Code when prompted (if new commands were installed to `.claude/commands/`)
 4. Update any custom references from plugin templates to `.specify/templates/`
 5. Update any custom references from plugin scripts to `.specify/scripts/`
-6. `/speckit.*` commands now come from `specify init`, not the plugin
+6. `/speckit-*` commands now come from `specify init`, not the plugin
 
 ## [1.0.0] - 2025-11-11
 

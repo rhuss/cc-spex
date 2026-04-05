@@ -43,8 +43,8 @@ Claude runs `specify init`, then asks you to pick traits and a permission level.
 Verify:
 - `.specify/` directory created (templates, scripts, config)
 - `.specify/spex-traits.json` shows `superpowers: true`
-- `.claude/commands/speckit.*.md` files exist
-- Overlay sentinels present: `grep SPEX-TRAIT .claude/commands/speckit.*.md`
+- `.claude/skills/speckit-*.md` files exist
+- Overlay sentinels present: `grep SPEX-TRAIT .claude/skills/speckit-*.md`
 
 Restart Claude Code now (the init installs new commands that need a reload).
 
@@ -55,7 +55,7 @@ claude
 ## 4. Create a project constitution
 
 ```
-/speckit.constitution
+/speckit-constitution
 ```
 
 Tell Claude the project is a CLI tool written in Python that should follow standard CLI conventions (exit codes, stderr for errors, stdout for output). Let Claude generate the constitution.
@@ -95,13 +95,13 @@ Verify:
 ## 7. Plan and generate tasks
 
 ```
-/speckit.plan
+/speckit-plan
 ```
 
 With the superpowers trait enabled, this command runs the full planning pipeline:
 1. Spec review (pre-planning gate)
 2. Plan generation from the spec
-3. Task generation (`/speckit.tasks`)
+3. Task generation (`/speckit-tasks`)
 4. Plan review (`/spex:review-plan`) producing `REVIEWERS.md`
 5. Commits spec artifacts to a feature branch
 6. Offers to create a spec PR (accept or decline)
@@ -128,7 +128,7 @@ Verify:
 ## 9. Implement the feature
 
 ```
-/speckit.implement
+/speckit-implement
 ```
 
 With the superpowers trait, Claude:
@@ -206,17 +206,17 @@ Verify:
 Run each of these against the spec you created:
 
 ```
-/speckit.clarify
+/speckit-clarify
 ```
 Identifies underspecified areas and asks targeted questions.
 
 ```
-/speckit.analyze
+/speckit-analyze
 ```
 Cross-artifact consistency check across spec, plan, and tasks.
 
 ```
-/speckit.checklist
+/speckit-checklist
 ```
 Generates a custom QA checklist for the feature.
 

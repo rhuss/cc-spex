@@ -52,7 +52,7 @@ Skip any step = lying, not verifying
 - After implementation and code review
 - Before claiming work is complete
 - Before committing/merging/deploying
-- As final gate in `/speckit.implement` (via superpowers trait overlay)
+- As final gate in `/speckit-implement` (via superpowers trait overlay)
 
 ## Spec Selection
 
@@ -79,7 +79,7 @@ Which spec should I verify implementation against?
 No specs found in specs/ directory.
 
 Verification requires a spec to validate against.
-Use `spex:brainstorm` or `/speckit.specify` to create one first.
+Use `spex:brainstorm` or `/speckit-specify` to create one first.
 ```
 
 ## The Process

@@ -10,7 +10,7 @@ argument-hint: "[list|cleanup]"
 
 This skill manages git worktrees to isolate feature development. It supports three actions:
 
-- **create**: Called by the `worktrees` trait overlay after `speckit.specify` completes. Creates a worktree, restores `main`, and prints switch instructions.
+- **create**: Called by the `worktrees` trait overlay after `speckit-specify` completes. Creates a worktree, restores `main`, and prints switch instructions.
 - **list**: Shows all active feature worktrees with path, branch, and feature name.
 - **cleanup**: Detects worktrees whose branches are merged and offers removal.
 
@@ -18,7 +18,7 @@ This skill manages git worktrees to isolate feature development. It supports thr
 
 Determine the action from context:
 
-- If invoked from the `speckit.specify` overlay (post-specify context), the action is **create**.
+- If invoked from the `speckit-specify` overlay (post-specify context), the action is **create**.
 - If invoked with argument `cleanup`, the action is **cleanup**.
 - Otherwise (no args, `list`, or invoked directly), the action is **list**.
 
@@ -32,7 +32,7 @@ git rev-parse --git-dir >/dev/null 2>&1 || { echo "ERROR: Not a git repository";
 
 ## Action: Create
 
-This action runs after `speckit.specify` has created a feature branch and spec files.
+This action runs after `speckit-specify` has created a feature branch and spec files.
 
 ### Step 1: Read Configuration
 
@@ -88,7 +88,7 @@ fi
 
 ### Step 5: Commit Spec Files to Feature Branch
 
-Before switching away from the feature branch, commit any spec files that `speckit.specify` created. Without this, the files would remain as untracked artifacts in the main worktree and would not appear in the feature worktree.
+Before switching away from the feature branch, commit any spec files that `speckit-specify` created. Without this, the files would remain as untracked artifacts in the main worktree and would not appear in the feature worktree.
 
 ```bash
 # Check for uncommitted spec files in the feature's spec directory
@@ -108,7 +108,7 @@ This ensures the spec files are persisted on the feature branch before the workt
 
 ### Step 6: Restore Main Branch (before worktree creation)
 
-Git does not allow two worktrees to have the same branch checked out. Since `speckit.specify` just created and checked out the feature branch, we must switch back to `main` before creating a worktree for that branch.
+Git does not allow two worktrees to have the same branch checked out. Since `speckit-specify` just created and checked out the feature branch, we must switch back to `main` before creating a worktree for that branch.
 
 ```bash
 if ! git checkout main 2>&1; then
@@ -196,7 +196,7 @@ If no feature worktrees exist:
 ```
 No active feature worktrees found.
 
-Create one by running /speckit.specify with the worktrees trait enabled.
+Create one by running /speckit-specify with the worktrees trait enabled.
 ```
 
 ## Action: Cleanup

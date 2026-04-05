@@ -14,14 +14,48 @@
 
 set -euo pipefail
 
+# --- Check specify CLI version (require >= 0.5.0) ---
+check_version() {
+  local version_output
+  version_output=$(specify version 2>/dev/null) || return 1
+
+  # Extract semver from decorated output (e.g., "CLI Version    0.5.1.dev0")
+  local version
+  version=$(echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  [ -n "$version" ] || return 1
+
+  # Parse major.minor.patch
+  local major minor patch
+  major=$(echo "$version" | cut -d. -f1)
+  minor=$(echo "$version" | cut -d. -f2)
+  patch=$(echo "$version" | cut -d. -f3)
+
+  # Require >= 0.5.0
+  if [ "$major" -gt 0 ] 2>/dev/null; then
+    return 0
+  elif [ "$major" -eq 0 ] && [ "$minor" -ge 5 ] 2>/dev/null; then
+    return 0
+  fi
+
+  echo "ERROR: spec-kit version $version is too old for this version of spex."
+  echo ""
+  echo "spex v4.0.0+ requires spec-kit >= 0.5.0, which uses the Agent Skills format."
+  echo ""
+  echo "Upgrade with:"
+  echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git"
+  echo ""
+  echo "Then re-run /spex:init to complete the migration."
+  return 1
+}
+
 # --- Fast path: single check for everything ---
 check_ready() {
   command -v specify &>/dev/null || return 1
   [ -d .specify ] || return 1
   [ -f .specify/templates/spec-template.md ] || return 1
-  # Verify all core command files exist (not just any speckit.* match)
+  # Verify all core skill files exist
   for cmd in specify plan implement tasks clarify; do
-    [ -f ".claude/commands/speckit.${cmd}.md" ] || return 1
+    [ -f ".claude/skills/speckit-${cmd}/SKILL.md" ] || return 1
   done
   return 0
 }
@@ -91,10 +125,38 @@ EOF
   echo "  Status line configured for ship pipeline progress"
 }
 
+# --- Migrate old speckit commands to skills format ---
+migrate_old_commands() {
+  local found=false
+  for f in .claude/commands/speckit.*.md; do
+    [ -f "$f" ] || continue
+    found=true
+    break
+  done
+  $found || return 0
+
+  echo "Migrating from speckit commands to skills format..."
+  for f in .claude/commands/speckit.*.md; do
+    [ -f "$f" ] || continue
+    local basename
+    basename=$(basename "$f" .md)
+    echo "  Removed $f (replaced by .claude/skills/${basename//./-}/)"
+    rm "$f"
+  done
+  echo "Migration complete."
+}
+
 # --- Ensure .gitignore covers spex-generated files ---
 configure_gitignore() {
   local gitignore=".gitignore"
   local sentinel="# spex: generated/local files"
+
+  # Migrate old pattern if present
+  if [ -f "$gitignore" ] && grep -qF ".claude/commands/speckit." "$gitignore"; then
+    sed -i '' 's|\.claude/commands/speckit\.\*|.claude/skills/speckit-*|' "$gitignore" 2>/dev/null || \
+      sed -i 's|\.claude/commands/speckit\.\*|.claude/skills/speckit-*|' "$gitignore" 2>/dev/null || true
+    echo "  Migrated .gitignore pattern from commands to skills"
+  fi
 
   # Skip if sentinel already present
   [ -f "$gitignore" ] && grep -qF "$sentinel" "$gitignore" && return 0
@@ -102,7 +164,7 @@ configure_gitignore() {
   cat >> "$gitignore" <<'EOF'
 
 # spex: generated/local files
-.claude/commands/speckit.*
+.claude/skills/speckit-*
 .claude/settings.local.json
 .specify/.spex-phase
 .specify/.spex-ship-phase
@@ -231,9 +293,17 @@ do_init() {
     exit 2
   fi
 
-  # Track whether commands existed before init
-  local had_commands=false
-  ls .claude/commands/speckit.* &>/dev/null && had_commands=true
+  # Version gate: require specify >= 0.5.0
+  if ! check_version; then
+    exit 1
+  fi
+
+  # Migrate old command-format files if present
+  migrate_old_commands
+
+  # Track whether skills existed before init
+  local had_skills=false
+  ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1 && had_skills=true
 
   echo "Initializing spec-kit..."
   if ! specify init --here --ai claude --force; then
@@ -241,16 +311,16 @@ do_init() {
     exit 1
   fi
 
-  # Check if NEW commands were installed (didn't exist before)
-  if [ "$had_commands" = false ] && ls .claude/commands/speckit.* &>/dev/null; then
+  # Check if NEW skills were installed (didn't exist before)
+  if [ "$had_skills" = false ] && ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1; then
     fix_constitution
     echo ""
     echo "RESTART_REQUIRED"
     echo ""
-    echo "spec-kit has installed local slash commands in:"
-    echo "  .claude/commands/speckit.*"
+    echo "spec-kit has installed local skills in:"
+    echo "  .claude/skills/speckit-*/"
     echo ""
-    echo "To load these new commands, please:"
+    echo "To load these new skills, please:"
     echo "1. Save your work"
     echo "2. Close this conversation"
     echo "3. Restart Claude Code"
@@ -306,6 +376,9 @@ do_update() {
     exit 1
   fi
 
+  # Migrate old command-format files if present
+  migrate_old_commands
+
   echo ""
   echo "Refreshing project setup..."
   specify init --here --ai claude --force
@@ -317,7 +390,7 @@ do_update() {
 
   echo ""
   echo "RESTART_REQUIRED"
-  echo "Slash commands refreshed. Please restart Claude Code."
+  echo "Skills refreshed. Please restart Claude Code."
   exit 3
 }
 

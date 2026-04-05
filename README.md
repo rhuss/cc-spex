@@ -29,9 +29,9 @@ Start with an idea, refine it through brainstorming, then create a formal spec a
 
 ```
 /spex:brainstorm          # Refine the idea through dialogue
-/speckit.specify           # Create formal spec
+/speckit-specify           # Create formal spec
 /spex:review-spec          # Validate spec quality
-/speckit.plan              # Generate implementation plan + tasks
+/speckit-plan              # Generate implementation plan + tasks
 /spex:review-plan          # Validate plan, generate REVIEWERS.md
 ```
 
@@ -42,7 +42,7 @@ Open a PR with these artifacts. Reviewers use `REVIEWERS.md` as a starting point
 After the spec PR is reviewed and merged, implementation can proceed in one or more PRs (one per logical phase is ideal). Each implementation PR updates `REVIEWERS.md` with code-specific review hints, compliance notes, and areas where the reviewer should focus.
 
 ```
-/speckit.implement         # Build following the plan
+/speckit-implement         # Build following the plan
 /spex:review-code          # Spec compliance + deep review
 /spex:stamp                # Final gate
 ```
@@ -58,18 +58,18 @@ flowchart TD
     Start([Idea]) --> HasClarity{Clear<br>requirements?}
 
     HasClarity -->|Not yet| Brainstorm["/spex:brainstorm<br>Refine idea"]
-    HasClarity -->|Yes| Specify["/speckit.specify<br>Create spec"]
+    HasClarity -->|Yes| Specify["/speckit-specify<br>Create spec"]
 
     Brainstorm --> Specify
     Brainstorm -->|Full auto| Ship["/spex:ship<br>Autonomous pipeline"]
 
     Specify --> ReviewSpec["/spex:review-spec<br>Validate spec"]
-    ReviewSpec --> Plan["/speckit.plan<br>Generate plan + tasks"]
+    ReviewSpec --> Plan["/speckit-plan<br>Generate plan + tasks"]
     Plan --> ReviewPlan["/spex:review-plan<br>Create REVIEWERS.md"]
 
     ReviewPlan -->|PR #1: Spec| SpecPR([Spec Review & Merge])
 
-    SpecPR --> Implement["/speckit.implement<br>Build with TDD"]
+    SpecPR --> Implement["/speckit-implement<br>Build with TDD"]
     Implement --> ReviewCode["/spex:review-code<br>Spec compliance +<br>deep review"]
 
     ReviewCode --> Verify{Tests pass?<br>Spec compliant?}
@@ -114,7 +114,7 @@ make install
 /spex:init
 ```
 
-This runs Spec-Kit's `specify init`, asks which traits to enable, and configures permission auto-approval. After initialization, your selected traits extend all `/speckit.*` commands.
+This runs Spec-Kit's `specify init`, asks which traits to enable, and configures permission auto-approval. After initialization, your selected traits extend all `/speckit-*` commands.
 
 ## The Traits System
 
@@ -129,9 +129,9 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 ### Available Traits
 
 **`superpowers`** adds quality gates to Spec-Kit commands. Requires the [Superpowers](https://github.com/obra/superpowers) companion plugin to be installed alongside cc-spex:
-- `/speckit.specify` gets automatic spec review after creation
-- `/speckit.plan` gets spec validation before planning and consistency checks after
-- `/speckit.implement` gets code review and verification gates
+- `/speckit-specify` gets automatic spec review after creation
+- `/speckit-plan` gets spec validation before planning and consistency checks after
+- `/speckit-implement` gets code review and verification gates
 
 **`deep-review`** adds multi-perspective code review with autonomous fix capabilities. Requires `superpowers`. Benefits significantly from having the [Superpowers](https://github.com/obra/superpowers) plugin installed, which provides the quality gate infrastructure that triggers deep review automatically after implementation:
 - `/spex:review-code` runs a two-stage pipeline: first spec compliance scoring, then (if compliance passes at 95%+) five specialized review agents analyze the code
@@ -141,10 +141,10 @@ When Spec-Kit updates wipe the command files (via `specify init --force`), runni
 - Optionally integrates with external tools (CodeRabbit CLI, GitHub Copilot CLI) when configured in `.specify/spex-traits.json`
 
 **`teams`** (experimental, requires `superpowers`) adds parallel implementation via Claude Code Agent Teams. When combined with `deep-review`, the five review agents run in parallel instead of sequentially:
-- `/speckit.implement` delegates to team orchestration with spec guardian review
+- `/speckit-implement` delegates to team orchestration with spec guardian review
 
 **`worktrees`** adds git worktree isolation for feature development:
-- `/speckit.specify` creates a sibling worktree for the feature branch and restores `main` in the original repo
+- `/speckit-specify` creates a sibling worktree for the feature branch and restores `main` in the original repo
 - `/spex:worktree` lists active worktrees or cleans up merged ones
 
 ### Managing Traits
@@ -161,19 +161,19 @@ Trait configuration is stored in `.specify/spex-traits.json`, which survives Spe
 
 ### Workflow Commands
 
-These are the commands you'll use day-to-day. The `/speckit.*` commands come from Spec-Kit and are enhanced by your enabled traits.
+These are the commands you'll use day-to-day. The `/speckit-*` commands come from Spec-Kit and are enhanced by your enabled traits.
 
 | Command | Purpose |
 |---------|---------|
-| `/speckit.specify` | Define requirements and create a formal spec |
-| `/speckit.plan` | Generate an implementation plan from a spec |
-| `/speckit.tasks` | Create actionable tasks from a plan |
-| `/speckit.implement` | Build features following the plan and tasks |
-| `/speckit.constitution` | Define project-wide governance principles |
-| `/speckit.clarify` | Clarify underspecified areas of a spec |
-| `/speckit.analyze` | Check consistency across spec artifacts |
-| `/speckit.checklist` | Generate a quality validation checklist |
-| `/speckit.taskstoissues` | Convert tasks to GitHub issues |
+| `/speckit-specify` | Define requirements and create a formal spec |
+| `/speckit-plan` | Generate an implementation plan from a spec |
+| `/speckit-tasks` | Create actionable tasks from a plan |
+| `/speckit-implement` | Build features following the plan and tasks |
+| `/speckit-constitution` | Define project-wide governance principles |
+| `/speckit-clarify` | Clarify underspecified areas of a spec |
+| `/speckit-analyze` | Check consistency across spec artifacts |
+| `/speckit-checklist` | Generate a quality validation checklist |
+| `/speckit-taskstoissues` | Convert tasks to GitHub issues |
 
 ### Spex Commands
 
@@ -317,7 +317,7 @@ Run `/spex:init` in each project. This automatically renames `.specify/sdd-trait
 | `/sdd:traits` | `/spex:traits` |
 | `.specify/sdd-traits.json` | `.specify/spex-traits.json` |
 
-All `/speckit.*` commands remain unchanged.
+All `/speckit-*` commands remain unchanged.
 
 ## Development
 
