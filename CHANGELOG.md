@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-04-05
+
+**Last release supporting `speckit.*.md` command format.** Future versions will migrate to Agent Skills format (`speckit-*/SKILL.md`). A `release/3.x` maintenance branch is available for bugfixes on this format.
+
 ### Changed
 - Synced with superpowers@eafe962 (2026-03-25)
   - `writing-plans`: Evaluated, 3 patterns adapted into `spex:review-plan` (expanded red flag patterns, type/name consistency check, no-placeholder enforcement)
