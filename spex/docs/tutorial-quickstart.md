@@ -31,7 +31,7 @@ spex adds the glue: specs as single source of truth, spec-first enforcement, com
 | Starting Point | Command | What Happens |
 |----------------|---------|--------------|
 | Rough idea | `/spex:brainstorm` | Collaborative dialogue refines idea into formal spec |
-| Clear requirements | `/speckit.specify` | Create spec directly using spec-kit |
+| Clear requirements | `/speckit-specify` | Create spec directly using spec-kit |
 
 **Output:** A specification file in `specs/features/[name]/spec.md`
 
@@ -41,7 +41,7 @@ spex adds the glue: specs as single source of truth, spec-first enforcement, com
 
 | Command | What Happens |
 |---------|--------------|
-| `/speckit.implement` | Generates plan from spec, uses TDD, validates compliance |
+| `/speckit-implement` | Generates plan from spec, uses TDD, validates compliance |
 
 **Output:** Working code that matches the spec
 
@@ -62,27 +62,27 @@ Use this to pick the right command:
 | You Have | You Want | Use |
 |----------|----------|-----|
 | Vague idea | Clear spec | `/spex:brainstorm` |
-| Clear requirements | Formal spec | `/speckit.specify` |
-| Validated spec | Working code | `/speckit.implement` |
+| Clear requirements | Formal spec | `/speckit-specify` |
+| Validated spec | Working code | `/speckit-implement` |
 | Spec + code mismatch | Alignment | `/spex:evolve` |
 | Draft spec | Validation | `/spex:review-spec` |
 | Code changes | Compliance check | `/spex:review-code` |
-| New project | Standards | `/speckit.constitution` |
+| New project | Standards | `/speckit-constitution` |
 
 ## Quick Reference Card
 
 ```
 SPEC CREATION
   /spex:brainstorm    Rough idea → spec (interactive)
-  /speckit.specify          Clear reqs → spec (direct)
-  /speckit.constitution  Project-wide principles
+  /speckit-specify          Clear reqs → spec (direct)
+  /speckit-constitution  Project-wide principles
 
 VALIDATION
   /spex:review-spec   Check spec quality
   /spex:review-code   Check code-to-spec compliance
 
 IMPLEMENTATION
-  /speckit.implement     Spec → code with TDD
+  /speckit-implement     Spec → code with TDD
 
 EVOLUTION
   /spex:evolve        Fix spec/code drift
@@ -118,13 +118,13 @@ You can also enable traits during `/spex:init`.
 
 Without traits, you run each step manually:
 ```
-/speckit.specify  →  /spex:review-spec  →  /speckit.plan  →  /spex:review-plan
+/speckit-specify  →  /spex:review-spec  →  /speckit-plan  →  /spex:review-plan
 ```
 
 With the superpowers trait, reviews happen automatically:
 ```
-/speckit.specify  →  (review runs automatically)
-/speckit.plan     →  (spec review before, plan review + tasks + spec PR after)
+/speckit-specify  →  (review runs automatically)
+/speckit-plan     →  (spec review before, plan review + tasks + spec PR after)
 ```
 
 Traits are optional. Start without them to learn the workflow, then enable them when you want automated discipline.
@@ -149,7 +149,7 @@ Best way to learn: try it on a real feature.
 
 1. Think of a feature you want to build
 2. Run `/spex:brainstorm` to turn it into a spec
-3. Run `/speckit.implement` to build it
+3. Run `/speckit-implement` to build it
 4. See how the workflow feels
 
 That's it. Specs first, code validates, evolve when needed.

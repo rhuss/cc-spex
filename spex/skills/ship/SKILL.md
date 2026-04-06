@@ -66,7 +66,7 @@ if [ -n "$DIRTY" ]; then
 fi
 ```
 
-If there are dirty non-spex files, commit them automatically with a "WIP: save before ship" message, then proceed. Do NOT stop or ask the user. Spex config files (`.claude/commands/speckit.*`, `.claude/settings.*`, `.specify/spex-traits.json`) are expected to be dirty after init and should be ignored.
+If there are dirty non-spex files, commit them automatically with a "WIP: save before ship" message, then proceed. Do NOT stop or ask the user. Spex config files (`.claude/skills/speckit-*`, `.claude/settings.*`, `.specify/spex-traits.json`) are expected to be dirty after init and should be ignored.
 
 ### External Tool Auth Validation
 
@@ -366,25 +366,25 @@ The pipeline executes 9 stages in fixed order:
 
 | Index | Stage | Invocation | Description |
 |-------|-------|------------|-------------|
-| 0 | `specify` | `/speckit.specify` | Generate spec from brainstorm |
-| 1 | `clarify` | `/speckit.clarify` | Resolve spec ambiguities |
+| 0 | `specify` | `/speckit-specify` | Generate spec from brainstorm |
+| 1 | `clarify` | `/speckit-clarify` | Resolve spec ambiguities |
 | 2 | `review-spec` | `{Skill: spex:review-spec}` | Validate spec quality |
-| 3 | `plan` | `/speckit.plan` | Generate implementation plan |
-| 4 | `tasks` | `/speckit.tasks` | Generate task breakdown |
+| 3 | `plan` | `/speckit-plan` | Generate implementation plan |
+| 4 | `tasks` | `/speckit-tasks` | Generate task breakdown |
 | 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEWERS.md |
-| 6 | `implement` | `/speckit.implement` | Execute implementation |
+| 6 | `implement` | `/speckit-implement` | Execute implementation |
 | 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEWERS.md update |
 | 8 | `stamp` | `{Skill: spex:verification-before-completion}` | Final gate |
 
 ### Suppressing trait overlay gates
 
-When running inside the ship pipeline, **no `/speckit.*` command may pause for user input unless the `ask` level is `always`**. This overrides any instruction in the speckit command prompts themselves. Specifically:
+When running inside the ship pipeline, **no `/speckit-*` command may pause for user input unless the `ask` level is `always`**. This overrides any instruction in the speckit command prompts themselves. Specifically:
 
-- **`speckit.specify`**: Do not ask "Shall I proceed?" after spec creation. Proceed to the next stage.
-- **`speckit.clarify`**: Do not present questions interactively in `smart` or `never` mode. Auto-select recommended answers.
-- **`speckit.plan`**: Do not ask for confirmation before or after planning. Proceed to the next stage.
-- **`speckit.tasks`**: Do not ask for confirmation. Proceed to the next stage.
-- **`speckit.implement`**: Do not pause at trait overlay gates. Proceed to the next stage.
+- **`speckit-specify`**: Do not ask "Shall I proceed?" after spec creation. Proceed to the next stage.
+- **`speckit-clarify`**: Do not present questions interactively in `smart` or `never` mode. Auto-select recommended answers.
+- **`speckit-plan`**: Do not ask for confirmation before or after planning. Proceed to the next stage.
+- **`speckit-tasks`**: Do not ask for confirmation. Proceed to the next stage.
+- **`speckit-implement`**: Do not pause at trait overlay gates. Proceed to the next stage.
 
 Trait overlays (e.g., `superpowers` adding review after specify) may run their reviews, but their results are informational. Do NOT pause or ask the user before proceeding. The ship pipeline's own stage gate logic handles all oversight decisions.
 
@@ -395,7 +395,7 @@ Trait overlays (e.g., `superpowers` adding review after specify) may run their r
 **Even if spec.md already exists**, this stage re-creates it from the brainstorm document. A fresh pipeline means fresh artifacts.
 
 1. Read the brainstorm document content.
-2. Invoke `/speckit.specify` passing the brainstorm content as the feature description.
+2. Invoke `/speckit-specify` passing the brainstorm content as the feature description.
    - The brainstorm content provides the problem statement, approaches considered, and decisions made.
    - Pass it as the user input to the specify command.
    - **Do not pause** after specify completes, even if a trait overlay runs a review or asks for confirmation. Proceed directly to step 4.
@@ -421,7 +421,7 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
    - If `ask` is `smart` or `never`: You are the decision-maker. Do NOT use `AskUserQuestion` or present options to the user. When the clarify process identifies ambiguities, YOU select the recommended option for each question. If no recommendation exists, use your best judgment based on the spec context. Answer all questions yourself, then encode the answers into the spec.
    - If `ask` is `always`: Present each question to the user interactively.
 
-4. Invoke `/speckit.clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
+4. Invoke `/speckit-clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
 5. After clarification completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 2 (do not stop).
 
 ### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
@@ -435,13 +435,13 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 ### Stage 3: Plan
 
-1. Invoke `/speckit.plan` to generate the implementation plan.
+1. Invoke `/speckit-plan` to generate the implementation plan.
 2. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
 3. After plan generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 4 (do not stop).
 
 ### Stage 4: Tasks
 
-1. Invoke `/speckit.tasks` to generate the task breakdown.
+1. Invoke `/speckit-tasks` to generate the task breakdown.
 2. This produces `tasks.md`.
 3. After task generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 5 (do not stop).
 
@@ -455,7 +455,7 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 ### Stage 6: Implement
 
-1. Invoke `/speckit.implement` to execute the implementation plan.
+1. Invoke `/speckit-implement` to execute the implementation plan.
 2. This is typically the longest stage. Implementation follows the task plan.
 3. When marking tasks complete in `tasks.md`, use the **Edit tool** (not sed/sd/Bash). Edit is reliable for checkbox toggles.
 4. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
@@ -680,13 +680,13 @@ Next steps:
 - Users directly via `/spex:ship`
 
 **This skill invokes:**
-- `/speckit.specify` (Stage 0)
-- `/speckit.clarify` (Stage 1)
+- `/speckit-specify` (Stage 0)
+- `/speckit-clarify` (Stage 1)
 - `{Skill: spex:review-spec}` (Stage 2)
-- `/speckit.plan` (Stage 3)
-- `/speckit.tasks` (Stage 4)
+- `/speckit-plan` (Stage 3)
+- `/speckit-tasks` (Stage 4)
 - `{Skill: spex:review-plan}` (Stage 5)
-- `/speckit.implement` (Stage 6)
+- `/speckit-implement` (Stage 6)
 - `{Skill: spex:review-code}` (Stage 7)
 - `{Skill: spex:verification-before-completion}` (Stage 8: Stamp)
 

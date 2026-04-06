@@ -27,7 +27,7 @@ Review code implementation against specification to ensure compliance.
 
 ## When to Use
 
-- After implementation complete (called via superpowers trait overlay on `/speckit.implement`)
+- After implementation complete (called via superpowers trait overlay on `/speckit-implement`)
 - Before merging/deploying code
 - When validating existing code against spec
 - As part of verification workflow
@@ -57,7 +57,7 @@ Which spec should I review code against?
 No specs found in specs/ directory.
 
 Code review against spec requires a spec to compare against.
-Use `spex:brainstorm` or `/speckit.specify` to create one first.
+Use `spex:brainstorm` or `/speckit-specify` to create one first.
 ```
 
 ## The Process

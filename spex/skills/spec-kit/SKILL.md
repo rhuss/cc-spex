@@ -11,7 +11,7 @@ description: Technical integration layer for the `specify` CLI (not speckit, not
 |------|--------------|-------------|
 | CLI command | `specify` | ~~speckit~~, ~~spec-kit~~ |
 | Package name | `specify-cli` | ~~spec-kit~~, ~~speckit~~ |
-| Slash commands | `/speckit.*` | (these are correct) |
+| Slash commands | `/speckit-*` | (these are correct) |
 
 **Installation:** `uv pip install specify-cli` or `pip install specify-cli`
 
@@ -33,15 +33,15 @@ This skill is the **single source of truth** for all spec-kit technical integrat
 - `specify check` - Check that required tools are installed
 - `specify version` - Display version information
 
-**All spec operations are done via `/speckit.*` slash commands**, which are installed by `specify init`:
-- `/speckit.specify` - Create specifications
-- `/speckit.plan` - Generate implementation plans
-- `/speckit.tasks` - Generate task lists
-- `/speckit.clarify` - Find underspecified areas
-- `/speckit.analyze` - Cross-artifact consistency check
-- `/speckit.checklist` - Generate quality checklists
-- `/speckit.implement` - Execute implementation
-- `/speckit.constitution` - Create project constitution
+**All spec operations are done via `/speckit-*` slash commands**, which are installed by `specify init`:
+- `/speckit-specify` - Create specifications
+- `/speckit-plan` - Generate implementation plans
+- `/speckit-tasks` - Generate task lists
+- `/speckit-clarify` - Find underspecified areas
+- `/speckit-analyze` - Cross-artifact consistency check
+- `/speckit-checklist` - Generate quality checklists
+- `/speckit-implement` - Execute implementation
+- `/speckit-constitution` - Create project constitution
 
 **NEVER call `specify validate`, `specify plan`, etc. - these commands don't exist!**
 
@@ -57,31 +57,31 @@ After initialization succeeds (or was skipped), this skill provides reference ma
 
 ## Available Slash Commands
 
-After `specify init`, these `/speckit.*` commands are available:
+After `specify init`, these `/speckit-*` commands are available:
 
 | Command | Purpose | Creates |
 |---------|---------|---------|
-| `/speckit.specify` | Create specification interactively | `specs/[NNNN]-[name]/spec.md` |
-| `/speckit.plan` | Generate implementation plan | `specs/[name]/plan.md` |
-| `/speckit.tasks` | Generate task list | `specs/[name]/tasks.md` |
-| `/speckit.clarify` | Find underspecified areas | (analysis output) |
-| `/speckit.analyze` | Cross-artifact consistency | (analysis output) |
-| `/speckit.checklist` | Generate quality checklist | checklist file |
-| `/speckit.implement` | Execute implementation | code files |
-| `/speckit.constitution` | Create project constitution | `.specify/memory/constitution.md` |
+| `/speckit-specify` | Create specification interactively | `specs/[NNNN]-[name]/spec.md` |
+| `/speckit-plan` | Generate implementation plan | `specs/[name]/plan.md` |
+| `/speckit-tasks` | Generate task list | `specs/[name]/tasks.md` |
+| `/speckit-clarify` | Find underspecified areas | (analysis output) |
+| `/speckit-analyze` | Cross-artifact consistency | (analysis output) |
+| `/speckit-checklist` | Generate quality checklist | checklist file |
+| `/speckit-implement` | Execute implementation | code files |
+| `/speckit-constitution` | Create project constitution | `.specify/memory/constitution.md` |
 
 **Usage in skills:**
 
 When a skill needs to create a spec, plan, or tasks, it should:
-1. Check that `/speckit.*` commands are available
+1. Check that `/speckit-*` commands are available
 2. Invoke the appropriate slash command
 3. If commands not available, fall back to manual creation following templates
 
 **Example:**
 ```
-To create a spec, invoke: /speckit.specify
+To create a spec, invoke: /speckit-specify
 
-If /speckit.specify is not available (not initialized),
+If /speckit-specify is not available (not initialized),
 create the spec manually following .specify/templates/spec-template.md
 ```
 
@@ -113,7 +113,7 @@ check_branch_for_speckit() {
 }
 ```
 
-**If the branch name is wrong**, create or switch to a properly named branch before running any `/speckit.*` commands:
+**If the branch name is wrong**, create or switch to a properly named branch before running any `/speckit-*` commands:
 
 ```bash
 # Example: for spec in specs/002-operator-config/
@@ -214,7 +214,7 @@ No specs found in specs/ directory.
 
 To create a spec:
 - Use `spex:brainstorm` to refine ideas into a spec
-- Use `/speckit.specify` to create a spec from clear requirements
+- Use `/speckit-specify` to create a spec from clear requirements
 ```
 
 ### Path Resolution Priority
@@ -299,13 +299,13 @@ Run: specify init --force
 - spex:evolve (at start)
 - spex:review-spec (at start)
 - spex:review-plan (at start)
-- `/speckit.implement` via superpowers trait overlay (at start)
+- `/speckit-implement` via superpowers trait overlay (at start)
 - All workflow skills that need spec-kit
 
 **Calls:**
 - `{Skill: spex:init}` (for initialization)
 - `specify` CLI (for init only, via spex:init)
-- `/speckit.*` slash commands (for all operations)
+- `/speckit-*` slash commands (for all operations)
 - File system operations
 
 ## Session Management
@@ -334,14 +334,14 @@ Run: specify init --force
 | Initialize project | CLI | `specify init` |
 | Check tools | CLI | `specify check` |
 | Show version | CLI | `specify version` |
-| Create spec | Slash | `/speckit.specify` |
-| Generate plan | Slash | `/speckit.plan` |
-| Generate tasks | Slash | `/speckit.tasks` |
-| Find gaps | Slash | `/speckit.clarify` |
-| Check consistency | Slash | `/speckit.analyze` |
-| Generate checklist | Slash | `/speckit.checklist` |
-| Execute implementation | Slash | `/speckit.implement` |
-| Create constitution | Slash | `/speckit.constitution` |
+| Create spec | Slash | `/speckit-specify` |
+| Generate plan | Slash | `/speckit-plan` |
+| Generate tasks | Slash | `/speckit-tasks` |
+| Find gaps | Slash | `/speckit-clarify` |
+| Check consistency | Slash | `/speckit-analyze` |
+| Generate checklist | Slash | `/speckit-checklist` |
+| Execute implementation | Slash | `/speckit-implement` |
+| Create constitution | Slash | `/speckit-constitution` |
 
 ## Remember
 
@@ -361,7 +361,7 @@ Run: specify init --force
 **This skill handles:**
 - Is specify CLI installed?
 - Is project initialized?
-- Are /speckit.* commands available?
+- Are /speckit-* commands available?
 - Do files exist in correct locations?
 
 **The goal: Zero-config, automatic, invisible setup.**

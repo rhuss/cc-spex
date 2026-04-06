@@ -44,7 +44,7 @@ Every feature starts as an idea. Before writing code, turn that idea into a form
 | Path | When to Use | Command |
 |------|-------------|---------|
 | Brainstorm | Rough idea, needs exploration | `/spex:brainstorm` |
-| Direct spec | Clear requirements, no ambiguity | `/speckit.specify` |
+| Direct spec | Clear requirements, no ambiguity | `/speckit-specify` |
 
 **Brainstorm workflow:**
 1. You describe your rough idea
@@ -107,7 +107,7 @@ Before implementing, validate your spec.
 
 Build from your validated spec using TDD.
 
-**Command:** `/speckit.implement`
+**Command:** `/speckit-implement`
 
 **What happens:**
 1. Generates implementation plan FROM spec
@@ -170,7 +170,7 @@ For projects with multiple features or team members, create a constitution.
 - Referenced during all spec creation and review
 - Ensures consistency across features
 
-**Command:** `/speckit.constitution`
+**Command:** `/speckit-constitution`
 
 **What it defines:**
 - Coding standards (naming, structure)
@@ -204,11 +204,11 @@ Named after the upstream Superpowers plugin whose process discipline it draws fr
 
 | Command | What the superpowers trait adds |
 |---------|------------------------|
-| `/speckit.specify` | Auto-runs spec review + constitution check after spec creation |
-| `/speckit.plan` | Runs spec review before planning. After planning: generates tasks, runs plan review, commits spec artifacts, offers a spec PR |
-| `/speckit.implement` | Verifies the spec package before starting. Runs code review + verification after completion |
+| `/speckit-specify` | Auto-runs spec review + constitution check after spec creation |
+| `/speckit-plan` | Runs spec review before planning. After planning: generates tasks, runs plan review, commits spec artifacts, offers a spec PR |
+| `/speckit-implement` | Verifies the spec package before starting. Runs code review + verification after completion |
 
-The spec PR flow is particularly useful for teams. After `/speckit.plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
+The spec PR flow is particularly useful for teams. After `/speckit-plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
 
 ### How Traits Compose
 
@@ -239,8 +239,8 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 | Command | Purpose |
 |---------|---------|
 | `/spex:brainstorm` | Rough idea to spec through dialogue |
-| `/speckit.specify` | Clear requirements to spec directly |
-| `/speckit.constitution` | Project-wide principles |
+| `/speckit-specify` | Clear requirements to spec directly |
+| `/speckit-constitution` | Project-wide principles |
 
 ### Validation
 | Command | Purpose |
@@ -251,7 +251,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 ### Implementation
 | Command | Purpose |
 |---------|---------|
-| `/speckit.implement` | Spec to code with TDD |
+| `/speckit-implement` | Spec to code with TDD |
 
 ### Evolution
 | Command | Purpose |
@@ -291,8 +291,8 @@ A: Generally no. Each feature should have its own spec. Use the constitution for
 
 1. **First feature:** `/spex:brainstorm` to create your first spec
 2. **Review it:** `/spex:review-spec` to validate
-3. **Build it:** `/speckit.implement` with TDD
+3. **Build it:** `/speckit-implement` with TDD
 4. **If drift:** `/spex:evolve` to reconcile
-5. **For consistency:** `/speckit.constitution` to set project standards
+5. **For consistency:** `/speckit-constitution` to set project standards
 
 The best way to learn spex is to use it on a real feature. Start small, follow the process, and see how it feels.

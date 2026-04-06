@@ -57,7 +57,7 @@ def main():
     spex_initialized = (
         (cwd / '.specify').is_dir()
         and (cwd / '.specify' / 'templates' / 'spec-template.md').exists()
-        and any((cwd / '.claude' / 'commands').glob('speckit.*'))
+        and any((cwd / '.claude' / 'commands').glob('speckit-*'))
     ) if (cwd / '.claude' / 'commands').is_dir() else False
 
     # Extract the skill name from the command (e.g., "/spex:brainstorm foo" -> "spex:brainstorm")
@@ -69,10 +69,10 @@ def main():
         'review-code', 'review-plan', 'review-spec', 'ship', 'traits', 'verify', 'worktree',
     }
     COMMAND_CORRECTIONS = {
-        'specify': '/speckit.specify',
-        'plan': '/speckit.plan',
-        'tasks': '/speckit.tasks',
-        'implement': '/speckit.implement',
+        'specify': '/speckit-specify',
+        'plan': '/speckit-plan',
+        'tasks': '/speckit-tasks',
+        'implement': '/speckit-implement',
     }
     command_short_check = skill_name.split(':', 1)[1] if ':' in skill_name else skill_name
     if command_short_check not in KNOWN_SPEX_COMMANDS:
@@ -88,7 +88,7 @@ def main():
                     f"ERROR: /{skill_name} does not exist. "
                     f"Did you mean {suggestion}? "
                     f"spex commands: brainstorm, review-*, evolve, traits, init, help, constitution. "
-                    f"Spec-kit commands: /speckit.specify, /speckit.plan, /speckit.tasks, /speckit.implement."
+                    f"Spec-kit commands: /speckit-specify, /speckit-plan, /speckit-tasks, /speckit-implement."
                     f"</spex-error>"
                 )
             }

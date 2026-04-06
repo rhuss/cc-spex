@@ -54,22 +54,22 @@ No specs found in specs/ directory.
 
 To create a spec first:
 - Use `spex:brainstorm` to refine ideas into a spec
-- Use `/speckit.specify` to create a spec from clear requirements
+- Use `/speckit-specify` to create a spec from clear requirements
 
 Cannot review without a spec to review.
 ```
 
 ## spec-kit Integration
 
-This skill can use `/speckit.*` slash commands when available:
+This skill can use `/speckit-*` slash commands when available:
 
-- `/speckit.clarify` - Find underspecified areas in the spec
-- `/speckit.analyze` - Cross-artifact consistency check (if plan/tasks exist)
+- `/speckit-clarify` - Find underspecified areas in the spec
+- `/speckit-analyze` - Cross-artifact consistency check (if plan/tasks exist)
 
-**If `/speckit.*` commands are available:**
+**If `/speckit-*` commands are available:**
 Use them to assist with review, but always perform manual review as well.
 
-**If `/speckit.*` commands are not available:**
+**If `/speckit-*` commands are not available:**
 Proceed with manual review only. This is acceptable.
 
 ## Review Dimensions
@@ -223,9 +223,9 @@ fi
 
 ### 8. Run Cross-Artifact Consistency Check (Optional)
 
-**If plan or tasks exist and `/speckit.analyze` is available:**
+**If plan or tasks exist and `/speckit-analyze` is available:**
 
-Invoke `/speckit.analyze` to check consistency between:
+Invoke `/speckit-analyze` to check consistency between:
 - spec.md (requirements)
 - plan.md (implementation approach)
 - tasks.md (task list)
@@ -335,7 +335,7 @@ Invoke `/speckit.analyze` to check consistency between:
 
 **If sound (minor issues only):**
 - ✅ Ready for implementation
-- Proceed with `/speckit.implement`
+- Proceed with `/speckit-implement`
 
 **If needs work (important issues):**
 - ⚠️ Fix issues before implementing
@@ -357,7 +357,7 @@ Use TodoWrite to track:
 - [ ] Validate implementability (can plan from this)
 - [ ] Assess testability (can verify requirements)
 - [ ] Check constitution alignment (if exists)
-- [ ] Run `/speckit.analyze` for cross-artifact consistency (if available)
+- [ ] Run `/speckit-analyze` for cross-artifact consistency (if available)
 - [ ] Generate review report
 - [ ] Make recommendation (ready/needs work/major issues)
 
@@ -428,7 +428,7 @@ performance requirement.
 
 **Ready for implementation:** Yes (after performance clarification)
 
-**Next steps:** Clarify "fast" requirement, then proceed to `/speckit.implement`
+**Next steps:** Clarify "fast" requirement, then proceed to `/speckit-implement`
 ```
 
 ## Example: Needs Work

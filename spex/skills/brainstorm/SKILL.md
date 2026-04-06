@@ -24,13 +24,13 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 
 These commands DO NOT EXIST. They will fail with "Unknown skill". When proposing next steps:
 
-- To create specs: `/speckit.specify` (NOT `/spex:specify`)
-- To plan: `/speckit.plan` (NOT `/spex:plan`)
-- To generate tasks: `/speckit.tasks` (NOT `/spex:tasks`)
-- To implement: `/speckit.implement` (NOT `/spex:implement`)
+- To create specs: `/speckit-specify` (NOT `/spex:specify`)
+- To plan: `/speckit-plan` (NOT `/spex:plan`)
+- To generate tasks: `/speckit-tasks` (NOT `/spex:tasks`)
+- To implement: `/speckit-implement` (NOT `/spex:implement`)
 
 spex namespace only has: brainstorm, review-*, evolve, traits, init, help.
-All spec workflow commands live in the `speckit.*` namespace.
+All spec workflow commands live in the `speckit-*` namespace.
 </HARD-GATE>
 
 ## Anti-Pattern: "This Is Too Simple To Need A Spec"
@@ -47,11 +47,11 @@ You MUST create a task for each of these items and complete them in order:
 4. **Ask clarifying questions** - one at a time, understand purpose/constraints/success criteria
 5. **Propose 2-3 approaches** - with trade-offs and your recommendation
 6. **Present spec sections** - scaled to their complexity, get user approval after each section
-7. **Create specification** - invoke `/speckit.specify` (or create manually), validate and commit
+7. **Create specification** - invoke `/speckit-specify` (or create manually), validate and commit
 8. **Spec self-review + review loop** - quick inline check (placeholders, consistency, scope, ambiguity), then `spex:review-spec` for formal validation; fix and re-review until approved (max 3 iterations, then surface to human)
 9. **User reviews written spec** - ask user to review the spec file before proceeding
 10. **Generate review brief** - synthesize spec into reviewer-friendly summary
-11. **Transition** - offer next steps via `/speckit.plan` or `/speckit.implement`
+11. **Transition** - offer next steps via `/speckit-plan` or `/speckit-implement`
 12. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`
 13. **Update overview** - create or refresh `brainstorm/00-overview.md` with index, open threads, parked ideas
 
@@ -71,7 +71,7 @@ digraph brainstorming {
     "Spec review passed?" [shape=diamond];
     "User reviews spec?" [shape=diamond];
     "Validate & commit spec" [shape=box];
-    "Offer /speckit.plan or /speckit.implement" [shape=box];
+    "Offer /speckit-plan or /speckit-implement" [shape=box];
     "Write brainstorm document" [shape=box];
     "Update overview" [shape=box];
     "Done" [shape=doublecircle];
@@ -91,8 +91,8 @@ digraph brainstorming {
     "Spec review passed?" -> "User reviews spec?" [label="approved"];
     "User reviews spec?" -> "Create specification file" [label="changes requested"];
     "User reviews spec?" -> "Validate & commit spec" [label="approved"];
-    "Validate & commit spec" -> "Offer /speckit.plan or /speckit.implement";
-    "Offer /speckit.plan or /speckit.implement" -> "Write brainstorm document";
+    "Validate & commit spec" -> "Offer /speckit-plan or /speckit-implement";
+    "Offer /speckit-plan or /speckit-implement" -> "Write brainstorm document";
     "Write brainstorm document" -> "Update overview";
     "Update overview" -> "Done";
 }
@@ -108,15 +108,15 @@ Before starting the brainstorming workflow, ensure spec-kit is initialized:
 
 If spec-kit prompts for restart, pause this workflow and resume after restart.
 
-## CRITICAL: Use /speckit.* Slash Commands
+## CRITICAL: Use /speckit-* Slash Commands
 
-Claude MUST use `/speckit.specify` to create specs. Claude MUST NOT:
+Claude MUST use `/speckit-specify` to create specs. Claude MUST NOT:
 - Generate specs internally and write them with Write/Edit tools
 - Create spec directories with mkdir
 - Create spec.md files directly
-- Bypass `/speckit.specify` for any reason
+- Bypass `/speckit-specify` for any reason
 
-If `/speckit.*` commands are not available, tell the user to run `/spex:init` first. Do NOT fall back to manual spec creation.
+If `/speckit-*` commands are not available, tell the user to run `/spex:init` first. Do NOT fall back to manual spec creation.
 
 ## The Process
 
@@ -182,27 +182,27 @@ If `/speckit.*` commands are not available, tell the user to run `/spex:init` fi
 **Once the user approves the presented spec:**
 
 <HARD-GATE>
-You MUST invoke `/speckit.specify` to create the spec file. Do NOT create spec files manually
+You MUST invoke `/speckit-specify` to create the spec file. Do NOT create spec files manually
 using Write or Edit tools. Do NOT create the spec directory with mkdir. Do NOT write spec.md
-directly. The `/speckit.specify` command handles file creation, directory structure, numbering,
+directly. The `/speckit-specify` command handles file creation, directory structure, numbering,
 and template formatting. Bypassing it is a process violation.
 </HARD-GATE>
 
 1. **Announce spec creation:**
-   "Based on our discussion, I'm creating the specification using `/speckit.specify`..."
+   "Based on our discussion, I'm creating the specification using `/speckit-specify`..."
 
-2. **Create spec file by invoking `/speckit.specify`:**
+2. **Create spec file by invoking `/speckit-specify`:**
 
    This creates the spec at `specs/[NNNN]-[feature-name]/spec.md` using the spec-kit template.
 
-   Pass the approved spec content to `/speckit.specify` so it populates the template correctly.
+   Pass the approved spec content to `/speckit-specify` so it populates the template correctly.
 
-   **If `/speckit.specify` is not available** (commands not installed): Stop and tell the user
+   **If `/speckit-specify` is not available** (commands not installed): Stop and tell the user
    to run `/spex:init` first. Do NOT fall back to manual file creation.
 
 3. **Run clarification check (RECOMMENDED):**
 
-   After creating the spec, invoke `/speckit.clarify` to identify any underspecified areas.
+   After creating the spec, invoke `/speckit-clarify` to identify any underspecified areas.
 
    Present clarification results to user for review. If gaps are identified, update the spec before proceeding.
 
@@ -325,7 +325,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 Note the spec path (`specs/[NNNN]-[feature-name]/`) so the brainstorm document (step 12) can reference it with status `spec-created`.
 
 **Run consistency check (RECOMMENDED):**
-If `/speckit.analyze` is available, invoke it to check for cross-artifact consistency.
+If `/speckit-analyze` is available, invoke it to check for cross-artifact consistency.
 
 **Generate review_brief.md:**
 
@@ -406,12 +406,12 @@ Write to `specs/[feature-name]/review_brief.md` using the template:
 - Be explicit about potential pushback points
 
 **Check if spex is initialized:**
-If `.specify/` directory does not exist or `.claude/commands/speckit.specify.md` does not exist, warn the user:
-- "Before running `/speckit.plan` or `/speckit.implement`, you need to initialize the project with `/spex:init`. This sets up spec-kit templates, commands, and trait configuration."
+If `.specify/` directory does not exist or `.claude/skills/speckit-specify/SKILL.md` does not exist, warn the user:
+- "Before running `/speckit-plan` or `/speckit-implement`, you need to initialize the project with `/spex:init`. This sets up spec-kit templates, commands, and trait configuration."
 
 **Offer next steps (use EXACTLY these command names):**
-- "Ready for `/speckit.specify`" (NOT `/spex:specify`, which does not exist)
-- After specify: plan with `/speckit.plan` or implement with `/speckit.implement`
+- "Ready for `/speckit-specify`" (NOT `/spex:specify`, which does not exist)
+- After specify: plan with `/speckit-plan` or implement with `/speckit-implement`
 - Never suggest `/spex:specify`, `/spex:plan`, `/spex:implement`, or `/spex:tasks`
 
 **Commit the spec:**
@@ -637,7 +637,7 @@ If no constitution exists and this seems to be early in project:
   - Quality gates
   - Error handling approaches
 - "Would you like to create one? It ensures consistency across features."
-- If yes, use `/speckit.constitution`
+- If yes, use `/speckit-constitution`
 
 **Don't be pushy:** Constitution is optional but recommended.
 
@@ -692,7 +692,7 @@ User: Yes
 
 You: Spec approved! Creating the specification file...
 
-[Creates spec via /speckit.specify]
+[Creates spec via /speckit-specify]
 [Runs spex:review-spec]
 [Asks user to review spec before proceeding]
 
@@ -701,8 +701,8 @@ Spec is sound and implementable.
 Committed to git.
 
 Ready to move forward? Next steps:
-- Plan first: `/speckit.plan`
-- Implement directly: `/speckit.implement`
+- Plan first: `/speckit-plan`
+- Implement directly: `/speckit-implement`
 ```
 
 ## Common Pitfalls

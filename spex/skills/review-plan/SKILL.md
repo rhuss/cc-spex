@@ -7,7 +7,7 @@ description: Post-planning quality validation - coverage matrix, red flag scanni
 
 ## Overview
 
-This skill validates plan and task quality after `/speckit.plan` and `/speckit.tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEWERS.md`.
+This skill validates plan and task quality after `/speckit-plan` and `/speckit-tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEWERS.md`.
 
 ## Prerequisites
 
@@ -17,8 +17,8 @@ This skill validates plan and task quality after `/speckit.plan` and `/speckit.t
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
-[ -f "$SPEC_DIR/plan.md" ] && echo "plan.md found" || echo "ERROR: plan.md missing - run /speckit.plan first"
-[ -f "$SPEC_DIR/tasks.md" ] && echo "tasks.md found" || echo "ERROR: tasks.md missing - run /speckit.tasks first"
+[ -f "$SPEC_DIR/plan.md" ] && echo "plan.md found" || echo "ERROR: plan.md missing - run /speckit-plan first"
+[ -f "$SPEC_DIR/tasks.md" ] && echo "tasks.md found" || echo "ERROR: tasks.md missing - run /speckit-tasks first"
 ```
 
 If either file is missing, stop and instruct the user to generate the missing artifact.
@@ -320,7 +320,7 @@ After all selected fixes are applied, re-present any remaining unaddressed findi
 ## Integration
 
 **This skill is invoked by:**
-- The superpowers trait overlay for `/speckit.plan` (after task generation)
+- The superpowers trait overlay for `/speckit-plan` (after task generation)
 - Users directly via `/spex:review-plan`
 
 **This skill invokes:**

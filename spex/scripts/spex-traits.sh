@@ -436,6 +436,76 @@ EOF
   do_apply
 }
 
+# --- Resolve overlay file to its target ---
+# Maps overlay paths to their target files:
+#   skills/<name>/SKILL.append.md  → .claude/skills/<name>/SKILL.md
+#   skills/<name>/SKILL.prepend.md → .claude/skills/<name>/SKILL.md
+#   templates/<name>.append.md     → .specify/templates/<name>.md
+resolve_overlay_target() {
+  local overlay_dir="$1"
+  local overlay_file="$2"
+  local rel_path="${overlay_file#"$overlay_dir"/}"
+
+  # Skills overlay: skills/<skill-name>/SKILL.{append,prepend}.md
+  if [[ "$rel_path" == skills/*/SKILL.append.md ]] || [[ "$rel_path" == skills/*/SKILL.prepend.md ]]; then
+    local skill_name
+    skill_name=$(echo "$rel_path" | cut -d/ -f2)
+    echo ".claude/skills/$skill_name/SKILL.md"
+    return 0
+  fi
+
+  # Templates overlay: templates/<name>.append.md
+  if [[ "$rel_path" == templates/*.append.md ]]; then
+    local tpl_basename
+    tpl_basename=$(basename "$rel_path" .append.md)
+    echo ".specify/templates/${tpl_basename}.md"
+    return 0
+  fi
+
+  return 1
+}
+
+# --- Apply prepend content (after YAML frontmatter) ---
+apply_prepend() {
+  local prepend_file="$1"
+  local target_file="$2"
+  local sentinel="$3"
+
+  # Check if sentinel already present
+  if grep -q "$sentinel" "$target_file" 2>/dev/null; then
+    return 1  # already applied
+  fi
+
+  local tmp
+  tmp=$(mktemp)
+
+  # Detect YAML frontmatter (starts with ---)
+  if head -1 "$target_file" | grep -q '^---$'; then
+    # Find end of frontmatter (second ---) and insert after it
+    awk -v prepend_file="$prepend_file" -v sentinel="$sentinel" '
+      BEGIN { fm_count=0; inserted=0 }
+      /^---$/ { fm_count++ }
+      { print }
+      fm_count == 2 && !inserted {
+        print ""
+        print sentinel
+        while ((getline line < prepend_file) > 0) print line
+        close(prepend_file)
+        inserted=1
+      }
+    ' "$target_file" > "$tmp"
+  else
+    # No frontmatter: prepend at top
+    echo "$sentinel" > "$tmp"
+    cat "$prepend_file" >> "$tmp"
+    echo "" >> "$tmp"
+    cat "$target_file" >> "$tmp"
+  fi
+
+  mv "$tmp" "$target_file"
+  return 0
+}
+
 apply_internal_overlays() {
   # Apply overlays from _ship-guard (and any future internal overlays).
   # These are always applied unconditionally, not user-configurable.
@@ -444,18 +514,8 @@ apply_internal_overlays() {
 
   local applied=0 skipped=0
   while IFS= read -r -d '' overlay_file; do
-    local rel_path="${overlay_file#"$guard_dir"/}"
-    local overlay_subdir
-    overlay_subdir=$(dirname "$rel_path")
-    local overlay_basename
-    overlay_basename=$(basename "$rel_path")
-    local target_basename="${overlay_basename%.append.md}.md"
-
-    local target_file=""
-    case "$overlay_subdir" in
-      commands) target_file=".claude/commands/$target_basename" ;;
-      *) continue ;;
-    esac
+    local target_file
+    target_file=$(resolve_overlay_target "$guard_dir" "$overlay_file") || continue
 
     [ -f "$target_file" ] || continue
 
@@ -468,7 +528,7 @@ apply_internal_overlays() {
     printf '\n' >> "$target_file"
     cat "$overlay_file" >> "$target_file"
     applied=$((applied + 1))
-  done < <(find "$guard_dir" -name "*.append.md" -print0 2>/dev/null)
+  done < <(find "$guard_dir" -name "SKILL.append.md" -print0 2>/dev/null)
 
   if [ $applied -gt 0 ]; then
     echo "Ship pipeline guard: $applied overlay(s) applied, $skipped already present."
@@ -511,6 +571,7 @@ do_apply() {
   declare -a overlay_files=()
   declare -a target_files=()
   declare -a trait_names=()
+  declare -a overlay_types=()  # "append" or "prepend"
   local errors=0
 
   for trait in $enabled_traits; do
@@ -521,24 +582,13 @@ do_apply() {
       continue
     fi
 
+    # Find both append and prepend overlays
     while IFS= read -r -d '' overlay_file; do
-      rel_path="${overlay_file#"$overlay_dir"/}"
-      overlay_subdir=$(dirname "$rel_path")
-      overlay_basename=$(basename "$rel_path")
-      target_basename="${overlay_basename%.append.md}.md"
-
-      case "$overlay_subdir" in
-        commands)
-          target_file=".claude/commands/$target_basename"
-          ;;
-        templates)
-          target_file=".specify/templates/$target_basename"
-          ;;
-        *)
-          echo "WARNING: Unknown overlay subdirectory '$overlay_subdir', skipping" >&2
-          continue
-          ;;
-      esac
+      local target_file
+      target_file=$(resolve_overlay_target "$overlay_dir" "$overlay_file") || {
+        echo "WARNING: Cannot resolve overlay target for $overlay_file, skipping" >&2
+        continue
+      }
 
       if [ ! -f "$target_file" ]; then
         echo "ERROR: Target file not found: $target_file (from $overlay_file)" >&2
@@ -546,10 +596,14 @@ do_apply() {
         continue
       fi
 
+      local otype="append"
+      [[ "$(basename "$overlay_file")" == *".prepend.md" ]] && otype="prepend"
+
       overlay_files+=("$overlay_file")
       target_files+=("$target_file")
       trait_names+=("$trait")
-    done < <(find "$overlay_dir" -name "*.append.md" -print0 2>/dev/null)
+      overlay_types+=("$otype")
+    done < <(find "$overlay_dir" \( -name "SKILL.append.md" -o -name "SKILL.prepend.md" -o -name "*.append.md" \) -print0 2>/dev/null)
   done
 
   if [ "$errors" -gt 0 ]; then
@@ -563,8 +617,8 @@ do_apply() {
   fi
 
   # Cleanup stale trait blocks from target files
-  # Check both legacy (SDD-TRAIT) and current (SPEX-TRAIT) markers
-  local all_sentinels="superpowers beads teams worktrees"
+  # Check both legacy (SDD-TRAIT) and current (SPEX-TRAIT/SPEX-PREPEND) markers
+  local all_sentinels="superpowers beads teams worktrees deep-review"
   for target in $(printf '%s\n' "${target_files[@]}" | sort -u); do
     for sentinel_trait in $all_sentinels; do
       # Skip if this trait is enabled (its block will be re-applied fresh)
@@ -575,8 +629,7 @@ do_apply() {
       $is_enabled && continue
 
       # Remove block from sentinel to next sentinel or EOF
-      # Check both old (SDD-TRAIT) and new (SPEX-TRAIT) markers
-      for marker_prefix in "SDD-TRAIT" "SPEX-TRAIT"; do
+      for marker_prefix in "SDD-TRAIT" "SPEX-TRAIT" "SPEX-PREPEND"; do
         local sentinel="<!-- ${marker_prefix}:${sentinel_trait} -->"
         if grep -q "$sentinel" "$target" 2>/dev/null; then
           local tmp
@@ -584,7 +637,7 @@ do_apply() {
           awk -v sentinel="$sentinel" '
             BEGIN { skip=0 }
             $0 ~ sentinel { skip=1; next }
-            skip && /<!-- (SDD|SPEX)-(TRAIT|GUARD):/ { skip=0 }
+            skip && /<!-- (SDD|SPEX)-(TRAIT|GUARD|PREPEND):/ { skip=0 }
             !skip { print }
           ' "$target" > "$tmp"
           mv "$tmp" "$target"
@@ -598,20 +651,28 @@ do_apply() {
   local applied=0 skipped=0
 
   for i in "${!overlay_files[@]}"; do
-    local sentinel="<!-- SPEX-TRAIT:${trait_names[$i]} -->"
+    if [ "${overlay_types[$i]}" = "prepend" ]; then
+      local sentinel="<!-- SPEX-PREPEND:${trait_names[$i]} -->"
+      if apply_prepend "${overlay_files[$i]}" "${target_files[$i]}" "$sentinel"; then
+        applied=$((applied + 1))
+      else
+        skipped=$((skipped + 1))
+      fi
+    else
+      local sentinel="<!-- SPEX-TRAIT:${trait_names[$i]} -->"
+      # Check for both old (SDD-TRAIT) and new (SPEX-TRAIT) markers
+      if grep -q "<!-- \(SDD\|SPEX\)-TRAIT:${trait_names[$i]} -->" "${target_files[$i]}" 2>/dev/null; then
+        skipped=$((skipped + 1))
+        continue
+      fi
 
-    # Check for both old (SDD-TRAIT) and new (SPEX-TRAIT) markers
-    if grep -q "<!-- \(SDD\|SPEX\)-TRAIT:${trait_names[$i]} -->" "${target_files[$i]}" 2>/dev/null; then
-      skipped=$((skipped + 1))
-      continue
+      printf '\n' >> "${target_files[$i]}"
+      cat "${overlay_files[$i]}" >> "${target_files[$i]}"
+      applied=$((applied + 1))
     fi
-
-    printf '\n' >> "${target_files[$i]}"
-    cat "${overlay_files[$i]}" >> "${target_files[$i]}"
-    applied=$((applied + 1))
   done
 
-  echo "Traits applied: $applied overlay(s) appended, $skipped already present."
+  echo "Traits applied: $applied overlay(s) applied, $skipped already present."
 }
 
 # --- Permissions ---

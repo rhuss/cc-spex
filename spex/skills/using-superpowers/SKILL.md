@@ -68,11 +68,11 @@ Before ANY implementation work:
 ## Available spex Skills
 
 ### Primary Workflow (via spec-kit commands)
-- `/speckit.specify` - Create specifications (superpowers trait adds review gate)
-- `/speckit.plan` - Generate plan and tasks (superpowers trait adds spec review + plan review)
-- `/speckit.implement` - Execute implementation (superpowers trait adds pre/post quality gates)
+- `/speckit-specify` - Create specifications (superpowers trait adds review gate)
+- `/speckit-plan` - Generate plan and tasks (superpowers trait adds spec review + plan review)
+- `/speckit-implement` - Execute implementation (superpowers trait adds pre/post quality gates)
 
-**NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit.*` names above. The `spex:` namespace only contains helper skills (brainstorm, review-*, evolve, traits, init, help).
+**NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit-*` names above. The `spex:` namespace only contains helper skills (brainstorm, review-*, evolve, traits, init, help).
 
 ### spex Helper Skills
 - **spex:brainstorm** - Rough idea → spec through collaborative dialogue
@@ -100,14 +100,14 @@ User request arrives
 Is this a new feature/project?
     Yes → Is it a rough idea?
             Yes → spex:brainstorm
-            No → Create spec using /speckit.specify
+            No → Create spec using /speckit-specify
     No → Does spec exist for this area?
             Yes → Is there spec/code mismatch?
                     Yes → spex:evolve
                     No → Need plan/tasks?
-                            Yes → /speckit.plan
-                            No → /speckit.implement
-            No → Create spec first using /speckit.specify
+                            Yes → /speckit-plan
+                            No → /speckit-implement
+            No → Create spec first using /speckit-specify
 ```
 
 ## Creating Specifications
@@ -129,13 +129,13 @@ User: "I want to add authentication to my app"
 
 ```
 User: "Add a POST /api/users endpoint that validates email and returns 422 on invalid format"
-→ Create spec directly using /speckit.specify
+→ Create spec directly using /speckit-specify
 ```
 
 **Direct spec creation:**
 - Requirements are already clear
 - No exploratory dialogue needed
-- Use `/speckit.specify` to create the spec
+- Use `/speckit-specify` to create the spec
 - Follow spec-kit layout conventions
 
 **WHAT vs HOW principle:**
@@ -183,7 +183,7 @@ Before using a skill, announce that you are using it.
 
 **Examples:**
 - "I'm using spex:brainstorm to refine your idea into a spec."
-- "I'm using /speckit.implement to build this feature from the spec."
+- "I'm using /speckit-implement to build this feature from the spec."
 - "I'm using spex:evolve to reconcile the spec/code mismatch."
 
 **Why:** Transparency helps your human partner understand your process and catch errors early.
@@ -215,7 +215,7 @@ Consider creating a constitution for your project:
 - Team projects: Always (defines shared understanding)
 
 **How to create:**
-Use `/speckit.constitution`.
+Use `/speckit-constitution`.
 
 ## Instructions ≠ Permission to Skip Workflows
 
@@ -265,7 +265,7 @@ User: "I want to add notifications to my app"
    - Call spec-kit (auto-setup)
    - Explore idea collaboratively
    - Create formal spec
-   - Hand off to /speckit.implement
+   - Hand off to /speckit-implement
 ```
 
 ### Pattern 2: New Feature from Clear Requirements
@@ -274,8 +274,8 @@ User: "I want to add notifications to my app"
 User: "Add GET /api/stats endpoint returning JSON with user_count and post_count"
 
 1. Recognize: Clear requirements
-2. Create spec using /speckit.specify
-3. Route to: /speckit.implement
+2. Create spec using /speckit-specify
+3. Route to: /speckit-implement
 4. Implementation will:
    - Quality gates from superpowers trait overlay
    - Use TDD

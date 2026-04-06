@@ -86,7 +86,7 @@ Tool and command names MUST follow established conventions exactly.
 
 - The CLI tool is `specify` (not speckit, not spec-kit).
 - The package is `specify-cli`.
-- Slash commands use the `/speckit.*` prefix (this is correct).
+- Slash commands use the `/speckit-*` prefix (this is correct).
 - spex skills use the `spex:` prefix.
 - Feature branches MUST match the pattern `NNN-feature-name`
   (three-digit prefix, hyphen, lowercase name).
@@ -121,10 +121,10 @@ These constraints govern the structure of the spex plugin codebase.
   receive spex context injection.
 - **File organization**: Commands live in `spex/commands/`, skills in
   `spex/skills/<name>/SKILL.md`, overlays in
-  `spex/overlays/<trait>/{commands,templates}/`, scripts in
+  `spex/overlays/<trait>/skills/<name>/`, scripts in
   `spex/scripts/`.
 - **Overlay application**: The `spex-traits.sh apply` function handles
-  all overlay application. It validates target files exist before
+  all overlay application. It validates target skill files exist before
   appending, uses sentinel markers for idempotency, and reports
   applied vs. skipped counts.
 - **No compiled artifacts**: This plugin consists entirely of Markdown

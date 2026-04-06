@@ -70,7 +70,7 @@ skills/**/SKILL.md.proposed
 /tmp/upstream-commits-*.txt
 
 # spex: generated/local files
-.claude/commands/speckit.*
+.claude/skills/speckit-*
 .claude/settings.local.json
 .specify/.spex-phase
 .specify/.spex-ship-phase
