@@ -20,7 +20,7 @@ A developer brainstorms a feature on `main`, then runs `/speckit.specify`. After
 
 1. **Given** a project with the `worktrees` trait enabled and the repo on `main`, **When** `speckit.specify` completes successfully, **Then** spec files are committed on the feature branch before any branch switch occurs
 2. **Given** spec files are committed, **When** the trait restores `main`, **Then** `git checkout main` succeeds because the feature branch (not main) was checked out, so main is free
-3. **Given** main is restored, **When** the trait creates the worktree, **Then** `git worktree add <base_path>/<branch-name> <branch-name>` succeeds because the feature branch is no longer checked out in the original repo
+3. **Given** main is restored, **When** the trait creates the worktree, **Then** `git worktree add <base_path>/<repo-name>:<branch-name> <branch-name>` succeeds because the feature branch is no longer checked out in the original repo
 4. **Given** the worktree is created, **Then** instructions are printed showing the exact `cd` and `claude` commands to start a new session
 
 ---
@@ -85,12 +85,12 @@ A developer finishes a feature and merges it to `main`. They run `/spex:worktree
 
 ### Functional Requirements
 
-- **FR-001**: After `speckit.specify` completes, the system MUST commit all spec files in `specs/<branch-name>/` to the feature branch before any branch switch
+- **FR-001**: After `speckit.specify` completes, the system MUST commit all staged and unstaged tracked file changes (spec files, `.specify/` config, and any other modified tracked files) to the feature branch before any branch switch
 - **FR-002**: After committing, the system MUST run `git checkout main` to restore the original repo to `main`
-- **FR-003**: After restoring main, the system MUST create a worktree at `<base_path>/<branch-name>` using `git worktree add`
-- **FR-004**: The system MUST print clear instructions showing the exact command to start a new Claude session in the worktree (e.g., `cd ../<branch-name> && claude`)
+- **FR-003**: After restoring main, the system MUST create a worktree at `<base_path>/<repo-name>:<branch-name>` using `git worktree add`, where `<repo-name>` is the basename of the main repository directory
+- **FR-004**: The system MUST print clear instructions showing the exact command to start a new Claude session in the worktree (e.g., `cd ../cc-spex:<branch-name> && claude`)
 - **FR-005**: The system MUST detect when running inside a worktree (`.git` is a file) and skip worktree creation
-- **FR-006**: The system MUST detect and report an error when the target worktree path already exists
+- **FR-006**: The system MUST detect and report an error when the target worktree path (`<base_path>/<repo-name>:<branch-name>`) already exists
 - **FR-007**: The system MUST provide a listing capability showing path, branch, and feature name for all feature worktrees (branches matching `NNN-*`)
 - **FR-008**: The system MUST provide a cleanup capability that detects merged worktrees and offers removal with confirmation
 - **FR-009**: The system MUST refuse to remove worktrees with unmerged branches unless explicitly confirmed
@@ -102,7 +102,7 @@ A developer finishes a feature and merges it to `main`. They run `/spex:worktree
 
 - **Trait Configuration**: The `worktrees` entry in `.specify/spex-traits.json` with `enabled` (boolean) and `worktrees_config.base_path` (string, default `..`)
 - **Overlay**: The `SKILL.append.md` file in `spex/overlays/worktrees/skills/speckit-specify/` that injects the post-specify worktree creation steps
-- **Worktree**: A git worktree directory at `<base_path>/<branch-name>` containing the full working tree on the feature branch
+- **Worktree**: A git worktree directory at `<base_path>/<repo-name>:<branch-name>` (e.g., `../cc-spex:015-feature`) containing the full working tree on the feature branch
 
 ## Success Criteria *(mandatory)*
 
@@ -114,6 +114,14 @@ A developer finishes a feature and merges it to `main`. They run `/spex:worktree
 - **SC-004**: The branch switch sequence (specify creates branch, commit, checkout main, worktree add) completes without "branch already checked out" errors because each step frees the previous branch before the next needs it
 - **SC-005**: All tracked project files (`.specify/`, `.claude/commands/`, spec files) are available in the worktree without manual copying
 
+## Clarifications
+
+### Session 2026-04-06
+
+- Q: Should worktree directories use `<base_path>/<branch-name>` or `<base_path>/<repo-name>:<branch-name>` naming? → A: Colon convention (`<repo-name>:<branch-name>`), matching existing worktree naming pattern
+- Q: Should the pre-switch commit include only `specs/<branch>/` or all modified tracked files? → A: All modified tracked files, ensuring `git checkout main` succeeds cleanly
+- Q: Must worktree creation happen after superpowers review, and is ordering guaranteed? → A: Yes, worktree creation after review; trait ordering in `spex-traits.json` determines overlay append order (superpowers before worktrees)
+
 ## Assumptions
 
 - The project uses git and `main` as the primary integration branch
@@ -122,5 +130,6 @@ A developer finishes a feature and merges it to `main`. They run `/spex:worktree
 - `.claude/commands/` is committed to git (worktrees inherit commands)
 - `.claude/skills/` is gitignored and regenerated per session by `spex:init` + trait overlay application
 - The existing `spex-initialized: false` sentinel in the session hook triggers `spex:init` in new worktree sessions
+- Trait overlays are appended in the order traits appear in `spex-traits.json`, ensuring superpowers review runs before worktree creation
 - `create-new-feature.sh` is the upstream spec-kit version (or updated from it)
 - After worktree creation, spec files exist only on the feature branch. The original repo on `main` will not contain the spec directory
