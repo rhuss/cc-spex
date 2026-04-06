@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*/spex/scripts/spex-init.sh*)",
+      "Bash(*/spex/scripts/spex-traits.sh*)"
+    ]
+  },
+  "allowedTools": [
+    "Bash",
+    "Read",
+    "Edit",
+    "Write",
+    "WebFetch",
+    "WebSearch",
+    "NotebookEdit",
+    "mcp__*"
+  ]
+}

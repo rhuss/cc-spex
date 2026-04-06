@@ -1,9 +1,7 @@
 # Local Claude Code settings (user-specific)
 .claude/state/
 .claude/history/
-.claude/*.json
 .claude/settings.local.json
-spex/.claude/settings.local.json
 # BUT: Keep .claude/commands/ for plugin maintenance commands
 
 # Editor swap files
@@ -61,16 +59,5 @@ build/
 *.log
 
 # Transient phase markers
-.specify/.spex-phase
-.specify/.spex-ship-phase
-
-# Sync-related temporary files
-skills/**/SKILL.md.proposed
-/tmp/upstream-changes-*.patch
-/tmp/upstream-commits-*.txt
-
-# spex: generated/local files
-.claude/skills/speckit-*
-.claude/settings.local.json
 .specify/.spex-phase
 .specify/.spex-ship-phase

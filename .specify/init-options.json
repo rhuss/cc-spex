@@ -1,11 +1,10 @@
 {
   "ai": "claude",
-  "ai_commands_dir": null,
-  "ai_skills": false,
+  "ai_skills": true,
   "branch_numbering": "sequential",
   "here": true,
-  "offline": false,
+  "integration": "claude",
   "preset": null,
   "script": "sh",
-  "speckit_version": "0.4.3"
+  "speckit_version": "0.5.1.dev0"
 }
