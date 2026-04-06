@@ -30,23 +30,23 @@ If spec-kit prompts for restart, pause this workflow and resume after restart.
 
 ## Spec Selection
 
-If no spec is specified, discover available specs:
+If a spec path is provided as an argument, use it directly.
+
+Otherwise, attempt branch-based resolution:
 
 ```bash
-# List all specs in the project
-fd -t f "spec.md" specs/ 2>/dev/null | head -20
+.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null
+```
+
+If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path. Parse the JSON to extract `FEATURE_SPEC` and `FEATURE_DIR`.
+
+If this fails (not on a feature branch, no matching spec directory), fall back to interactive selection:
+
+```bash
+find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
 **If specs found:** Present list and ask user to select one using AskUserQuestion.
-
-Example:
-```
-Found 2 specs in this project:
-1. specs/0001-user-auth/spec.md
-2. specs/0002-api-gateway/spec.md
-
-Which spec would you like to review?
-```
 
 **If no specs found:** Inform user:
 ```

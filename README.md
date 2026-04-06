@@ -52,6 +52,14 @@ After the spec PR is reviewed and merged, implementation can proceed in one or m
 
 If spec/code drift is detected during implementation, use `/spex:evolve` to reconcile: either update the spec or fix the code, then continue.
 
+### Context Management
+
+Between phases (and between planning and implementation within a phase), running `/clear` gives each stage a fresh context window. This prevents context accumulation from degrading output quality and ensures reviewers evaluate code independently of implementation history.
+
+When you run `/clear`, review skills (`/spex:review-code`, `/spex:review-spec`, `/spex:deep-review`, `/spex:stamp`) automatically resolve the spec from the current git branch name, so no manual spec selection is needed. The `superpowers` trait displays context clear recommendations at transition points.
+
+In the `/spex:ship` pipeline, the implementation and review stages run as isolated subagents automatically, so the orchestrator stays lightweight without manual `/clear` calls.
+
 ### One-Shot: `/spex:ship`
 
 For smaller features or solo projects, `/spex:ship` chains the entire workflow from brainstorm through verification in a single session, without intermediate PRs. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`) and can optionally create a PR at the end with `--create-pr`. See [Ship Command](#ship-command) below for details.

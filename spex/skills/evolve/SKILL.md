@@ -45,7 +45,7 @@ If no spec is specified, discover available specs:
 
 ```bash
 # List all specs in the project
-fd -t f "spec.md" specs/ 2>/dev/null | head -20
+find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
 **If specs found:** Present list and ask user to select one using AskUserQuestion.

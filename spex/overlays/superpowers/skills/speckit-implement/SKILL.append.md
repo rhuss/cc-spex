@@ -12,3 +12,7 @@
 **After implementation completes:**
 1. Invoke {Skill: spex:review-code} to check code compliance against spec
 2. Invoke {Skill: spex:verification-before-completion} for the final stamp
+
+## Context Management
+
+**Before running code review**, consider running `/clear` to ensure an unbiased review. The reviewer should evaluate the code independently, without carrying context from the implementation process. An implementation-aware reviewer tends to confirm what was built rather than critically assess it. Spec-kit resolves all artifacts from the branch name automatically, so no context is lost.
