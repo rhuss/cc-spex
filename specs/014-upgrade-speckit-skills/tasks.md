@@ -13,11 +13,11 @@
 
 **Purpose**: Tag the last old-format release and create the maintenance branch before any migration work begins.
 
-- [ ] T001 Bump version to 3.0.2 in `.claude-plugin/marketplace.json` and `spex/.claude-plugin/plugin.json`
-- [ ] T002 Add v3.0.2 entry in `CHANGELOG.md` noting this is the last release supporting `speckit.*.md` commands
-- [ ] T003 Run `make release` to validate current state
-- [ ] T004 Tag v3.0.2 and create GitHub release via `gh release create v3.0.2 --generate-notes`
-- [ ] T005 Create `release/3.x` branch from v3.0.2 tag
+- [x] T001 Bump version to 3.0.2 in `.claude-plugin/marketplace.json` and `spex/.claude-plugin/plugin.json`
+- [x] T002 Add v3.0.2 entry in `CHANGELOG.md` noting this is the last release supporting `speckit.*.md` commands
+- [x] T003 Run `make release` to validate current state
+- [x] T004 Tag v3.0.2 and create GitHub release via `gh release create v3.0.2 --generate-notes`
+- [x] T005 Create `release/3.x` branch from v3.0.2 tag
 
 **Checkpoint**: v3.0.2 released, `release/3.x` branch exists for bugfix maintenance
 
