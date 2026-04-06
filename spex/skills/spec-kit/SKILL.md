@@ -193,7 +193,7 @@ When a workflow skill requires a spec file and none is specified, use this disco
 
 ```bash
 # Find all spec.md files in specs/ directory
-fd -t f "spec.md" specs/ 2>/dev/null || find specs/ -name "spec.md" -type f 2>/dev/null
+find specs/ -name "spec.md" -type f 2>/dev/null
 
 # Also check for direct .md files in specs/features/
 ls specs/features/*.md 2>/dev/null
@@ -231,7 +231,7 @@ resolve_spec_path() {
   local feature_name=$1
 
   # Check numbered directory pattern first
-  local numbered=$(fd -t f "spec.md" specs/ 2>/dev/null | grep -i "$feature_name" | head -1)
+  local numbered=$(find specs/ -name "spec.md" -type f 2>/dev/null | grep -i "$feature_name" | head -1)
   if [ -n "$numbered" ]; then
     echo "$numbered"
     return

@@ -47,7 +47,7 @@ If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path.
 If this fails (not on a feature branch, no matching spec directory), fall back to interactive selection:
 
 ```bash
-fd -t f "spec.md" specs/ 2>/dev/null | head -20
+find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
 **If specs found:** Present list and ask user to select one using AskUserQuestion.
