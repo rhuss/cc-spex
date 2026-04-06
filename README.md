@@ -1,12 +1,15 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-3.0.1-blue)
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
 [![Builds on Spec-Kit](https://img.shields.io/badge/builds%20on-Spec--Kit-blue)](https://github.com/github/spec-kit)
 
 > Extend Spec-Kit with composable traits and additional workflow commands for Claude Code.
+
+> [!IMPORTANT]
+> Starting with v4.0.0, cc-spex requires [Spec-Kit](https://github.com/github/spec-kit) **0.5.0** or later. For older Spec-Kit versions, use a [3.0.x release](https://github.com/rhuss/cc-spex/releases?q=v3.0).
 
 > [!NOTE]
 > This project was previously named **cc-sdd**. It has been renamed to **cc-spex** in v3.0.0 to avoid confusion with the unrelated [gotalab/cc-sdd](https://github.com/gotalab/cc-sdd) project. If you were using cc-sdd, see [Migrating from sdd](#migrating-from-sdd-v2x) below.
