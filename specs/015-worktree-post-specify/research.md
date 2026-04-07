@@ -4,9 +4,9 @@
 
 ## R1: Colon Naming Convention for Worktrees
 
-**Decision**: Use `<repo-name>:<branch-name>` naming (e.g., `cc-spex:015-feature`)
+**Decision**: Use `<repo-name>:<branch-name>` naming on Unix (e.g., `cc-spex:015-feature`) and `<repo-name>--<branch-name>` on Windows (e.g., `cc-spex--015-feature`)
 
-**Rationale**: Matches the existing worktree naming convention already in use in this project. The `git worktree add` command accepts arbitrary paths, so colon characters in directory names are valid on both macOS and Linux.
+**Rationale**: Matches the existing worktree naming convention already in use in this project. Colon characters in directory names are valid on macOS and Linux but not on Windows (reserved for drive letters). The implementation detects the platform via `uname -s` and uses `--` as separator on MINGW/MSYS/CYGWIN/Windows_NT environments.
 
 **How to derive repo name**: `basename $(git rev-parse --show-toplevel)` from the main worktree. When running inside a worktree, the repo root is the worktree root, but the main worktree path can be obtained via `git worktree list --porcelain | head -1 | sed 's/^worktree //'` and then taking its basename. However, when the create action runs, we are still in the main repo (before worktree creation), so `basename $(git rev-parse --show-toplevel)` gives the correct repo name.
 

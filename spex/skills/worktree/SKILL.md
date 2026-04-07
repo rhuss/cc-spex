@@ -64,84 +64,150 @@ GIT_DIR=$(git rev-parse --git-dir)
 if [ "$GIT_DIR" != "$REPO_ROOT/.git" ] && [ "$GIT_DIR" != ".git" ]; then
   echo "WARNING: Already inside a git worktree. Skipping worktree creation."
   echo "Worktree nesting is not supported."
-  # Skip worktree creation but continue with the rest of the specify flow
+  # Stop here. Do not proceed to subsequent steps.
 fi
 ```
 
-If inside a worktree, skip the entire create action (FR-009).
+If inside a worktree, skip the entire create action (FR-005). Do not proceed to any subsequent Create steps.
 
 ### Step 4: Compute Target Path and Validate
 
+Derive the repo name from the repository root and build the worktree path (FR-003):
+
 ```bash
-WORKTREE_PATH="$REPO_ROOT/$BASE_PATH/$BRANCH_NAME"
+REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+
+# Handle both absolute and relative base paths
+if [[ "$BASE_PATH" = /* ]]; then
+  RESOLVED_BASE=$(cd "$BASE_PATH" && pwd)
+else
+  RESOLVED_BASE=$(cd "$REPO_ROOT/$BASE_PATH" && pwd)
+fi
 ```
 
-Check if the target path already exists (FR-008):
+If the `cd` fails (directory does not exist), report a clear error and stop:
+
+```bash
+if [ -z "$RESOLVED_BASE" ]; then
+  echo "ERROR: base_path '$BASE_PATH' does not resolve to a valid directory."
+  echo "Check worktrees_config.base_path in .specify/spex-traits.json"
+  # Stop here. Do not proceed to subsequent steps.
+fi
+```
+
+Choose the separator based on the platform. Colons are invalid in Windows directory names, so use `--` there:
+
+```bash
+# Platform-aware separator: colon on Unix, double-hyphen on Windows/NTFS
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*|Windows_NT) SEP="--" ;;
+  Linux)
+    # Detect WSL with Windows filesystem (NTFS cannot contain colons)
+    if [[ "$RESOLVED_BASE" == /mnt/[a-z]/* ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+      SEP="--"
+    else
+      SEP=":"
+    fi
+    ;;
+  *) SEP=":" ;;
+esac
+```
+
+Build the worktree path:
+
+```bash
+WORKTREE_PATH="${RESOLVED_BASE}/${REPO_NAME}${SEP}${BRANCH_NAME}"
+```
+
+Verify the worktree path is not inside the main repository (a `base_path` of `.` would cause this):
+
+```bash
+case "$WORKTREE_PATH" in
+  "$REPO_ROOT"/*)
+    echo "ERROR: Worktree path is inside the main repository: $WORKTREE_PATH"
+    echo "Set base_path to a directory outside the repo (default: '..')"
+    # Stop here. Do not proceed to subsequent steps.
+    ;;
+esac
+```
+
+Check if the target path already exists (FR-006):
 
 ```bash
 if [ -d "$WORKTREE_PATH" ] || [ -f "$WORKTREE_PATH" ]; then
   echo "ERROR: Target path already exists: $WORKTREE_PATH"
   echo "Remove it manually or choose a different base_path in .specify/spex-traits.json"
-  # Stop worktree creation, but don't fail the entire specify flow
+  # Stop here. Do not proceed to subsequent steps.
 fi
 ```
 
-### Step 5: Commit Spec Files to Feature Branch
+### Step 5: Commit All Tracked Changes to Feature Branch
 
-Before switching away from the feature branch, commit any spec files that `speckit-specify` created. Without this, the files would remain as untracked artifacts in the main worktree and would not appear in the feature worktree.
+Before switching away from the feature branch, commit all modified tracked files (FR-001). This includes spec files, `.specify/` configuration changes, and any other modified tracked files. Stage changes in two passes to avoid capturing unintended untracked files:
 
 ```bash
-# Check for uncommitted spec files in the feature's spec directory
-SPEC_DIR="specs/$BRANCH_NAME"
-if [ -d "$SPEC_DIR" ]; then
-  UNTRACKED=$(git status --porcelain "$SPEC_DIR" 2>/dev/null)
-  if [ -n "$UNTRACKED" ]; then
-    git add "$SPEC_DIR"
-    git commit -m "feat: Add spec for $BRANCH_NAME
+# Stage modifications to already-tracked files
+git add -u
+
+# Stage new spec artifacts (these are untracked but expected)
+[ -d "specs/$BRANCH_NAME" ] && git add "specs/$BRANCH_NAME"
+[ -d ".specify" ] && git add .specify/
+
+if ! git diff --cached --quiet; then
+  git commit -m "feat: Add spec for $BRANCH_NAME
 
 Assisted-By: 🤖 Claude Code"
-  fi
 fi
 ```
 
-This ensures the spec files are persisted on the feature branch before the worktree is created from it.
+Using `git add -u` (tracked modifications only) plus explicit paths for new spec artifacts limits the commit scope to intended files. The `git diff --cached --quiet` guard skips the commit when there are no staged changes, avoiding empty commits.
 
-### Step 6: Restore Main Branch (before worktree creation)
+### Step 6: Restore Default Branch (before worktree creation)
 
-Git does not allow two worktrees to have the same branch checked out. Since `speckit-specify` just created and checked out the feature branch, we must switch back to `main` before creating a worktree for that branch.
+Git does not allow two worktrees to have the same branch checked out. Since `speckit-specify` just created and checked out the feature branch, we must switch back to the default branch before creating a worktree for that branch.
+
+Detect the default branch dynamically with a fallback chain:
 
 ```bash
-if ! git checkout main 2>&1; then
-  echo "WARNING: Could not switch back to main."
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+if [ -z "$DEFAULT_BRANCH" ]; then
+  # origin/HEAD not set (common with git init + remote add). Try common names.
+  for candidate in main master; do
+    if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+      DEFAULT_BRANCH="$candidate"
+      break
+    fi
+  done
+fi
+DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
+```
+
+```bash
+if ! git checkout "$DEFAULT_BRANCH" 2>&1; then
+  echo "WARNING: Could not switch back to $DEFAULT_BRANCH."
   echo "You likely have uncommitted changes. Commit or stash them first."
   echo "The repository remains on branch $BRANCH_NAME."
   echo "Worktree creation skipped (cannot create worktree while branch is checked out here)."
-  # Stop here - worktree creation is not possible without switching branches first
+  # Stop here. Do not proceed to subsequent steps.
 fi
 ```
 
 ### Step 7: Create the Worktree
 
-Now that the current worktree is on `main`, create a new worktree for the feature branch:
-
-```bash
-git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
-```
-
-If this fails (disk full, permission denied, etc.), report the error clearly. The original repo is already back on `main`:
+Now that the current worktree is on the default branch, create a new worktree for the feature branch. If this fails (disk full, permission denied, etc.), report the error clearly:
 
 ```bash
 if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
   echo "ERROR: Failed to create worktree at $WORKTREE_PATH"
-  echo "The repository is on main. The feature branch $BRANCH_NAME still exists."
+  echo "The repository is on $DEFAULT_BRANCH. The feature branch $BRANCH_NAME still exists."
   echo "Resolve the issue and retry, or switch to the branch manually: git checkout $BRANCH_NAME"
-  # Stop here
+  # Stop here. Do not proceed to subsequent steps.
 fi
 ```
 
 ### Step 8: Print Switch Instructions
 
-Print clear instructions for the user (FR-004):
+Print clear instructions for the user showing the worktree path (FR-004):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -157,9 +223,11 @@ Print clear instructions for the user (FR-004):
 └─────────────────────────────────────────────────────────────┘
 ```
 
+Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output. This ensures the path is correct regardless of the configured `base_path`.
+
 ## Action: List
 
-Show all active feature worktrees for the project (FR-005).
+Show all active feature worktrees for the project (FR-007).
 
 ### Step 1: Get Worktree List
 
@@ -180,16 +248,18 @@ Skip the main worktree (the original repo).
 
 ### Step 3: Format Output
 
-Display a table:
+Display a table with worktree directory names. The separator varies by platform (`:` on Unix, `--` on Windows):
 
 ```
 Active Feature Worktrees:
 
   Path                              Branch              Feature
   ─────────────────────────────────────────────────────────────
-  ../004-user-auth                  004-user-auth       user-auth
-  ../007-worktrees-trait            007-worktrees-trait  worktrees-trait
+  cc-spex:004-user-auth             004-user-auth       user-auth
+  cc-spex:007-worktrees-trait       007-worktrees-trait  worktrees-trait
 ```
+
+Derive the display path by extracting the last path component from the worktree's absolute path.
 
 If no feature worktrees exist:
 
@@ -201,13 +271,25 @@ Create one by running /speckit-specify with the worktrees trait enabled.
 
 ## Action: Cleanup
 
-Detect worktrees whose branches are merged and offer removal (FR-006, FR-007).
+Detect worktrees whose branches are merged and offer removal (FR-008, FR-009).
 
 ### Step 1: Get Merged Branches
 
 ```bash
-# Get all branches merged into main
-MERGED_BRANCHES=$(git branch --merged main | sed 's/^[* ]*//' | grep -E '^[0-9]{3}-')
+# Detect default branch with fallback chain
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+if [ -z "$DEFAULT_BRANCH" ]; then
+  for candidate in main master; do
+    if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+      DEFAULT_BRANCH="$candidate"
+      break
+    fi
+  done
+fi
+DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
+
+# Get all feature branches merged into the default branch
+MERGED_BRANCHES=$(git branch --merged "$DEFAULT_BRANCH" | sed 's/^[* ]*//' | grep -E '^[0-9]{3}-')
 ```
 
 ### Step 2: Cross-Reference with Worktrees
@@ -219,7 +301,7 @@ For each worktree with a feature branch, check if its branch appears in the merg
 For each merged worktree, present it to the user and ask for confirmation:
 
 ```
-Worktree ../004-user-auth (branch 004-user-auth) is merged into main.
+Worktree cc-spex:004-user-auth (branch 004-user-auth) is merged into main.
 Remove this worktree? (yes/no)
 ```
 
@@ -237,10 +319,10 @@ git branch -d <branch-name>
 
 ### Step 4: Handle Unmerged Worktrees
 
-For worktrees with unmerged branches, warn the user (FR-007):
+For worktrees with unmerged branches, warn the user (FR-009):
 
 ```
-Worktree ../007-worktrees-trait (branch 007-worktrees-trait) has NOT been merged.
+Worktree cc-spex:007-worktrees-trait (branch 007-worktrees-trait) has NOT been merged.
 Skipping. Use --force to remove unmerged worktrees (data may be lost).
 ```
 
