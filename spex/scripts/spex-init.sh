@@ -151,11 +151,17 @@ configure_gitignore() {
   local gitignore=".gitignore"
   local sentinel="# spex: generated/local files"
 
-  # Migrate old pattern if present
-  if [ -f "$gitignore" ] && grep -qF ".claude/commands/speckit." "$gitignore"; then
-    sed -i '' 's|\.claude/commands/speckit\.\*|.claude/skills/speckit-*|' "$gitignore" 2>/dev/null || \
-      sed -i 's|\.claude/commands/speckit\.\*|.claude/skills/speckit-*|' "$gitignore" 2>/dev/null || true
-    echo "  Migrated .gitignore pattern from commands to skills"
+  # Migrate old patterns if present
+  if [ -f "$gitignore" ]; then
+    if grep -qF ".claude/commands/speckit." "$gitignore"; then
+      sed -i '' 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$gitignore" 2>/dev/null || \
+        sed -i 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$gitignore" 2>/dev/null || true
+      echo "  Migrated .gitignore pattern from commands to skills"
+    elif grep -qF ".claude/skills/speckit-*" "$gitignore"; then
+      sed -i '' 's|\.claude/skills/speckit-\*|.claude/skills/|' "$gitignore" 2>/dev/null || \
+        sed -i 's|\.claude/skills/speckit-\*|.claude/skills/|' "$gitignore" 2>/dev/null || true
+      echo "  Migrated .gitignore pattern from speckit-* to skills/"
+    fi
   fi
 
   # Skip if sentinel already present
@@ -164,7 +170,7 @@ configure_gitignore() {
   cat >> "$gitignore" <<'EOF'
 
 # spex: generated/local files
-.claude/skills/speckit-*
+.claude/skills/
 .claude/settings.local.json
 .specify/.spex-phase
 .specify/.spex-ship-phase
