@@ -298,6 +298,64 @@ OR
 - Fix issues before proceeding
 - Re-run verification after fixes
 
+### 8. Completion Celebration
+
+**After all verification passes** (go decision is positive), check if a state file exists:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ]; then
+  MODE=$(jq -r '.mode // empty' "$STATE_FILE" 2>/dev/null)
+fi
+```
+
+**If a state file exists** (flow or ship mode), display a celebration:
+
+1. **Compute stats:**
+   ```bash
+   FEATURE=$(jq -r '.feature_branch // "unknown"' "$STATE_FILE" 2>/dev/null)
+   STARTED=$(jq -r '.started_at // empty' "$STATE_FILE" 2>/dev/null)
+   SPEC_DIR=$(jq -r '.spec_dir // empty' "$STATE_FILE" 2>/dev/null)
+   # If spec_dir not in state (ship mode), derive from branch
+   [ -z "$SPEC_DIR" ] && SPEC_DIR="specs/$FEATURE"
+   REVIEW_COUNT=$(ls "$SPEC_DIR"/REVIEW-*.md 2>/dev/null | wc -l | tr -d ' ')
+   COMMIT_COUNT=$(git rev-list --count main..HEAD 2>/dev/null || echo "?")
+   ```
+   - Duration: compute from `started_at` to now (human-readable, e.g., "2h 15m" or "3d 4h")
+   - If `started_at` is empty, skip duration
+
+2. **Display celebration banner:**
+   ```
+   ┌─────────────────────────────────────────┐
+   │                                         │
+   │   ✅  ALL CHECKS PASSED                 │
+   │                                         │
+   │   Feature:  <feature_branch>            │
+   │   Duration: <duration>                  │
+   │   Reviews:  <count> passed              │
+   │   Commits:  <count>                     │
+   │                                         │
+   │   <random sign-off message>             │
+   │                                         │
+   └─────────────────────────────────────────┘
+   ```
+
+3. **Sign-off message pool** (select one randomly):
+   - "Ship it!"
+   - "Another one bites the dust."
+   - "That's a wrap."
+   - "Clean as a whistle."
+   - "Nailed it."
+   - "Spec met. Code shipped. Coffee earned."
+   - "Nothing left to prove."
+
+4. **Remove state file** after displaying:
+   ```bash
+   rm -f "$STATE_FILE"
+   ```
+
+**If no state file exists**, skip the celebration (no-op).
+
 ## Common Failures
 
 | Claim | Requires | Not Sufficient |

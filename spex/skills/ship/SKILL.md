@@ -186,7 +186,7 @@ Create a brainstorm document first with /spex:brainstorm
 
 ## State File Management
 
-The pipeline tracks its progress in `.specify/.spex-ship-phase` as JSON. **All state file operations use the `spex-ship-state.sh` script. Never write the state file directly.**
+The pipeline tracks its progress in `.specify/.spex-state` as JSON. **All state file operations use the `spex-ship-state.sh` script. Never write the state file directly.**
 
 Locate the script:
 ```bash
@@ -223,12 +223,12 @@ When `--resume` is set:
 
 1. Read the state file:
    ```bash
-   if [ ! -f .specify/.spex-ship-phase ]; then
+   if [ ! -f .specify/.spex-state ]; then
      echo "ERROR: No interrupted pipeline found."
      echo "Start a new pipeline with: /spex:ship <brainstorm-file>"
      exit 1
    fi
-   STATE=$(cat .specify/.spex-ship-phase)
+   STATE=$(cat .specify/.spex-state)
    ```
 
 2. Extract the last stage and its index:
@@ -355,7 +355,7 @@ Output a brief status message confirming the pipeline configuration before runni
 - **Brainstorm**: <file>
 - **Starting stage**: <stage> (<index>/9)
 - **Oversight**: <ask-level>
-- **State file**: .specify/.spex-ship-phase (created)
+- **State file**: .specify/.spex-state (created)
 ```
 
 Only after all three steps complete successfully, proceed to Pipeline Stages below.
@@ -371,9 +371,9 @@ The pipeline executes 9 stages in fixed order:
 | 2 | `review-spec` | `{Skill: spex:review-spec}` | Validate spec quality |
 | 3 | `plan` | `/speckit-plan` | Generate implementation plan |
 | 4 | `tasks` | `/speckit-tasks` | Generate task breakdown |
-| 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEWERS.md |
+| 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEW-PLAN.md |
 | 6 | `implement` | `/speckit-implement` | Execute implementation |
-| 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEWERS.md update |
+| 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEW-CODE.md |
 | 8 | `stamp` | `{Skill: spex:verification-before-completion}` | Final gate |
 
 ### Suppressing trait overlay gates
@@ -449,7 +449,7 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 1. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
 3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
-4. This generates `REVIEWERS.md`.
+4. This generates `REVIEW-PLAN.md`.
 5. Capture findings and apply **Oversight Decision Logic**.
 6. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
@@ -474,7 +474,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Tasks: <FEATURE_DIR>/tasks.md
 
    Read these files, then invoke /speckit-implement to execute the implementation.
-   The .specify/.spex-ship-phase file exists with status "running", so the
+   The .specify/.spex-state file exists with status "running", so the
    implement command will run in pipeline mode (no completion summary, no user questions).
 
    When marking tasks complete in tasks.md, use the Edit tool.
@@ -507,9 +507,9 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
    Invoke {Skill: spex:review-code} to run the full review chain:
    - Spec compliance check
-   - Code Review Guide (appended to REVIEWERS.md)
+   - Code Review Guide (written to REVIEW-CODE.md)
    - Deep review (if deep-review trait is enabled): 5 review agents, fix loop,
-     Deep Review Report appended to REVIEWERS.md
+     Deep Review Report appended to REVIEW-CODE.md
    - External tools (CodeRabbit, Copilot) if enabled
 
    Report the compliance score, gate outcome, and a summary of findings when done.
@@ -656,13 +656,13 @@ All stages passed successfully:
   2. review-spec - spec validated
   3. plan       - plan.md generated
   4. tasks      - tasks.md generated
-  5. review-plan - plan validated, REVIEWERS.md generated
+  5. review-plan - plan validated, REVIEW-PLAN.md generated
   6. implement  - code implemented
-  7. review-code - code reviewed, REVIEWERS.md updated
+  7. review-code - code reviewed, REVIEW-CODE.md generated
   8. verify     - verification passed
 ```
 
-4. Clean up: `rm -f .specify/.spex-ship-phase`
+4. Clean up: `rm -f .specify/.spex-state`
 
 ### PR Creation (if --create-pr)
 
@@ -691,14 +691,14 @@ If `--create-pr` is set and all stages passed:
 
    Autonomous pipeline implementation of $FEATURE_NAME.
 
-   See \`$SPEC_DIR/REVIEWERS.md\` for detailed review guidance.
+   See \`$SPEC_DIR/REVIEW-PLAN.md\` and \`$SPEC_DIR/REVIEW-CODE.md\` for detailed review guidance.
 
    ## Artifacts
 
    - Spec: \`$SPEC_DIR/spec.md\`
    - Plan: \`$SPEC_DIR/plan.md\`
    - Tasks: \`$SPEC_DIR/tasks.md\`
-   - Review Guide: \`$SPEC_DIR/REVIEWERS.md\`
+   - Review Guide: \`$SPEC_DIR/REVIEW-PLAN.md\`, \`$SPEC_DIR/REVIEW-CODE.md\`
 
    Generated by \`/spex:ship\` in $AUTONOMY mode.
 

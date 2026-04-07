@@ -59,6 +59,6 @@ build/
 *.bak
 *.log
 
-# Transient phase markers
+# Transient phase/state markers
 .specify/.spex-phase
-.specify/.spex-ship-phase
+.specify/.spex-state

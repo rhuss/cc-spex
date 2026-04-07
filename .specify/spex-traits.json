@@ -3,13 +3,16 @@
   "traits": {
     "superpowers": true,
     "deep-review": true,
-    "teams": true,
-    "worktrees": false
+    "teams": false,
+    "worktrees": true
+  },
+  "worktrees_config": {
+    "base_path": ".."
   },
   "external_tools": {
     "enabled": true,
     "coderabbit": true,
     "copilot": true
   },
-  "applied_at": "2026-04-06T08:49:14Z"
+  "applied_at": "2026-04-07T08:40:10Z"
 }

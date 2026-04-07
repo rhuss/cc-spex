@@ -234,6 +234,8 @@ Invoke `/speckit-analyze` to check consistency between:
 
 ### 9. Generate Review Report
 
+**Write the review report to `REVIEW-SPEC.md` in the spec directory** (e.g., `specs/[feature-name]/REVIEW-SPEC.md`). This enables artifact-based detection by the status line.
+
 **Report structure:**
 
 ```markdown

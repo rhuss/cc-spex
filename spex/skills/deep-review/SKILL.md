@@ -312,13 +312,13 @@ format. Explain why they could not be auto-fixed and what human action
 is needed.]
 ```
 
-### Step 9: Append Deep Review Report to REVIEWERS.md
+### Step 9: Append Deep Review Report to REVIEW-CODE.md
 
-After writing `review-findings.md`, append a **Deep Review Report** section to `REVIEWERS.md`. This gives human reviewers a quick summary of what the automated review covered, what it found and fixed, and where human attention is still needed.
+After writing `review-findings.md`, append a **Deep Review Report** section to `REVIEW-CODE.md`. This gives human reviewers a quick summary of what the automated review covered, what it found and fixed, and where human attention is still needed.
 
-**If REVIEWERS.md does not exist**, create it with just this section.
+**If REVIEW-CODE.md does not exist**, create it with just this section.
 
-**Append the following to REVIEWERS.md:**
+**Append the following to REVIEW-CODE.md:**
 
 ```markdown
 

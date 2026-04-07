@@ -1,13 +1,13 @@
 ---
 name: review-plan
-description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEWERS.md generation
+description: Post-planning quality validation - coverage matrix, red flag scanning, task quality enforcement, NFR validation, and REVIEW-PLAN.md generation
 ---
 
 # Post-Planning Quality Validation
 
 ## Overview
 
-This skill validates plan and task quality after `/speckit-plan` and `/speckit-tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEWERS.md`.
+This skill validates plan and task quality after `/speckit-plan` and `/speckit-tasks` have run. It checks coverage, scans for red flags, enforces task quality standards, and generates `REVIEW-PLAN.md`.
 
 ## Prerequisites
 
@@ -116,13 +116,13 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 6. Generate REVIEWERS.md (MANDATORY)
+## 6. Generate REVIEW-PLAN.md (MANDATORY)
 
-Generating `REVIEWERS.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEWERS.md`.
+Generating `REVIEW-PLAN.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEW-PLAN.md`.
 
 ### Purpose
 
-REVIEWERS.md is a **reviewer's companion**: a document that helps a human reviewer start and complete a meaningful spec review within 30 minutes. It is NOT a self-assessment, not a validation report, and not a dump of spec contents.
+REVIEW-PLAN.md is a **reviewer's companion**: a document that helps a human reviewer start and complete a meaningful spec review within 30 minutes. It is NOT a self-assessment, not a validation report, and not a dump of spec contents.
 
 ### Mindset
 
@@ -133,7 +133,7 @@ Write this document as if you are briefing a colleague who has 30 minutes and no
 3. Ask honest questions where you are uncertain or where the spec could go either way
 4. Surface the bigger picture: how does this spec fit into the project's trajectory?
 
-### What does NOT belong in REVIEWERS.md
+### What does NOT belong in REVIEW-PLAN.md
 
 - Quality scores, pass/fail verdicts, coverage matrices, red flag scan results (those go to console output in step 7)
 - Phrases like "Quality Score: X/Y", "Verdict: PASS", "Recommendation: proceed to..."
@@ -254,18 +254,18 @@ Out of scope with justification.]
 - **Hyperlink all references.** Every mention of a spec section, requirement, plan phase, or artifact MUST be a markdown hyperlink using relative paths within the spec directory. Use `[section title](spec.md#anchor)` format. The anchor is the lowercase, hyphenated heading (e.g., `## Functional Requirements` becomes `#functional-requirements`). Never use bare backtick references like `` `spec.md` section 3 `` without a link.
 - **Prior feedback handling:** When a Review Response Matrix is present, each distinct reviewer comment gets its own row. Group by reviewer (not by theme). Never collapse multiple comments into one row.
 
-### Structural validation (run after writing REVIEWERS.md)
+### Structural validation (run after writing REVIEW-PLAN.md)
 
-REVIEWERS.md MUST contain at least 3 of these 5 headings: What This Spec Does, Bigger Picture, Spec Review Guide, Areas where I'm less certain, Risks and open questions.
+REVIEW-PLAN.md MUST contain at least 3 of these 5 headings: What This Spec Does, Bigger Picture, Spec Review Guide, Areas where I'm less certain, Risks and open questions.
 
 After writing the file, verify:
 
 ```bash
 SPEC_DIR="specs/[feature-name]"
 REQUIRED_HEADINGS="What This Spec Does|Bigger Picture|Spec Review Guide|Areas where|Risks and open"
-HEADING_COUNT=$(grep -cE "^##[#]?\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEWERS.md" 2>/dev/null || echo 0)
+HEADING_COUNT=$(grep -cE "^##[#]?\s+($REQUIRED_HEADINGS)" "$SPEC_DIR/REVIEW-PLAN.md" 2>/dev/null || echo 0)
 if [ "$HEADING_COUNT" -lt 3 ]; then
-  echo "ERROR: REVIEWERS.md has only $HEADING_COUNT of 5 expected sections. Regenerate with the template from step 5."
+  echo "ERROR: REVIEW-PLAN.md has only $HEADING_COUNT of 5 expected sections. Regenerate with the template from step 5."
 fi
 ```
 
@@ -278,7 +278,7 @@ Report to the user:
 - Coverage matrix summary
 - Red flag scan results
 - NFR validation results
-- Path to generated REVIEWERS.md
+- Path to generated REVIEW-PLAN.md
 
 ## 8. Offer Remediation
 

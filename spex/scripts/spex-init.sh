@@ -173,7 +173,7 @@ configure_gitignore() {
 .claude/skills/
 .claude/settings.local.json
 .specify/.spex-phase
-.specify/.spex-ship-phase
+.specify/.spex-state
 EOF
   echo "  Updated .gitignore with spex patterns"
 }

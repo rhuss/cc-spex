@@ -18,24 +18,24 @@ The `update-agent-context.sh` script (from spec-kit) auto-generates "Active Tech
 
 **After the plan is generated:**
 1. Run `/speckit-tasks` to generate the task breakdown
-2. Invoke {Skill: spex:review-plan} to validate coverage, task quality, and generate REVIEWERS.md
+2. Invoke {Skill: spex:review-plan} to validate coverage, task quality, and generate REVIEW-PLAN.md
 
 **Pre-PR Quality Gate (mandatory):**
 
 Before creating a spec PR, verify that ALL three quality checks have been completed:
 1. `/spex:review-spec` (spec soundness, completeness, implementability)
-2. `/spex:review-plan` (coverage matrix, task quality, REVIEWERS.md generation)
+2. `/spex:review-plan` (coverage matrix, task quality, REVIEW-PLAN.md generation)
 3. `/speckit-clarify` (clarification questions resolved, answers encoded in spec)
 
-If any of these have NOT been run during this planning session, run them now before proceeding. Do NOT skip any of these steps. The REVIEWERS.md file MUST exist in the spec directory.
+If any of these have NOT been run during this planning session, run them now before proceeding. Do NOT skip any of these steps. The REVIEW-PLAN.md file MUST exist in the spec directory.
 
 **Commit and PR:**
-1. Commit spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) to the feature branch
+1. Commit spec artifacts (spec.md, plan.md, tasks.md, REVIEW-PLAN.md) to the feature branch
 2. **Ask the user** before creating a spec PR. Do NOT create a PR automatically.
    - If approved, proceed with:
    - Target remote: `upstream` if configured, otherwise `origin`
    - PR title: feature name from spec
-   - PR body: summarize the feature, then direct reviewers to REVIEWERS.md
+   - PR body: summarize the feature, then direct reviewers to REVIEW-PLAN.md
      in the spec directory for detailed review guidance
 
 ## Context Management

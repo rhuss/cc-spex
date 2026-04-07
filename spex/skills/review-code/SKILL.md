@@ -235,17 +235,17 @@ Overall: 16/18 = 89%
 - If compliance = 100%: Proceed to verification
 ```
 
-### 8. Append Code Review Guide to REVIEWERS.md (MANDATORY)
+### 8. Write Code Review Guide to REVIEW-CODE.md (MANDATORY)
 
-After generating the compliance report (step 7), append or update a **Code Review Guide** section in the existing `REVIEWERS.md`. This section helps human reviewers focus their code review in 30 minutes, using the same structure as the Spec Review Guide.
+After generating the compliance report (step 7), write a **Code Review Guide** to `REVIEW-CODE.md` in the spec directory. This section helps human reviewers focus their code review in 30 minutes, using the same structure as the Spec Review Guide.
 
-**If REVIEWERS.md does not exist**, create it with just the Code Review Guide section.
+**If REVIEW-CODE.md does not exist**, create it with the Code Review Guide.
 
-**If a Code Review Guide section already exists** (from a prior implementation phase), append a new dated subsection under it rather than replacing it. Incremental PRs build up the review guide over time, and reviewers need context from all phases.
+**If a Code Review Guide already exists in REVIEW-CODE.md** (from a prior implementation phase), append a new dated subsection rather than replacing it. Incremental PRs build up the review guide over time, and reviewers need context from all phases.
 
-**CRITICAL:** This follows the exact same philosophy as the Spec Review Guide: time-boxed, question-driven, honest about uncertainty, focused on high-level questions that need human judgment. Do NOT dump compliance scores, requirement checklists, or verification results into REVIEWERS.md. Those belong in the console report (step 7).
+**CRITICAL:** This follows the exact same philosophy as the Spec Review Guide: time-boxed, question-driven, honest about uncertainty, focused on high-level questions that need human judgment. Do NOT dump compliance scores, requirement checklists, or verification results into REVIEW-CODE.md. Those belong in the console report (step 7).
 
-**Append the following to REVIEWERS.md:**
+**Write the following to REVIEW-CODE.md:**
 
 ```markdown
 
@@ -315,7 +315,7 @@ If there are no deviations, state explicitly: "No deviations from
 - **Question density:** Aim for 5-10 questions, each pointing to a specific file/line and framed at the level a senior reviewer cares about (not code style, but architectural choices).
 - **Honesty requirement:** The "Areas where I'm less certain" section is mandatory. If you implemented everything perfectly, you are not being honest enough.
 - **No compliance dumps.** Don't list requirements and their status. Don't paste the compliance matrix.
-- **Incremental builds.** If a Code Review Guide section already exists in REVIEWERS.md, add a new dated subsection (e.g., `### Phase 2: API endpoints (2026-03-29)`) rather than replacing the existing content. Each phase adds context for the reviewer.
+- **Incremental builds.** If a Code Review Guide section already exists in REVIEW-CODE.md, add a new dated subsection (e.g., `### Phase 2: API endpoints (2026-03-29)`) rather than replacing the existing content. Each phase adds context for the reviewer.
 - **Hyperlink all references.** Every mention of a spec section, plan phase, or spec artifact MUST be a markdown hyperlink using relative paths (e.g., `[FR-003](spec.md#fr-003)`, `[Phase 2](plan.md#phase-2)`). Never use bare backtick references without a link.
 
 ### 9. Deep Review Enhancement (if trait enabled)

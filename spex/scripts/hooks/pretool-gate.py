@@ -76,7 +76,7 @@ def side_effects(tool_name, tool_input, session_id, cwd):
             marker_path('prose-active', session_id).write_text(skill)
 
     # Ship done cleanup: remove completed ship state file
-    state_file = Path(cwd) / '.specify' / '.spex-ship-phase'
+    state_file = Path(cwd) / '.specify' / '.spex-state'
     if state_file.exists():
         try:
             state = json.loads(state_file.read_text())
@@ -205,7 +205,7 @@ def check_ship_pipeline(tool_name, tool_input, cwd):
 
     Returns (deny_reason, context_text) tuple. Both may be None.
     """
-    state_file = Path(cwd) / '.specify' / '.spex-ship-phase'
+    state_file = Path(cwd) / '.specify' / '.spex-state'
     if not state_file.exists():
         return None, None
 
@@ -265,12 +265,12 @@ def _stage_brief(stage_index):
             "\n--- STAGE 7 REQUIREMENTS ---"
             "\nYou MUST invoke {Skill: spex:review-code} which runs:"
             "\n  1. Spec compliance check (compliance score)"
-            "\n  2. Code Review Guide -> REVIEWERS.md"
+            "\n  2. Code Review Guide -> REVIEW-CODE.md"
             "\n  3. Deep review: 5 agents (correctness, architecture, security, production, tests)"
             "\n  4. CodeRabbit CLI: coderabbit review --agent --type all (LOCAL, no PR needed)"
             "\n  5. Fix loop for Critical/Important findings"
-            "\n  6. Deep Review Report -> REVIEWERS.md"
-            "\nThe advance script WILL REJECT advancement if REVIEWERS.md lacks a Deep Review Report section."
+            "\n  6. Deep Review Report -> REVIEW-CODE.md"
+            "\nThe advance script WILL REJECT advancement if REVIEW-CODE.md lacks a Deep Review Report section."
         ),
         8: (
             "\n--- STAGE 8 REQUIREMENTS ---"

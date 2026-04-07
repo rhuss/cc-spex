@@ -2,7 +2,7 @@
 <!-- SPEX-GUARD:ship -->
 ## Ship Pipeline Guard
 
-If `.specify/.spex-ship-phase` exists and its `status` is `running`, this command is part of an autonomous `/spex:ship` pipeline. You MUST:
+If `.specify/.spex-state` exists and its `status` is `running`, this command is part of an autonomous `/spex:ship` pipeline. You MUST:
 - Complete the task generation normally.
 - Do NOT output a completion summary.
 - Do NOT ask "Shall I proceed?" or suggest next steps.
