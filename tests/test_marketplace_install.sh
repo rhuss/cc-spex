@@ -213,7 +213,7 @@ fi
 echo ""
 echo "Skill verification:"
 
-EXPECTED_SKILLS=("brainstorm" "deep-review" "evolve" "review-code" "review-plan" "review-spec" "ship" "using-superpowers" "verification-before-completion")
+EXPECTED_SKILLS=("brainstorm" "deep-review" "evolve" "review-code" "review-plan" "review-spec" "ship" "using-superpowers" "verification-before-completion" "worktree")
 
 SKILL_DIR="${PLUGIN_CACHE_BASE}/skills"
 
@@ -288,7 +288,7 @@ echo "Overlay verification:"
 OVERLAY_DIR="${PLUGIN_CACHE_BASE}/overlays"
 
 if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$OVERLAY_DIR" ]]; then
-  EXPECTED_OVERLAYS=("superpowers" "deep-review" "_ship-guard")
+  EXPECTED_OVERLAYS=("superpowers" "deep-review" "_ship-guard" "worktrees")
   for overlay in "${EXPECTED_OVERLAYS[@]}"; do
     if [[ -d "$OVERLAY_DIR/$overlay" ]]; then
       pass "Overlay present: $overlay"
