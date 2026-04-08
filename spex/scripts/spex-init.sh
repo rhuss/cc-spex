@@ -5,6 +5,7 @@
 #   spex-init.sh           # Check + initialize if needed
 #   spex-init.sh --refresh # Re-download templates and refresh project
 #   spex-init.sh --update  # Update specify-cli and refresh project
+#   spex-init.sh --clear   # Remove flow/ship state file (reset status line)
 #
 # Exit codes:
 #   0 - READY (spec-kit fully initialized)
@@ -400,6 +401,17 @@ do_update() {
   exit 3
 }
 
+# --- Clear flow/ship state ---
+do_clear() {
+  local state_file=".specify/.spex-state"
+  if [ -f "$state_file" ]; then
+    rm -f "$state_file"
+    echo "Cleared spex state (flow/ship status line reset)"
+  else
+    echo "No active spex state to clear"
+  fi
+}
+
 # --- Main ---
 case "${1:-}" in
   --refresh)
@@ -407,6 +419,9 @@ case "${1:-}" in
     ;;
   --update)
     do_update
+    ;;
+  --clear)
+    do_clear
     ;;
   *)
     # Migrate legacy config files first

@@ -1,7 +1,7 @@
 ---
 name: spex:init
-description: Initialize or update the project using the `specify` CLI (--refresh for templates, --update to upgrade CLI). Do NOT search for speckit or spec-kit binaries.
-argument-hint: "[--refresh | --update]"
+description: Initialize or update the project using the `specify` CLI (--refresh for templates, --update to upgrade CLI, --clear to reset status line). Do NOT search for speckit or spec-kit binaries.
+argument-hint: "[--refresh | --update | --clear]"
 ---
 
 You MUST complete ALL steps below. Do not stop after Step 1.

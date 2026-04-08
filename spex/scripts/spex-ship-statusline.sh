@@ -43,71 +43,75 @@ read_traits() {
 # --- Flow mode ---
 render_flow() {
   # Extract all flow fields in one jq call
-  local spec_dir implemented
-  read -r spec_dir implemented < <(
-    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false] | @tsv' 2>/dev/null
+  local spec_dir implemented clarified running
+  read -r spec_dir implemented clarified running < <(
+    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // ""] | @tsv' 2>/dev/null
   )
 
   if [ -z "$spec_dir" ] || [ ! -d "$spec_dir" ]; then
     exit 0
   fi
 
-  # Milestone detection
+  # Milestone detection (linear stages)
   local has_spec=false has_plan=false has_tasks=false has_impl=false
   [ -f "$spec_dir/spec.md" ] && has_spec=true
   [ -f "$spec_dir/plan.md" ] && has_plan=true
   [ -f "$spec_dir/tasks.md" ] && has_tasks=true
   [ "$implemented" = "true" ] && has_impl=true
 
-  # Review artifact detection
-  local has_rev_spec=false has_rev_plan=false has_rev_code=false
+  # Quality gate detection (independent, can be done in any order)
+  local has_clar=false has_rev_spec=false has_rev_plan=false has_rev_code=false
+  [ "$clarified" = "true" ] && has_clar=true
   [ -f "$spec_dir/REVIEW-SPEC.md" ] && has_rev_spec=true
   [ -f "$spec_dir/REVIEW-PLAN.md" ] && has_rev_plan=true
   [ -f "$spec_dir/REVIEW-CODE.md" ] && has_rev_code=true
 
-  # Next step computation (FR-004)
+  # Next milestone (first incomplete linear stage)
   local next_step=""
-  if [ "$has_spec" = false ]; then
-    next_step="specify"
-  elif [ "$has_plan" = false ]; then
-    next_step="plan"
-  elif [ "$has_tasks" = false ]; then
-    next_step="tasks"
-  elif [ "$has_impl" = false ]; then
-    next_step="implement"
-  elif [ "$has_rev_spec" = false ]; then
-    next_step="review-spec"
-  elif [ "$has_rev_plan" = false ]; then
-    next_step="review-plan"
-  elif [ "$has_rev_code" = false ]; then
-    next_step="review-code"
-  else
-    next_step="stamp"
+  if [ "$has_spec" = false ]; then next_step="specify"
+  elif [ "$has_plan" = false ]; then next_step="plan"
+  elif [ "$has_tasks" = false ]; then next_step="tasks"
+  elif [ "$has_impl" = false ]; then next_step="implement"
   fi
 
-  # Render milestone checkmarks via loop
-  local names=("spec" "plan" "tasks" "impl")
-  local has_vals=("$has_spec" "$has_plan" "$has_tasks" "$has_impl")
-  local next_names=("specify" "plan" "tasks" "implement")
+  # All done = milestones + all gates
+  local all_done=false
+  if [ "$has_spec" = true ] && [ "$has_plan" = true ] && [ "$has_tasks" = true ] && [ "$has_impl" = true ] \
+     && [ "$has_clar" = true ] && [ "$has_rev_spec" = true ] && [ "$has_rev_plan" = true ] && [ "$has_rev_code" = true ]; then
+    all_done=true
+  fi
+
+  # Render milestones (linear, ▶ on next step, dim after)
+  local mile_names=("spec" "plan" "tasks" "impl")
+  local mile_done=("$has_spec" "$has_plan" "$has_tasks" "$has_impl")
+  local mile_next=("specify" "plan" "tasks" "implement")
   local marks=""
-  for idx in "${!names[@]}"; do
-    if [ "${has_vals[$idx]}" = true ]; then
-      marks+=" ${GREEN}✓${names[$idx]}${RESET}"
-    elif [ "$next_step" = "${next_names[$idx]}" ]; then
-      marks+=" ${CYAN}${BOLD}○${names[$idx]}${RESET}"
+  for idx in "${!mile_names[@]}"; do
+    if [ -n "$running" ] && [ "$running" = "${mile_next[$idx]}" ]; then
+      marks+=" ${CYAN}${BOLD}${mile_names[$idx]} ▶${RESET}"
+    elif [ "${mile_done[$idx]}" = true ]; then
+      marks+=" ${GREEN}${mile_names[$idx]} ✓${RESET}"
     else
-      marks+=" ${DIM}○${names[$idx]}${RESET}"
+      marks+=" ${DIM}${mile_names[$idx]} ○${RESET}"
     fi
   done
 
-  # Render review checklist (abbreviated)
-  local rev_s rev_p rev_c
-  if [ "$has_rev_spec" = true ]; then rev_s="${GREEN}✓S${RESET}"; else rev_s="${DIM}○S${RESET}"; fi
-  if [ "$has_rev_plan" = true ]; then rev_p="${GREEN}✓P${RESET}"; else rev_p="${DIM}○P${RESET}"; fi
-  if [ "$has_rev_code" = true ]; then rev_c="${GREEN}✓C${RESET}"; else rev_c="${DIM}○C${RESET}"; fi
+  # Render quality gates (independent checklist: C=clarify, S=review-spec, P=review-plan, R=review-code)
+  local gate_c gate_s gate_p gate_r
+  if [ "$running" = "clarify" ]; then gate_c="${CYAN}${BOLD}C ▶${RESET}";
+  elif [ "$has_clar" = true ]; then gate_c="${GREEN}C ✓${RESET}"; else gate_c="${DIM}C ○${RESET}"; fi
+  if [ "$running" = "review-spec" ]; then gate_s="${CYAN}${BOLD}S ▶${RESET}";
+  elif [ "$has_rev_spec" = true ]; then gate_s="${GREEN}S ✓${RESET}"; else gate_s="${DIM}S ○${RESET}"; fi
+  if [ "$running" = "review-plan" ]; then gate_p="${CYAN}${BOLD}P ▶${RESET}";
+  elif [ "$has_rev_plan" = true ]; then gate_p="${GREEN}P ✓${RESET}"; else gate_p="${DIM}P ○${RESET}"; fi
+  if [ "$running" = "review-code" ]; then gate_r="${CYAN}${BOLD}R ▶${RESET}";
+  elif [ "$has_rev_code" = true ]; then gate_r="${GREEN}R ✓${RESET}"; else gate_r="${DIM}R ○${RESET}"; fi
 
   # Build output
-  printf "🧬 ${CYAN}${BOLD}spex${RESET}${marks} ${DIM}|${RESET} ${rev_s} ${rev_p} ${rev_c} ${DIM}|${RESET} ${DIM}next:${RESET} ${YELLOW}${BOLD}${next_step}${RESET}"
+  printf "🧬 ${CYAN}${BOLD}spex${RESET}${marks} ${DIM}|${RESET} ${gate_c} ${gate_s} ${gate_p} ${gate_r}"
+  if [ "$all_done" = true ]; then
+    printf " ${GREEN}${BOLD}🏁${RESET}"
+  fi
   read_traits
 }
 
