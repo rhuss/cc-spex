@@ -1,0 +1,4 @@
+# Deep Review Extension Configuration
+external_tools:
+  coderabbit: false
+  copilot: false
