@@ -1,11 +1,10 @@
 <!-- Sync Impact Report
-Version: 1.1.0 → 1.2.0 (MINOR: add release process, update verification to reflect integration tests)
+Version: 1.2.0 → 2.0.0 (MAJOR: replace overlay/trait system with spec-kit extensions)
 Modified sections:
-  - Development Workflow (added release process, updated verification from manual to automated)
-Templates validated:
-  - .specify/templates/plan-template.md ✅ (Constitution Check section present)
-  - .specify/templates/spec-template.md ✅ (no changes needed)
-  - .specify/templates/tasks-template.md ✅ (no changes needed)
+  - II. Overlay Delegation → II. Extension Architecture
+  - III. Trait Composability → III. Extension Composability
+  - Plugin Architecture Constraints (updated file organization, replaced overlay application)
+  - Version bump to 2.0.0
 Follow-up TODOs: none
 -->
 
@@ -33,35 +32,36 @@ gate on every code change. Code can change without documentation.
   dogmatically to trivial changes creates overhead that slows
   development without improving quality.
 
-### II. Overlay Delegation
+### II. Extension Architecture
 
-Overlay files MUST delegate to skills. They MUST NOT inline
-discipline logic.
+Extensions provide commands and lifecycle hooks. They MUST be
+self-contained and portable across AI agents.
 
-- Each overlay file MUST be under 30 lines.
-- Overlays MUST contain a sentinel marker (`<!-- SPEX-TRAIT:name -->`)
-  for idempotent application.
-- Overlays MUST use `{Skill: spex:skill-name}` references to invoke
-  behavior, not embed the behavior directly.
-- Overlays append to spec-kit command or template files. They do not
-  replace content.
-- Rationale: Small overlays are auditable, composable, and resistant
-  to merge conflicts. Inlined logic creates maintenance burden and
-  makes trait combinations unpredictable.
+- Each extension lives in `spex/extensions/<ext-id>/` with an
+  `extension.yml` manifest, a `commands/` directory, and optional
+  config files.
+- Extension commands are markdown files following the
+  `speckit.{ext-id}.{command}` naming pattern.
+- Extensions register lifecycle hooks (before/after events) in
+  their manifest. Hooks fire automatically at spec-kit command
+  boundaries.
+- Extensions are installed via `specify extension add <path> --dev`
+  and managed via `specify extension enable/disable`.
+- Rationale: Spec-kit's native extension system provides standardized,
+  agent-portable capabilities without custom overlay machinery.
 
-### III. Trait Composability
+### III. Extension Composability
 
-Traits MUST be independent and combinable. Enabling one trait MUST NOT
-break another.
+Extensions MUST be independent and combinable. Enabling one extension
+MUST NOT break another.
 
-- Each trait operates through its own overlay directory
-  (`spex/overlays/<trait>/`).
-- Traits MUST NOT modify each other's overlay files.
-- Multiple overlays targeting the same command file coexist via
-  sequential appending, each behind its own sentinel marker.
-- Trait enablement and disablement MUST go through `spex-traits.sh`.
-  Direct file editing is not supported.
-- Rationale: Users enable traits based on their workflow needs.
+- Each extension operates through its own directory and manifest.
+- Extensions MUST NOT modify each other's files or hooks.
+- Multiple hooks on the same lifecycle event execute sequentially
+  in the order they appear in `.specify/extensions.yml`.
+- Extension dependencies are declared in the manifest's `requires`
+  section and validated by spec-kit on enable.
+- Rationale: Users enable extensions based on their workflow needs.
   Independence ensures predictable behavior regardless of combination.
 
 ### IV. Quality Gates
@@ -119,14 +119,12 @@ These constraints govern the structure of the spex plugin codebase.
 - **Hook filtering**: The context hook (`context-hook.py`) MUST only
   fire for `/spex:` prefixed commands. Non-spex commands MUST NOT
   receive spex context injection.
-- **File organization**: Commands live in `spex/commands/`, skills in
-  `spex/skills/<name>/SKILL.md`, overlays in
-  `spex/overlays/<trait>/skills/<name>/`, scripts in
-  `spex/scripts/`.
-- **Overlay application**: The `spex-traits.sh apply` function handles
-  all overlay application. It validates target skill files exist before
-  appending, uses sentinel markers for idempotency, and reports
-  applied vs. skipped counts.
+- **File organization**: Extension bundles live in
+  `spex/extensions/<ext-id>/` with manifests and commands. Scripts
+  live in `spex/scripts/`. Hooks live in `spex/scripts/hooks/`.
+- **Extension installation**: The `spex-init.sh` script installs
+  all bundled extensions from `spex/extensions/` using
+  `specify extension add <path> --dev`.
 - **No compiled artifacts**: This plugin consists entirely of Markdown
   and Bash. There are no build steps, no compiled binaries, no
   package dependencies beyond `jq` and the `specify` CLI.
@@ -147,7 +145,7 @@ The plugin's own development follows these workflow rules.
   Update docs when it helps, not because a process demands it.
 - **Verification**: `make release` runs schema validation and a full
   integration test that installs the plugin from the local marketplace,
-  checks all commands, skills, hooks, and overlays are present, then
+  checks all extensions, commands, hooks, and skills are present, then
   cleans up. Run `make install` after testing to restore the plugin.
 - **Release process**: Bump the version in `.claude-plugin/marketplace.json`,
   run `make release` to validate, then `gh release create v<version>
@@ -170,4 +168,4 @@ Implementation plans SHOULD include a "Constitution Check" section.
 - **Compliance reviews** happen during `spex:review-spec` and
   `spex:review-plan` invocations when those gates are used.
 
-**Version**: 1.2.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-04-03
+**Version**: 2.0.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-04-10

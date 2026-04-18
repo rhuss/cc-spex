@@ -49,9 +49,8 @@ def main():
 
     # Resolve script paths
     init_script = plugin_root / 'scripts' / 'spex-init.sh'
-    traits_script = plugin_root / 'scripts' / 'spex-traits.sh'
-    # Check if spex traits are configured
-    spex_configured = (cwd / '.specify' / 'spex-traits.json').exists()
+    # Check if spex extensions are configured (via registry)
+    spex_configured = (cwd / '.specify' / 'extensions' / '.registry').exists()
 
     # Check if project is fully initialized (mirrors check_ready() in spex-init.sh)
     spex_initialized = (
@@ -66,7 +65,8 @@ def main():
     # Guard against hallucinated commands (e.g., /spex:specify, /spex:plan)
     KNOWN_SPEX_COMMANDS = {
         'brainstorm', 'constitution', 'evolve', 'help', 'init',
-        'review-code', 'review-plan', 'review-spec', 'ship', 'traits', 'verify', 'worktree',
+        'review-code', 'review-plan', 'review-spec', 'ship', 'extensions',
+        'deep-review', 'stamp', 'verify', 'worktree',
     }
     COMMAND_CORRECTIONS = {
         'specify': '/speckit-specify',
@@ -101,9 +101,23 @@ def main():
     # tool is called first. Direct workflow commands (init, traits, help, etc.)
     # already provide instructions inline and should NOT be gated.
     command_short = skill_name.split(':', 1)[1] if ':' in skill_name else skill_name
-    command_file = plugin_root / 'commands' / f'{command_short}.md'
+    # Check extension command files for skill delegation
+    command_file = None
+    for ext_dir in (plugin_root / 'extensions').iterdir():
+        if ext_dir.is_dir():
+            for cmd_file in (ext_dir / 'commands').glob('*.md'):
+                if cmd_file.stem.endswith(f'.{command_short}'):
+                    command_file = cmd_file
+                    break
+        if command_file:
+            break
+    # Fallback: check legacy commands directory
+    if not command_file:
+        legacy = plugin_root / 'commands' / f'{command_short}.md'
+        if legacy.exists():
+            command_file = legacy
     delegates_to_skill = False
-    if command_file.exists():
+    if command_file and command_file.exists():
         try:
             content = command_file.read_text()
             delegates_to_skill = '{Skill:' in content
@@ -149,7 +163,6 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 <spex-configured>{str(spex_configured).lower()}</spex-configured>
 <spex-initialized>{str(spex_initialized).lower()}</spex-initialized>
 <spex-init-command>{init_script}{init_args}</spex-init-command>
-<spex-traits-command>{traits_script}</spex-traits-command>
 </spex-context>{enforcement}"""
 
     response = {

@@ -136,15 +136,12 @@ def check_teams_enforce(tool_name, tool_input, cwd):
     if not tool_input.get('run_in_background'):
         return None
 
-    traits_config = Path(cwd) / '.specify' / 'spex-traits.json'
+    registry_file = Path(cwd) / '.specify' / 'extensions' / '.registry'
     try:
-        config = json.loads(traits_config.read_text())
-        traits = config.get('traits', {})
-        teams_enabled = (
-            traits.get('teams', False)
-            or traits.get('teams-vanilla', False)
-            or traits.get('teams-spec', False)
-        )
+        registry = json.loads(registry_file.read_text())
+        extensions = registry.get('extensions', {})
+        teams_ext = extensions.get('spex-teams', {})
+        teams_enabled = teams_ext.get('enabled', False)
     except Exception:
         return None
 

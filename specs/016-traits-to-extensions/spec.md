@@ -18,7 +18,7 @@ A developer runs `/spex:init` on a new or existing project. The init process ins
 **Acceptance Scenarios**:
 
 1. **Given** a project with no `.specify/` directory, **When** the user runs `/spex:init`, **Then** `specify init` runs, all five extensions are installed from the plugin's bundled path, hooks are registered in `.specify/extensions.yml`, and agent commands are created.
-2. **Given** a project with an existing `.specify/` from a previous version (with `spex-traits.json`), **When** the user runs `/spex:init`, **Then** the old traits config is ignored, extensions are installed fresh, and the project works with the new system.
+2. **Given** a project with an existing `.specify/` from a previous version (with `spex-traits.json`), **When** the user runs `/spex:init`, **Then** the old traits config is ignored, a warning is printed that traits have been replaced by extensions, extensions are installed fresh, and the project works with the new system.
 3. **Given** a project where init has already run with extensions, **When** the user runs `/spex:init` again, **Then** extensions are updated/reinstalled without duplication or error.
 
 ---
@@ -68,23 +68,23 @@ A developer runs `speckit.spex.ship` for autonomous end-to-end workflow. Ship se
 
 1. **Given** a brainstorm document and all extensions enabled, **When** the user runs `/speckit.spex.ship`, **Then** the pipeline runs specify, plan, tasks, implement in sequence, quality gate hooks fire at each boundary, clarify is skipped, and a PR is created.
 2. **Given** ship is running, **When** spex-gates hooks fire, **Then** they detect autonomous mode (via `.spex-state`) and run without prompting for user input.
-3. **Given** ship is running with spex-teams enabled, **When** implement begins, **Then** the `before_implement` hook analyzes tasks and pre-empts with parallel team orchestration if 2+ independent tasks exist.
+3. **Given** ship is running with spex-teams enabled, **When** implement begins and tasks.md has 2+ independent tasks, **Then** ship routes to `speckit.spex-teams.implement` for parallel orchestration instead of standard implement.
 
 ---
 
-### User Story 5 - Teams Pre-emption via Hook (Priority: P3)
+### User Story 5 - Teams as Standalone Command (Priority: P3)
 
-A developer has spex-teams enabled. When `/speckit.implement` starts, the `before_implement` hook from spex-teams reads `tasks.md`, determines if 2+ independent tasks exist, and if so, pre-empts the standard implement flow with parallel team orchestration. If tasks are sequential or only one exists, implement proceeds normally.
+A developer has spex-teams enabled. Instead of using `/speckit.implement`, they can invoke `speckit.spex-teams.implement` directly for parallel orchestration. The ship pipeline automatically routes to the teams implement command when spex-teams is enabled and 2+ independent tasks exist in `tasks.md`. No hook pre-emption is involved.
 
-**Why this priority**: This is the most complex behavioral pattern to migrate from overlays to hooks. It validates that the "pre-emption" pattern works as a replacement for in-context behavioral injection.
+**Why this priority**: Teams orchestration is the most complex behavioral pattern. Making it a standalone command (rather than a pre-empting hook) keeps the hook contract clean and simplifies the architecture.
 
-**Independent Test**: Create a tasks.md with 3 independent tasks. Enable spex-teams. Run `/speckit.implement`. Verify that the teams hook intercepts and spawns parallel agents instead of sequential implementation.
+**Independent Test**: Create a tasks.md with 3 independent tasks. Enable spex-teams. Run `speckit.spex-teams.implement`. Verify that parallel agents are spawned for the independent tasks.
 
 **Acceptance Scenarios**:
 
-1. **Given** spex-teams is enabled and tasks.md has 3 independent tasks, **When** `/speckit.implement` starts, **Then** the `before_implement` hook pre-empts with `speckit.spex-teams.orchestrate`, which spawns parallel agents.
-2. **Given** spex-teams is enabled and tasks.md has 1 task, **When** `/speckit.implement` starts, **Then** the `before_implement` hook passes through and implement runs normally.
-3. **Given** spex-teams is disabled, **When** `/speckit.implement` starts, **Then** no teams hook fires and implement runs normally.
+1. **Given** spex-teams is enabled and tasks.md has 3 independent tasks, **When** the user runs `speckit.spex-teams.implement`, **Then** parallel agents are spawned for independent tasks.
+2. **Given** spex-teams is enabled, **When** the ship pipeline reaches the implement phase and tasks.md has 2+ independent tasks, **Then** ship routes to `speckit.spex-teams.implement` instead of standard implement.
+3. **Given** spex-teams is disabled, **When** the ship pipeline reaches implement, **Then** standard implement runs normally.
 
 ---
 
@@ -108,8 +108,8 @@ A developer has spex-worktrees enabled. After `/speckit.specify` completes (and 
 
 - What happens when `specify extension add` fails during init (e.g., extension manifest validation error)? Init should report the failure but continue installing remaining extensions.
 - What happens when multiple `after_implement` hooks exist from different extensions (spex-deep-review and spex-gates)? They must execute sequentially in manifest registration order.
-- What happens when a user has the old traits system (`.specify/spex-traits.json`) and runs the new init? The old config is ignored; extensions are installed fresh.
-- What happens when the `before_implement` hook from spex-teams pre-empts but teams orchestration fails? The failure should be reported and the user can retry or run implement without teams.
+- What happens when a user has the old traits system (`.specify/spex-traits.json`) and runs the new init? The old config is ignored, a warning is printed, and extensions are installed fresh.
+- What happens when `speckit.spex-teams.implement` fails during parallel orchestration? The failure should be reported and the user can retry or fall back to standard implement.
 
 ## Requirements
 
@@ -122,18 +122,19 @@ A developer has spex-worktrees enabled. After `/speckit.specify` completes (and 
 - **FR-005**: The spex core extension MUST always be installed during init. Optional extensions (spex-gates, spex-worktrees, spex-teams, spex-deep-review) MUST be installed by default but can be disabled after init.
 - **FR-006**: Disabling an extension via `specify extension disable` MUST remove its commands from the agent, deactivate its hooks, and remove its generated skill files.
 - **FR-007**: The ship command (`speckit.spex.ship`) MUST sequence core spec-kit commands (specify, plan, tasks, implement), skip clarify, set `.spex-state` for autonomous mode, and create a PR on completion.
-- **FR-008**: The spex-teams `before_implement` hook MUST analyze `tasks.md` for independent tasks and pre-empt the implement step with parallel orchestration when 2+ independent tasks exist.
+- **FR-008**: The spex-teams extension MUST provide a standalone `speckit.spex-teams.implement` command that analyzes `tasks.md` for independent tasks and runs parallel orchestration. The ship pipeline MUST route to this command when spex-teams is enabled and 2+ independent tasks exist.
 - **FR-009**: The old overlay system (overlays directory, `spex-traits.sh`, sentinel markers) MUST be removed entirely.
 - **FR-010**: The old skills directory and commands directory in the plugin MUST be removed, with all functionality migrated to extension commands.
 - **FR-011**: Multiple hooks on the same lifecycle event MUST execute sequentially in the order they appear in `.specify/extensions.yml`.
 - **FR-012**: The constitution MUST be updated to remove references to overlay delegation (section II), trait composability (section III), and overlay application constraints, replacing them with extension-based architecture descriptions.
+- **FR-013**: When a mandatory hook fails, the pipeline MUST halt and report the failure. The user MUST be given the choice to fix and retry, or skip the failed hook.
 
 ### Key Entities
 
 - **Extension**: A spec-kit extension with manifest, commands, and optional hooks. Installed in `.specify/extensions/{ext-id}/`.
 - **Extension Command**: A markdown file defining an AI agent command. Registered in agent-specific directories (e.g., `.claude/commands/`).
 - **Lifecycle Hook**: A before/after trigger on a spec-kit command that invokes an extension command. Configured in `.specify/extensions.yml`.
-- **Extension Config**: Per-extension YAML configuration in `.specify/extensions/{ext-id}/{ext-id}-config.yml` with layered overrides.
+- **Extension Config**: Per-extension YAML configuration with two layers: extension defaults (shipped in the extension bundle) overridden by project-level config in `.specify/extensions/{ext-id}/{ext-id}-config.yml`.
 
 ## Success Criteria
 
@@ -141,16 +142,26 @@ A developer has spex-worktrees enabled. After `/speckit.specify` completes (and 
 
 - **SC-001**: All four current trait capabilities (quality gates, worktrees, teams, deep-review) function identically through the extension system as they did through overlays.
 - **SC-002**: The cc-spex plugin codebase is reduced by removing all overlay files, `spex-traits.sh`, plugin skills directory, and plugin commands directory.
-- **SC-003**: Extension commands work with at least two AI agents (Claude Code and one other, e.g., Codex) without agent-specific code in the extensions.
+- **SC-003**: Extension commands work with at least two AI agents (Claude Code and one other, e.g., Codex) via spec-kit's agent detection and directory mapping, without agent-specific code in the extensions themselves.
 - **SC-004**: Enabling and disabling extensions produces zero context pollution (disabled extension commands do not appear in the agent's available commands).
 - **SC-005**: The ship pipeline completes autonomously end-to-end with hook-driven quality gates, no manual intervention required.
 - **SC-006**: Integration tests (`make release`) pass with the new extension-based architecture, validating that all commands, hooks, and skills are correctly installed.
+
+## Clarifications
+
+### Session 2026-04-09
+
+- Q: Should spex-teams use hook pre-emption to replace implement, or be a standalone command? → A: Teams is a standalone command (`speckit.spex-teams.implement`); the ship pipeline routes to it when teams is enabled. No hook pre-emption mechanism needed.
+- Q: Should there be migration assistance from the old traits system to extensions? → A: Clean break with a one-time warning. Init ignores old `spex-traits.json` and prints a notice that traits have been replaced by extensions.
+- Q: How are extension commands registered for non-Claude agents? → A: Extensions provide generic command markdown. Spec-kit detects the active agent and maps commands to the correct agent-specific directory (e.g., `.claude/commands/`, `.codex/commands/`). No agent-specific code in extensions.
+- Q: What happens when a mandatory hook fails or returns a negative review? → A: Pipeline halts and reports the failure. User decides whether to fix and retry or skip. Prevents shipping artifacts that failed review.
+- Q: What are the config override layers and their precedence? → A: Two layers only. Extension defaults (shipped with the extension) are overridden by project-level config (in `.specify/extensions/{ext-id}/`). No user-global or environment variable layers.
 
 ## Assumptions
 
 - Spec-kit's `specify extension add <local-path> --dev` command works reliably for installing from bundled paths within a plugin directory.
 - Spec-kit guarantees sequential execution of multiple hooks on the same lifecycle event in manifest order.
-- The `before_implement` hook mechanism allows a hook command to effectively pre-empt (replace) the standard implement behavior when teams orchestration is triggered.
+- The ship pipeline can inspect enabled extensions and route to alternative commands (e.g., `speckit.spex-teams.implement` instead of standard implement) without requiring hook pre-emption.
 - Users accept the namespace change from `/spex:*` to `/speckit.spex*.*` commands.
 - The current spec-kit version (0.5.2+) supports all required extension features (hooks with conditions, multiple hooks per event, skill auto-generation).
 - The constitution update (removing overlay/trait sections, adding extension architecture) is within scope of this feature.

@@ -179,14 +179,42 @@ EOF
   echo "  Updated .gitignore with spex patterns"
 }
 
-# --- Apply trait overlays if configured ---
-apply_traits() {
-  local script_dir
-  script_dir="$(dirname "$0")"
-  if [ -f .specify/spex-traits.json ] && [ -x "$script_dir/spex-traits.sh" ]; then
-    if ! "$script_dir/spex-traits.sh" apply "$@"; then
-      echo "WARNING: spex-traits.sh apply failed (traits not applied). spec-kit is still usable." >&2
+# --- Install bundled extensions ---
+install_extensions() {
+  local plugin_root
+  plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
+  local extensions_dir="$plugin_root/extensions"
+
+  if [ ! -d "$extensions_dir" ]; then
+    echo "WARNING: No bundled extensions found at $extensions_dir" >&2
+    return 0
+  fi
+
+  local installed=0 failed=0
+  for ext_path in "$extensions_dir"/*/; do
+    [ -f "$ext_path/extension.yml" ] || continue
+    local ext_id
+    ext_id=$(basename "$ext_path")
+    if specify extension add "$ext_path" --dev 2>/dev/null; then
+      installed=$((installed + 1))
+    else
+      echo "WARNING: Failed to install extension '$ext_id'" >&2
+      failed=$((failed + 1))
     fi
+  done
+
+  echo "  Extensions: $installed installed, $failed failed"
+}
+
+# --- Detect old traits config and warn ---
+detect_old_traits() {
+  if [ -f ".specify/spex-traits.json" ]; then
+    echo ""
+    echo "NOTE: Found .specify/spex-traits.json (old traits system)."
+    echo "  Traits have been replaced by extensions."
+    echo "  Extensions are now managed via 'specify extension enable/disable'."
+    echo "  The old traits config is no longer used."
+    echo ""
   fi
 }
 
@@ -341,7 +369,8 @@ do_init() {
     migrate_traits_config
     migrate_phase_marker
     migrate_from_beads
-    apply_traits
+    detect_old_traits
+    install_extensions
     configure_statusline
     configure_gitignore
     echo ""
@@ -366,7 +395,8 @@ do_refresh() {
   fi
 
   fix_constitution
-  apply_traits
+  detect_old_traits
+  install_extensions
 
   echo ""
   echo "RESTART_REQUIRED"
@@ -390,7 +420,8 @@ do_update() {
   echo "Refreshing project setup..."
   specify init --here --ai claude --force
 
-  apply_traits
+  detect_old_traits
+  install_extensions
 
   echo ""
   specify version
@@ -431,7 +462,7 @@ case "${1:-}" in
     if check_ready; then
       fix_constitution
       migrate_from_beads
-      apply_traits >/dev/null 2>&1 || true
+      install_extensions >/dev/null 2>&1 || true
       configure_statusline 2>/dev/null || true
       configure_gitignore 2>/dev/null || true
       echo "READY"

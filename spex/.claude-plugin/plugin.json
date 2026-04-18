@@ -1,7 +1,7 @@
 {
   "name": "spex",
-  "version": "4.0.0",
-  "description": "Specification-Driven Development with Process Discipline for Claude Code",
+  "version": "5.0.0",
+  "description": "Specification-Driven Development with Process Discipline for AI Agents",
   "author": {
     "name": "Roland Huss",
     "email": "rhuss@redhat.com"
@@ -19,7 +19,7 @@
     "tdd",
     "process-discipline",
     "quality-gates",
-    "superpowers"
+    "extensions"
   ],
   "hooks": "./hooks.json"
 }
