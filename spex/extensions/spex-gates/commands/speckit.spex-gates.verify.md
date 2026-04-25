@@ -100,7 +100,7 @@ find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 No specs found in specs/ directory.
 
 Verification requires a spec to validate against.
-Use `spex:brainstorm` or `/speckit-specify` to create one first.
+Use `speckit-spex-brainstorm` or `/speckit-specify` to create one first.
 ```
 
 ## The Process
@@ -184,7 +184,7 @@ Spec Compliance: X/X requirements = XX%
 ```
 
 **If compliance < 100%:**
-- STOP: Use `spex:evolve` to reconcile
+- STOP: Use `speckit-spex-evolve` to reconcile
 - Document all deviations
 - Do not proceed until resolved
 
@@ -203,7 +203,7 @@ Spec Compliance: X/X requirements = XX%
 
 **If drift detected:**
 - Document each instance
-- Use `spex:evolve` to reconcile
+- Use `speckit-spex-evolve` to reconcile
 - Do not proceed with drift
 
 ### 5. Verify Success Criteria

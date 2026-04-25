@@ -43,7 +43,7 @@ This skill checks: completeness, clarity, implementability, and testability.
 
 ## Prerequisites
 
-Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first and stop.
 
 ## Spec Selection
 
@@ -70,7 +70,7 @@ find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 No specs found in specs/ directory.
 
 To create a spec first:
-- Use `spex:brainstorm` to refine ideas into a spec
+- Use `speckit-spex-brainstorm` to refine ideas into a spec
 - Use `/speckit-specify` to create a spec from clear requirements
 
 Cannot review without a spec to review.
@@ -260,7 +260,7 @@ Invoke `/speckit-analyze` to check consistency between:
 
 **Spec:** specs/features/[feature].md
 **Date:** YYYY-MM-DD
-**Reviewer:** Claude (spex:review-spec)
+**Reviewer:** Claude (speckit-spex-gates-review-spec)
 
 ## Overall Assessment
 

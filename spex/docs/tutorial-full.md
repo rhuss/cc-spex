@@ -195,7 +195,7 @@ specify extension enable spex-gates       # Enable spex quality gates
 specify extension disable spex-gates      # Remove spex quality gates
 ```
 
-You can also enable extensions during `/spex:init`.
+You can also enable extensions during `/speckit-spex-init`.
 
 ### The spex-gates Extension
 

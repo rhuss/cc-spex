@@ -22,17 +22,17 @@ This skill detects divergence, analyzes the mismatch, recommends resolution, and
 - Spec ambiguity discovered during implementation
 
 **Auto-triggered by:**
-- `spex:review-code` (when deviations found)
-- `spex:stamp` (when compliance fails)
+- `speckit-spex-gates-review-code` (when deviations found)
+- `speckit-spex-gates-stamp` (when compliance fails)
 
 **Don't use this skill when:**
 - No mismatch exists (everything compliant)
 - Spec doesn't exist yet -> Use `/speckit-specify`
-- Multiple specs need consolidation -> Use `spex:spec-refactoring`
+- Multiple specs need consolidation -> Use `speckit-spex-spec-refactoring`
 
 ## Prerequisites
 
-Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first and stop.
 
 ## Spec Selection
 
@@ -59,7 +59,7 @@ Which spec needs evolution/reconciliation?
 No specs found in specs/ directory.
 
 Spec evolution requires an existing spec to evolve.
-Use `spex:brainstorm` or `/speckit-specify` to create one first.
+Use `speckit-spex-brainstorm` or `/speckit-specify` to create one first.
 ```
 
 ## The Process

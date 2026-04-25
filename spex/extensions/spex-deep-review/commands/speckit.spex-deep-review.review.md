@@ -9,7 +9,7 @@ description: Multi-perspective code review with autonomous fix loop - dispatches
 
 This command orchestrates a multi-perspective code review using five specialized review agents. Each agent analyzes code from a distinct angle (correctness, architecture, security, production readiness, test quality). Findings are merged, deduplicated, and classified by severity. Critical and Important findings trigger an autonomous fix loop (up to 3 rounds). Results are documented in `review-findings.md`.
 
-**This command is invoked by `spex:review-code` when the deep-review extension is enabled, or via the `after_implement` hook.**
+**This command is invoked by `speckit-spex-gates-review-code` when the deep-review extension is enabled, or via the `after_implement` hook.**
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path 
 
 ### External Tool Settings Resolution
 
-If external tool settings are provided by the caller, use them directly. If not (e.g., when invoked directly by `spex:ship` or manually), resolve from config:
+If external tool settings are provided by the caller, use them directly. If not (e.g., when invoked directly by `speckit-spex-ship` or manually), resolve from config:
 
 ```bash
 # Read config defaults from deep-review extension config (all default to true if key is missing)
@@ -827,7 +827,7 @@ In parallel mode (teams extension), agents complete in non-deterministic order. 
 The gate outcome depends on the invocation context:
 
 **Superpowers context** (triggered as quality gate from `/speckit-implement`):
-- **PASS**: Allow proceeding to `spex:stamp`
+- **PASS**: Allow proceeding to `speckit-spex-gates-stamp`
 - **FAIL**: Block completion. The user must resolve remaining findings before the implementation can proceed.
 
 **Manual context** (user runs `/speckit-spex-gates-review-code` directly):

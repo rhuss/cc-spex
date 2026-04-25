@@ -87,7 +87,7 @@ find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 No specs found in specs/ directory.
 
 Code review against spec requires a spec to compare against.
-Use `spex:brainstorm` or `/speckit-specify` to create one first.
+Use `speckit-spex-brainstorm` or `/speckit-specify` to create one first.
 ```
 
 ## The Process
@@ -251,7 +251,7 @@ Compliance % = (Compliant Requirements / Total Requirements) x 100
 [Overall assessment]
 
 **Next Steps:**
-- If compliance < 100%: Use `spex:evolve` to reconcile deviations
+- If compliance < 100%: Use `speckit-spex-evolve` to reconcile deviations
 - If compliance = 100%: Proceed to verification
 ```
 
@@ -409,7 +409,7 @@ Resolution logic:
 
 **If deviations found (standard review path, no deep-review):**
 - Present review results to user
-- Recommend using `spex:evolve`
+- Recommend using `speckit-spex-evolve`
 - Don't proceed to verification until resolved
 
 **If 100% compliant (standard review path):**
@@ -474,7 +474,7 @@ This is not just code quality review; it's **spec validation**.
 
 - Don't force-fit wrong spec
 - Don't ignore deviations
-- Use `spex:evolve` to reconcile
+- Use `speckit-spex-evolve` to reconcile
 
 **The code and spec must tell the same story.**
 

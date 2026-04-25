@@ -99,7 +99,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 
 spex COMMANDS (helpers and configuration)
 
-  /spex:init                  Initialize spec-kit + configure extensions and permissions
+  /speckit-spex-init                  Initialize spec-kit + configure extensions and permissions
   /speckit-spex-worktree      List active worktrees or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to stamp)
@@ -124,9 +124,9 @@ COMMON MISTAKES (do NOT use these)
   /spex:plan      ✗  Does not exist → use /speckit-plan
   /spex:tasks     ✗  Does not exist → use /speckit-tasks
   /spex:implement ✗  Does not exist → use /speckit-implement
-  /spex:brainstorm ✗  Old name → use /speckit-spex-brainstorm
+  /speckit-spex-brainstorm ✗  Old name → use /speckit-spex-brainstorm
   /spex:ship      ✗  Old name → use /speckit-spex-ship
-  /spex:evolve    ✗  Old name → use /speckit-spex-evolve
+  /speckit-spex-evolve    ✗  Old name → use /speckit-spex-evolve
   /spex:traits    ✗  Removed → use `specify extension enable/disable`
 
   Rule: spex commands use /speckit-spex-* prefix (brainstorm, review, evolve).

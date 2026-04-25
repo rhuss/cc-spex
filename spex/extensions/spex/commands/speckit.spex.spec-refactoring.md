@@ -8,7 +8,7 @@ description: "Consolidate and improve evolved specs while maintaining feature co
 
 Refactor specifications that have grown organically to improve clarity, consistency, and maintainability.
 
-As specs evolve through `spex:evolve`, they can accumulate:
+As specs evolve through `speckit-spex-evolve`, they can accumulate:
 - Inconsistencies
 - Redundancies
 - Unclear sections
@@ -153,7 +153,7 @@ If implementation exists without spec coverage, ADD it during refactor.
 - [ ] Structure logical
 - [ ] No new ambiguities introduced
 
-**Use `spex:review-spec`** on refactored version.
+**Use `speckit-spex-gates-review-spec`** on refactored version.
 
 ### 7. Create Changelog
 
@@ -219,7 +219,7 @@ Old Section 3.4 -> New Section 2.3
 
 ```bash
 # Check spec compliance with current code
-# Use spex:review-code
+# Use speckit-spex-gates-review-code
 ```
 
 **Ensure:**

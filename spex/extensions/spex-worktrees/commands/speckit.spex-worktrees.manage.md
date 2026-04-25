@@ -205,7 +205,7 @@ if [ -d ".claude" ]; then
 fi
 ```
 
-This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/spex:init` needed in the worktree.
+This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/speckit-spex-init` needed in the worktree.
 
 ### Step 9: Print Switch Instructions
 

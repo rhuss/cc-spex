@@ -30,7 +30,7 @@ spex extends these with spec-first enforcement, compliance scoring, drift detect
 
 ## Technical Prerequisites
 
-**All technical setup is handled by `/spex:init`.** Spec-kit and extensions must be initialized before using any workflow command. If `.specify/` directory does not exist, tell the user to run `/spex:init` first. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
+**All technical setup is handled by `/speckit-spex-init`.** Spec-kit and extensions must be initialized before using any workflow command. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
 
 ## MANDATORY FIRST RESPONSE PROTOCOL
 
@@ -62,7 +62,7 @@ Before ANY implementation work:
 2. **Follow mandatory workflows.** Brainstorm -> Spec -> Plan -> TDD -> Verify.
 3. **Check for relevant skills before ANY task.** spex has skills for each phase.
 4. **Validate spec compliance.** Code review and verification check specs.
-5. **Handle spec/code drift.** Use spex:evolve when mismatches detected.
+5. **Handle spec/code drift.** Use speckit-spex-evolve when mismatches detected.
 
 ## Available spex Skills
 
@@ -74,17 +74,17 @@ Before ANY implementation work:
 **NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit-*` names above. spex extension commands use the `speckit-spex-*` prefix (e.g., `/speckit-spex-brainstorm`), and speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`).
 
 ### spex Helper Skills
-- **spex:brainstorm** - Rough idea -> spec through collaborative dialogue
-- **spex:review-spec** - Validate spec soundness and completeness
-- **spex:review-plan** - Post-planning quality validation (coverage, red flags, task quality)
-- **spex:review-code** - Review code-to-spec compliance
-- **spex:evolve** - Handle spec/code mismatches with AI guidance
-- **spex:stamp** - Final gate: tests + spec compliance validation
-- **spex:spec-refactoring** - Consolidate and improve evolved specs
+- **speckit-spex-brainstorm** - Rough idea -> spec through collaborative dialogue
+- **speckit-spex-gates-review-spec** - Validate spec soundness and completeness
+- **speckit-spex-gates-review-plan** - Post-planning quality validation (coverage, red flags, task quality)
+- **speckit-spex-gates-review-code** - Review code-to-spec compliance
+- **speckit-spex-evolve** - Handle spec/code mismatches with AI guidance
+- **speckit-spex-gates-stamp** - Final gate: tests + spec compliance validation
+- **speckit-spex-spec-refactoring** - Consolidate and improve evolved specs
 
 ### Configuration
-- **spex:extensions** - Enable/disable spex extensions (spex-gates, spex-teams, etc.)
-- **spex:init** - Initialize project with spec-kit and spex configuration
+- **speckit-spex-extensions** - Enable/disable spex extensions (spex-gates, spex-teams, etc.)
+- **speckit-spex-init** - Initialize project with spec-kit and spex configuration
 
 ### Companion: Superpowers Plugin
 These skills require [obra/superpowers](https://github.com/obra/superpowers) to be installed separately (`/plugin install superpowers@claude-plugins-official` or `claude plugin install superpowers@claude-plugins-official`). They complement spex but are not bundled:
@@ -98,11 +98,11 @@ User request arrives
     |
 Is this a new feature/project?
     Yes -> Is it a rough idea?
-            Yes -> spex:brainstorm
+            Yes -> speckit-spex-brainstorm
             No -> Create spec using /speckit-specify
     No -> Does spec exist for this area?
             Yes -> Is there spec/code mismatch?
-                    Yes -> spex:evolve
+                    Yes -> speckit-spex-evolve
                     No -> Need plan/tasks?
                             Yes -> /speckit-plan
                             No -> /speckit-implement
@@ -115,7 +115,7 @@ Is this a new feature/project?
 
 ```
 User: "I want to add authentication to my app"
--> Use spex:brainstorm
+-> Use speckit-spex-brainstorm
 ```
 
 **Brainstorm will:**
@@ -154,8 +154,8 @@ If you catch yourself thinking ANY of these thoughts, STOP. You are rationalizin
 
 **Skill-avoidance rationalizations:**
 - "This is just a quick fix" -> WRONG. Quick fixes need spec validation.
-- "I can check the spec manually" -> WRONG. Use spex:stamp.
-- "The spec is good enough" -> WRONG. Use spex:review-spec before implementing.
+- "I can check the spec manually" -> WRONG. Use speckit-spex-gates-stamp.
+- "The spec is good enough" -> WRONG. Use speckit-spex-gates-review-spec before implementing.
 - "I remember this workflow" -> WRONG. Skills evolve. Run the current version.
 
 **Why:** Specs prevent drift. Skills enforce discipline. Both save time by preventing mistakes.
@@ -181,9 +181,9 @@ Before using a skill, announce that you are using it.
 "I'm using [Skill Name] to [what you're doing]."
 
 **Examples:**
-- "I'm using spex:brainstorm to refine your idea into a spec."
+- "I'm using speckit-spex-brainstorm to refine your idea into a spec."
 - "I'm using /speckit-implement to build this feature from the spec."
-- "I'm using spex:evolve to reconcile the spec/code mismatch."
+- "I'm using speckit-spex-evolve to reconcile the spec/code mismatch."
 
 **Why:** Transparency helps your human partner understand your process and catch errors early.
 
@@ -193,7 +193,7 @@ Specs WILL diverge from code. This is expected and healthy.
 
 **When mismatch detected:**
 1. DON'T panic or force-fit code to wrong spec
-2. DO use spex:evolve
+2. DO use speckit-spex-evolve
 3. AI analyzes: update spec vs. fix code
 4. User decides (or auto-update if configured)
 
@@ -259,7 +259,7 @@ High-quality software with specs that remain the living source of truth.
 User: "I want to add notifications to my app"
 
 1. Recognize: Rough idea
-2. Route to: spex:brainstorm
+2. Route to: speckit-spex-brainstorm
 3. Brainstorm will:
    - Call spec-kit (auto-setup)
    - Explore idea collaboratively
@@ -288,7 +288,7 @@ User: "Document what this auth module does"
 
 1. Recognize: Code without spec
 2. Create spec by analyzing code
-3. Route to: spex:evolve (to reconcile)
+3. Route to: speckit-spex-evolve (to reconcile)
 ```
 
 ### Pattern 4: Code and Spec Diverged
@@ -297,7 +297,7 @@ User: "Document what this auth module does"
 User: "The login endpoint returns different errors than the spec says"
 
 1. Recognize: Spec/code mismatch
-2. Route to: spex:evolve
+2. Route to: speckit-spex-evolve
 3. Evolve will:
    - Call spec-kit (auto-setup)
    - Analyze mismatch

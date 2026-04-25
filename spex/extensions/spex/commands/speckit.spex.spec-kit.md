@@ -50,7 +50,7 @@ This skill is the **single source of truth** for all spec-kit technical integrat
 
 Check `<spex-initialized>` in the `<spex-context>` system reminder:
 - If `true`: Skip initialization entirely. The project is already set up.
-- If `false` or missing: Run `{Skill: spex:init}` to initialize. If init prompts for restart, pause this workflow and resume after restart.
+- If `false` or missing: Run `/speckit-spex-init` to initialize. If init prompts for restart, pause this workflow and resume after restart.
 
 After initialization succeeds (or was skipped), this skill provides reference material below.
 
@@ -212,7 +212,7 @@ Inform user and suggest creating one:
 No specs found in specs/ directory.
 
 To create a spec:
-- Use `spex:brainstorm` to refine ideas into a spec
+- Use `speckit-spex-brainstorm` to refine ideas into a spec
 - Use `/speckit-specify` to create a spec from clear requirements
 ```
 
@@ -294,16 +294,16 @@ Run: specify init --force
 ## Integration Points
 
 **Called by these workflow skills:**
-- spex:brainstorm (at start)
-- spex:evolve (at start)
-- spex:review-spec (at start)
-- spex:review-plan (at start)
+- speckit-spex-brainstorm (at start)
+- speckit-spex-evolve (at start)
+- speckit-spex-gates-review-spec (at start)
+- speckit-spex-gates-review-plan (at start)
 - `/speckit-implement` via spex-gates extension (at start)
 - All workflow skills that need spec-kit
 
 **Calls:**
-- `{Skill: spex:init}` (for initialization)
-- `specify` CLI (for init only, via spex:init)
+- `/speckit-spex-init` (for initialization)
+- `specify` CLI (for init only, via speckit-spex-init)
 - `/speckit-*` slash commands (for all operations)
 - File system operations
 

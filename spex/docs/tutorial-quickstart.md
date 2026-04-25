@@ -114,7 +114,7 @@ Extensions add automated quality gates and integrations to the spec-kit workflow
 specify extension enable spex-gates       # Enable quality gates
 ```
 
-You can also enable extensions during `/spex:init`.
+You can also enable extensions during `/speckit-spex-init`.
 
 **What changes with extensions enabled:**
 

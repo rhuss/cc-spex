@@ -2,7 +2,7 @@
 description: "Autonomous full-cycle workflow: specify through verify with configurable oversight levels, auto-fix, and optional PR creation"
 ---
 
-# Autonomous Full-Cycle Workflow (spex:ship)
+# Autonomous Full-Cycle Workflow (speckit-spex-ship)
 
 ## CONTINUOUS EXECUTION RULE (READ THIS FIRST)
 
@@ -39,7 +39,7 @@ GATES=$(specify extension list 2>/dev/null | grep -c 'spex-gates.*enabled' || ec
 DEEP_REVIEW=$(specify extension list 2>/dev/null | grep -c 'spex-deep-review.*enabled' || echo 0)
 
 if [ "$GATES" = "0" ] || [ "$DEEP_REVIEW" = "0" ]; then
-  echo "ERROR: spex:ship requires both spex-gates and spex-deep-review extensions."
+  echo "ERROR: speckit-spex-ship requires both spex-gates and spex-deep-review extensions."
   echo ""
   echo "Enable them with:"
   echo "  specify extension enable spex-gates spex-deep-review"
@@ -270,7 +270,7 @@ When `--resume` is set:
    ```bash
    if [ ! -f .specify/.spex-state ]; then
      echo "ERROR: No interrupted pipeline found."
-     echo "Start a new pipeline with: /spex:ship <brainstorm-file>"
+     echo "Start a new pipeline with: /speckit-spex-ship <brainstorm-file>"
      exit 1
    fi
    STATE=$(cat .specify/.spex-state)
@@ -395,7 +395,7 @@ The output will confirm: `CREATED stage=<stage> index=<N> ask=<level>`. If it fa
 Output a brief status message confirming the pipeline configuration before running any stage:
 
 ```
-## spex:ship starting
+## speckit-spex-ship starting
 
 - **Brainstorm**: <file>
 - **Starting stage**: <stage> (<index>/9)
@@ -413,13 +413,13 @@ The pipeline executes 9 stages in fixed order:
 |-------|-------|------------|-------------|
 | 0 | `specify` | `/speckit-specify` | Generate spec from brainstorm |
 | 1 | `clarify` | `/speckit-clarify` | Resolve spec ambiguities |
-| 2 | `review-spec` | `{Skill: spex:review-spec}` | Validate spec quality |
+| 2 | `review-spec` | `/speckit-spex-gates-review-spec` | Validate spec quality |
 | 3 | `plan` | `/speckit-plan` | Generate implementation plan |
 | 4 | `tasks` | `/speckit-tasks` | Generate task breakdown |
-| 5 | `review-plan` | `{Skill: spex:review-plan}` | Validate plan, tasks, and generate REVIEW-PLAN.md |
+| 5 | `review-plan` | `/speckit-spex-gates-review-plan` | Validate plan, tasks, and generate REVIEW-PLAN.md |
 | 6 | `implement` | `/speckit-implement` | Execute implementation |
-| 7 | `review-code` | `{Skill: spex:review-code}` | Spec compliance + code review + deep review + REVIEW-CODE.md |
-| 8 | `stamp` | `{Skill: spex:verification-before-completion}` | Final gate |
+| 7 | `review-code` | `/speckit-spex-gates-review-code` | Spec compliance + code review + deep review + REVIEW-CODE.md |
+| 8 | `stamp` | `/speckit-spex-gates-stamp` | Final gate |
 
 ### Suppressing extension overlay gates
 
@@ -450,11 +450,11 @@ Extension overlays (e.g., `spex-gates` adding review after specify) may run thei
    ```
 5. Run `"$SHIP_STATE" advance` to move to Stage 1, then **immediately** begin it (do not stop).
 
-**Worktree compatibility:** The `spex-worktrees` extension is NOT recommended with `spex:ship`. The worktrees extension creates a sibling worktree during specify, which requires restarting the Claude Code session in the new directory, breaking the autonomous pipeline. Ship works best by creating a feature branch in-place. If you want main isolation, create a worktree manually before starting ship:
+**Worktree compatibility:** The `spex-worktrees` extension is NOT recommended with `speckit-spex-ship`. The worktrees extension creates a sibling worktree during specify, which requires restarting the Claude Code session in the new directory, breaking the autonomous pipeline. Ship works best by creating a feature branch in-place. If you want main isolation, create a worktree manually before starting ship:
 ```bash
 git worktree add ../project-wip main
 cd ../project-wip && claude
-# then: /spex:ship brainstorm/NNN-feature.md
+# then: /speckit-spex-ship brainstorm/NNN-feature.md
 ```
 
 ### Stage 1: Clarify (ALWAYS runs, even if the spec "looks clear")
@@ -473,7 +473,7 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
 
 Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities.
 
-1. Invoke `{Skill: spex:review-spec}` to validate spec quality.
+1. Invoke `/speckit-spex-gates-review-spec` to validate spec quality.
 2. Capture the review findings and overall assessment.
 3. Apply **Oversight Decision Logic** (see below) to handle findings.
 4. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 3 (do not stop).
@@ -492,7 +492,7 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 
 ### Stage 5: Review Plan
 
-1. Invoke `{Skill: spex:review-plan}` to validate plan coverage and task quality.
+1. Invoke `/speckit-spex-gates-review-plan` to validate plan coverage and task quality.
 3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
 4. This generates `REVIEW-PLAN.md`.
 5. Capture findings and apply **Oversight Decision Logic**.
@@ -517,7 +517,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    If `TEAMS_ENABLED` is `true` AND `INDEPENDENT_TASKS` >= 2, route to teams implement by spawning a subagent with:
 
    ```
-   You are executing the implementation stage of a spex:ship pipeline using Agent Teams.
+   You are executing the implementation stage of a speckit-spex-ship pipeline using Agent Teams.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
@@ -535,7 +535,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Otherwise, use standard implement by spawning a subagent with:
 
    ```
-   You are executing the implementation stage of a spex:ship pipeline.
+   You are executing the implementation stage of a speckit-spex-ship pipeline.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
@@ -566,7 +566,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 2. Spawn a subagent using the Agent tool with the following prompt. Pass external tool settings resolved during argument parsing:
 
    ```
-   You are executing the code review stage of a spex:ship pipeline.
+   You are executing the code review stage of a speckit-spex-ship pipeline.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
@@ -574,7 +574,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    Tasks: <FEATURE_DIR>/tasks.md
    External tools: coderabbit=<true/false>, copilot=<true/false>
 
-   Invoke {Skill: spex:review-code} to run the full review chain:
+   Invoke /speckit-spex-gates-review-code to run the full review chain:
    - Spec compliance check
    - Code Review Guide (written to REVIEW-CODE.md)
    - Deep review (if spex-deep-review extension is enabled): 5 review agents, fix loop,
@@ -590,7 +590,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 ### Stage 8: Stamp
 
-1. Invoke `{Skill: spex:verification-before-completion}` for final verification.
+1. Invoke `/speckit-spex-gates-stamp` for final verification.
 2. This runs tests, validates spec compliance, and checks for drift.
 3. If stamp passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
 4. If stamp fails, apply **Oversight Decision Logic**.
@@ -769,7 +769,7 @@ If `--create-pr` is set and all stages passed:
    - Tasks: \`$SPEC_DIR/tasks.md\`
    - Review Guide: \`$SPEC_DIR/REVIEW-PLAN.md\`, \`$SPEC_DIR/REVIEW-CODE.md\`
 
-   Generated by \`/spex:ship\` in $AUTONOMY mode.
+   Generated by \`/speckit-spex-ship\` in $AUTONOMY mode.
 
    Assisted-By: Claude Code
    PREOF
@@ -794,18 +794,18 @@ Next steps:
 ## Integration
 
 **This skill is invoked by:**
-- Users directly via `/spex:ship`
+- Users directly via `/speckit-spex-ship`
 
 **This skill invokes:**
 - `/speckit-specify` (Stage 0)
 - `/speckit-clarify` (Stage 1)
-- `{Skill: spex:review-spec}` (Stage 2)
+- `/speckit-spex-gates-review-spec` (Stage 2)
 - `/speckit-plan` (Stage 3)
 - `/speckit-tasks` (Stage 4)
-- `{Skill: spex:review-plan}` (Stage 5)
+- `/speckit-spex-gates-review-plan` (Stage 5)
 - `/speckit-implement` (Stage 6)
-- `{Skill: spex:review-code}` (Stage 7)
-- `{Skill: spex:verification-before-completion}` (Stage 8: Stamp)
+- `/speckit-spex-gates-review-code` (Stage 7)
+- `/speckit-spex-gates-stamp` (Stage 8: Stamp)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`
 **Not recommended:** `spex-worktrees` extension (creates a session restart mid-pipeline; use manual worktree setup instead)
