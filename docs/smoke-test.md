@@ -8,7 +8,7 @@ spex builds on two upstream projects:
 
 ## Prerequisites
 
-- [`specify` CLI](https://github.com/github/spec-kit) installed and on PATH (`uv pip install specify-cli`)
+- [`specify` CLI](https://github.com/github/spec-kit) installed and on PATH (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`)
 - Claude Code with the spex plugin loaded
 - `gh` CLI authenticated (for the PR step)
 
@@ -24,33 +24,33 @@ git add README.md && git commit -m "Initial commit"
 claude
 ```
 
-## 2. Show the quick reference
-
-```
-/spex:help
-```
-
-You should see the workflow diagram, all spec-kit commands, trait descriptions, and the spex command list.
-
-## 3. Initialize the project
+## 2. Initialize the project
 
 ```
 /spex:init
 ```
 
-Claude runs `specify init`, then asks you to pick traits and a permission level. For this test, enable the **superpowers** trait and choose **Standard** permissions.
+Claude runs `specify init`, installs all five bundled extensions, then asks you to select extensions and a permission level. For this test, enable all extensions and choose **Standard** permissions.
 
 Verify:
 - `.specify/` directory created (templates, scripts, config)
-- `.specify/spex-traits.json` shows `superpowers: true`
-- `.claude/skills/speckit-*.md` files exist
-- Overlay sentinels present: `grep SPEX-TRAIT .claude/skills/speckit-*.md`
+- `.specify/extensions/.registry` shows all extensions enabled
+- `.claude/skills/speckit-spex-*` skill directories created
+- Extension hooks registered: `cat .specify/extensions.yml`
 
-Restart Claude Code now (the init installs new commands that need a reload).
+Restart Claude Code now (the init installs new skills that need a reload).
 
 ```bash
 claude
 ```
+
+## 3. Show the quick reference
+
+```
+/speckit-spex-help
+```
+
+You should see the workflow diagram, all spec-kit commands, extension descriptions, and the spex command list.
 
 ## 4. Create a project constitution
 
@@ -66,7 +66,7 @@ Verify:
 ## 5. Brainstorm a feature from a rough idea
 
 ```
-/spex:brainstorm
+/speckit-spex-brainstorm
 ```
 
 Give Claude a vague idea:
@@ -80,10 +80,12 @@ Verify:
 - A spec file was created at `specs/<NNN>-<feature>/spec.md`
 - The spec captures requirements, edge cases, and success criteria
 
-## 6. Review the spec
+## 6. Review the spec (automatic via hooks)
+
+With the spex-gates extension enabled, spec review runs automatically after `/speckit-specify`. You can also run it manually:
 
 ```
-/spex:review-spec
+/speckit-spex-gates-review-spec
 ```
 
 Claude reads the spec and checks it for completeness, clarity, implementability, and constitution alignment.
@@ -98,18 +100,12 @@ Verify:
 /speckit-plan
 ```
 
-With the superpowers trait enabled, this command runs the full planning pipeline:
-1. Spec review (pre-planning gate)
-2. Plan generation from the spec
-3. Task generation (`/speckit-tasks`)
-4. Plan review (`/spex:review-plan`) producing `REVIEWERS.md`
-5. Commits spec artifacts to a feature branch
-6. Offers to create a spec PR (accept or decline)
+This runs the planning pipeline. With spex-gates enabled, the `after_tasks` hook automatically fires plan review.
 
 Verify:
 - `plan.md` created in the spec directory
-- `tasks.md` created with dependency-ordered tasks
-- `REVIEWERS.md` generated
+- `tasks.md` created with dependency-ordered tasks after `/speckit-tasks`
+- Plan review runs automatically (via `after_tasks` hook)
 - Artifacts committed (check `git log --oneline`)
 
 ## 8. Review the plan independently
@@ -117,7 +113,7 @@ Verify:
 You already got an automatic plan review in step 7, but you can also run it manually:
 
 ```
-/spex:review-plan
+/speckit-spex-gates-review-plan
 ```
 
 Verify:
@@ -131,10 +127,10 @@ Verify:
 /speckit-implement
 ```
 
-With the superpowers trait, Claude:
+With spex-gates enabled, Claude:
 1. Verifies the spec package exists (spec, plan, tasks)
 2. Implements using TDD (tests first, then code)
-3. Runs `/spex:review-code` after implementation
+3. Runs code review automatically after implementation (via `after_implement` hook)
 4. Runs verification (tests + spec compliance) before claiming completion
 
 Verify:
@@ -148,7 +144,7 @@ Verify:
 Run this independently to see the compliance check in isolation:
 
 ```
-/spex:review-code
+/speckit-spex-gates-review-code
 ```
 
 Verify:
@@ -163,7 +159,7 @@ Manually introduce a deviation. For example, edit the implementation to add a `-
 Then run:
 
 ```
-/spex:evolve
+/speckit-spex-evolve
 ```
 
 Claude detects the mismatch and recommends either updating the spec (to accept the new flag) or removing the code (to match the spec). Pick one and let Claude restore alignment.

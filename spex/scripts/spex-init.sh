@@ -190,12 +190,16 @@ install_extensions() {
     return 0
   fi
 
+  # Install in dependency order: extensions without dependencies first,
+  # then extensions that depend on others (spex-deep-review and spex-teams
+  # require spex-gates).
+  local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams)
+
   local installed=0 failed=0
-  for ext_path in "$extensions_dir"/*/; do
+  for ext_id in "${install_order[@]}"; do
+    local ext_path="$extensions_dir/$ext_id"
     [ -f "$ext_path/extension.yml" ] || continue
-    local ext_id
-    ext_id=$(basename "$ext_path")
-    if specify extension add "$ext_path" --dev 2>/dev/null; then
+    if specify extension add "$ext_path" --dev; then
       installed=$((installed + 1))
     else
       echo "WARNING: Failed to install extension '$ext_id'" >&2
@@ -258,6 +262,7 @@ fix_constitution() {
 migrate_from_beads() {
   local has_beads_dir=false has_beads_trait=false has_bd_markers=false
   [ -d ".beads" ] && has_beads_dir=true
+  [ "$(jq -r '.extensions["beads"].enabled // false' .specify/extensions/.registry 2>/dev/null)" = "true" ] && has_beads_trait=true
   [ "$(jq -r '.traits.beads // false' .specify/spex-traits.json 2>/dev/null)" = "true" ] && has_beads_trait=true
   grep -rq '(bd-' specs/*/tasks.md 2>/dev/null && has_bd_markers=true
 
@@ -349,6 +354,9 @@ do_init() {
   # Check if NEW skills were installed (didn't exist before)
   if [ "$had_skills" = false ] && ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1; then
     fix_constitution
+    install_extensions
+    configure_statusline
+    configure_gitignore
     echo ""
     echo "RESTART_REQUIRED"
     echo ""

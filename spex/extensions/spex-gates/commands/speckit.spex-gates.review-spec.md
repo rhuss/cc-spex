@@ -43,11 +43,7 @@ This skill checks: completeness, clarity, implementability, and testability.
 
 ## Prerequisites
 
-Ensure spec-kit is initialized:
-
-{Skill: spec-kit}
-
-If spec-kit prompts for restart, pause this workflow and resume after restart.
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 ## Spec Selection
 

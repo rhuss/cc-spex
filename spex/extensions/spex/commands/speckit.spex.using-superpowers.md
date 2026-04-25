@@ -30,7 +30,7 @@ spex extends these with spec-first enforcement, compliance scoring, drift detect
 
 ## Technical Prerequisites
 
-**All technical setup is automatic.** Every spex workflow skill calls `{Skill: spec-kit}` first, which handles initialization, installation, and validation internally. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
+**All technical setup is handled by `/spex:init`.** Spec-kit and extensions must be initialized before using any workflow command. If `.specify/` directory does not exist, tell the user to run `/spex:init` first. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
 
 ## MANDATORY FIRST RESPONSE PROTOCOL
 
@@ -71,7 +71,7 @@ Before ANY implementation work:
 - `/speckit-plan` - Generate plan and tasks (spex-gates extension adds spec review + plan review)
 - `/speckit-implement` - Execute implementation (spex-gates extension adds pre/post quality gates)
 
-**NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit-*` names above. The `spex:` namespace only contains helper skills (brainstorm, review-*, evolve, extensions, init, help).
+**NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit-*` names above. spex extension commands use the `speckit-spex-*` prefix (e.g., `/speckit-spex-brainstorm`), and speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`).
 
 ### spex Helper Skills
 - **spex:brainstorm** - Rough idea -> spec through collaborative dialogue

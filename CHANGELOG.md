@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-04-25
+
+### Changed (BREAKING)
+- **Traits replaced by spec-kit native extensions.** The overlay system (sentinel markers, `spex-traits.sh`, `spex-traits.json`) is removed entirely. All capabilities now use spec-kit's extension mechanism with `extension.yml` manifests, lifecycle hooks, and `specify extension enable/disable`.
+- **Command names changed.** `/spex:*` commands are now registered by spec-kit as `/speckit-spex-*` (e.g., `/speckit-spex-brainstorm`, `/speckit-spex-ship`). Only `/spex:init` remains as a plugin-level bootstrap skill.
+- **Quality gates fire automatically via hooks.** Review commands no longer need manual invocation. `spex-gates` registers `after_specify`, `after_tasks`, and `after_implement` hooks that run reviews automatically.
+- **Config location changed.** Extension state is tracked in `.specify/extensions/.registry` (JSON), replacing `.specify/spex-traits.json`.
+
+### Added
+- **Five bundled extensions:** spex (core), spex-gates (quality gates), spex-worktrees (git worktrees), spex-teams (parallel agents), spex-deep-review (multi-agent review)
+- **Flow state tracking.** The `after_specify` hook from the spex core extension creates `.specify/.spex-state` with `"mode": "flow"` to power the status line during step-by-step workflow.
+- **CodeRabbit enabled by default** in deep-review extension config (when CLI is available).
+- **Worktree config copy.** Worktree creation now copies `.claude/` and `.specify/` directories, so no `/spex:init` is needed in the worktree.
+- **Teams routing in ship.** Ship pipeline checks for spex-teams extension and routes to parallel implementation when 2+ independent tasks exist.
+
+### Removed
+- `spex/overlays/` directory (all overlay files)
+- `spex/skills/` directory (all skills except `init/`)
+- `spex/commands/` directory (all command files)
+- `spex/scripts/bash/spex-traits.sh`
+- `/spex:traits` command (replaced by `specify extension enable/disable`)
+
+### Migration from 4.x
+
+1. Run `make install` to update the plugin
+2. In each project, run `/spex:init` to install extensions (old `spex-traits.json` is detected and a warning is printed)
+3. Update command references: `/spex:brainstorm` -> `/speckit-spex-brainstorm`, `/spex:ship` -> `/speckit-spex-ship`, etc.
+4. Extension management: `specify extension enable/disable <name>` replaces `/spex:traits enable/disable`
+
 ## [3.0.2] - 2026-04-05
 
 **Last release supporting `speckit.*.md` command format.** Future versions will migrate to Agent Skills format (`speckit-*/SKILL.md`). A `release/3.x` maintenance branch is available for bugfixes on this format.

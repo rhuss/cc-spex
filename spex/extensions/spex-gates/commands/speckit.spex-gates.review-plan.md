@@ -32,7 +32,7 @@ This skill validates plan and task quality after `/speckit-plan` and `/speckit-t
 
 ## Prerequisites
 
-{Skill: spec-kit}
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 **Both plan.md and tasks.md MUST exist before running this skill.** If either is missing, stop with an error:
 
@@ -345,4 +345,4 @@ After all selected fixes are applied, re-present any remaining unaddressed findi
 - Users directly via `speckit.spex-gates.review-plan`
 
 **This command invokes:**
-- `{Skill: spec-kit}` for initialization
+- Prerequisite check for `.specify/` directory

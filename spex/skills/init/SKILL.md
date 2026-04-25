@@ -1,5 +1,6 @@
 ---
-description: "Initialize or update the project with specify CLI and spex configuration"
+name: init
+description: Initialize or update the project using the `specify` CLI (--refresh for templates, --update to upgrade CLI, --clear to reset status line). Do NOT search for speckit or spec-kit binaries.
 ---
 
 You MUST complete ALL steps below. Do not stop after Step 1.

@@ -58,14 +58,14 @@ Before starting the pipeline, check for uncommitted changes that are NOT spex co
 
 ```bash
 # Filter out spex-generated files from dirty check
-DIRTY=$(git status --porcelain 2>/dev/null | grep -v -E '^.{2} \.claude/(commands/speckit\.|settings)' | grep -v -E '^.{2} \.specify/(spex-traits\.json|\.spex-)' || true)
+DIRTY=$(git status --porcelain 2>/dev/null | grep -v -E '^.{2} \.claude/(commands/speckit\.|settings)' | grep -v -E '^.{2} \.specify/(extensions/|\.spex-)' || true)
 if [ -n "$DIRTY" ]; then
   echo "Working tree has uncommitted non-spex changes:"
   echo "$DIRTY"
 fi
 ```
 
-If there are dirty non-spex files, commit them automatically with a "WIP: save before ship" message, then proceed. Do NOT stop or ask the user. Spex config files (`.claude/skills/speckit-*`, `.claude/settings.*`, `.specify/spex-traits.json`) are expected to be dirty after init and should be ignored.
+If there are dirty non-spex files, commit them automatically with a "WIP: save before ship" message, then proceed. Do NOT stop or ask the user. Spex config files (`.claude/skills/speckit-*`, `.claude/settings.*`, `.specify/extensions/`) are expected to be dirty after init and should be ignored.
 
 ### External Tool Auth Validation
 
@@ -117,17 +117,17 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
 
 **External tool flags**: Follow the same resolution pattern as the `review-code` skill:
 
-1. Read config defaults:
+1. Read config defaults from deep-review extension config:
    ```bash
-   DEFAULT_ENABLED=$(jq -r '.external_tools.enabled // true' .specify/spex-traits.json 2>/dev/null)
-   DEFAULT_CODERABBIT=$(jq -r '.external_tools.coderabbit // true' .specify/spex-traits.json 2>/dev/null)
-   DEFAULT_COPILOT=$(jq -r '.external_tools.copilot // true' .specify/spex-traits.json 2>/dev/null)
+   DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
+   DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
    ```
 
 2. Start with config defaults:
    ```
-   coderabbit = DEFAULT_ENABLED && DEFAULT_CODERABBIT
-   copilot    = DEFAULT_ENABLED && DEFAULT_COPILOT
+   coderabbit = DEFAULT_CODERABBIT
+   copilot    = DEFAULT_COPILOT
    ```
 
 3. Apply CLI flag overrides (flags always win, applied in order):
@@ -180,7 +180,7 @@ ERROR: No brainstorm files found in brainstorm/ directory.
 Available files:
 $(ls brainstorm/ 2>/dev/null || echo "  (directory does not exist)")
 
-Create a brainstorm document first with /spex:brainstorm
+Create a brainstorm document first with /speckit-spex-brainstorm
 ```
 
 ## State File Management
@@ -508,7 +508,31 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Spawn a subagent using the Agent tool with the following prompt. The subagent receives only file paths, not conversation history:
+2. Check if spex-teams should handle implementation:
+   ```bash
+   TEAMS_ENABLED=$(jq -r '.extensions["spex-teams"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+   INDEPENDENT_TASKS=$(grep -c '\[P\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
+   ```
+
+   If `TEAMS_ENABLED` is `true` AND `INDEPENDENT_TASKS` >= 2, route to teams implement by spawning a subagent with:
+
+   ```
+   You are executing the implementation stage of a spex:ship pipeline using Agent Teams.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+   Plan: <FEATURE_DIR>/plan.md
+   Tasks: <FEATURE_DIR>/tasks.md
+
+   Read these files, then invoke /speckit.spex-teams.implement to execute parallel implementation.
+   The .specify/.spex-state file exists with status "running", so the
+   implement command will run in pipeline mode (no completion summary, no user questions).
+
+   When marking tasks complete in tasks.md, use the Edit tool.
+   Report a brief summary of completed tasks when done.
+   ```
+
+   Otherwise, use standard implement by spawning a subagent with:
 
    ```
    You are executing the implementation stage of a spex:ship pipeline.
@@ -764,7 +788,7 @@ Pipeline complete. No PR created (use --create-pr to auto-create).
 Next steps:
   - Review changes: git diff main...HEAD
   - Create PR manually: gh pr create
-  - Run additional reviews: /spex:review-code
+  - Run additional reviews: /speckit-spex-gates-review-code
 ```
 
 ## Integration

@@ -40,6 +40,15 @@ provides:
     - name: speckit.spex.extensions
       file: commands/speckit.spex.extensions.md
       description: "Manage spex extensions: enable, disable, or list active extensions"
+    - name: speckit.spex.flow-state
+      file: commands/speckit.spex.flow-state.md
+      description: "Create flow state for step-by-step SDD workflow tracking"
+
+hooks:
+  after_specify:
+    command: speckit.spex.flow-state
+    optional: false
+    description: "Initialize flow state tracking after specification"
 
 tags:
   - "spex"

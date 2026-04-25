@@ -39,10 +39,8 @@ tmp=$(mktemp) && jq '.implemented = true' .specify/.spex-state > "$tmp" && mv "$
 **Before starting any review work**, check if the `spex-deep-review` extension is enabled:
 
 ```bash
-# Check via extensions system
-specify extension list 2>/dev/null | grep -q "spex-deep-review" && echo "deep-review-enabled" || echo "deep-review-disabled"
-# Fallback: check traits
-jq -r '.traits["deep-review"] // false' .specify/spex-traits.json 2>/dev/null
+# Check via extensions registry
+jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null
 ```
 
 If deep review is enabled, this command MUST invoke `speckit.spex-deep-review.review` after spec compliance passes (>= 95%). Do NOT produce only a basic compliance review when deep-review is active. The deep review dispatches 5 specialized agents, runs a fix loop, and generates a Deep Review Report. See step 9a below for details.
@@ -360,21 +358,20 @@ Flags are consumed and removed from the argument string. The remaining text (if 
 **Resolve external tool settings (defaults + flag overrides):**
 
 ```bash
-# 1. Read defaults from config (all default to true if key is missing)
-DEFAULT_ENABLED=$(jq -r '.external_tools.enabled // true' .specify/spex-traits.json 2>/dev/null)
-DEFAULT_CODERABBIT=$(jq -r '.external_tools.coderabbit // true' .specify/spex-traits.json 2>/dev/null)
-DEFAULT_COPILOT=$(jq -r '.external_tools.copilot // true' .specify/spex-traits.json 2>/dev/null)
+# 1. Read defaults from deep-review extension config (all default to true if key is missing)
+DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 
-# 2. If global "enabled" is false, individual tools default to false too
-#    (unless individually overridden to true in config)
+# 2. If config file is missing, default all tools to true
 ```
 
 ```
 Resolution logic:
 
 1. Start with config defaults:
-   coderabbit = DEFAULT_ENABLED && DEFAULT_CODERABBIT
-   copilot    = DEFAULT_ENABLED && DEFAULT_COPILOT
+   coderabbit = DEFAULT_CODERABBIT
+   copilot    = DEFAULT_COPILOT
 
 2. Apply flag overrides (flags always win over defaults):
    --external       -> coderabbit = true,  copilot = true

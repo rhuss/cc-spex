@@ -16,13 +16,13 @@ requires:
 
 provides:
   commands:
-    - name: speckit.spex-worktrees.worktree
-      file: commands/speckit.spex-worktrees.worktree.md
+    - name: speckit.spex-worktrees.manage
+      file: commands/speckit.spex-worktrees.manage.md
       description: "Manage git worktrees for isolated feature development"
 
 hooks:
   after_specify:
-    command: speckit.spex-worktrees.worktree
+    command: speckit.spex-worktrees.manage
     optional: true
     prompt: "Create a worktree for this feature?"
     description: "Create git worktree after specification"

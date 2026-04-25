@@ -19,17 +19,19 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 </HARD-GATE>
 
 <HARD-GATE>
-## Command Namespace: NEVER suggest /spex:specify, /spex:plan, /spex:implement, /spex:tasks
+## Command Namespace: Use the correct prefixes
 
-These commands DO NOT EXIST. They will fail with "Unknown skill". When proposing next steps:
+spex extension commands use the `speckit-spex-*` prefix (e.g., `/speckit-spex-brainstorm`).
+speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`, `/speckit-plan`).
+
+When proposing next steps:
 
 - To create specs: `/speckit-specify` (NOT `/spex:specify`)
 - To plan: `/speckit-plan` (NOT `/spex:plan`)
 - To generate tasks: `/speckit-tasks` (NOT `/spex:tasks`)
 - To implement: `/speckit-implement` (NOT `/spex:implement`)
 
-spex namespace only has: brainstorm, review-*, evolve, traits, init, help.
-All spec workflow commands live in the `speckit-*` namespace.
+Commands like `/spex:specify`, `/spex:plan`, `/spex:implement`, `/spex:tasks` DO NOT EXIST.
 </HARD-GATE>
 
 ## Anti-Pattern: "This Is Too Simple To Need A Spec"
@@ -101,11 +103,7 @@ digraph brainstorming {
 
 ## Prerequisites
 
-Before starting the brainstorming workflow, ensure spec-kit is initialized:
-
-{Skill: spec-kit}
-
-If spec-kit prompts for restart, pause this workflow and resume after restart.
+Spec-kit must be initialized before brainstorming. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 ## CRITICAL: Use /speckit-* Slash Commands
 
@@ -409,9 +407,9 @@ If `.specify/` directory does not exist or `.claude/skills/speckit-specify/SKILL
 - "Before running `/speckit-plan` or `/speckit-implement`, you need to initialize the project with `/spex:init`. This sets up spec-kit templates, commands, and trait configuration."
 
 **Offer next steps (use EXACTLY these command names):**
-- "Ready for `/speckit-specify`" (NOT `/spex:specify`, which does not exist)
+- "Ready for `/speckit-specify`"
 - After specify: plan with `/speckit-plan` or implement with `/speckit-implement`
-- Never suggest `/spex:specify`, `/spex:plan`, `/spex:implement`, or `/spex:tasks`
+- spex extension commands use the `speckit-spex-*` prefix, speckit core commands use the `speckit-` prefix
 
 **Commit the spec:**
 ```bash

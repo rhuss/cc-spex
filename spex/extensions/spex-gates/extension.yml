@@ -34,10 +34,10 @@ hooks:
     command: speckit.spex-gates.review-spec
     optional: false
     description: "Review spec soundness after specification"
-  after_plan:
+  after_tasks:
     command: speckit.spex-gates.review-plan
     optional: false
-    description: "Review plan quality after planning"
+    description: "Review plan and task quality after task generation"
   after_implement:
     command: speckit.spex-gates.review-code
     optional: false

@@ -1,45 +1,39 @@
 # cc-spex Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-29
+Auto-generated from all feature plans. Last updated: 2026-04-22
 
 ## Active Technologies
-- Bash (POSIX-compatible), Markdown for commands/skills + `jq` (JSON parsing), `specify` CLI (spec-kit), `grep`/`rg` (sentinel detection)
-- JSON (`.specify/spex-traits.json`), Markdown files
-- Bash (POSIX-compatible) + Markdown + Python 3 (for hooks) + `jq` (JSON parsing), `spex-traits.sh`, Claude Code Agent Teams
-- Bash (POSIX-compatible), Python 3 (hooks), Markdown (commands/skills) + `jq` (JSON parsing), `specify` CLI (spec-kit), Claude Code plugin system (008-rename-to-cc-spex)
-- File-based (JSON config, Markdown documents) (008-rename-to-cc-spex)
-- Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), spex plugin infrastructure, Claude Code Agent Teams (parallel mode) (009-deep-review-trait)
-- File-based (`.specify/spex-traits.json` for config, Markdown for artifacts) (009-deep-review-trait)
-- Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), existing spex skills and speckit commands (010-yolo-autonomous-workflow)
-- JSON state file (`.specify/.spex-yolo-phase`), Markdown artifacts (010-yolo-autonomous-workflow)
+
+- Bash (POSIX-compatible), Markdown, Python 3 (hooks), `jq`, `specify` CLI (spec-kit)
 
 ## Project Structure
 
 ```text
 spex/
-  commands/        # Slash command definitions
-  skills/          # Skill prompt files
-  overlays/        # Trait overlay files
-  scripts/         # Shell/Python scripts and hooks
-  docs/            # Tutorials and help
-specs/             # Feature specifications (historical)
+  extensions/          # Extension bundles
+    spex/              # Core spex extension (brainstorm, ship, using-superpowers)
+    spex-gates/        # Quality gates (review-spec, review-code, review-plan, stamp)
+    spex-worktrees/    # Git worktree isolation
+    spex-teams/        # Parallel agent orchestration
+    spex-deep-review/  # Multi-agent code review
+  skills/              # Standalone skills (init/)
+  scripts/             # Shell/Python scripts and hooks
+  docs/                # Tutorials and help
+specs/                 # Feature specifications (historical)
 ```
 
 ## Code Style
 
 Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follow standard conventions
 
-## Traits
+## Extensions
 
-- `superpowers`: Quality gates on speckit commands (review-spec, review-code, verification)
-- `teams`: Parallel implementation via Claude Code Agent Teams (experimental, requires superpowers)
-- `worktrees`: Git worktree isolation after speckit.specify (creates sibling worktree, restores main)
-
-
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+- `spex`: Core extension with brainstorm, ship, and methodology entry point
+- `spex-gates`: Quality gates on speckit commands (review-spec, review-code, review-plan, stamp, verification)
+- `spex-worktrees`: Git worktree isolation after speckit.specify (creates sibling worktree, restores main)
+- `spex-teams`: Parallel implementation via Claude Code Agent Teams (experimental)
+- `spex-deep-review`: Multi-agent code review with 5 specialized review agents and autonomous fix loop
 
 ## Recent Changes
-- 010-yolo-autonomous-workflow: Added Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), existing spex skills and speckit commands
-- 009-deep-review-trait: Added Bash (POSIX-compatible), Markdown, Python 3 (hooks) + `jq` (JSON parsing), `specify` CLI (spec-kit), spex plugin infrastructure, Claude Code Agent Teams (parallel mode)
-- 008-rename-to-cc-spex: Added Bash (POSIX-compatible), Python 3 (hooks), Markdown (commands/skills) + `jq` (JSON parsing), `specify` CLI (spec-kit), Claude Code plugin system
+
+- 016-traits-to-extensions: Migrated traits to extension bundles, renamed commands from `/spex:*` to `speckit-spex-*` prefix

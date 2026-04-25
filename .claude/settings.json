@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*/spex/scripts/spex-init.sh*)",
-      "Bash(*/spex/scripts/spex-traits.sh*)"
+      "Bash(*/spex/scripts/spex-init.sh*)"
     ]
   },
   "allowedTools": [

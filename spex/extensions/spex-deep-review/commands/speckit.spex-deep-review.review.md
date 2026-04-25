@@ -37,16 +37,16 @@ If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path 
 If external tool settings are provided by the caller, use them directly. If not (e.g., when invoked directly by `spex:ship` or manually), resolve from config:
 
 ```bash
-# Read config defaults (all default to true if key is missing)
-DEFAULT_ENABLED=$(jq -r '.external_tools.enabled // true' .specify/spex-traits.json 2>/dev/null)
-DEFAULT_CODERABBIT=$(jq -r '.external_tools.coderabbit // true' .specify/spex-traits.json 2>/dev/null)
-DEFAULT_COPILOT=$(jq -r '.external_tools.copilot // true' .specify/spex-traits.json 2>/dev/null)
+# Read config defaults from deep-review extension config (all default to true if key is missing)
+DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 ```
 
 ```
 Resolution:
-  coderabbit = DEFAULT_ENABLED && DEFAULT_CODERABBIT
-  copilot    = DEFAULT_ENABLED && DEFAULT_COPILOT
+  coderabbit = DEFAULT_CODERABBIT
+  copilot    = DEFAULT_COPILOT
 ```
 
 This ensures CodeRabbit and Copilot are enabled by default regardless of how deep-review is invoked.
@@ -79,11 +79,10 @@ git diff --name-only --cached 2>/dev/null
 
 ### Step 2: Detect External Tools
 
-Check for optional external review CLIs, respecting the external tool settings from the caller:
+Check for external review CLIs, respecting the external tool settings from the caller:
 
 ```bash
-# Only check if the tool is enabled in settings
-# CodeRabbit (skip if coderabbit setting is false)
+# CodeRabbit (skip only if explicitly disabled in config)
 which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 
 # GitHub Copilot CLI (skip if copilot setting is false)
@@ -92,17 +91,16 @@ which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
 **External tool resolution:**
 1. Use the external tool settings from Prerequisites (either caller-provided or self-resolved from config)
-2. If `coderabbit` is `false`, skip CodeRabbit detection entirely
+2. **CodeRabbit is enabled by default.** Only skip if the config explicitly sets `coderabbit: false`
 3. If `copilot` is `false`, skip Copilot detection entirely
 4. If a tool is enabled in settings but not installed, proceed silently without it
-
-No error or warning if tools are not found or disabled. Proceed with internal agents only.
+5. **When CodeRabbit is available and enabled, it MUST be invoked.** Do not skip it for performance or convenience reasons. CodeRabbit provides external validation that complements the internal review agents.
 
 ### Step 3: Dispatch Review Agents
 
 **Check for teams extension:**
 
-Read `.specify/spex-traits.json` and check if `teams` is enabled.
+Read `.specify/extensions/.registry` and check if `spex-teams` extension is enabled (query: `.extensions["spex-teams"].enabled`).
 
 **Sequential mode** (teams NOT enabled):
 - Dispatch each agent one at a time using the Agent tool
@@ -134,23 +132,34 @@ Read `.specify/spex-traits.json` and check if `teams` is enabled.
 ### Step 4: Dispatch External Tools (if available)
 
 **CodeRabbit** (if available):
-```bash
-# Initial review (Stage 2): review all changes (committed branch diff + uncommitted work)
-coderabbit review --agent --type all --no-color 2>&1
 
-# Fix loop re-review rounds: review only uncommitted fixes
+**IMPORTANT: CodeRabbit MUST be run when the CLI is installed and the config allows it. Do NOT skip it. CodeRabbit findings are high-value external validation and MUST be included in the fix loop alongside internal agent findings.**
+
+First, build the file list excluding spec artifacts:
+```bash
+# Get changed files, excluding specs/ and brainstorm/ directories
+REVIEW_FILES=$(git diff --name-only "${MAIN_BRANCH}...HEAD" 2>/dev/null | grep -v -E '^(specs/|brainstorm/)' | sort -u)
+```
+
+Then invoke CodeRabbit with the explicit file list:
+```bash
+# Initial review (Stage 2): review changed source files only
+coderabbit review --agent --no-color --files $REVIEW_FILES 2>&1
+
+# Fix loop re-review rounds: review only the files that were modified by fixes
 coderabbit review --agent --type uncommitted --no-color 2>&1
 ```
-The `--agent` flag produces structured, detailed findings with rationale (preferred over `--prompt-only` which only shows prompts).
+
+The `--agent` flag produces structured, detailed findings with rationale (preferred over `--prompt-only` which only shows prompts). The `--files` flag ensures spec artifacts under `specs/` and `brainstorm/` are never reviewed.
 
 Parse output:
 1. Check for "Review completed" (no issues found)
 2. Split on `=============` delimiters
 3. For each block: extract file, line, severity keyword, description, and **rationale/explanation**
-4. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
-5. Map severity: critical -> Critical, major -> Important, minor -> Minor
-6. Set category = "external", source_agent = "coderabbit", confidence = 75
-7. **Preserve the full rationale** from CodeRabbit output for inclusion in review-findings.md
+4. Map severity: critical -> Critical, major -> Important, minor -> Minor
+5. Set category = "external", source_agent = "coderabbit", confidence = 75
+6. **Preserve the full rationale** from CodeRabbit output for inclusion in review-findings.md
+7. **All CodeRabbit findings with severity Critical or Important MUST enter the fix loop** (Step 7). They are treated identically to internal agent findings for gate and fix purposes.
 
 **Copilot CLI** (if available):
 ```bash
@@ -774,7 +783,7 @@ CHECKLIST - Check each item against the code:
 
 ## Hint Injection
 
-When the user provides hint text via `/spex:review-code <hint>`, append this section to each agent's prompt:
+When the user provides hint text via `/speckit-spex-gates-review-code <hint>`, append this section to each agent's prompt:
 
 ```
 ## Additional Review Focus (User Hint)
@@ -821,7 +830,7 @@ The gate outcome depends on the invocation context:
 - **PASS**: Allow proceeding to `spex:stamp`
 - **FAIL**: Block completion. The user must resolve remaining findings before the implementation can proceed.
 
-**Manual context** (user runs `/spex:review-code` directly):
+**Manual context** (user runs `/speckit-spex-gates-review-code` directly):
 - **PASS** or **FAIL**: Advisory only. Report findings and let the user decide. Do NOT block further commands.
 
 The invocation context is determined by the caller. When invoked from the superpowers quality gate in `speckit-implement`, the context is `superpowers`. When invoked directly, the context is `manual`.

@@ -36,10 +36,11 @@ This action runs after `speckit-specify` has created a feature branch and spec f
 
 ### Step 1: Read Configuration
 
-Read `base_path` from `.specify/spex-traits.json`:
+Read `base_path` from the worktrees extension config (or default to `..`):
 
 ```bash
-BASE_PATH=$(jq -r '.worktrees_config.base_path // ".."' .specify/spex-traits.json 2>/dev/null)
+WORKTREE_CONFIG=".specify/extensions/spex-worktrees/worktree-config.yml"
+BASE_PATH=$(yq -r '.worktrees.base_path // ".."' "$WORKTREE_CONFIG" 2>/dev/null || echo "..")
 ```
 
 Default: `..` (sibling directory to the repo root).
@@ -90,7 +91,7 @@ If the `cd` fails (directory does not exist), report a clear error and stop:
 ```bash
 if [ -z "$RESOLVED_BASE" ]; then
   echo "ERROR: base_path '$BASE_PATH' does not resolve to a valid directory."
-  echo "Check worktrees_config.base_path in .specify/spex-traits.json"
+  echo "Check worktrees.base_path in .specify/extensions/spex-worktrees/worktree-config.yml"
   # Stop here. Do not proceed to subsequent steps.
 fi
 ```
@@ -118,7 +119,7 @@ Check if the target path already exists:
 ```bash
 if [ -d "$WORKTREE_PATH" ] || [ -f "$WORKTREE_PATH" ]; then
   echo "ERROR: Target path already exists: $WORKTREE_PATH"
-  echo "Remove it manually or choose a different base_path in .specify/spex-traits.json"
+  echo "Remove it manually or choose a different base_path in .specify/extensions/spex-worktrees/worktree-config.yml"
   # Stop here. Do not proceed to subsequent steps.
 fi
 ```
@@ -131,8 +132,9 @@ Before switching away from the feature branch, commit all modified tracked files
 # Stage modifications to already-tracked files
 git add -u
 
-# Stage new spec artifacts (these are untracked but expected)
+# Stage new spec and brainstorm artifacts (these are untracked but expected)
 [ -d "specs/$BRANCH_NAME" ] && git add "specs/$BRANCH_NAME"
+[ -d "brainstorm" ] && git add brainstorm/
 [ -d ".specify" ] && git add .specify/
 
 if ! git diff --cached --quiet; then
@@ -187,16 +189,23 @@ if ! git worktree add "$WORKTREE_PATH" "$BRANCH_NAME" 2>&1; then
 fi
 ```
 
-### Step 8: Copy Flow State to Worktree
+### Step 8: Copy Configuration to Worktree
 
-The `.specify/.spex-state` file is gitignored (runtime state), so it won't exist in the new worktree. Copy it so the status line works immediately in the new session:
+Gitignored config directories (`.claude/` and `.specify/`) won't exist in the new worktree. Copy them so spec-kit extensions, skills, and settings work immediately without re-running init:
 
 ```bash
-if [ -f ".specify/.spex-state" ]; then
-  mkdir -p "$WORKTREE_PATH/.specify"
-  cp ".specify/.spex-state" "$WORKTREE_PATH/.specify/.spex-state"
+# Copy .specify/ (extensions registry, hooks, state, config)
+if [ -d ".specify" ]; then
+  rsync -a --exclude='.git' ".specify/" "$WORKTREE_PATH/.specify/"
+fi
+
+# Copy .claude/ (skills, settings, commands)
+if [ -d ".claude" ]; then
+  rsync -a ".claude/" "$WORKTREE_PATH/.claude/"
 fi
 ```
+
+This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/spex:init` needed in the worktree.
 
 ### Step 9: Print Switch Instructions
 
@@ -209,8 +218,8 @@ Print clear instructions for the user showing the worktree path:
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
 │                                                             │
-│ In the new session, run /spex:init to set up spec-kit        │
-│ commands and spex traits in the worktree.                   │
+│ Config (.claude/ and .specify/) has been copied.            │
+│ All extensions and skills are ready to use.                 │
 │                                                             │
 │ The spec file contains all context from this session.       │
 └─────────────────────────────────────────────────────────────┘

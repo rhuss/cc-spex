@@ -25,14 +25,14 @@ MAGENTA="\033[35m"
 RED="\033[31m"
 WHITE="\033[37m"
 
-# --- Trait display (appended to both modes) ---
-read_traits() {
-  local traits_file=".specify/spex-traits.json"
-  if [ ! -f "$traits_file" ]; then
+# --- Extension display (appended to both modes) ---
+read_extensions() {
+  local registry=".specify/extensions/.registry"
+  if [ ! -f "$registry" ]; then
     return
   fi
   local names
-  names=$(jq -r '.traits // {} | to_entries[] | select(.value == true) | .key' "$traits_file" 2>/dev/null)
+  names=$(jq -r '.extensions // {} | to_entries[] | select(.value.enabled == true) | .key' "$registry" 2>/dev/null)
   if [ -n "$names" ]; then
     local joined
     joined=$(echo "$names" | paste -sd ',' - | sed 's/,/, /g')
@@ -112,7 +112,7 @@ render_flow() {
   if [ "$all_done" = true ]; then
     printf " ${GREEN}${BOLD}🏁${RESET}"
   fi
-  read_traits
+  read_extensions
 }
 
 # --- Ship mode ---
@@ -160,12 +160,12 @@ render_ship() {
     never)  ASK_ICON="🚀";;
   esac
 
-  local PREFIX="🧬 ${COLOR}${BOLD}spex:ship${RESET}"
+  local PREFIX="🧬 ${COLOR}${BOLD}spex-ship${RESET}"
   local STAGE_DISPLAY="${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET}"
   local PROGRESS="${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET}"
 
   if [ "$STAGE" = "done" ]; then
-    printf "🧬 ${GREEN}${BOLD}spex:ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
+    printf "🧬 ${GREEN}${BOLD}spex-ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
   elif [ "$STATUS" = "paused" ]; then
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
   elif [ "$STATUS" = "failed" ]; then
@@ -173,7 +173,7 @@ render_ship() {
   else
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON}"
   fi
-  read_traits
+  read_extensions
 }
 
 # --- Mode dispatch ---
