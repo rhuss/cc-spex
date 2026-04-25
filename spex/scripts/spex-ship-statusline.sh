@@ -13,6 +13,17 @@ fi
 STATE_JSON=$(cat "$STATE_FILE" 2>/dev/null) || exit 0
 MODE=$(echo "$STATE_JSON" | jq -r '.mode // empty' 2>/dev/null)
 
+# Staleness check: if the state references a feature branch and we're not on it
+# (e.g., merged back to main), auto-clear the stale state file
+FEATURE_BRANCH=$(echo "$STATE_JSON" | jq -r '.feature_branch // empty' 2>/dev/null)
+if [ -n "$FEATURE_BRANCH" ]; then
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$FEATURE_BRANCH" ]; then
+    rm -f "$STATE_FILE"
+    exit 0
+  fi
+fi
+
 # Colors (shared between modes)
 RESET="\033[0m"
 BOLD="\033[1m"
