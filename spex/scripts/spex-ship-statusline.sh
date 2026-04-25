@@ -171,12 +171,12 @@ render_ship() {
     never)  ASK_ICON="🚀";;
   esac
 
-  local PREFIX="🧬 ${COLOR}${BOLD}spex${RESET}"
+  local PREFIX="🧬 ${COLOR}${BOLD}speckit-spex-ship${RESET}"
   local STAGE_DISPLAY="${EMOJI} ${COLOR}${BOLD}${STAGE}${RESET}"
   local PROGRESS="${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET}"
 
   if [ "$STAGE" = "done" ]; then
-    printf "🧬 ${GREEN}${BOLD}spex${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
+    printf "🧬 ${GREEN}${BOLD}speckit-spex-ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
   elif [ "$STATUS" = "paused" ]; then
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
   elif [ "$STATUS" = "failed" ]; then
