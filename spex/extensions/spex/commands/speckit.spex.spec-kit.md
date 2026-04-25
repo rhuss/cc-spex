@@ -50,7 +50,7 @@ This skill is the **single source of truth** for all spec-kit technical integrat
 
 Check `<spex-initialized>` in the `<spex-context>` system reminder:
 - If `true`: Skip initialization entirely. The project is already set up.
-- If `false` or missing: Run `/speckit-spex-init` to initialize. If init prompts for restart, pause this workflow and resume after restart.
+- If `false` or missing: Run `/spex:init` to initialize. If init prompts for restart, pause this workflow and resume after restart.
 
 After initialization succeeds (or was skipped), this skill provides reference material below.
 
@@ -302,8 +302,8 @@ Run: specify init --force
 - All workflow skills that need spec-kit
 
 **Calls:**
-- `/speckit-spex-init` (for initialization)
-- `specify` CLI (for init only, via speckit-spex-init)
+- `/spex:init` (for initialization)
+- `specify` CLI (for init only, via spex:init)
 - `/speckit-*` slash commands (for all operations)
 - File system operations
 

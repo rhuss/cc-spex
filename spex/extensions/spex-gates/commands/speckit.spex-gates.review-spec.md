@@ -43,7 +43,7 @@ This skill checks: completeness, clarity, implementability, and testability.
 
 ## Prerequisites
 
-Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first and stop.
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 ## Spec Selection
 

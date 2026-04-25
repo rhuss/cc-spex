@@ -32,7 +32,7 @@ This skill validates plan and task quality after `/speckit-plan` and `/speckit-t
 
 ## Prerequisites
 
-Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first and stop.
+Spec-kit must be initialized. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 **Both plan.md and tasks.md MUST exist before running this skill.** If either is missing, stop with an error:
 

@@ -30,7 +30,7 @@ spex extends these with spec-first enforcement, compliance scoring, drift detect
 
 ## Technical Prerequisites
 
-**All technical setup is handled by `/speckit-spex-init`.** Spec-kit and extensions must be initialized before using any workflow command. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
+**All technical setup is handled by `/spex:init`.** Spec-kit and extensions must be initialized before using any workflow command. If `.specify/` directory does not exist, tell the user to run `/spex:init` first. Do not check for or search for any CLI tools. Focus on choosing the right workflow.
 
 ## MANDATORY FIRST RESPONSE PROTOCOL
 
@@ -84,7 +84,7 @@ Before ANY implementation work:
 
 ### Configuration
 - **speckit-spex-extensions** - Enable/disable spex extensions (spex-gates, spex-teams, etc.)
-- **speckit-spex-init** - Initialize project with spec-kit and spex configuration
+- **spex:init** - Initialize project with spec-kit and spex configuration
 
 ### Companion: Superpowers Plugin
 These skills require [obra/superpowers](https://github.com/obra/superpowers) to be installed separately (`/plugin install superpowers@claude-plugins-official` or `claude plugin install superpowers@claude-plugins-official`). They complement spex but are not bundled:

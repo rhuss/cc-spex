@@ -99,7 +99,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 
 spex COMMANDS (helpers and configuration)
 
-  /speckit-spex-init                  Initialize spec-kit + configure extensions and permissions
+  /spex:init                  Initialize spec-kit + configure extensions and permissions
   /speckit-spex-worktree      List active worktrees or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to stamp)

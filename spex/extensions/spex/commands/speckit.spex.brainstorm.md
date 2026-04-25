@@ -103,7 +103,7 @@ digraph brainstorming {
 
 ## Prerequisites
 
-Spec-kit must be initialized before brainstorming. If `.specify/` directory does not exist, tell the user to run `/speckit-spex-init` first and stop.
+Spec-kit must be initialized before brainstorming. If `.specify/` directory does not exist, tell the user to run `/spex:init` first and stop.
 
 ## CRITICAL: Use /speckit-* Slash Commands
 
@@ -113,7 +113,7 @@ Claude MUST use `/speckit-specify` to create specs. Claude MUST NOT:
 - Create spec.md files directly
 - Bypass `/speckit-specify` for any reason
 
-If `/speckit-*` commands are not available, tell the user to run `/speckit-spex-init` first. Do NOT fall back to manual spec creation.
+If `/speckit-*` commands are not available, tell the user to run `/spex:init` first. Do NOT fall back to manual spec creation.
 
 ## The Process
 
@@ -195,7 +195,7 @@ and template formatting. Bypassing it is a process violation.
    Pass the approved spec content to `/speckit-specify` so it populates the template correctly.
 
    **If `/speckit-specify` is not available** (commands not installed): Stop and tell the user
-   to run `/speckit-spex-init` first. Do NOT fall back to manual file creation.
+   to run `/spex:init` first. Do NOT fall back to manual file creation.
 
 3. **Run clarification check (RECOMMENDED):**
 
@@ -404,7 +404,7 @@ Write to `specs/[feature-name]/review_brief.md` using the template:
 
 **Check if spex is initialized:**
 If `.specify/` directory does not exist or `.claude/skills/speckit-specify/SKILL.md` does not exist, warn the user:
-- "Before running `/speckit-plan` or `/speckit-implement`, you need to initialize the project with `/speckit-spex-init`. This sets up spec-kit templates, commands, and trait configuration."
+- "Before running `/speckit-plan` or `/speckit-implement`, you need to initialize the project with `/spex:init`. This sets up spec-kit templates, commands, and trait configuration."
 
 **Offer next steps (use EXACTLY these command names):**
 - "Ready for `/speckit-specify`"
