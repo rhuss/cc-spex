@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+extension:
+  id: spex-teams
+  name: "Spex Agent Teams"
+  version: "1.0.0"
+  description: "Parallel implementation via Claude Code Agent Teams"
+  author: cc-spex
+  license: MIT
+
+requires:
+  speckit_version: ">=0.5.2"
+  extensions:
+    - id: spex-gates
+      version: ">=1.0.0"
+
+provides:
+  commands:
+    - name: speckit.spex-teams.orchestrate
+      file: commands/speckit.spex-teams.orchestrate.md
+      description: "Parallel task implementation with spec guardian review pattern via Agent Teams"
+    - name: speckit.spex-teams.research
+      file: commands/speckit.spex-teams.research.md
+      description: "Parallel codebase research during planning via Agent Teams"
+    - name: speckit.spex-teams.implement
+      file: commands/speckit.spex-teams.implement.md
+      description: "Standalone parallel implementation via Agent Teams for independent tasks"
+
+  config:
+    - name: "teams-config.yml"
+      template: "config-template.yml"
+      description: "Agent Teams configuration"
+      required: false
+
+hooks:
+  before_plan:
+    command: speckit.spex-teams.research
+    optional: true
+    prompt: "Run parallel codebase research?"
+    description: "Parallel codebase research during planning via Agent Teams"
+
+tags:
+  - "spex"
+  - "teams"
+  - "parallel"

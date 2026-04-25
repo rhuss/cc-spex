@@ -3,7 +3,7 @@
   "traits": {
     "superpowers": true,
     "deep-review": true,
-    "teams": false,
+    "teams": true,
     "worktrees": true
   },
   "worktrees_config": {
@@ -14,5 +14,5 @@
     "coderabbit": true,
     "copilot": true
   },
-  "applied_at": "2026-04-07T08:40:10Z"
+  "applied_at": "2026-04-09T12:13:34Z"
 }

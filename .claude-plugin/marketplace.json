@@ -5,12 +5,12 @@
     "email": "rhuss@redhat.com"
   },
   "metadata": {
-    "description": "Local development marketplace for the cc-spex plugin. Extends Spec-Kit with composable traits and workflow commands for Claude Code."
+    "description": "Local development marketplace for the cc-spex plugin. Extends Spec-Kit with composable extensions and workflow commands for Claude Code."
   },
   "plugins": [
     {
       "name": "spex",
-      "version": "4.0.0",
+      "version": "5.0.0",
       "description": "Specification-Driven Development with Process Discipline for Claude Code",
       "author": {
         "name": "Roland Huss",

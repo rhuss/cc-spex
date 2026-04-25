@@ -1,0 +1,49 @@
+schema_version: "1.0"
+
+extension:
+  id: spex-gates
+  name: "Spex Quality Gates"
+  version: "1.0.0"
+  description: "Quality gates for specification-driven development: spec review, plan review, code review, and verification"
+  author: cc-spex
+  license: MIT
+
+requires:
+  speckit_version: ">=0.5.2"
+
+provides:
+  commands:
+    - name: speckit.spex-gates.review-spec
+      file: commands/speckit.spex-gates.review-spec.md
+      description: "Review spec soundness, completeness, and implementability"
+    - name: speckit.spex-gates.review-plan
+      file: commands/speckit.spex-gates.review-plan.md
+      description: "Post-planning quality validation with coverage matrix and red flag scanning"
+    - name: speckit.spex-gates.review-code
+      file: commands/speckit.spex-gates.review-code.md
+      description: "Review code against spec compliance with deviation tracking"
+    - name: speckit.spex-gates.verify
+      file: commands/speckit.spex-gates.verify.md
+      description: "Final verification gate: tests, code hygiene, spec compliance, drift check"
+    - name: speckit.spex-gates.stamp
+      file: commands/speckit.spex-gates.stamp.md
+      description: "Stamp command - invokes verification before completion"
+
+hooks:
+  after_specify:
+    command: speckit.spex-gates.review-spec
+    optional: false
+    description: "Review spec soundness after specification"
+  after_tasks:
+    command: speckit.spex-gates.review-plan
+    optional: false
+    description: "Review plan and task quality after task generation"
+  after_implement:
+    command: speckit.spex-gates.review-code
+    optional: false
+    description: "Review code compliance after implementation"
+
+tags:
+  - "spex"
+  - "quality"
+  - "review"

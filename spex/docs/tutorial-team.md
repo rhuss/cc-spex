@@ -47,7 +47,7 @@ spex team approach: Create spec, get team alignment, then implement. The PR revi
 ```
 1. CREATE BRANCH AND SPEC
    Developer creates feature branch
-   Runs /spex:brainstorm to create spec
+   Runs /speckit-spex-brainstorm to create spec
    Spec lives at specs/features/authentication/spec.md
 
 2. CREATE SPEC-ONLY PR
@@ -94,23 +94,23 @@ Think of specs as contracts between team members:
 
 **The implementer promises:**
 - Build exactly what's specified
-- Use `/spex:evolve` if reality differs
+- Use `/speckit-spex-evolve` if reality differs
 - Don't silently deviate from spec
 
-## Traits for Team Workflows
+## Extensions for Team Workflows
 
-For teams, enabling the **superpowers trait** is strongly recommended. It automates the review steps that catch issues early and integrates spec PRs directly into the workflow.
+For teams, enabling the **spex-gates extension** is strongly recommended. It automates the review steps that catch issues early and integrates spec PRs directly into the workflow.
 
 ### Automated Spec PRs
 
-With the superpowers trait enabled, `/speckit-plan` handles spec PR creation automatically:
+With the spex-gates extension enabled, `/speckit-plan` handles spec PR creation automatically via lifecycle hooks:
 
 1. Spec review runs before planning begins
 2. Plan, tasks, and review summary are generated
 3. All spec artifacts are committed to the feature branch
 4. A spec PR is offered, targeting `upstream` if configured (for fork-based workflows) or `origin` otherwise
 
-This fits naturally with the "Spec PRs before implementation" pattern described above. Instead of manually creating spec PRs, the trait handles it as part of the planning step.
+This fits naturally with the "Spec PRs before implementation" pattern described above. Instead of manually creating spec PRs, the extension handles it as part of the planning step.
 
 ## Multi-Developer Patterns
 
@@ -189,7 +189,7 @@ Team: "Let's go with magic links for v1, OAuth as future enhancement"
 
 ```
 Implementer: "The spec says X, but I discovered Y is better"
-→ Don't silently change. Use /spex:evolve
+→ Don't silently change. Use /speckit-spex-evolve
 → Create PR updating spec with reasoning
 → Team reviews the change
 → Spec and code stay aligned
@@ -207,7 +207,7 @@ spex makes onboarding easier:
 
 **Onboarding workflow:**
 ```
-1. /spex:tutorial - Learn the methodology
+1. /speckit-spex-help - Learn the methodology
 2. Review constitution - Understand project standards
 3. Review 2-3 feature specs - See examples
 4. Pair on spec creation - Practice with support
@@ -242,7 +242,7 @@ spex makes onboarding easier:
 - Fewer "I thought it meant X" moments
 
 **"Specs become outdated"**
-- That's what `/spex:evolve` is for
+- That's what `/speckit-spex-evolve` is for
 - Deliberate evolution > silent drift
 - Constitution defines update expectations
 
@@ -263,7 +263,7 @@ spex makes onboarding easier:
 **Key practices:**
 1. Spec PRs for significant features
 2. Review specs before implementation
-3. Use `/spex:evolve` for any deviations
+3. Use `/speckit-spex-evolve` for any deviations
 4. Constitution for shared standards
 5. Treat specs as team contracts
 

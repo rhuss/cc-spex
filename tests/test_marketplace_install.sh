@@ -186,47 +186,56 @@ else
 fi
 
 #==============================================================================
-# Test 5: Commands present
+# Test 5: Extension bundles present
 #==============================================================================
 echo ""
-echo "Command verification:"
+echo "Extension verification:"
 
-EXPECTED_COMMANDS=("stamp" "deep-review" "ship" "init" "traits" "brainstorm" "evolve" "help" "review-code" "review-spec" "review-plan" "worktree")
+EXPECTED_EXTENSIONS=("spex" "spex-gates" "spex-worktrees" "spex-teams" "spex-deep-review")
 
-PLUGIN_CACHE="${PLUGIN_CACHE_BASE}/commands"
+EXT_DIR="${PLUGIN_CACHE_BASE}/extensions"
 
-if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$PLUGIN_CACHE" ]]; then
-  for cmd in "${EXPECTED_COMMANDS[@]}"; do
-    if [[ -f "$PLUGIN_CACHE/$cmd.md" ]]; then
-      pass "Command present: /spex:$cmd"
+if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then
+  for ext in "${EXPECTED_EXTENSIONS[@]}"; do
+    if [[ -f "$EXT_DIR/$ext/extension.yml" ]]; then
+      pass "Extension present: $ext"
     else
-      fail "Command missing: /spex:$cmd"
+      fail "Extension missing: $ext"
     fi
   done
 else
-  fail "Plugin cache directory not found"
+  fail "Extensions directory not found"
 fi
 
 #==============================================================================
-# Test 6: Skills present
+# Test 6: Extension commands present
 #==============================================================================
 echo ""
-echo "Skill verification:"
+echo "Extension command verification:"
 
-EXPECTED_SKILLS=("brainstorm" "deep-review" "evolve" "review-code" "review-plan" "review-spec" "ship" "using-superpowers" "verification-before-completion" "worktree")
+EXPECTED_EXT_COMMANDS=(
+  "spex/commands/speckit.spex.ship.md"
+  "spex/commands/speckit.spex.init.md"
+  "spex/commands/speckit.spex.brainstorm.md"
+  "spex/commands/speckit.spex.extensions.md"
+  "spex-gates/commands/speckit.spex-gates.review-code.md"
+  "spex-gates/commands/speckit.spex-gates.review-spec.md"
+  "spex-gates/commands/speckit.spex-gates.review-plan.md"
+  "spex-gates/commands/speckit.spex-gates.stamp.md"
+  "spex-worktrees/commands/speckit.spex-worktrees.manage.md"
+  "spex-deep-review/commands/speckit.spex-deep-review.review.md"
+)
 
-SKILL_DIR="${PLUGIN_CACHE_BASE}/skills"
-
-if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$SKILL_DIR" ]]; then
-  for skill in "${EXPECTED_SKILLS[@]}"; do
-    if [[ -f "$SKILL_DIR/$skill/SKILL.md" ]]; then
-      pass "Skill present: $skill"
+if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then
+  for cmd_path in "${EXPECTED_EXT_COMMANDS[@]}"; do
+    if [[ -f "$EXT_DIR/$cmd_path" ]]; then
+      pass "Command present: $cmd_path"
     else
-      fail "Skill missing: $skill"
+      fail "Command missing: $cmd_path"
     fi
   done
 else
-  fail "Skills directory not found"
+  fail "Extensions directory not found"
 fi
 
 #==============================================================================
@@ -280,24 +289,27 @@ else
 fi
 
 #==============================================================================
-# Test 9: Overlay directories exist
+# Test 9: Extension manifests valid
 #==============================================================================
 echo ""
-echo "Overlay verification:"
+echo "Extension manifest validation:"
 
-OVERLAY_DIR="${PLUGIN_CACHE_BASE}/overlays"
-
-if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$OVERLAY_DIR" ]]; then
-  EXPECTED_OVERLAYS=("superpowers" "deep-review" "_ship-guard" "worktrees")
-  for overlay in "${EXPECTED_OVERLAYS[@]}"; do
-    if [[ -d "$OVERLAY_DIR/$overlay" ]]; then
-      pass "Overlay present: $overlay"
+if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then
+  for ext in "${EXPECTED_EXTENSIONS[@]}"; do
+    MANIFEST="$EXT_DIR/$ext/extension.yml"
+    if [[ -f "$MANIFEST" ]]; then
+      EXT_ID=$(yq -r '.extension.id' "$MANIFEST" 2>/dev/null || echo "")
+      if [[ "$EXT_ID" == "$ext" ]]; then
+        pass "Manifest valid: $ext (id=$EXT_ID)"
+      else
+        fail "Manifest id mismatch: $ext (expected=$ext, got=$EXT_ID)"
+      fi
     else
-      fail "Overlay missing: $overlay"
+      fail "Manifest missing: $ext"
     fi
   done
 else
-  fail "Overlays directory not found"
+  fail "Extensions directory not found"
 fi
 
 #==============================================================================

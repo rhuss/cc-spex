@@ -1,0 +1,56 @@
+schema_version: "1.0"
+
+extension:
+  id: spex
+  name: "Spex Core"
+  version: "1.0.0"
+  description: "Specification-Driven Development core workflow for AI agents"
+  author: cc-spex
+  license: MIT
+
+requires:
+  speckit_version: ">=0.5.2"
+
+provides:
+  commands:
+    - name: speckit.spex.brainstorm
+      file: commands/speckit.spex.brainstorm.md
+      description: "Refine rough ideas into executable specifications through collaborative questioning"
+    - name: speckit.spex.ship
+      file: commands/speckit.spex.ship.md
+      description: "Autonomous full-cycle workflow: specify through verify with configurable oversight"
+    - name: speckit.spex.help
+      file: commands/speckit.spex.help.md
+      description: "Quick reference for all spex commands and workflow"
+    - name: speckit.spex.init
+      file: commands/speckit.spex.init.md
+      description: "Initialize or update the project with specify CLI and spex configuration"
+    - name: speckit.spex.evolve
+      file: commands/speckit.spex.evolve.md
+      description: "Handle spec/code mismatches through AI-guided analysis and user-controlled evolution"
+    - name: speckit.spex.spec-refactoring
+      file: commands/speckit.spex.spec-refactoring.md
+      description: "Consolidate and improve evolved specs while maintaining feature coverage"
+    - name: speckit.spex.using-superpowers
+      file: commands/speckit.spex.using-superpowers.md
+      description: "Spex methodology entry point: workflow routing, process discipline, spec-first principle"
+    - name: speckit.spex.spec-kit
+      file: commands/speckit.spex.spec-kit.md
+      description: "Technical integration layer for the specify CLI"
+    - name: speckit.spex.extensions
+      file: commands/speckit.spex.extensions.md
+      description: "Manage spex extensions: enable, disable, or list active extensions"
+    - name: speckit.spex.flow-state
+      file: commands/speckit.spex.flow-state.md
+      description: "Create flow state for step-by-step SDD workflow tracking"
+
+hooks:
+  after_specify:
+    command: speckit.spex.flow-state
+    optional: false
+    description: "Initialize flow state tracking after specification"
+
+tags:
+  - "spex"
+  - "sdd"
+  - "workflow"

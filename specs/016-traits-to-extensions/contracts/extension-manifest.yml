@@ -1,0 +1,40 @@
+# Extension Manifest Contract
+# Each spex extension MUST provide an extension.yml matching this schema.
+# Reference implementation: .specify/extensions/git/extension.yml
+
+schema_version: "1.0"
+
+extension:
+  id: "spex-gates"                    # REQUIRED: unique identifier
+  name: "Spex Quality Gates"          # REQUIRED: human-readable
+  version: "1.0.0"                    # REQUIRED: semver
+  description: "Quality gates..."     # REQUIRED: one-line
+  author: "cc-spex"                   # REQUIRED
+  repository: "https://github.com/..."  # OPTIONAL
+  license: "MIT"                      # OPTIONAL
+
+requires:
+  speckit_version: ">=0.5.2"          # REQUIRED: minimum spec-kit version
+  tools: []                           # OPTIONAL: external tool dependencies
+  extensions: []                      # OPTIONAL: extension dependencies
+    # - id: "spex-gates"
+    #   version: ">=1.0.0"
+
+provides:
+  commands:                           # REQUIRED: at least one command
+    - name: "speckit.spex-gates.review-spec"
+      file: "commands/speckit.spex-gates.review-spec.md"
+      description: "Review spec for soundness"
+  config: []                          # OPTIONAL: config files
+
+hooks:                                # OPTIONAL: lifecycle hooks
+  after_specify:
+    command: "speckit.spex-gates.review-spec"
+    optional: false
+    prompt: null
+    description: "Run spec review after specification"
+
+tags: ["quality", "review"]           # OPTIONAL: searchable tags
+
+config:
+  defaults: {}                        # OPTIONAL: default config values

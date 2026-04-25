@@ -43,7 +43,7 @@ Every feature starts as an idea. Before writing code, turn that idea into a form
 
 | Path | When to Use | Command |
 |------|-------------|---------|
-| Brainstorm | Rough idea, needs exploration | `/spex:brainstorm` |
+| Brainstorm | Rough idea, needs exploration | `/speckit-spex-brainstorm` |
 | Direct spec | Clear requirements, no ambiguity | `/speckit-specify` |
 
 **Brainstorm workflow:**
@@ -92,7 +92,7 @@ What it explicitly doesn't do
 
 Before implementing, validate your spec.
 
-**Command:** `/spex:review-spec`
+**Command:** `/speckit-spex-review-spec`
 
 **What it checks:**
 - Structure and completeness
@@ -135,7 +135,7 @@ After implementation, verify both tests and spec compliance.
 
 Specs will drift from code. This is normal and healthy. The key is handling it deliberately.
 
-**Command:** `/spex:evolve`
+**Command:** `/speckit-spex-evolve`
 
 **What happens:**
 1. AI analyzes the mismatch
@@ -184,35 +184,42 @@ For projects with multiple features or team members, create a constitution.
 - Existing projects: When patterns emerge
 - Team projects: Always (defines shared understanding)
 
-## Traits: Quality Gates and Extensions
+## Extensions: Quality Gates and Integrations
 
-Traits are overlay modules that inject automated behavior into spec-kit commands. They add quality gates, reviews, and integrations without changing the core workflow.
+Extensions are spec-kit native modules that inject automated behavior into spec-kit commands via lifecycle hooks. They add quality gates, reviews, and integrations without changing the core workflow.
 
-### Managing Traits
+### Managing Extensions
 
 ```
-/spex:traits list              # Show which traits are active
-/spex:traits enable superpowers        # Enable spex quality gates
-/spex:traits disable superpowers       # Remove spex quality gates
+specify extension enable spex-gates       # Enable spex quality gates
+specify extension disable spex-gates      # Remove spex quality gates
 ```
 
-You can also enable traits during `/spex:init`.
+You can also enable extensions during `/spex:init`.
 
-### The Superpowers Trait
+### The spex-gates Extension
 
-Named after the upstream Superpowers plugin whose process discipline it draws from, this trait adds automated quality gates at each workflow step:
+Named after the upstream Superpowers plugin whose process discipline it draws from, this extension adds automated quality gates at each workflow step via lifecycle hooks:
 
-| Command | What the superpowers trait adds |
-|---------|------------------------|
+| Command | What spex-gates adds |
+|---------|----------------------|
 | `/speckit-specify` | Auto-runs spec review + constitution check after spec creation |
 | `/speckit-plan` | Runs spec review before planning. After planning: generates tasks, runs plan review, commits spec artifacts, offers a spec PR |
 | `/speckit-implement` | Verifies the spec package before starting. Runs code review + verification after completion |
 
-The spec PR flow is particularly useful for teams. After `/speckit-plan` completes, the trait commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
+The spec PR flow is particularly useful for teams. After `/speckit-plan` completes, the extension commits all spec artifacts (spec.md, plan.md, tasks.md, REVIEWERS.md) and offers to create a PR targeting `upstream` if configured, otherwise `origin`.
 
-### How Traits Compose
+### Other Extensions
 
-Traits are independent and can be enabled or disabled individually. Each trait uses sentinel markers (HTML comments like `<!-- SPEX-TRAIT:superpowers -->`) in overlay files to prevent double-application. Enabling multiple traits stacks their additions on top of the base commands.
+| Extension | What it adds |
+|-----------|--------------|
+| `spex-teams` | Parallel task execution via Claude Code Agent Teams with spec guardian review (experimental) |
+| `spex-deep-review` | Multi-perspective code review with 5 specialized agents, autonomous fix loop |
+| `spex-worktrees` | Git worktree isolation after `/speckit-specify`, worktree management commands |
+
+### How Extensions Compose
+
+Extensions are independent and can be enabled or disabled individually. Each extension registers lifecycle hooks that run before or after spec-kit commands. Enabling multiple extensions stacks their hooks, and they execute in registration order.
 
 ## Skill Lineage
 
@@ -238,15 +245,15 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 ### Spec Creation
 | Command | Purpose |
 |---------|---------|
-| `/spex:brainstorm` | Rough idea to spec through dialogue |
+| `/speckit-spex-brainstorm` | Rough idea to spec through dialogue |
 | `/speckit-specify` | Clear requirements to spec directly |
 | `/speckit-constitution` | Project-wide principles |
 
 ### Validation
 | Command | Purpose |
 |---------|---------|
-| `/spex:review-spec` | Validate spec quality |
-| `/spex:review-code` | Check code-to-spec compliance |
+| `/speckit-spex-review-spec` | Validate spec quality |
+| `/speckit-spex-review-code` | Check code-to-spec compliance |
 
 ### Implementation
 | Command | Purpose |
@@ -256,7 +263,7 @@ Understanding where each skill comes from helps when troubleshooting or customiz
 ### Evolution
 | Command | Purpose |
 |---------|---------|
-| `/spex:evolve` | Reconcile spec/code drift |
+| `/speckit-spex-evolve` | Reconcile spec/code drift |
 
 ## FAQ
 
@@ -267,13 +274,13 @@ A: Even small features benefit from spec context. A minimal spec (Purpose, Requi
 A: No. The spec is what you "know exactly." Write it down, then implement. This catches gaps you didn't realize existed.
 
 **Q: What if the spec keeps changing during implementation?**
-A: That's normal. Use `/spex:evolve` to reconcile. The process makes changes deliberate rather than accidental.
+A: That's normal. Use `/speckit-spex-evolve` to reconcile. The process makes changes deliberate rather than accidental.
 
 **Q: How detailed should specs be?**
 A: Detailed enough that implementation is unambiguous. If you're guessing during implementation, the spec needs more detail.
 
 **Q: What about legacy code without specs?**
-A: Create specs by analyzing existing code. Use `/spex:evolve` to reconcile any differences between what the code does and what it should do.
+A: Create specs by analyzing existing code. Use `/speckit-spex-evolve` to reconcile any differences between what the code does and what it should do.
 
 **Q: Can multiple features share a spec?**
 A: Generally no. Each feature should have its own spec. Use the constitution for shared patterns and principles.
@@ -289,10 +296,10 @@ A: Generally no. Each feature should have its own spec. Use the constitution for
 
 ## Getting Started
 
-1. **First feature:** `/spex:brainstorm` to create your first spec
-2. **Review it:** `/spex:review-spec` to validate
+1. **First feature:** `/speckit-spex-brainstorm` to create your first spec
+2. **Review it:** `/speckit-spex-review-spec` to validate
 3. **Build it:** `/speckit-implement` with TDD
-4. **If drift:** `/spex:evolve` to reconcile
+4. **If drift:** `/speckit-spex-evolve` to reconcile
 5. **For consistency:** `/speckit-constitution` to set project standards
 
 The best way to learn spex is to use it on a real feature. Start small, follow the process, and see how it feels.
