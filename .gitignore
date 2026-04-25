@@ -62,3 +62,5 @@ build/
 # Transient phase/state markers
 .specify/.spex-phase
 .specify/.spex-state
+.specify/extensions.yml
+.specify/extensions/
