@@ -413,13 +413,13 @@ The pipeline executes 9 stages in fixed order:
 |-------|-------|------------|-------------|
 | 0 | `specify` | `/speckit-specify` | Generate spec from brainstorm |
 | 1 | `clarify` | `/speckit-clarify` | Resolve spec ambiguities |
-| 2 | `review-spec` | `/speckit-spex-gates-review-spec` | Validate spec quality |
+| 2 | `review-spec` | `/speckit-spex-gates-review-spec` (Subagent) | Validate spec quality |
 | 3 | `plan` | `/speckit-plan` | Generate implementation plan |
 | 4 | `tasks` | `/speckit-tasks` | Generate task breakdown |
-| 5 | `review-plan` | `/speckit-spex-gates-review-plan` | Validate plan, tasks, and generate REVIEW-PLAN.md |
-| 6 | `implement` | `/speckit-implement` | Execute implementation |
-| 7 | `review-code` | `/speckit-spex-gates-review-code` | Spec compliance + code review + deep review + REVIEW-CODE.md |
-| 8 | `stamp` | `/speckit-spex-gates-stamp` | Final gate |
+| 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan, tasks, and generate REVIEW-PLAN.md |
+| 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
+| 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review + REVIEW-CODE.md |
+| 8 | `stamp` | `/speckit-spex-gates-stamp` (Subagent) | Final gate |
 
 ### Suppressing extension overlay gates
 
@@ -469,14 +469,34 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
 4. Invoke `/speckit-clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
 5. After clarification completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 2 (do not stop).
 
-### Stage 2: Review Spec (ALWAYS runs, even if spec passed clarify without changes)
+### Stage 2: Review Spec (Forked Subagent)
 
-Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities.
+Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities. This stage runs in an isolated subagent for clean context separation between generation and review.
 
-1. Invoke `/speckit-spex-gates-review-spec` to validate spec quality.
-2. Capture the review findings and overall assessment.
-3. Apply **Oversight Decision Logic** (see below) to handle findings.
-4. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 3 (do not stop).
+1. Resolve the spec directory:
+   ```bash
+   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
+   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   ```
+
+2. Spawn a subagent using the Agent tool with the following prompt:
+
+   ```
+   You are executing the spec review stage of a speckit-spex-ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+
+   Invoke /speckit-spex-gates-review-spec to validate spec quality.
+   The .specify/.spex-state file exists with status "running", so
+   complete the review autonomously and return immediately.
+
+   Report the overall assessment and any findings when done.
+   ```
+
+3. When the subagent returns, capture its summary.
+4. Apply **Oversight Decision Logic** (see below) to handle findings.
+5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 3 (do not stop).
 
 ### Stage 3: Plan
 
@@ -490,13 +510,37 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
 2. This produces `tasks.md`.
 3. After task generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 5 (do not stop).
 
-### Stage 5: Review Plan
+### Stage 5: Review Plan (Forked Subagent)
 
-1. Invoke `/speckit-spex-gates-review-plan` to validate plan coverage and task quality.
-3. This requires both `plan.md` and `tasks.md` (generated in stages 3 and 4).
-4. This generates `REVIEW-PLAN.md`.
-5. Capture findings and apply **Oversight Decision Logic**.
-6. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
+This stage runs in an isolated subagent for clean context separation between planning and review.
+
+1. Resolve the spec directory:
+   ```bash
+   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
+   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   ```
+
+2. Spawn a subagent using the Agent tool with the following prompt:
+
+   ```
+   You are executing the plan review stage of a speckit-spex-ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+   Plan: <FEATURE_DIR>/plan.md
+   Tasks: <FEATURE_DIR>/tasks.md
+
+   Invoke /speckit-spex-gates-review-plan to validate plan coverage and task quality.
+   This generates REVIEW-PLAN.md.
+   The .specify/.spex-state file exists with status "running", so
+   complete the review autonomously and return immediately.
+
+   Report the findings and overall assessment when done.
+   ```
+
+3. When the subagent returns, capture its summary.
+4. Apply **Oversight Decision Logic** to handle findings.
+5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement (Forked Subagent)
 
@@ -588,12 +632,37 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
-### Stage 8: Stamp
+### Stage 8: Stamp (Forked Subagent)
 
-1. Invoke `/speckit-spex-gates-stamp` for final verification.
-2. This runs tests, validates spec compliance, and checks for drift.
-3. If stamp passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
-4. If stamp fails, apply **Oversight Decision Logic**.
+This stage runs in an isolated subagent for clean final verification without accumulated context from prior stages.
+
+1. Resolve the spec directory:
+   ```bash
+   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
+   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   ```
+
+2. Spawn a subagent using the Agent tool with the following prompt:
+
+   ```
+   You are executing the final verification stage of a speckit-spex-ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+   Plan: <FEATURE_DIR>/plan.md
+   Tasks: <FEATURE_DIR>/tasks.md
+
+   Invoke /speckit-spex-gates-stamp for final verification.
+   This runs tests, validates spec compliance, and checks for drift.
+   The .specify/.spex-state file exists with status "running", so
+   complete the verification autonomously and return immediately.
+
+   Report pass/fail and any findings when done.
+   ```
+
+3. When the subagent returns, capture its summary.
+4. If stamp passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
+5. If stamp fails, apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic
 
@@ -796,16 +865,18 @@ Next steps:
 **This skill is invoked by:**
 - Users directly via `/speckit-spex-ship`
 
-**This skill invokes:**
+**This skill invokes (inline):**
 - `/speckit-specify` (Stage 0)
 - `/speckit-clarify` (Stage 1)
-- `/speckit-spex-gates-review-spec` (Stage 2)
 - `/speckit-plan` (Stage 3)
 - `/speckit-tasks` (Stage 4)
+
+**This skill invokes (forked subagent for context isolation):**
+- `/speckit-spex-gates-review-spec` (Stage 2)
 - `/speckit-spex-gates-review-plan` (Stage 5)
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
-- `/speckit-spex-gates-stamp` (Stage 8: Stamp)
+- `/speckit-spex-gates-stamp` (Stage 8)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`
 **Not recommended:** `spex-worktrees` extension (creates a session restart mid-pipeline; use manual worktree setup instead)
