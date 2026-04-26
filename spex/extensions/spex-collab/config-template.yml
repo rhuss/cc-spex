@@ -1,0 +1,2 @@
+pr_base_branch: "main"
+auto_generate_reviewers: true

@@ -1,0 +1,50 @@
+schema_version: "1.0"
+
+extension:
+  id: spex-collab
+  name: "Spex Collaboration"
+  version: "1.0.0"
+  description: "Generate REVIEWERS.md guides for PR reviewers and split implementation into phase-based PRs with pause points"
+  author: cc-spex
+  license: MIT
+
+requires:
+  speckit_version: ">=0.5.2"
+  extensions:
+    - id: spex-gates
+      version: ">=1.0.0"
+
+provides:
+  commands:
+    - name: speckit.spex-collab.reviewers
+      file: commands/speckit.spex-collab.reviewers.md
+      description: "Generate REVIEWERS.md review guide for spec and code PRs"
+    - name: speckit.spex-collab.phase-split
+      file: commands/speckit.spex-collab.phase-split.md
+      description: "Present phase split proposal before implementation"
+    - name: speckit.spex-collab.phase-manager
+      file: commands/speckit.spex-collab.phase-manager.md
+      description: "Manage phase boundaries, PR creation, and REVIEWERS.md updates"
+
+  config:
+    - name: "collab-config.yml"
+      template: "config-template.yml"
+      description: "Collaboration extension configuration"
+      required: false
+
+hooks:
+  after_tasks:
+    command: speckit.spex-collab.reviewers
+    optional: false
+    description: "Generate REVIEWERS.md after task generation"
+  before_implement:
+    command: speckit.spex-collab.phase-split
+    optional: true
+    prompt: "Review PR split for implementation phases?"
+    description: "Present phase split proposal before implementation"
+
+tags:
+  - "spex"
+  - "collaboration"
+  - "review"
+  - "pr"

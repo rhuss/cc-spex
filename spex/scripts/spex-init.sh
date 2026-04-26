@@ -191,9 +191,9 @@ install_extensions() {
   fi
 
   # Install in dependency order: extensions without dependencies first,
-  # then extensions that depend on others (spex-deep-review and spex-teams
-  # require spex-gates).
-  local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams)
+  # then extensions that depend on others (spex-deep-review, spex-teams,
+  # and spex-collab require spex-gates).
+  local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab)
 
   local installed=0 failed=0
   for ext_id in "${install_order[@]}"; do

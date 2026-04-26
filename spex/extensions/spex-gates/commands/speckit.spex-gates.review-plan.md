@@ -137,9 +137,21 @@ For each non-functional requirement in the spec, verify the plan includes:
 
 If any NFR lacks a measurement method, flag it.
 
-## 6. Generate REVIEW-PLAN.md (MANDATORY)
+## 6. Generate REVIEW-PLAN.md (MANDATORY unless spex-collab is active)
 
-Generating `REVIEW-PLAN.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEW-PLAN.md`.
+**Check if spex-collab is enabled** before deciding where to output the review:
+
+```bash
+if [ -f "spex/extensions/spex-collab/extension.yml" ]; then
+  echo "COLLAB_ENABLED=true"
+else
+  echo "COLLAB_ENABLED=false"
+fi
+```
+
+**If spex-collab is enabled**: Output the validation findings (coverage matrix, red flags, task quality) to the console only. Do NOT write `REVIEW-PLAN.md`. The reviewer-facing content is consolidated into `REVIEWERS.md` by spex-collab instead. Skip the structural validation in step 7 as well.
+
+**If spex-collab is NOT enabled**: Generating `REVIEW-PLAN.md` is **mandatory**. The planning workflow MUST NOT proceed to PR creation without this file. After validation passes, generate `specs/[feature-name]/REVIEW-PLAN.md`.
 
 ### Purpose
 

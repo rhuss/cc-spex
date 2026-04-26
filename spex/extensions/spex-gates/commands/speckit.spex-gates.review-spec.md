@@ -251,7 +251,19 @@ Invoke `/speckit-analyze` to check consistency between:
 
 ### 9. Generate Review Report
 
-**Write the review report to `REVIEW-SPEC.md` in the spec directory** (e.g., `specs/[feature-name]/REVIEW-SPEC.md`). This enables artifact-based detection by the status line.
+**Check if spex-collab is enabled** before deciding where to output the report:
+
+```bash
+if [ -f "spex/extensions/spex-collab/extension.yml" ]; then
+  echo "COLLAB_ENABLED=true"
+else
+  echo "COLLAB_ENABLED=false"
+fi
+```
+
+**If spex-collab is enabled**: Output the review findings to the console only. Do NOT write `REVIEW-SPEC.md`. The reviewer-facing content is consolidated into `REVIEWERS.md` by spex-collab instead.
+
+**If spex-collab is NOT enabled**: Write the review report to `REVIEW-SPEC.md` in the spec directory (e.g., `specs/[feature-name]/REVIEW-SPEC.md`). This enables artifact-based detection by the status line.
 
 **Report structure:**
 

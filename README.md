@@ -15,7 +15,7 @@
 
 [Spec-Kit](https://github.com/github/spec-kit) is a great foundation for specification-driven development. cc-spex is a Claude Code plugin that extends Spec-Kit through **extensions**, self-contained bundles that provide additional commands and lifecycle hooks.
 
-Five bundled extensions add quality gates, git worktree isolation, parallel agent execution, and multi-perspective code review. Each extension registers hooks that fire automatically at spec-kit lifecycle boundaries. You enable or disable them independently via `specify extension enable/disable`.
+Six bundled extensions add quality gates, git worktree isolation, parallel agent execution, multi-perspective code review, and collaborative PR workflows. Each extension registers hooks that fire automatically at spec-kit lifecycle boundaries. You enable or disable them independently via `specify extension enable/disable`.
 
 cc-spex also adds commands for things Spec-Kit doesn't cover: interactive brainstorming, spec/code drift detection, and autonomous pipelines. For hands-on work, you call each step yourself. For full automation, `/speckit-spex-ship` chains the entire workflow from brainstorm to verification with configurable oversight.
 
@@ -137,7 +137,7 @@ make install
 /spex:init
 ```
 
-This runs Spec-Kit's `specify init`, installs all five bundled extensions, and asks about permissions. After initialization, extension hooks fire automatically at spec-kit lifecycle boundaries.
+This runs Spec-Kit's `specify init`, installs all six bundled extensions, and asks about permissions. After initialization, extension hooks fire automatically at spec-kit lifecycle boundaries.
 
 ## The Extensions System
 
@@ -157,6 +157,11 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 **`spex-teams`** (experimental, requires `spex-gates`): Parallel implementation via Claude Code Agent Teams. When combined with `spex-deep-review`, review agents run in parallel.
 
 **`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, optionally creates a sibling worktree and copies `.claude/` and `.specify/` config to it.
+
+**`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and splits implementation into phase-based PRs with pause points between phases. When enabled, `REVIEWERS.md` replaces the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files as the single reviewer-facing artifact.
+- `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance
+- `before_implement`: presents phase split proposal for implementation PRs
+- `phase-manager`: coordinates PR creation, code review updates, and phase boundaries
 
 ### Managing Extensions
 
@@ -203,6 +208,9 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-stamp` | spex-gates | Final gate before completion |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, create, or clean up git worktrees |
+| `/speckit-spex-collab-reviewers` | spex-collab | Generate REVIEWERS.md review guide (fires automatically via hook) |
+| `/speckit-spex-collab-phase-split` | spex-collab | Present phase split proposal before implementation |
+| `/speckit-spex-collab-phase-manager` | spex-collab | Manage phase boundaries, PR creation, and REVIEWERS.md updates |
 
 ## Ship Command
 

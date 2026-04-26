@@ -191,7 +191,7 @@ fi
 echo ""
 echo "Extension verification:"
 
-EXPECTED_EXTENSIONS=("spex" "spex-gates" "spex-worktrees" "spex-teams" "spex-deep-review")
+EXPECTED_EXTENSIONS=("spex" "spex-gates" "spex-worktrees" "spex-teams" "spex-deep-review" "spex-collab")
 
 EXT_DIR="${PLUGIN_CACHE_BASE}/extensions"
 
@@ -224,6 +224,9 @@ EXPECTED_EXT_COMMANDS=(
   "spex-gates/commands/speckit.spex-gates.stamp.md"
   "spex-worktrees/commands/speckit.spex-worktrees.manage.md"
   "spex-deep-review/commands/speckit.spex-deep-review.review.md"
+  "spex-collab/commands/speckit.spex-collab.reviewers.md"
+  "spex-collab/commands/speckit.spex-collab.phase-split.md"
+  "spex-collab/commands/speckit.spex-collab.phase-manager.md"
 )
 
 if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then
