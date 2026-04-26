@@ -309,7 +309,7 @@ def check_verification_gate(tool_name, tool_input, session_id, cwd):
 
     return (
         "spex stamp reminder: Final verification has not been run this session. "
-        "Consider running /spex:stamp first, or confirm with the user that "
+        "Consider running /speckit-spex-gates-stamp first, or confirm with the user that "
         "they want to proceed without the final gate."
     )
 
