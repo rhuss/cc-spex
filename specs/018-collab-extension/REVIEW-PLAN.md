@@ -15,9 +15,9 @@ When a team uses the spec-driven development workflow, the spec, plan, and imple
 
 ## Bigger Picture
 
-This extension is the implementation of the collaborative SDD workflow described in the README's Workflow section. It sits between the existing quality gates (spex-gates) and the user. The gates produce review artifacts (REVIEW-SPEC.md, REVIEW-CODE.md), and spex-collab synthesizes those into a reviewer-friendly narrative. Without this extension, the two-phase PR workflow described in the README is a manual process.
+This extension is the implementation of the collaborative SDD workflow described in the README's Workflow section. It consolidates what were previously three separate review files (REVIEW-SPEC.md, REVIEW-PLAN.md, REVIEW-CODE.md) into a single `REVIEWERS.md` artifact. The spex-gates validation logic still runs, but outputs findings to console only when spex-collab is enabled. Without this extension, the two-phase PR workflow described in the README is a manual process.
 
-The extension depends on spex-gates but does not modify it. If spex-collab is disabled, vanilla spec-kit behavior is preserved. This is the first extension that manages state across conversation boundaries (via `.spex-state`), which sets a precedent for how other extensions might persist cross-session state.
+The extension depends on spex-gates but modifies its output behavior: when spex-collab is enabled, spex-gates suppresses file output (FR-014). If spex-collab is disabled, vanilla spec-kit behavior is preserved, including the original separate review files. This is the first extension that both manages cross-session state (via `.spex-state`) and alters another extension's output, which sets precedents for inter-extension coordination.
 
 ---
 
@@ -58,11 +58,11 @@ Spec sections are overwritten on re-run, but code phase sections are preserved. 
 
 ### Areas where I'm less certain (5 min)
 
-- [FR-009](spec.md#functional-requirements): The transparency requirement says the user calls `/speckit-implement` as normal and spex-collab "intercepts at phase boundaries." But the actual mechanism is a `before_implement` hook plus a separate `phase-manager` command. This is not quite "transparent" in the way the requirement implies. The plan addresses this pragmatically, but the requirement text overpromises.
+- [FR-014](spec.md#functional-requirements): This is the first time one extension modifies another extension's behavior. The spec says spex-gates should suppress file output when spex-collab is enabled. Does this create a coupling that violates constitution principle III (Extension Composability)? The manifest `requires` declaration makes the dependency explicit, but the behavioral change is implicit.
 
-- [Edge case: change split mid-implementation](spec.md#edge-cases): The spec says users can "re-group remaining phases but not already-completed ones." The tasks include this in T013, but the state model in data-model.md says `phase_plan` is "immutable after confirmation." These may conflict.
+- [Edge case: change split mid-implementation](spec.md#edge-cases): The spec says users can "re-group remaining phases but not already-completed ones." The data-model.md now clarifies this: completed phases are immutable, remaining phases can be re-grouped. Is this distinction clear enough for the implementation?
 
-- The [Assumptions](spec.md#assumptions) section mentions that `review_brief.md` from the brainstorm command is "superseded" by REVIEWERS.md. This cross-cutting change is not tracked in the tasks. If the brainstorm skill continues to generate `review_brief.md`, reviewers might get confused by two competing review guides.
+- The [Assumptions](spec.md#assumptions) section mentions that `review_brief.md` from the brainstorm command is "superseded" by REVIEWERS.md. T028 tracks this as a follow-up issue, but until it ships, two competing review guides could coexist and confuse reviewers.
 
 ### Risks and open questions (5 min)
 
