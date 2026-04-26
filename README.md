@@ -24,20 +24,28 @@ cc-spex also adds commands for things Spec-Kit doesn't cover: interactive brains
 
 ## Workflow
 
-The recommended workflow has two phases, each producing a pull request:
+Specification-driven development works well as a solo practice: you write the spec, you implement it, you review your own code. The feedback loop is tight and the overhead is low. In a team setting, though, the approach hits friction. The spec, plan, and implementation together can produce thousands of lines of structured artifacts and code. A single PR containing all of that is difficult to review meaningfully. Reviewers either rubber-stamp it or spend hours trying to understand decisions that were made early in the process.
+
+cc-spex addresses this with a two-phase workflow that splits specification from implementation into separate pull requests. The key insight: catch design problems during spec review, before any code exists, so that implementation PRs can focus on whether the code matches an already-agreed specification.
 
 ### Phase 1: Specification
 
-Start with an idea, refine it through brainstorming, then create a formal spec and implementation plan. The output is a PR containing `spec.md`, `plan.md`, `tasks.md`, and a `REVIEWERS.md` that guides reviewers through what to look for during spec review.
+Start with an idea, refine it through brainstorming, then create a formal spec and implementation plan.
 
 ```
-/speckit-spex-brainstorm   # Refine the idea through dialogue
-/speckit-specify           # Create formal spec (review-spec hook fires automatically)
+/speckit-spex-brainstorm   # Refine the idea into a structured brainstorm document
+/speckit-specify           # Create formal spec from brainstorm (review-spec hook fires automatically)
 /speckit-plan              # Generate implementation plan
 /speckit-tasks             # Generate task breakdown (review-plan hook fires automatically)
 ```
 
-Open a PR with these artifacts. Reviewers use `REVIEWERS.md` as a starting point to understand the spec's scope, key decisions, and areas that need scrutiny.
+The output is a PR containing `spec.md`, `plan.md`, `tasks.md`, and a `REVIEWERS.md` guide. That last file is what makes collaborative SDD practical.
+
+#### The REVIEWERS.md Guide
+
+Reviewing a 500-line specification document from scratch is daunting. `REVIEWERS.md` solves this by providing a structured 30-minute review walkthrough. It highlights the decisions that actually need human judgment: architectural trade-offs, scope boundaries, areas where the AI made assumptions that a domain expert should validate. The guide also flags potentially controversial points, things where reasonable engineers might disagree, so reviewers can focus their time on the parts where their input matters most rather than reading everything end to end.
+
+Open a PR with these artifacts. Reviewers follow `REVIEWERS.md` to understand the spec's scope, key decisions, and areas that need scrutiny. This keeps spec review focused and time-boxed.
 
 ### Phase 2: Implementation
 
@@ -48,6 +56,8 @@ After the spec PR is reviewed and merged, implementation can proceed in one or m
 /speckit-spex-gates-stamp  # Final gate
 ```
 
+Because the spec is already reviewed and agreed, implementation PRs are smaller in scope. Reviewers already understand the design. They can focus on whether the code correctly implements the spec rather than questioning the approach itself.
+
 If spec/code drift is detected during implementation, use `/speckit-spex-evolve` to reconcile: either update the spec or fix the code, then continue.
 
 ### Context Management
@@ -56,11 +66,11 @@ Between phases (and between planning and implementation within a phase), running
 
 When you run `/clear`, review commands automatically resolve the spec from the current git branch name, so no manual spec selection is needed. The `spex-gates` extension displays context clear recommendations at transition points.
 
-In the `/speckit-spex-ship` pipeline, the implementation and review stages run as isolated subagents automatically, so the orchestrator stays lightweight without manual `/clear` calls.
+In the `/speckit-spex-ship` pipeline, all review stages and the implementation stage run as isolated subagents automatically, so the orchestrator stays lightweight without manual `/clear` calls.
 
 ### One-Shot: `/speckit-spex-ship`
 
-For smaller features or solo projects, `/speckit-spex-ship` chains the entire workflow from brainstorm through verification in a single session, without intermediate PRs. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`) and can optionally create a PR at the end with `--create-pr`. See [Ship Command](#ship-command) below for details.
+For smaller features or solo work where intermediate review is not needed, `/speckit-spex-ship` chains the entire workflow from brainstorm through verification in a single session. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`) and can optionally create a PR at the end with `--create-pr`. See [Ship Command](#ship-command) below for details.
 
 ```mermaid
 flowchart TD
@@ -76,7 +86,7 @@ flowchart TD
     ReviewSpec --> Plan["/speckit-plan<br>Generate plan + tasks"]
     Plan --> ReviewPlan["review-plan<br>(auto via hook)"]
 
-    ReviewPlan -->|PR #1: Spec| SpecPR([Spec Review & Merge])
+    ReviewPlan -->|PR #1: Spec| SpecPR([Spec Review via REVIEWERS.md])
 
     SpecPR --> Implement["/speckit-implement<br>Build with TDD"]
     Implement --> ReviewCode["review-code<br>(auto via hook)"]
@@ -179,7 +189,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | Command | Extension | Purpose |
 |---------|-----------|---------|
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions |
-| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a spec through dialogue |
+| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
 | `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
 | `/speckit-spex-help` | spex | Show a quick reference for all commands |
