@@ -61,12 +61,21 @@ After each implementation phase, the extension updates `REVIEWERS.md` with code-
 - What happens when a phase's code review finds critical issues? The fix loop runs within the phase before offering PR creation, same as current review-code behavior.
 - What happens when the user declines PR creation after a phase? Continue to the next phase without creating a PR. The work accumulates for a later PR.
 
+## Clarifications
+
+### Session 2026-04-26
+
+- Q: How should the extension track completed phases across conversation boundaries? → A: Persist phase progress in `.specify/.spex-state` (extend existing state file with a `completed_phases` array)
+- Q: What branch does each phase PR target in a multi-phase implementation? → A: Each phase PR targets `main` (or the base branch). Phase PRs are sequential, each showing only that phase's changes on top of the previously merged phase.
+- Q: What happens to an existing REVIEWERS.md on re-run? → A: Spec sections are regenerated from current state; code phase sections are appended (never overwritten), each identified by phase number.
+- Q: What should be explicitly out of scope? → A: Reviewer assignment, automated merging, CI/CD integration, and comment/feedback tracking are all excluded.
+
 ## Requirements
 
 ### Functional Requirements
 
 - **FR-001**: Extension MUST generate `REVIEWERS.md` in the spec directory after the review-plan gate completes (spec phase).
-- **FR-002**: Extension MUST update `REVIEWERS.md` in the spec directory after each implementation phase's review-code gate completes.
+- **FR-002**: Extension MUST update `REVIEWERS.md` in the spec directory after each implementation phase's review-code gate completes. On re-run, spec-level sections (feature overview, scope, decisions) are regenerated from current state, while code phase sections are appended and identified by phase number (never overwritten).
 - **FR-003**: `REVIEWERS.md` MUST be a human-readable document aimed at PR reviewers, NOT a dump of automated review findings.
 - **FR-004**: `REVIEWERS.md` for spec PRs MUST include: feature overview, scope boundaries, key decisions with trade-offs, areas needing attention (controversial points), and open questions.
 - **FR-005**: `REVIEWERS.md` for code PRs MUST include: what changed in this phase, spec compliance notes, areas where the reviewer should focus, and any assumptions the AI made during implementation.
@@ -74,14 +83,16 @@ After each implementation phase, the extension updates `REVIEWERS.md` with code-
 - **FR-007**: When spex-collab is disabled, it has no effect. No REVIEWERS.md is generated, no phase pausing occurs. Vanilla spec-kit behavior is preserved.
 - **FR-008**: At the start of implementation (not in ship mode), the extension MUST present a PR split proposal based on task phases from tasks.md and allow the user to adjust groupings before proceeding.
 - **FR-009**: The extension MUST hook into spec-kit's phase system transparently, so that `/speckit-implement` pauses between phases without requiring a separate wrapper command. The user calls `/speckit-implement` as normal; spex-collab intercepts at phase boundaries.
-- **FR-010**: After each implementation phase completes and review gates pass, the extension MUST offer to create a PR via `gh pr create`, letting the user confirm or adjust before creating.
+- **FR-010**: After each implementation phase completes and review gates pass, the extension MUST offer to create a PR via `gh pr create` targeting `main` (or the base branch), letting the user confirm or adjust before creating. Each phase PR contains only that phase's changes; subsequent phases wait for the previous PR to be merged before opening theirs.
 - **FR-011**: After PR creation, the extension MUST pause and wait for the user to indicate readiness (e.g., PR merged) before starting the next phase. The user resumes by responding in the conversation.
 - **FR-012**: If tasks.md has no phase markers, the extension MUST treat all tasks as a single phase.
+- **FR-013**: The extension MUST persist phase completion state in `.specify/.spex-state` by maintaining a `completed_phases` array. When a conversation resumes, the extension reads this state to skip already-completed phases and continue from the next pending phase.
 
 ### Key Entities
 
 - **REVIEWERS.md**: A human-readable review guide generated in the spec directory. Contains different content depending on whether it accompanies a spec PR or a code PR.
 - **Phase Split Plan**: A grouping of tasks into PR-sized phases, derived from tasks.md phase markers and optionally adjusted by the user.
+- **Phase State** (in `.specify/.spex-state`): A `completed_phases` array tracking which phases have been implemented and had PRs created, enabling cross-session continuity.
 
 ## Success Criteria
 
@@ -107,6 +118,13 @@ The exact hook names depend on what spec-kit's phase system exposes. If spec-kit
 ### Ship Mode Guard
 
 All hooks check for `.specify/.spex-state` with `mode: "ship"`. If detected, the hook returns immediately without action.
+
+## Out of Scope
+
+- **Reviewer assignment**: The extension does not assign reviewers to PRs or manage reviewer lists. The user (or team tooling) handles reviewer selection.
+- **Automated merging**: The extension creates PRs but never merges them. Merge decisions remain with the team.
+- **CI/CD integration**: The extension does not trigger or monitor CI pipelines. It operates entirely within the Claude Code conversation.
+- **Comment/feedback tracking**: The extension does not read, aggregate, or respond to PR review comments. REVIEWERS.md is a one-way output, not a feedback loop.
 
 ## Assumptions
 
