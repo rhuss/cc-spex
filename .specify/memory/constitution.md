@@ -155,6 +155,12 @@ The plugin's own development follows these workflow rules.
   added, or removed, all cross-references in retained skills SHOULD
   be updated in the same change. `rg` verification helps catch stale
   references.
+- **Documentation maintenance**: When adding, removing, or renaming
+  extensions, commands, hooks, or workflows, README.md and all
+  relevant documentation MUST be updated in the same commit or PR.
+  This includes the Bundled Extensions section, Commands Reference
+  table, workflow descriptions, and any migration guides. Stale
+  documentation misleads users and erodes trust.
 
 ## Governance
 

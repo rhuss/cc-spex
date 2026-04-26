@@ -36,7 +36,7 @@ Start with an idea, refine it through brainstorming, then create a formal spec a
 /speckit-tasks             # Generate task breakdown
 ```
 
-Quality gates fire automatically via `spex-gates` hooks: review-spec runs after specify, review-plan runs after tasks.
+Quality gates fire automatically via `spex-gates` hooks: review-spec runs after specify, review-plan runs after tasks. When the `spex-collab` extension is enabled, `REVIEWERS.md` is generated automatically after task generation, replacing the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files with a single reviewer-focused artifact.
 
 The output is a PR containing Spec-Kit artifacts (`spec.md`, `plan.md`, `tasks.md`) and a spex-generated `REVIEWERS.md` guide. That last file is what makes collaborative SDD practical.
 
@@ -48,13 +48,16 @@ Open a PR with these artifacts. Reviewers follow `REVIEWERS.md` to understand th
 
 ### Phase 2: Implementation
 
-After the spec PR is reviewed and merged, implementation can proceed in one or more PRs (one per logical phase is ideal). Each implementation PR updates `REVIEWERS.md` with code-specific review hints, compliance notes, and areas where the reviewer should focus.
+After the spec PR is reviewed and merged, implementation can proceed in one or more PRs (one per logical phase is ideal).
+
+When `spex-collab` is enabled, it presents a phase split proposal before implementation begins (via the `before_implement` hook). You confirm or adjust how tasks.md phases map to PRs, then implementation pauses after each phase. At each pause, the `phase-manager` command runs code review, updates `REVIEWERS.md` with code-specific review hints, and offers to create a PR via `gh`. After the PR is merged, you resume with the next phase.
 
 ```
-/speckit-implement         # Build following the plan
+/speckit-implement                        # Starts with phase split proposal
+/speckit-spex-collab-phase-manager        # After each phase: review, PR, pause
 ```
 
-Code review and verification run automatically via `spex-gates` hooks after implementation completes.
+Without `spex-collab`, implementation runs straight through and code review fires automatically via `spex-gates` hooks after completion.
 
 Because the spec is already reviewed and agreed, reviewers already understand the design. They can focus on whether the code correctly implements the spec rather than questioning the approach itself.
 
@@ -92,12 +95,15 @@ flowchart TD
 
     ReviewPlan -->|PR #1: Spec| SpecPR([Spec Review via REVIEWERS.md])
 
-    SpecPR --> Implement["/speckit-implement<br>Build with TDD"]
+    SpecPR --> PhaseSplit["phase-split<br>(auto via hook, spex-collab)"]
+    PhaseSplit --> Implement["/speckit-implement<br>Build phase N"]
     Implement --> ReviewCode["review-code<br>(auto via hook)"]
 
     ReviewCode --> Verify{Tests pass?<br>Spec compliant?}
 
-    Verify -->|Yes| ImplPR([PR #2+: Implementation])
+    Verify -->|Yes| PhaseManager["phase-manager<br>Update REVIEWERS.md, create PR"]
+    PhaseManager -->|"More phases"| Implement
+    PhaseManager -->|"All done"| ImplPR([PR #2+: Implementation])
     Verify -->|Drift detected| Evolve["/speckit-spex-evolve<br>Reconcile"]
 
     Evolve -->|"Update spec"| ReviewSpec
