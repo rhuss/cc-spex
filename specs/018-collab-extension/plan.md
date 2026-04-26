@@ -87,9 +87,9 @@ spex/extensions/spex-collab/
 
 ### REVIEWERS.md Content Sources
 
-**Decision**: For spec PRs, extract content from `spec.md` (overview, scope, requirements), `plan.md` (technical approach, key decisions), and `REVIEW-SPEC.md` (areas of concern from spec review). For code PRs, extract from `REVIEW-CODE.md` (compliance findings, focus areas) and git diff summary.
+**Decision**: REVIEWERS.md is the single reviewer-facing artifact, replacing the separate REVIEW-SPEC.md and REVIEW-PLAN.md files. For spec PRs, extract content directly from `spec.md` (overview, scope, requirements), `plan.md` (technical approach, key decisions), and `tasks.md` (coverage validation). The spex-gates review-spec and review-plan commands still run their validation logic but output findings to console only (no persisted files) when spex-collab is enabled. For code PRs, extract from the review-code gate's console output and `git diff` summary.
 
-**Rationale**: Reusing existing review artifacts avoids duplicating analysis. REVIEWERS.md adds the human-readable narrative layer on top.
+**Rationale**: One reviewer artifact is clearer than three. The validation logic (spec soundness, coverage matrix, red flags) is valuable, but persisting it as separate files creates confusion about which document reviewers should read. Console output serves the spec author; REVIEWERS.md serves the PR reviewer.
 
 ### PR Creation via `gh`
 

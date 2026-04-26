@@ -34,7 +34,7 @@
 - [ ] T004 [US1] Create the reviewers command in spex/extensions/spex-collab/commands/speckit.spex-collab.reviewers.md with YAML frontmatter (name, description, argument-hint) and step-by-step instructions
 - [ ] T005 [US1] Implement ship mode guard in reviewers command: check .specify/.spex-state for mode "ship", return immediately if detected (FR-006)
 - [ ] T006 [US1] Implement spec directory resolution in reviewers command: use check-prerequisites.sh --json --paths-only to locate FEATURE_DIR, FEATURE_SPEC, and related artifacts
-- [ ] T007 [US1] Implement spec PR REVIEWERS.md generation logic: read spec.md (overview, scope, requirements), plan.md (technical approach, key decisions), and REVIEW-SPEC.md (areas of concern). Compose REVIEWERS.md using the template from spex/extensions/spex-collab/templates/reviewers-template.md. Write to FEATURE_DIR/REVIEWERS.md (FR-001, FR-003, FR-004)
+- [ ] T007 [US1] Implement spec PR REVIEWERS.md generation logic: read spec.md (overview, scope, requirements), plan.md (technical approach, key decisions), and tasks.md (coverage). Compose REVIEWERS.md using the template from spex/extensions/spex-collab/templates/reviewers-template.md. Write to FEATURE_DIR/REVIEWERS.md (FR-001, FR-003, FR-004). REVIEWERS.md is the single reviewer artifact, replacing REVIEW-SPEC.md and REVIEW-PLAN.md
 - [ ] T008 [US1] Implement re-run behavior: when REVIEWERS.md already exists, regenerate spec sections (everything above the first `## Phase` heading) while preserving any existing code phase sections below that boundary (FR-002 clarification)
 - [ ] T009 [US1] Implement disabled extension guard: check if spex-collab extension is enabled via specify extension list or config check. If disabled, return without generating REVIEWERS.md (FR-007)
 
@@ -87,9 +87,10 @@
 
 - [ ] T023 [P] Update spex/scripts/spex-init.sh to include spex-collab in the extension installation loop (specify extension add spex/extensions/spex-collab --dev)
 - [ ] T024 [P] Register spex-collab hooks in .specify/extensions.yml: add after_tasks hook for speckit.spex-collab.reviewers (optional: false) and before_implement hook for speckit.spex-collab.phase-split (optional: true, prompt: "Review PR split for implementation phases?")
-- [ ] T025 [P] Update README.md: add spex-collab to Bundled Extensions section (description, commands, hooks), add entry to Commands Reference table, document the phase-manager workflow
-- [ ] T026 Run make release to validate schema and integration test passes with spex-collab present
-- [ ] T027 [P] Create follow-up issue to update brainstorm skill: remove review_brief.md generation (superseded by spex-collab REVIEWERS.md per spec Assumptions)
+- [ ] T025 [P] Modify spex-gates review-spec and review-plan commands: when spex-collab is enabled (check specify extension list or extension registry), suppress file output (no REVIEW-SPEC.md, no REVIEW-PLAN.md) and output validation findings to console only (FR-014)
+- [ ] T026 [P] Update README.md: add spex-collab to Bundled Extensions section (description, commands, hooks), add entry to Commands Reference table, document the phase-manager workflow. Note that REVIEWERS.md replaces REVIEW-SPEC.md and REVIEW-PLAN.md
+- [ ] T027 Run make release to validate schema and integration test passes with spex-collab present
+- [ ] T028 [P] Create follow-up issue to update brainstorm skill: remove review_brief.md generation (superseded by spex-collab REVIEWERS.md per spec Assumptions)
 
 **Checkpoint**: `/spex:init` installs spex-collab. Extension appears in `specify extension list`. `make release` passes.
 

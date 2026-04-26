@@ -74,10 +74,11 @@ After each implementation phase, the extension updates `REVIEWERS.md` with code-
 
 ### Functional Requirements
 
-- **FR-001**: Extension MUST generate `REVIEWERS.md` in the spec directory after the review-plan gate completes (spec phase).
+- **FR-001**: Extension MUST generate `REVIEWERS.md` in the spec directory after the review-plan gate completes (spec phase). `REVIEWERS.md` is the single reviewer-facing artifact, replacing the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files that spex-gates previously generated.
 - **FR-002**: Extension MUST update `REVIEWERS.md` in the spec directory after each implementation phase's review-code gate completes. On re-run, spec-level sections (feature overview, scope, decisions) are regenerated from current state, while code phase sections are appended and identified by phase number (never overwritten).
 - **FR-003**: `REVIEWERS.md` MUST be a human-readable document aimed at PR reviewers, NOT a dump of automated review findings.
 - **FR-004**: `REVIEWERS.md` for spec PRs MUST include: feature overview, scope boundaries, key decisions with trade-offs, areas needing attention (controversial points), and open questions.
+- **FR-014**: When spex-collab is enabled, spex-gates review-spec and review-plan MUST still run their validation checks (coverage matrix, red flags, task quality, spec soundness) but MUST output findings to console only, not persist them as `REVIEW-SPEC.md` or `REVIEW-PLAN.md` files. The reviewer-facing content is consolidated into `REVIEWERS.md` by spex-collab.
 - **FR-005**: `REVIEWERS.md` for code PRs MUST include: what changed in this phase, spec compliance notes, areas where the reviewer should focus, and any assumptions the AI made during implementation.
 - **FR-006**: When the ship pipeline is running, the extension MUST be completely skipped (no REVIEWERS.md generation, no phase pausing, no PR assistance).
 - **FR-007**: When spex-collab is disabled, it has no effect. No REVIEWERS.md is generated, no phase pausing occurs. Vanilla spec-kit behavior is preserved.
@@ -90,7 +91,7 @@ After each implementation phase, the extension updates `REVIEWERS.md` with code-
 
 ### Key Entities
 
-- **REVIEWERS.md**: A human-readable review guide generated in the spec directory. Contains different content depending on whether it accompanies a spec PR or a code PR.
+- **REVIEWERS.md**: The single reviewer-facing artifact in the spec directory. Replaces the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files. Contains different content depending on whether it accompanies a spec PR or a code PR. Accumulates content as the workflow progresses.
 - **Phase Split Plan**: A grouping of tasks into PR-sized phases, derived from tasks.md phase markers and optionally adjusted by the user.
 - **Phase State** (in `.specify/.spex-state`): A `completed_phases` array tracking which phases have been implemented and had PRs created, enabling cross-session continuity.
 
