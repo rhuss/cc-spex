@@ -4,8 +4,11 @@
 # Input: JSON via stdin from Claude Code with context_window info
 # Output: Colored status line for ship or flow mode, or empty if no active state
 
-# Read stdin (Claude Code passes context JSON)
-STDIN_JSON=$(cat 2>/dev/null)
+# Read stdin non-blocking (Claude Code may pass context JSON)
+STDIN_JSON=""
+if read -t 0 2>/dev/null; then
+  STDIN_JSON=$(cat 2>/dev/null)
+fi
 
 STATE_FILE=".specify/.spex-state"
 
