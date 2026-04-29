@@ -402,8 +402,8 @@ After the review completes, mark the review-code gate as passed in the flow stat
 ```bash
 STATE_FILE=".specify/.spex-state"
 if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.review_code_passed = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  jq '.review_code_passed = true | .implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi
 ```
 
-This updates the status line to show `R ✓`.
+This updates the status line to show both `impl ✓` and `R ✓`. If code review passed, implementation is by definition complete.
