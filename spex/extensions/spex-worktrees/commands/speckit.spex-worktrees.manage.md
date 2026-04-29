@@ -1,17 +1,18 @@
 ---
 name: speckit.spex-worktrees.worktree
-description: Manage git worktrees for isolated feature development - create after specify, list active worktrees, cleanup merged branches
-argument-hint: "[list|cleanup]"
+description: Manage git worktrees for isolated feature development - create after specify, list active worktrees, finish and cleanup
+argument-hint: "[list|cleanup|finish]"
 ---
 
 # Git Worktree Management for spex
 
 ## Overview
 
-This command manages git worktrees to isolate feature development. It supports three actions:
+This command manages git worktrees to isolate feature development. It supports four actions:
 
 - **create**: Called by the `after_specify` hook after `speckit-specify` completes. Creates a worktree, restores `main`, and prints switch instructions.
 - **list**: Shows all active feature worktrees with path, branch, and feature name.
+- **finish**: Merges the current worktree's branch into the default branch and removes the worktree. Use when implementation is complete.
 - **cleanup**: Detects worktrees whose branches are merged and offers removal.
 
 ## Action Routing
@@ -19,6 +20,7 @@ This command manages git worktrees to isolate feature development. It supports t
 Determine the action from context:
 
 - If invoked from the `after_specify` hook (post-specify context), the action is **create**.
+- If invoked with argument `finish`, the action is **finish**.
 - If invoked with argument `cleanup`, the action is **cleanup**.
 - Otherwise (no args, `list`, or invoked directly), the action is **list**.
 
@@ -285,6 +287,140 @@ No active feature worktrees found.
 
 Create one by running /speckit-specify with the worktrees extension enabled.
 ```
+
+## Action: Finish
+
+Merges the current worktree's feature branch into the default branch and removes the worktree. This is the recommended way to complete work in a spex worktree.
+
+**IMPORTANT:** Do NOT use Claude Code's `ExitWorktree` tool. Spex worktrees are created via `git worktree add`, not `EnterWorktree`, so `ExitWorktree` will refuse to operate on them. Always use git commands directly.
+
+### Step 1: Verify We're in a Worktree
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel)
+GIT_DIR=$(git rev-parse --git-dir)
+
+# A worktree has a .git file (not directory) pointing to the main repo
+if [ "$GIT_DIR" = "$REPO_ROOT/.git" ] || [ "$GIT_DIR" = ".git" ]; then
+  echo "ERROR: Not inside a git worktree. Use 'finish' from within a spex worktree."
+  # Stop here.
+fi
+```
+
+### Step 2: Get Branch and Main Worktree Info
+
+```bash
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+WORKTREE_PATH=$(git rev-parse --show-toplevel)
+
+# Find the main worktree (first entry in worktree list)
+MAIN_WORKTREE=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+
+# Detect default branch
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+if [ -z "$DEFAULT_BRANCH" ]; then
+  for candidate in main master; do
+    if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+      DEFAULT_BRANCH="$candidate"
+      break
+    fi
+  done
+fi
+DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
+```
+
+### Step 3: Ensure All Changes Are Committed
+
+```bash
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "ERROR: Uncommitted changes in worktree. Commit or stash before finishing."
+  # Stop here.
+fi
+```
+
+### Step 4: Ask User How to Proceed
+
+Use AskUserQuestion with:
+- header: "Finish"
+- multiSelect: false
+- Options:
+  - "Merge and remove (Recommended)": "Fast-forward merge branch into default, remove worktree and branch"
+  - "Remove only": "Remove worktree and branch without merging (changes stay in git reflog)"
+  - "Cancel": "Keep worktree as-is"
+
+If "Cancel": stop.
+
+### Step 5: Switch CWD to Main Worktree
+
+**CRITICAL:** Switch the working directory to the main worktree BEFORE doing anything destructive. If cwd is inside the worktree being removed, all subsequent Bash commands will fail with "path does not exist".
+
+```bash
+cd "$MAIN_WORKTREE"
+```
+
+### Step 6: Merge (if selected)
+
+If the user chose "Merge and remove":
+
+```bash
+cd "$MAIN_WORKTREE"
+git checkout "$DEFAULT_BRANCH"
+git merge --ff-only "$BRANCH_NAME" 2>&1
+```
+
+If fast-forward merge fails (branches diverged), ask the user:
+
+Use AskUserQuestion with:
+- header: "Merge"
+- multiSelect: false
+- Options:
+  - "Create merge commit": "Merge with a merge commit (branches have diverged)"
+  - "Abort": "Keep worktree, resolve manually"
+
+If "Create merge commit":
+```bash
+git merge "$BRANCH_NAME" -m "Merge branch '$BRANCH_NAME'
+
+Assisted-By: 🤖 Claude Code" 2>&1
+```
+
+If "Abort": stop. The cwd is already at the main worktree, so the user can navigate back.
+
+### Step 7: Remove Worktree and Branch
+
+```bash
+# Remove worktree (cwd is already at main worktree from Step 5)
+git worktree remove "$WORKTREE_PATH" 2>&1
+
+# Delete the feature branch (it's merged or user chose remove-only)
+git branch -d "$BRANCH_NAME" 2>&1 || git branch -D "$BRANCH_NAME" 2>&1
+```
+
+### Step 8: Clear Flow State
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ]; then
+  rm -f "$STATE_FILE"
+fi
+```
+
+### Step 9: Report
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Feature branch <branch> finished.                       │
+│                                                         │
+│ - Merged to <default-branch> (if selected)              │
+│ - Worktree removed: <worktree-path>                     │
+│ - Branch deleted: <branch>                              │
+│ - Flow state cleared                                    │
+│                                                         │
+│ You are now in the main repo on <default-branch>.       │
+└─────────────────────────────────────────────────────────┘
+```
+
+If the user wants to push: `git push origin $DEFAULT_BRANCH`
 
 ## Action: Cleanup
 
