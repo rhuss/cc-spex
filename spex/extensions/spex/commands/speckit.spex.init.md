@@ -10,30 +10,7 @@ Run the command from `<spex-init-command>` in the `<spex-context>` system remind
 
 - If output contains `NEED_INSTALL`: show output, STOP.
 - If output contains `ERROR`: show error, STOP.
-- If output contains `BEADS_MIGRATION_NEEDED`: go to Step 1b.
 - If output contains `READY` or `RESTART_REQUIRED`: **do not summarize yet**, go to Step 2.
-
-## Step 1b: Beads Migration (only if BEADS_MIGRATION_NEEDED)
-
-The beads trait has been removed from spex. Show the user this message and ask for confirmation:
-
-Use `AskUserQuestion` (`multiSelect: false`, header: "Beads Migration"):
-
-**Message**: "The beads trait has been removed from spex. Task state is now tracked directly in tasks.md checkboxes, which is simpler and equally persistent via git. The beads integration added unnecessary complexity (Dolt database, bidirectional sync, fragile bd CLI piping) without meaningful benefit."
-
-**Options**:
-- "Migrate (recommended)": "Sync closed bd issues to tasks.md checkboxes, strip (bd-xxx) markers, disable beads trait"
-- "Skip": "Leave tasks.md as-is (bd markers will remain but beads trait becomes inactive)"
-
-If "Migrate": run the beads migration via Bash:
-```bash
-# Source the init script to get the migration function
-INIT_SCRIPT="<value from spex-init-command>"
-SCRIPT_DIR=$(dirname "$INIT_SCRIPT")
-bash -c "source '$INIT_SCRIPT' && do_beads_migration"
-```
-
-Then continue to Step 2.
 
 ## Step 2: Ask about extensions and permissions
 

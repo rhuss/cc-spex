@@ -255,69 +255,6 @@ fix_constitution() {
   fi
 }
 
-# --- Migrate legacy beads integration ---
-# The beads trait has been removed. Task state is tracked directly in
-# tasks.md checkboxes. This function syncs any closed bd issues back to
-# tasks.md and strips (bd-xxx) markers.
-migrate_from_beads() {
-  local has_beads_dir=false has_beads_trait=false has_bd_markers=false
-  [ -d ".beads" ] && has_beads_dir=true
-  [ "$(jq -r '.extensions["beads"].enabled // false' .specify/extensions/.registry 2>/dev/null)" = "true" ] && has_beads_trait=true
-  [ "$(jq -r '.traits.beads // false' .specify/spex-traits.json 2>/dev/null)" = "true" ] && has_beads_trait=true
-  grep -rq '(bd-' specs/*/tasks.md 2>/dev/null && has_bd_markers=true
-
-  # Nothing to migrate
-  $has_beads_dir || $has_beads_trait || $has_bd_markers || return 0
-
-  echo "BEADS_MIGRATION_NEEDED"
-  echo "BEADS_HAS_DIR=$has_beads_dir"
-  echo "BEADS_HAS_TRAIT=$has_beads_trait"
-  echo "BEADS_HAS_MARKERS=$has_bd_markers"
-}
-
-# Run the actual beads migration (called after user confirms in spex:init)
-do_beads_migration() {
-  echo "Migrating from beads..."
-
-  # Reverse sync: if bd is available, update tasks.md checkboxes from bd state
-  if command -v bd &>/dev/null; then
-    for tasks_file in specs/*/tasks.md; do
-      [ -f "$tasks_file" ] || continue
-      grep -q '(bd-' "$tasks_file" 2>/dev/null || continue
-
-      grep -oP '\(bd-[a-zA-Z0-9_-]+\)' "$tasks_file" 2>/dev/null | while read -r marker; do
-        bd_id="${marker:1:-1}"
-        status=$(bd show "$bd_id" --json 2>/dev/null | jq -r '.[0].status // "unknown"' 2>/dev/null || echo "unknown")
-        if [ "$status" = "closed" ]; then
-          sd "- \[ \] (T\d+) \(${bd_id}\)" '- [X] $1' "$tasks_file" 2>/dev/null || true
-        fi
-      done
-      echo "  Synced bd state to $tasks_file"
-    done
-  fi
-
-  # Strip (bd-xxx) markers from all tasks.md files
-  for tasks_file in specs/*/tasks.md; do
-    [ -f "$tasks_file" ] || continue
-    if grep -q '(bd-' "$tasks_file" 2>/dev/null; then
-      sd '\s*\(bd-[a-zA-Z0-9_-]+\)' '' "$tasks_file" 2>/dev/null || \
-        sed -i '' 's/ *(bd-[a-zA-Z0-9_-]*)//g' "$tasks_file"
-      echo "  Stripped bd markers from $tasks_file"
-    fi
-  done
-
-  # Disable beads trait in config (if still present)
-  if [ -f .specify/spex-traits.json ]; then
-    local tmp
-    tmp=$(mktemp)
-    jq 'del(.traits["beads"])' .specify/spex-traits.json > "$tmp"
-    mv "$tmp" .specify/spex-traits.json
-  fi
-
-  echo "Beads migration complete. The .beads/ directory is kept for reference."
-  echo "You can delete it manually when ready: rm -rf .beads"
-}
-
 # --- Initialize project ---
 do_init() {
   if ! command -v specify &>/dev/null; then
@@ -376,7 +313,7 @@ do_init() {
     fix_constitution
     migrate_traits_config
     migrate_phase_marker
-    migrate_from_beads
+
     detect_old_traits
     install_extensions
     configure_statusline
@@ -469,7 +406,7 @@ case "${1:-}" in
     # Fast path: already ready?
     if check_ready; then
       fix_constitution
-      migrate_from_beads
+  
       install_extensions >/dev/null 2>&1 || true
       configure_statusline 2>/dev/null || true
       configure_gitignore 2>/dev/null || true
