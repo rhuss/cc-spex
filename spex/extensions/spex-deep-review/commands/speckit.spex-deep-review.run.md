@@ -321,99 +321,50 @@ format. Explain why they could not be auto-fixed and what human action
 is needed.]
 ```
 
-### Step 9: Append Deep Review Report to REVIEW-CODE.md
+### Step 9: Report Gate Outcome with Agent Summary
 
-After writing `review-findings.md`, append a **Deep Review Report** section to `REVIEW-CODE.md`. This gives human reviewers a quick summary of what the automated review covered, what it found and fixed, and where human attention is still needed.
+After writing `review-findings.md`, output a tabular console summary showing what each agent found, what was fixed, and the gate outcome. This is the primary output the user sees.
 
-**If REVIEW-CODE.md does not exist**, create it with just this section.
+**Always output this summary to the console:**
 
-**Append the following to REVIEW-CODE.md:**
+```
+Deep review completed.
 
-```markdown
+Gate: PASS|FAIL (after fix round N)
 
----
+Review Agents:
 
-## Deep Review Report
+| Agent                   | Found | Fixed | Remaining | Status    |
+|-------------------------|-------|-------|-----------|-----------|
+| Correctness             |     N |     N |         N | completed |
+| Architecture & Idioms   |     N |     N |         N | completed |
+| Security                |     N |     N |         N | completed |
+| Production Readiness    |     N |     N |         N | completed |
+| Test Quality            |     N |     N |         N | completed |
+| CodeRabbit (external)   |     N |     N |         N | completed/skipped/failed |
+| Copilot (external)      |     N |     N |         N | completed/skipped/failed |
+|-------------------------|-------|-------|-----------|-----------|
+| Total                   |     N |     N |         N |           |
 
-> Automated multi-perspective code review results. This section summarizes
-> what was checked, what was found, and what remains for human review.
+Key fixes applied:
+  1. [Brief description of fix] (agent-name)
+  2. [Brief description of fix] (agent-name)
+  ...
 
-**Date:** YYYY-MM-DD | **Rounds:** N/3 | **Gate:** PASS|FAIL
+Remaining findings (N Important):
+  - [Finding summary] (agent-name, file:line)
+  ...
 
-### Review Agents
-
-| Agent | Findings | Status |
-|-------|----------|--------|
-| Correctness | N | completed |
-| Architecture & Idioms | N | completed |
-| Security | N | completed |
-| Production Readiness | N | completed |
-| Test Quality | N | completed |
-| CodeRabbit (external) | N | completed/skipped/failed |
-| Copilot (external) | N | completed/skipped/failed |
-
-### Findings Summary
-
-| Severity | Found | Fixed | Remaining |
-|----------|-------|-------|-----------|
-| Critical | N | N | N |
-| Important | N | N | N |
-| Minor | N | - | N |
-
-### What was fixed automatically
-
-[Brief summary of the most significant fixes applied during the fix loop.
-Group by theme rather than listing every finding. E.g., "Fixed 3 resource
-cleanup issues in the HTTP handler (correctness agent) and removed 2 unused
-imports (architecture agent)."]
-
-### What still needs human attention
-
-[If gate PASSED with zero remaining: "All Critical and Important findings
-were resolved. N Minor findings remain (see [review-findings.md](review-findings.md)
-for details). No further review action needed, but reviewers may want to check
-the Minor findings during code review."]
-
-[If gate FAILED or Minor findings remain, list what needs attention as
-questions:]
-
-- [Finding or area framed as question, e.g. "The security agent flagged
-  input validation at `handler.go:42`. Is the current sanitization
-  sufficient for production use?"]
-- [Another area needing human judgment]
-
-[If all findings were resolved:]
-"No unresolved findings. The automated review covered correctness, architecture,
-security, production readiness, and test quality across N changed files."
-
-### Recommendation
-
-[One of:]
-- "All findings addressed. Code is ready for human review with no known blockers."
-- "N Minor findings remain. Consider reviewing them during code review but they
-  are not blocking."
-- "N Critical/Important findings could not be auto-fixed. Human review and manual
-  fixes are recommended before merging. See [review-findings.md](review-findings.md)
-  for details."
+Details: review-findings.md
 ```
 
 **Constraints:**
-- Keep this section factual and concise (200-400 words max)
-- The "What was fixed" section should summarize, not list every finding
-- The "What still needs human attention" section should frame remaining items as questions where possible
-- Do NOT repeat the full findings here (that's what [review-findings.md](review-findings.md) is for)
-- Include external tools in the agent table even if skipped (mark as "skipped" with reason)
-- **Hyperlink all references.** Link to [review-findings.md](review-findings.md), [spec.md](spec.md), and [plan.md](plan.md) using relative paths. Reference specific code files with backtick paths.
-
-### Step 10: Report Gate Outcome
-
-**Superpowers context (gate is blocking):**
-- **PASS**: "Deep review passed. N findings found, N fixed. Proceeding to verification."
-- **FAIL**: "Deep review failed after N rounds. N Critical/Important findings remain. Review `review-findings.md` for details. Implementation cannot proceed to verification."
-
-**Manual context (gate is advisory):**
-- **PASS**: "Deep review passed. N findings found, N fixed. See `review-findings.md` for details."
-- **FAIL**: "Deep review completed with N remaining Critical/Important findings after N rounds. See `review-findings.md` for details. You may proceed at your discretion."
+- Always include the agent table, even if some agents found nothing (show 0)
+- Include external tools in the table even if skipped (show "skipped" with reason in Status)
+- "Key fixes applied" lists up to 10 most significant fixes, grouped by theme
+- "Remaining findings" lists only Critical and Important severity items
+- If gate PASSED with zero remaining: omit the "Remaining findings" section
+- If CodeRabbit was skipped: show reason (e.g., "skipped (CLI not installed)" or "skipped (disabled in config)")
 
 ---
 
