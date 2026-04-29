@@ -54,6 +54,11 @@ hooks:
     args: "clarified"
     optional: false
     description: "Mark clarification complete in flow state"
+  after_implement:
+    command: speckit.spex.flow-state
+    args: "implemented"
+    optional: false
+    description: "Mark implementation complete in flow state"
 
 tags:
   - "spex"
