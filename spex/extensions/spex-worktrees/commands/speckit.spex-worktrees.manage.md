@@ -207,6 +207,21 @@ fi
 
 This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/spex:init` needed in the worktree.
 
+### Step 8b: Update feature.json for the Worktree Branch
+
+The copied `.specify/feature.json` still points to whatever feature was active in the source repo. Update it to reference the correct spec directory for this worktree's branch:
+
+```bash
+FEATURE_JSON="$WORKTREE_PATH/.specify/feature.json"
+if [ -f "$FEATURE_JSON" ]; then
+  # Use jq to update the feature_directory to match the worktree's branch
+  jq --arg dir "specs/$BRANCH_NAME" '.feature_directory = $dir' "$FEATURE_JSON" > "${FEATURE_JSON}.tmp" \
+    && mv "${FEATURE_JSON}.tmp" "$FEATURE_JSON"
+fi
+```
+
+This prevents spec-kit commands in the worktree from operating on the wrong spec directory.
+
 ### Step 9: Print Switch Instructions
 
 Print clear instructions for the user showing the worktree path:

@@ -1,9 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(*/spex/scripts/spex-init.sh*)"
-    ]
-  },
   "allowedTools": [
     "Bash",
     "Read",
@@ -13,5 +8,17 @@
     "WebSearch",
     "NotebookEdit",
     "mcp__*"
-  ]
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Bash(*/spex/scripts/spex-init.sh*)",
+      "Bash(*/spex/scripts/spex-ship-statusline.sh*)",
+      "Bash(specify *)",
+      "Bash(*/.local/bin/specify *)"
+    ]
+  }
 }

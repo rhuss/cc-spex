@@ -38,22 +38,28 @@ Then continue to Step 2.
 
 ## Step 2: Ask about extensions and permissions
 
-You MUST ask the user these two questions using AskUserQuestion before doing anything else:
+You MUST ask the user these three questions using AskUserQuestion before doing anything else:
 
-1. (`multiSelect: true`, header: "Extensions"): "Which spex extensions do you want to enable?"
+1. (`multiSelect: true`, header: "Quality"): "Which quality & review extensions do you want to enable?"
    - "spex-gates": "Quality gates on speckit commands (review-spec, review-code, verification)"
-   - "spex-deep-review": "Multi-perspective code review with autonomous fix loop (5 agents: correctness, architecture, security, production-readiness, test-quality)"
-   - "spex-teams": "Parallel implementation with spec guardian review via Claude Code Agent Teams (experimental, requires: spex-gates)"
+   - "spex-deep-review": "Multi-perspective code review with autonomous fix loop (5 specialized agents)"
+   - "spex-teams": "Parallel implementation with spec guardian review via Agent Teams (experimental, requires: spex-gates)"
+
+2. (`multiSelect: true`, header: "Workflow"): "Which workflow extensions do you want to enable?"
+   - "spex-collab": "Collaborative review: phase splits, REVIEWERS.md generation, phase boundary management"
    - "spex-worktrees": "Git worktree isolation after speckit-specify (creates sibling worktree, restores main)"
 
-2. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
+3. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
    - "YOLO": "Auto-approve everything: Bash, Read, Edit, Write, MCP, specify CLI"
    - "None": "Confirm every spex command before execution"
 
 Then apply the selections:
 
-**Extensions**: Extensions are already installed and enabled by the init script. For any extensions the user did NOT select, disable them:
+**Dependency resolution**: If the user selected `spex-teams` but NOT `spex-gates`, auto-enable `spex-gates` and warn:
+> **Note:** spex-gates was auto-enabled because spex-teams depends on it for spec guardian review.
+
+**Extensions**: Extensions are already installed and enabled by the init script. For any extensions the user did NOT select (after dependency resolution), disable them:
 
 ```bash
 # Disable unselected extensions (ignore errors if already in desired state)
