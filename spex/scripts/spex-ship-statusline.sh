@@ -81,9 +81,9 @@ read_extensions() {
 # --- Flow mode ---
 render_flow() {
   # Extract all flow fields in one jq call
-  local spec_dir implemented clarified running
-  read -r spec_dir implemented clarified running < <(
-    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // ""] | @tsv' 2>/dev/null
+  local spec_dir implemented clarified running rev_spec rev_plan rev_code
+  read -r spec_dir implemented clarified running rev_spec rev_plan rev_code < <(
+    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // "", .review_spec_passed // false, .review_plan_passed // false, .review_code_passed // false] | @tsv' 2>/dev/null
   )
 
   if [ -z "$spec_dir" ] || [ ! -d "$spec_dir" ]; then
@@ -97,12 +97,12 @@ render_flow() {
   [ -f "$spec_dir/tasks.md" ] && has_tasks=true
   [ "$implemented" = "true" ] && has_impl=true
 
-  # Quality gate detection (independent, can be done in any order)
+  # Quality gate detection (from state file)
   local has_clar=false has_rev_spec=false has_rev_plan=false has_rev_code=false
   [ "$clarified" = "true" ] && has_clar=true
-  [ -f "$spec_dir/REVIEW-SPEC.md" ] && has_rev_spec=true
-  [ -f "$spec_dir/REVIEW-PLAN.md" ] && has_rev_plan=true
-  [ -f "$spec_dir/REVIEW-CODE.md" ] && has_rev_code=true
+  [ "$rev_spec" = "true" ] && has_rev_spec=true
+  [ "$rev_plan" = "true" ] && has_rev_plan=true
+  [ "$rev_code" = "true" ] && has_rev_code=true
 
   # Next milestone (first incomplete linear stage)
   local next_step=""

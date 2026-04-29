@@ -1,6 +1,6 @@
 ---
 description: "Create or update flow state for step-by-step SDD workflow tracking"
-argument-hint: "[running <phase>|clarified|implemented]"
+argument-hint: "[running <phase>|clarified|implemented|gate <name>]"
 ---
 
 # Flow State Management
@@ -13,6 +13,7 @@ This command manages the `.specify/.spex-state` file with `"mode": "flow"` to en
 - **`running <phase>`** (via `before_*` hooks): Sets the currently active phase (shown as `▶` in status line).
 - **`clarified`** (via `after_clarify` hook): Marks clarification as complete and clears running.
 - **`implemented`** (via `after_implement` hook): Marks implementation as complete and clears running.
+- **`gate <name>`** (via spex-gates hooks): Marks a quality gate as passed (review-spec, review-plan, review-code).
 
 ## Action: Create (no arguments)
 
@@ -106,6 +107,30 @@ When invoked with argument `implemented`:
 STATE_FILE=".specify/.spex-state"
 if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
   jq '.implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+3. Do NOT output anything to the user. This runs silently as a hook.
+
+## Action: Mark gate passed
+
+When invoked with arguments `gate <name>` (e.g., `gate review-spec`, `gate review-plan`, `gate review-code`):
+
+1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
+
+2. Map the gate name to a state field and set it to `true`, also clear `running`:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+GATE="$2"  # second argument after "gate"
+case "$GATE" in
+  review-spec) FIELD="review_spec_passed" ;;
+  review-plan) FIELD="review_plan_passed" ;;
+  review-code) FIELD="review_code_passed" ;;
+  *) exit 0 ;;
+esac
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq --arg f "$FIELD" '.[$f] = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi
 ```
 

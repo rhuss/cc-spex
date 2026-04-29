@@ -251,116 +251,7 @@ Invoke `/speckit-analyze` to check consistency between:
 
 ### 9. Generate Review Report
 
-**Check if spex-collab is enabled** before deciding where to output the report:
-
-```bash
-if [ -f "spex/extensions/spex-collab/extension.yml" ]; then
-  echo "COLLAB_ENABLED=true"
-else
-  echo "COLLAB_ENABLED=false"
-fi
-```
-
-**If spex-collab is enabled**: Output the review findings to the console only. Do NOT write `REVIEW-SPEC.md`. The reviewer-facing content is consolidated into `REVIEWERS.md` by spex-collab instead.
-
-**If spex-collab is NOT enabled**: Write the review report to `REVIEW-SPEC.md` in the spec directory (e.g., `specs/[feature-name]/REVIEW-SPEC.md`). This enables artifact-based detection by the status line.
-
-**Report structure:**
-
-```markdown
-# Spec Review: [Feature Name]
-
-**Spec:** specs/features/[feature].md
-**Date:** YYYY-MM-DD
-**Reviewer:** Claude (speckit-spex-gates-review-spec)
-
-## Overall Assessment
-
-**Status:** SOUND / NEEDS WORK / MAJOR ISSUES
-
-**Summary:** [1-2 sentence overall assessment]
-
-## Completeness: [Score/5]
-
-### Structure
-- All required sections present
-- Recommended sections included
-- No placeholder text
-
-### Coverage
-- All functional requirements defined
-- Error cases identified
-- Edge cases covered
-- Success criteria specified
-
-**Issues:**
-- [List any completeness issues]
-
-## Clarity: [Score/5]
-
-### Language Quality
-- No ambiguous language
-- Requirements are specific
-- No vague terms
-
-**Ambiguities Found:**
-1. [Quote ambiguous text]
-   - Issue: [What's unclear]
-   - Suggestion: [Specific alternative]
-
-## Implementability: [Score/5]
-
-### Plan Generation
-- Can generate implementation plan
-- Dependencies identified
-- Constraints realistic
-- Scope manageable
-
-**Issues:**
-- [List any implementability issues]
-
-## Testability: [Score/5]
-
-### Verification
-- Success criteria measurable
-- Requirements verifiable
-- Acceptance criteria clear
-
-**Issues:**
-- [List any testability issues]
-
-## Constitution Alignment
-
-[If constitution exists]
-
-- Follows project principles
-- Patterns consistent
-- Error handling aligned
-
-**Violations:**
-- [List any violations]
-
-## Recommendations
-
-### Critical (Must Fix Before Implementation)
-- [ ] [Critical issue 1]
-- [ ] [Critical issue 2]
-
-### Important (Should Fix)
-- [ ] [Important issue 1]
-
-### Optional (Nice to Have)
-- [ ] [Optional improvement 1]
-
-## Conclusion
-
-[Final assessment and recommendation]
-
-**Ready for implementation:** Yes / No / After fixes
-
-**Next steps:**
-[What should be done]
-```
+Output the review findings to the console. Do NOT write a `REVIEW-SPEC.md` file. All review information is presented directly in the conversation output.
 
 ### 10. Make Recommendation
 
@@ -428,3 +319,16 @@ fi
 - Balance perfection with pragmatism
 
 **The goal is implementability, not perfection.**
+
+## Update Flow State
+
+After the review completes, mark the review-spec gate as passed in the flow state:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq '.review_spec_passed = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+This updates the status line to show `S ✓`.

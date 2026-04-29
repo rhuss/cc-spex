@@ -119,30 +119,21 @@ verify_stage_artifacts() {
         return 1
       fi
       ;;
-    5) # review-plan -> must have REVIEW-PLAN.md (with REVIEWERS.md fallback)
-      if [ -z "$spec_dir" ]; then
-        echo "ARTIFACT_MISSING: spec directory not found. Stage 'review-plan' requires a spec directory."
-        return 1
-      fi
-      if [ ! -f "$spec_dir/REVIEW-PLAN.md" ] && [ ! -f "$spec_dir/REVIEWERS.md" ]; then
-        echo "ARTIFACT_MISSING: REVIEW-PLAN.md not found. Stage 'review-plan' did not produce a review document."
+    5) # review-plan -> check state file for review_plan_passed
+      local state_file=".specify/.spex-state"
+      if [ -f "$state_file" ] && jq -e '.review_plan_passed == true' "$state_file" >/dev/null 2>&1; then
+        : # passed
+      else
+        echo "ARTIFACT_MISSING: review-plan gate not passed. Stage 'review-plan' validation must complete."
         return 1
       fi
       ;;
-    7) # review-code -> must have REVIEW-CODE.md (with REVIEWERS.md fallback for deep review)
-      if [ -z "$spec_dir" ]; then
-        echo "ARTIFACT_MISSING: spec directory not found. Stage 'review-code' requires a spec directory."
-        return 1
-      fi
-      if [ ! -f "$spec_dir/REVIEW-CODE.md" ] && [ ! -f "$spec_dir/REVIEWERS.md" ]; then
-        echo "ARTIFACT_MISSING: REVIEW-CODE.md not found. Stage 'review-code' requires REVIEW-CODE.md."
-        return 1
-      fi
-      # Check for Deep Review Report in either file
-      local review_file="$spec_dir/REVIEW-CODE.md"
-      [ ! -f "$review_file" ] && review_file="$spec_dir/REVIEWERS.md"
-      if ! grep -q "Deep Review Report\|deep.review.report\|## Deep Review" "$review_file" 2>/dev/null; then
-        echo "ARTIFACT_MISSING: $review_file lacks a Deep Review Report section. The deep-review agents must run before advancing past review-code."
+    7) # review-code -> check state file for review_code_passed
+      local state_file=".specify/.spex-state"
+      if [ -f "$state_file" ] && jq -e '.review_code_passed == true' "$state_file" >/dev/null 2>&1; then
+        : # passed
+      else
+        echo "ARTIFACT_MISSING: review-code gate not passed. Stage 'review-code' validation must complete."
         return 1
       fi
       ;;
