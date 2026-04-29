@@ -26,12 +26,15 @@ fi
 
 In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proceed?", do NOT suggest next steps. Complete the review and return.
 
-## Flow Status Update
+## Flow Status Update (before review starts)
 
-After successfully completing the code review, if `.specify/.spex-state` exists with `"mode": "flow"`, update it to set `"implemented": true`:
+If review-code is running, implementation is by definition done. Mark it immediately so the status line shows `impl ✓` during the review:
 
 ```bash
-tmp=$(mktemp) && jq '.implemented = true' .specify/.spex-state > "$tmp" && mv "$tmp" .specify/.spex-state
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq '.implemented = true | .running = "review-code"' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
 ```
 
 ## IMPORTANT: Deep Review Extension Check
