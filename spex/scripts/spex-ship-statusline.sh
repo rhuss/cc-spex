@@ -1,7 +1,11 @@
 #!/bin/bash
 # spex-ship-statusline.sh - Read .specify/.spex-state and output compact status
 # Usage: Called by Claude Code status line integration
+# Input: JSON via stdin from Claude Code with context_window info
 # Output: Colored status line for ship or flow mode, or empty if no active state
+
+# Read stdin (Claude Code passes context JSON)
+STDIN_JSON=$(cat 2>/dev/null)
 
 STATE_FILE=".specify/.spex-state"
 
@@ -35,6 +39,26 @@ YELLOW="\033[33m"
 MAGENTA="\033[35m"
 RED="\033[31m"
 WHITE="\033[37m"
+
+# --- Context window percentage (from stdin JSON) ---
+render_context() {
+  if [ -z "$STDIN_JSON" ]; then
+    return
+  fi
+  local used
+  used=$(echo "$STDIN_JSON" | jq -r '.context_window.used_percentage // empty' 2>/dev/null)
+  if [ -z "$used" ]; then
+    return
+  fi
+  local pct_int=${used%.*}
+  local color="$GREEN"
+  if [ "$pct_int" -ge 80 ] 2>/dev/null; then
+    color="$RED"
+  elif [ "$pct_int" -ge 60 ] 2>/dev/null; then
+    color="$YELLOW"
+  fi
+  printf " ${DIM}|${RESET} ${color}${used}%%${RESET}"
+}
 
 # --- Extension display (appended to both modes) ---
 read_extensions() {
@@ -124,6 +148,7 @@ render_flow() {
     printf " ${GREEN}${BOLD}🏁${RESET}"
   fi
   read_extensions
+  render_context
 }
 
 # --- Ship mode ---
@@ -185,6 +210,7 @@ render_ship() {
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON}"
   fi
   read_extensions
+  render_context
 }
 
 # --- Mode dispatch ---
