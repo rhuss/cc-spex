@@ -16,8 +16,8 @@ requires:
 
 provides:
   commands:
-    - name: speckit.spex-deep-review.review
-      file: commands/speckit.spex-deep-review.review.md
+    - name: speckit.spex-deep-review.run
+      file: commands/speckit.spex-deep-review.run.md
       description: "Multi-perspective code review with autonomous fix loop"
 
   config:
@@ -28,7 +28,7 @@ provides:
 
 hooks:
   after_implement:
-    command: speckit.spex-deep-review.review
+    command: speckit.spex-deep-review.run
     optional: true
     prompt: "Run deep multi-perspective review?"
     description: "Multi-agent code review after implementation"
