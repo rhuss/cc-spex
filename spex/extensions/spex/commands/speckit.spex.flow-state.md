@@ -1,6 +1,6 @@
 ---
 description: "Create or update flow state for step-by-step SDD workflow tracking"
-argument-hint: "[clarified|implemented]"
+argument-hint: "[running <phase>|clarified|implemented]"
 ---
 
 # Flow State Management
@@ -10,8 +10,9 @@ This command manages the `.specify/.spex-state` file with `"mode": "flow"` to en
 ## When Invoked
 
 - **No arguments** (via `after_specify` hook): Creates initial flow state after specification.
-- **`clarified`** (via `after_clarify` hook): Marks clarification as complete.
-- **`implemented`** (via `after_implement` hook): Marks implementation as complete.
+- **`running <phase>`** (via `before_*` hooks): Sets the currently active phase (shown as `▶` in status line).
+- **`clarified`** (via `after_clarify` hook): Marks clarification as complete and clears running.
+- **`implemented`** (via `after_implement` hook): Marks implementation as complete and clears running.
 
 ## Action: Create (no arguments)
 
@@ -41,18 +42,53 @@ EOF
 
 4. Do NOT output anything to the user. This runs silently as a hook.
 
+## Action: Set running phase
+
+When invoked with arguments `running <phase>` (e.g., `running plan`, `running implement`, `running clarify`):
+
+1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
+
+2. Set the `running` field to the phase name:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+PHASE="$2"  # second argument after "running"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq --arg phase "$PHASE" '.running = $phase' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+3. Do NOT output anything to the user. This runs silently as a hook.
+
+## Action: Clear running (done)
+
+When invoked with arguments `running done`:
+
+1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
+
+2. Clear the `running` field:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq '.running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+3. Do NOT output anything to the user. This runs silently as a hook.
+
 ## Action: Update clarified
 
 When invoked with argument `clarified`:
 
 1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
 
-2. Update the `clarified` field to `true`:
+2. Update the `clarified` field to `true` and clear `running`:
 
 ```bash
 STATE_FILE=".specify/.spex-state"
 if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.clarified = true' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  jq '.clarified = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi
 ```
 
@@ -64,12 +100,12 @@ When invoked with argument `implemented`:
 
 1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
 
-2. Update the `implemented` field to `true`:
+2. Update the `implemented` field to `true` and clear `running`:
 
 ```bash
 STATE_FILE=".specify/.spex-state"
 if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.implemented = true' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  jq '.implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi
 ```
 

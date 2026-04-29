@@ -49,11 +49,41 @@ hooks:
     command: speckit.spex.flow-state
     optional: false
     description: "Initialize flow state tracking after specification"
+  before_clarify:
+    command: speckit.spex.flow-state
+    args: "running clarify"
+    optional: false
+    description: "Mark clarify as active in flow state"
   after_clarify:
     command: speckit.spex.flow-state
     args: "clarified"
     optional: false
     description: "Mark clarification complete in flow state"
+  before_plan:
+    command: speckit.spex.flow-state
+    args: "running plan"
+    optional: false
+    description: "Mark plan as active in flow state"
+  after_plan:
+    command: speckit.spex.flow-state
+    args: "running done"
+    optional: false
+    description: "Clear running state after planning"
+  before_tasks:
+    command: speckit.spex.flow-state
+    args: "running tasks"
+    optional: false
+    description: "Mark tasks as active in flow state"
+  after_tasks:
+    command: speckit.spex.flow-state
+    args: "running done"
+    optional: false
+    description: "Clear running state after task generation"
+  before_implement:
+    command: speckit.spex.flow-state
+    args: "running implement"
+    optional: false
+    description: "Mark implement as active in flow state"
   after_implement:
     command: speckit.spex.flow-state
     args: "implemented"
