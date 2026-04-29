@@ -1,16 +1,18 @@
 ---
 description: "Create or update flow state for step-by-step SDD workflow tracking"
+argument-hint: "[clarified]"
 ---
 
 # Flow State Management
 
-This command creates the `.specify/.spex-state` file with `"mode": "flow"` to enable the status line during step-by-step SDD workflow (as opposed to the autonomous ship pipeline).
+This command manages the `.specify/.spex-state` file with `"mode": "flow"` to enable the status line during step-by-step SDD workflow (as opposed to the autonomous ship pipeline).
 
 ## When Invoked
 
-Called automatically via the `after_specify` hook when a feature specification is created. This tracks progress through the manual workflow: specify, plan, tasks, implement.
+- **No arguments** (via `after_specify` hook): Creates initial flow state after specification.
+- **`clarified`** (via `after_clarify` hook): Marks clarification as complete.
 
-## Action
+## Action: Create (no arguments)
 
 1. Check if `.specify/.spex-state` already exists with `"mode": "ship"`. If so, do NOT overwrite (ship pipeline takes precedence).
 
@@ -21,7 +23,7 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 SPEC_DIR="specs/$BRANCH"
 ```
 
-3. Create or update the flow state file:
+3. Create the flow state file:
 
 ```bash
 cat > .specify/.spex-state << EOF
@@ -37,3 +39,20 @@ EOF
 ```
 
 4. Do NOT output anything to the user. This runs silently as a hook.
+
+## Action: Update clarified
+
+When invoked with argument `clarified`:
+
+1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
+
+2. Update the `clarified` field to `true`:
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq '.clarified = true' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+3. Do NOT output anything to the user. This runs silently as a hook.

@@ -49,6 +49,11 @@ hooks:
     command: speckit.spex.flow-state
     optional: false
     description: "Initialize flow state tracking after specification"
+  after_clarify:
+    command: speckit.spex.flow-state
+    args: "clarified"
+    optional: false
+    description: "Mark clarification complete in flow state"
 
 tags:
   - "spex"
