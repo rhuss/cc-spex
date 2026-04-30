@@ -61,20 +61,6 @@ check_ready() {
   return 0
 }
 
-# --- Migrate sdd-traits.json to spex-traits.json ---
-migrate_traits_config() {
-  local old_config=".specify/sdd-traits.json"
-  local new_config=".specify/spex-traits.json"
-
-  if [ -f "$old_config" ] && [ ! -f "$new_config" ]; then
-    cp "$old_config" "$new_config"
-    echo "Migrated trait config: copied $old_config to $new_config"
-    echo "  You can safely delete $old_config after verifying the migration."
-  elif [ -f "$old_config" ] && [ -f "$new_config" ]; then
-    echo "Both $old_config and $new_config exist. Using $new_config (preferred)."
-  fi
-}
-
 # --- Migrate .sdd-phase to .spex-phase ---
 migrate_phase_marker() {
   if [ -f ".specify/.sdd-phase" ] && [ ! -f ".specify/.spex-phase" ]; then
@@ -210,18 +196,6 @@ install_extensions() {
   echo "  Extensions: $installed installed, $failed failed"
 }
 
-# --- Detect old traits config and warn ---
-detect_old_traits() {
-  if [ -f ".specify/spex-traits.json" ]; then
-    echo ""
-    echo "NOTE: Found .specify/spex-traits.json (old traits system)."
-    echo "  Traits have been replaced by extensions."
-    echo "  Extensions are now managed via 'specify extension enable/disable'."
-    echo "  The old traits config is no longer used."
-    echo ""
-  fi
-}
-
 # --- Migrate legacy constitution symlink setup ---
 # Older versions stored the constitution at specs/constitution.md with a symlink
 # from .specify/memory/constitution.md. The canonical location is now
@@ -311,10 +285,10 @@ do_init() {
   # Verify after init
   if check_ready; then
     fix_constitution
-    migrate_traits_config
+
     migrate_phase_marker
 
-    detect_old_traits
+
     install_extensions
     configure_statusline
     configure_gitignore
@@ -340,7 +314,6 @@ do_refresh() {
   fi
 
   fix_constitution
-  detect_old_traits
   install_extensions
 
   echo ""
@@ -365,7 +338,6 @@ do_update() {
   echo "Refreshing project setup..."
   specify init --here --ai claude --force
 
-  detect_old_traits
   install_extensions
 
   echo ""
@@ -401,7 +373,7 @@ case "${1:-}" in
     ;;
   *)
     # Migrate legacy config files first
-    migrate_traits_config
+
     migrate_phase_marker
     # Fast path: already ready?
     if check_ready; then
