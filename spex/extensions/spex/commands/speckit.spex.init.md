@@ -38,11 +38,19 @@ specify extension disable <extension-name> 2>/dev/null || true
 
 If the user selected all extensions, no action needed (all are enabled by default after init).
 
-**Permissions**: The `specify` CLI does not manage permissions. Instead, write permission allowlists directly to `.claude/settings.json` based on the user's choice:
+**Permissions**: The `specify` CLI does not manage permissions. Instead, write permission allowlists directly to `.claude/settings.json` based on the user's choice. Use the EXACT allow arrays below (copy verbatim, do not modify or rephrase the permission strings):
 
-- **Standard**: Add allowlists for spex plugin scripts (`spex-init.sh`, `spex-ship-statusline.sh`) and the `specify` CLI
-- **YOLO**: Add broad allowlists for Bash, Read, Edit, Write, MCP tools, and the `specify` CLI
+- **Standard**:
+  ```json
+  {"permissions": {"allow": ["Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  ```
+- **YOLO**:
+  ```json
+  {"permissions": {"allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "mcp__*__*", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  ```
 - **None**: Do not modify permissions (leave defaults)
+
+IMPORTANT: The MCP permission rule is `mcp__*__*` (three parts separated by double underscores, NO parentheses). `mcp__*(*)` is INVALID and will cause a settings parse error.
 
 Use the existing project `.claude/settings.json` (create if missing). Merge permission entries without overwriting existing settings.
 
