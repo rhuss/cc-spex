@@ -785,3 +785,16 @@ The gate outcome depends on the invocation context:
 - **PASS** or **FAIL**: Advisory only. Report findings and let the user decide. Do NOT block further commands.
 
 The invocation context is determined by the caller. When invoked from the superpowers quality gate in `speckit-implement`, the context is `superpowers`. When invoked directly, the context is `manual`.
+
+## Update Flow State
+
+After the deep review completes (regardless of gate outcome), mark the review-code gate as passed in the flow state. Deep review completing means the code review phase is done, even if findings remain.
+
+```bash
+STATE_FILE=".specify/.spex-state"
+if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
+  jq '.review_code_passed = true | .implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+This ensures the status line shows `R ✓` after deep review finishes, since review-code delegates to deep review and its own final state update may not execute.
