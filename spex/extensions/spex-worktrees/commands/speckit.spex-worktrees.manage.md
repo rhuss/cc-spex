@@ -209,20 +209,30 @@ fi
 
 This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/spex:init` needed in the worktree.
 
-### Step 8b: Update feature.json for the Worktree Branch
+### Step 8b: Update feature.json and flow state for the Worktree Branch
 
 The copied `.specify/feature.json` still points to whatever feature was active in the source repo. Update it to reference the correct spec directory for this worktree's branch:
 
 ```bash
 FEATURE_JSON="$WORKTREE_PATH/.specify/feature.json"
 if [ -f "$FEATURE_JSON" ]; then
-  # Use jq to update the feature_directory to match the worktree's branch
   jq --arg dir "specs/$BRANCH_NAME" '.feature_directory = $dir' "$FEATURE_JSON" > "${FEATURE_JSON}.tmp" \
     && mv "${FEATURE_JSON}.tmp" "$FEATURE_JSON"
 fi
 ```
 
-This prevents spec-kit commands in the worktree from operating on the wrong spec directory.
+The copied `.specify/.spex-state` also contains the old `feature_branch`. Update it to match the worktree's branch so the status line works correctly (the statusline script deletes state files where `feature_branch` doesn't match the current branch):
+
+```bash
+STATE_FILE="$WORKTREE_PATH/.specify/.spex-state"
+if [ -f "$STATE_FILE" ]; then
+  jq --arg branch "$BRANCH_NAME" --arg dir "specs/$BRANCH_NAME" \
+    '.feature_branch = $branch | .spec_dir = $dir' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+fi
+```
+
+This prevents both spec-kit commands and the status line from operating on the wrong feature context.
 
 ### Step 9: Print Switch Instructions
 

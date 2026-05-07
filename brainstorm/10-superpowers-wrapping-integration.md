@@ -63,7 +63,7 @@ Every superpowers skill falls into one of three categories:
 | `requesting-code-review` | `speckit-spex-deep-review-run` | `spex-deep-review` |
 | `finishing-a-development-branch` | `speckit-spex-worktrees-manage finish` | `spex-worktrees` |
 | `using-git-worktrees` | `speckit-spex-worktrees-manage create` | `spex-worktrees` |
-| `writing-plans` | `/speckit-plan` (routing awareness) | n/a |
+| `writing-plans` | `/speckit-plan` (router redirects, no wrapper needed) | n/a |
 | `subagent-driven-development` | `speckit-spex-teams-orchestrate` | `spex-teams` |
 | `dispatching-parallel-agents` | `speckit-spex-teams-research/implement` | `spex-teams` |
 | `executing-plans` | ship pipeline (routing awareness) | `spex` core |

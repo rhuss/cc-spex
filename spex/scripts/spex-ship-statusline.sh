@@ -10,6 +10,11 @@ if read -t 0 2>/dev/null; then
   STDIN_JSON=$(cat 2>/dev/null)
 fi
 
+# CWD is not guaranteed to be the project root; use CLAUDE_PROJECT_DIR
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+  cd "$CLAUDE_PROJECT_DIR"
+fi
+
 STATE_FILE=".specify/.spex-state"
 
 if [ ! -f "$STATE_FILE" ]; then

@@ -127,7 +127,7 @@ Use AskUserQuestion with:
   - "Ship autonomously (/speckit-spex-ship)": "Run the full pipeline (specify, plan, implement, review) with configurable oversight. Best for small to mid-sized features."
   - "Done for now": "Stop here. The brainstorm document is saved for later."
 
-If the user chooses "Specify step-by-step": suggest running `/speckit-specify` with the brainstorm document as context.
+If the user chooses "Specify step-by-step": invoke `/speckit-specify` with the brainstorm document as context.
 
 If the user chooses "Ship autonomously": invoke `/speckit-spex-ship` with the brainstorm document path as argument.
 
