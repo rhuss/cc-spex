@@ -314,6 +314,7 @@ Resolution logic:
   - External tool settings: `{coderabbit: true/false, copilot: true/false}` (resolved from defaults + flags)
   - Spec path and feature directory
 - Wait for deep review to complete before proceeding
+- Deep review includes a post-fix spec compliance check (Step 7b) that catches requirements dropped during the fix loop. If deep review reports dropped requirements, treat them as Critical findings that must be resolved before proceeding.
 
 **If deep review is enabled AND spec compliance < 95%:**
 - Do NOT invoke deep review

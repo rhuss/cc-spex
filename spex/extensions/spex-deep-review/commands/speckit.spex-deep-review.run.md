@@ -252,6 +252,45 @@ For each round:
 
 **No user approval needed.** Fixes are applied autonomously. The user reviews all accumulated changes after the loop completes via `git diff`.
 
+### Step 7b: Post-Fix Spec Compliance Check
+
+**This step is MANDATORY when the fix loop removed code (deleted lines, removed functions, or deleted files).** Code removal is the operation most likely to silently drop a spec requirement. Edits and additions don't carry the same risk.
+
+After the fix loop completes (regardless of PASS or FAIL), check if any fix round removed code:
+
+```bash
+# Check if any fix round deleted lines
+REMOVED_LINES=$(git diff --stat HEAD~1 2>/dev/null | grep -oE '[0-9]+ deletion' | head -1)
+```
+
+If code was removed AND a spec is available:
+
+1. Read the spec's functional requirements (all FR-NNN entries or requirement bullet points)
+2. For each functional requirement, verify that at least one code path still implements it:
+   - Search for key terms, function names, or class names associated with the requirement
+   - Check that the implementation file still exists
+   - Verify the function/method body is not empty or a stub
+3. Build a coverage check:
+
+```
+Post-fix spec coverage:
+  FR-001: parse JSONL events         → agent_eval/events.py:parse_events()  ✓
+  FR-002: event type discriminator   → agent_eval/events.py:EventType       ✓
+  ...
+  FR-009: tool result from user msgs → MISSING (removed in fix round 1)     ✗
+```
+
+4. If any FR is MISSING or STUB:
+   - Add a new Critical finding for each: `"Spec requirement FR-NNN dropped during fix loop: [requirement text]"`
+   - If the fix loop has remaining rounds (< 3), run another fix round to re-implement the dropped requirements
+   - If max rounds reached, report the dropped requirements as Critical findings in the gate outcome
+
+5. Update the gate outcome:
+   - If dropped requirements were re-implemented successfully: maintain GATE PASS
+   - If dropped requirements remain: **GATE FAIL** (spec coverage gaps override code quality PASS)
+
+If no code was removed, or no spec is available, skip this step.
+
 ### Step 8: Write review-findings.md
 
 Write `specs/<feature>/review-findings.md` (overwrite if exists):
@@ -314,6 +353,18 @@ If remaining: explain what needs to happen to resolve it.]
 
 ...
 
+## Post-Fix Spec Coverage
+
+[If Step 7b ran, include the coverage check results:]
+
+| Requirement | Implementation | Status |
+|-------------|---------------|--------|
+| FR-001: ... | file.py:func() | ✓ |
+| FR-009: ... | MISSING (removed in fix round 1) | ✗ |
+
+[If all FRs covered: "All spec requirements verified after fix loop."]
+[If any dropped: "N spec requirements dropped during fix loop and flagged as Critical findings."]
+
 ## Remaining Findings
 
 [If gate failed, list unresolved findings here with the same detailed
@@ -354,6 +405,8 @@ Key fixes applied:
 Remaining findings (N Important):
   - [Finding summary] (agent-name, file:line)
   ...
+
+Post-fix spec coverage: N/N requirements verified [✓ all covered | ✗ N dropped]
 
 Details: review-findings.md
 ```
