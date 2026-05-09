@@ -195,6 +195,10 @@ install_extensions() {
   for ext_id in "${install_order[@]}"; do
     local ext_path="$extensions_dir/$ext_id"
     [ -f "$ext_path/extension.yml" ] || continue
+    # Remove first if already installed (specify extension add skips existing)
+    if [ -d ".specify/extensions/$ext_id" ]; then
+      echo "y" | specify extension remove "$ext_id" >/dev/null 2>&1 || true
+    fi
     if specify extension add "$ext_path" --dev; then
       installed=$((installed + 1))
     else
