@@ -137,8 +137,9 @@ PR TITLE CONVENTIONS
   Feature Name [Spec + Impl (1/3)] Multi-phase implementation
 
   Labels (auto-applied, configurable in collab-config.yml):
-    spex/spec        Applied to spec-only PRs
-    spex/implement   Applied to implementation PRs
+    spex/spec           Spec under review
+    spex/spec-approved  Spec approved, ready for implementation
+    spex/implement      Implementation in progress
     Set labels.enabled: false to disable
 
 

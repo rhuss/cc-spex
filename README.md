@@ -23,7 +23,9 @@ cc-spex also adds commands for things Spec-Kit doesn't cover: interactive brains
 
 Specification-driven development works well as a solo practice: you write the spec, you implement it, you review your own code. The feedback loop is tight and the overhead is low. In a team setting, though, the approach hits friction. The spec, plan, and implementation together can produce thousands of lines of structured artifacts and code. A single PR containing all of that is difficult to review meaningfully. Reviewers either rubber-stamp it or spend hours trying to understand decisions that were made early in the process.
 
-cc-spex addresses this with a two-phase workflow that splits specification from implementation into separate pull requests. The key insight: catch design problems during spec review, before any code exists, so that implementation PRs can focus on whether the code matches an already-agreed specification.
+cc-spex addresses this with a two-phase workflow that separates specification from implementation. The key insight: catch design problems during spec review, before any code exists, so that implementation review can focus on whether the code matches an already-agreed specification.
+
+The two phases can live in **separate PRs** (spec PR first, implementation PR second) or on the **same PR** (spec committed first, implementation added after approval). Labels track which phase the PR is in. The `spex-collab` extension must be enabled for the collaborative workflow features described below (`specify extension enable spex-collab`).
 
 ### Phase 1: Specification
 
@@ -36,9 +38,7 @@ Start with an idea, refine it through brainstorming, then create a formal spec a
 /speckit-tasks             # Generate task breakdown
 ```
 
-Quality gates fire automatically via `spex-gates` hooks: review-spec runs after specify, review-plan runs after tasks. When the `spex-collab` extension is enabled, `REVIEWERS.md` is generated automatically after task generation, replacing the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files with a single reviewer-focused artifact.
-
-The output is a PR containing Spec-Kit artifacts (`spec.md`, `plan.md`, `tasks.md`) and a spex-generated `REVIEWERS.md` guide. That last file is what makes collaborative SDD practical. When `spex-collab` is enabled, the reviewers command offers to create a `[Spec]` PR automatically after generating REVIEWERS.md.
+Quality gates fire automatically via `spex-gates` hooks: review-spec runs after specify, review-plan runs after tasks. With `spex-collab` enabled, `REVIEWERS.md` is generated automatically after task generation as the single reviewer-facing artifact. The reviewers command offers to create a `[Spec]` PR automatically after generating REVIEWERS.md.
 
 #### The REVIEWERS.md Guide
 
@@ -58,7 +58,17 @@ spex uses structured PR titles to communicate the content at a glance:
 | Spec + implementation | `Feature Name [Spec + Impl]` | `Structured events [Spec + Impl]` |
 | Multi-phase | `Feature Name [Spec + Impl (N/T)]` | `Structured events [Spec + Impl (1/3)]` |
 
-PRs are automatically labeled with `spex/spec` or `spex/implement` when created via collab commands. Labels are configurable in `.specify/extensions/spex-collab/collab-config.yml` and can be disabled entirely for repos that don't have them.
+#### PR Labels
+
+Labels track the current phase of a PR, especially useful when spec and implementation live on the same PR. They are applied automatically by collab commands and updated as the PR progresses:
+
+| Label | Applied when | Meaning |
+|-------|-------------|---------|
+| `spex/spec` | Spec PR created | Spec is under review, not yet approved |
+| `spex/spec-approved` | Spec approved, implementation starting | Replaces `spex/spec` after review approval |
+| `spex/implement` | Implementation added | Code is being implemented against the approved spec |
+
+Labels are configurable in `.specify/extensions/spex-collab/collab-config.yml` and can be disabled entirely for repos that don't have them.
 
 #### Spec Revision Loop
 
@@ -81,9 +91,13 @@ The reconcile command classifies each task as DONE (existing code satisfies it),
 
 ### Phase 2: Implementation
 
-After the spec PR is reviewed and merged, implementation can proceed in one or more PRs (one per logical phase is ideal).
+After the spec is approved, implementation can proceed. Two patterns are supported:
 
-When `spex-collab` is enabled, it presents a phase split proposal before implementation begins (via the `before_implement` hook). You confirm or adjust how tasks.md phases map to PRs, then implementation pauses after each phase. At each pause, the `phase-manager` command runs code review, updates `REVIEWERS.md` with code-specific review hints, and offers to create a PR via `gh`. After the PR is merged, you resume with the next phase.
+**Same PR** (recommended for smaller scopes): Keep spec and implementation on the same PR. After spec approval, the `spex/spec` label is replaced with `spex/spec-approved`, then `spex/implement` is added when implementation begins. The PR title updates from `[Spec]` to `[Spec + Impl]`. Reviewers can see the full history in one place.
+
+**Separate PRs** (for larger scopes): Merge the spec PR first, then create one or more implementation PRs. Each implementation PR references the approved spec via `REVIEWERS.md`.
+
+With `spex-collab` enabled, a phase split proposal is presented before implementation begins (via the `before_implement` hook). You confirm or adjust how tasks.md phases map to PRs, then implementation pauses after each phase. At each pause, the `phase-manager` command runs code review, updates `REVIEWERS.md` with code-specific review hints, and offers to create a PR via `gh`.
 
 ```
 /speckit-implement                        # Starts with phase split proposal
@@ -199,7 +213,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 **`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, optionally creates a sibling worktree and copies `.claude/` and `.specify/` config to it.
 
-**`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and splits implementation into phase-based PRs with pause points between phases. When enabled, `REVIEWERS.md` replaces the separate `REVIEW-SPEC.md` and `REVIEW-PLAN.md` files as the single reviewer-facing artifact.
+**`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR
 - `before_implement`: presents phase split proposal for implementation PRs
 - `phase-manager`: coordinates PR creation, code review updates, and phase boundaries

@@ -8,4 +8,5 @@ auto_generate_reviewers: true
 labels:
   enabled: true
   spec: "spex/spec"
+  spec_approved: "spex/spec-approved"
   implement: "spex/implement"

@@ -191,6 +191,8 @@ REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
 # Read label config
 COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
 LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+SPEC_LABEL=$(yq -r '.labels.spec // "spex/spec"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec")
+SPEC_APPROVED_LABEL=$(yq -r '.labels.spec_approved // "spex/spec-approved"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec-approved")
 IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
 LABEL_FLAG=""
 if [ "$LABELS_ENABLED" = "true" ]; then
@@ -226,6 +228,14 @@ PR_BODY
 
 After PR creation:
 - Capture the PR URL from gh output
+- If labels are enabled, update labels on the PR to reflect the implementation phase:
+  ```bash
+  # If an existing PR has spex/spec, transition labels
+  PR_NUM=$(gh pr view --json number --jq .number 2>/dev/null)
+  if [ -n "$PR_NUM" ] && [ "$LABELS_ENABLED" = "true" ]; then
+    gh pr edit "$PR_NUM" --remove-label "$SPEC_LABEL" --add-label "$SPEC_APPROVED_LABEL","$IMPL_LABEL" 2>/dev/null || true
+  fi
+  ```
 - Mark the phase as completed (see below)
 - Output: "PR created: [URL]"
 - Output: "Phase [N] complete. After the PR is merged, invoke `/speckit.spex-collab.phase-manager` to continue with Phase [N+1]."
