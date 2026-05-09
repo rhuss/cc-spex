@@ -10,8 +10,28 @@ motivation in 30 seconds.]
 
 ## What Changes
 
-[One paragraph summary of the solution: what gets added, removed,
-or restructured. Mention breaking changes upfront if any.]
+[One paragraph summary of the solution at the outcome level: what
+gets added, removed, or restructured. Stay at the "what does the
+user/system gain" level. Mention breaking changes upfront if any.
+Do NOT describe implementation details here.]
+
+## How It Works
+
+[Implementation approach from plan.md: architecture, key modules,
+data flow, integration points. This is where technical details
+belong. Keep it concise but specific enough that a reviewer
+understands the implementation strategy without reading plan.md.]
+
+## When It Applies
+
+[Reframe scope as applicability. More natural than in/out lists
+for a reviewer scanning the PR.]
+
+**Applies when**:
+- [conditions, contexts, or scenarios where this feature is active]
+
+**Does not apply when**:
+- [explicit exclusions with brief rationale for deferral]
 
 ## Key Decisions
 
@@ -24,14 +44,6 @@ or restructured. Mention breaking changes upfront if any.]
 [Points where reasonable engineers might disagree. Flag trade-offs,
 assumptions that could be wrong, patterns that deviate from project
 conventions, complexity concerns.]
-
-## Scope Boundaries
-
-**In scope**:
-- [bullet list of concrete deliverables and behaviors]
-
-**Out of scope**:
-- [bullet list of explicit exclusions with brief rationale]
 
 ## Open Questions
 

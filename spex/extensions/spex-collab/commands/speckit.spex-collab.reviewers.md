@@ -74,14 +74,15 @@ Read these files from FEATURE_DIR to extract review guide content:
 1. **spec.md** (required):
    - Problem statement: extract from "## Problem Statement", "## Background", or the first substantive paragraph explaining what's broken or missing (feeds "Why This Change")
    - Feature overview: user story summaries or solution description (feeds "What Changes")
-   - Scope boundaries: extract from "## Requirements" (in-scope) and "## Out of Scope" (exclusions)
+   - Scope and applicability: extract from "## Requirements" (applies when) and "## Out of Scope" (does not apply when) (feeds "When It Applies")
    - Success criteria: from the "## Success Criteria" section
    - Edge cases: from the "### Edge Cases" section if present
 
-2. **plan.md** (required):
+2. **plan.md** (if exists, feeds "How It Works"):
+   - Architecture approach: modules, data flow, integration points
    - Key technical decisions: from "## Research Findings" or decision sections
    - Trade-offs and rationale: why alternatives were rejected
-   - Architecture approach: from the "## Implementation Phases" section
+   - Implementation strategy: from the "## Implementation Phases" section
 
 3. **tasks.md** (if exists):
    - Phase count and task distribution
@@ -103,7 +104,13 @@ The structure follows "general to specific": a reviewer should understand the mo
 
 **Why This Change**: The problem being solved. What's broken, painful, or missing today. 2-4 sentences, written so a reviewer who has NOT read the spec understands the motivation in 30 seconds. Extract from the spec's problem statement, user stories, or the plan's research findings.
 
-**What Changes**: One paragraph summary of the solution. What gets added, removed, or restructured. Mention breaking changes upfront. This is the "elevator pitch" of the PR.
+**What Changes**: One paragraph summary of the solution at the outcome level. What gets added, removed, or restructured. Stay at the "what does the user/system gain" level. Mention breaking changes upfront. Do NOT include implementation details here (those go in "How It Works").
+
+**How It Works**: Implementation approach extracted from plan.md. Cover architecture, key modules, data flow, and integration points. This is where technical details belong. Keep it concise but specific enough that a reviewer understands the implementation strategy without reading plan.md. For spec-only PRs where plan.md doesn't exist yet, omit this section or note "Implementation approach TBD."
+
+**When It Applies**: Reframe scope as applicability. More natural than in/out lists for a reviewer scanning the PR.
+- "Applies when": conditions, contexts, or scenarios where this feature is active
+- "Does not apply when": explicit exclusions with brief rationale for deferral
 
 **Key Decisions**: Numbered list of the most significant design choices. For each, include:
 - What was decided
@@ -115,10 +122,6 @@ The structure follows "general to specific": a reviewer should understand the mo
 - Assumptions that could be wrong
 - Patterns that deviate from project conventions
 - Complexity that might be over-engineered or under-engineered
-
-**Scope Boundaries**: Two bullet lists (this is reference material, not the opening):
-- "In scope": the concrete deliverables and behaviors
-- "Out of scope": what was explicitly excluded and why
 
 **Open Questions**: Remaining ambiguities or deferred decisions. If none, state "No open questions identified."
 
@@ -197,7 +200,7 @@ Report the PR URL.
 Output a brief confirmation:
 ```
 Generated REVIEWERS.md in [feature-dir]/
-Sections: Why This Change, What Changes, Key Decisions, Areas Needing Attention, Scope Boundaries, Open Questions, Review Checklist
+Sections: Why This Change, What Changes, How It Works, When It Applies, Key Decisions, Areas Needing Attention, Open Questions, Review Checklist
 ```
 
 If this was a re-run with preserved code phase sections, also note:
