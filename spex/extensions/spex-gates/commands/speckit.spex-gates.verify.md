@@ -159,34 +159,57 @@ These are craft-level issues that no spec describes but that cause real bugs.**
 cat specs/features/[feature-name].md
 ```
 
-**Check each requirement:**
+**Check each requirement and emit a machine-readable compliance matrix:**
+
+For each functional requirement in the spec, determine its status. There are exactly two valid statuses:
+
+- **IMPLEMENTED**: Code fully implements the requirement. You can point to the function, the test, and the behavior.
+- **MISSING**: Code does not implement the requirement, or implements it only partially.
+
+There is NO "PARTIAL" status. There is NO "COMPLIANT (with documented gap)" status. There is NO "IMPLEMENTED (known limitation)" status. If the code doesn't fully do what the spec says MUST happen, the status is MISSING.
 
 ```markdown
 Functional Requirement 1: [From spec]
-  IMPLEMENTED / MISSING
-  TESTED / UNTESTED
-  MATCHES SPEC / DEVIATION
+  Status: IMPLEMENTED | MISSING
+  Evidence: [file:line where it's implemented, or why it's missing]
 
 Functional Requirement 2: [From spec]
-  ...
+  Status: IMPLEMENTED | MISSING
+  Evidence: [file:line where it's implemented, or why it's missing]
 ```
 
-**Verify:**
-- All requirements implemented
-- All requirements tested
-- All behavior matches spec
-- No missing features
-- No extra features (or documented)
+**After checking ALL requirements, emit a machine-readable gate result block:**
 
-**Calculate compliance:**
 ```
-Spec Compliance: X/X requirements = XX%
+SPEC_COMPLIANCE_RESULT:
+  total: N
+  implemented: N
+  missing: N
+  percentage: XX%
+  gate: PASS | FAIL
 ```
 
-**If compliance < 100%:**
-- STOP: Use `speckit-spex-evolve` to reconcile
-- Document all deviations
-- Do not proceed until resolved
+The gate value is determined mechanically: if `missing > 0`, the gate is `FAIL`. No exceptions. No judgment calls. No "but it's a known gap." If the spec says MUST and the code doesn't, it's MISSING, and the gate is FAIL.
+
+**Anti-rationalization guardrails (read these before making your compliance decision):**
+
+You WILL be tempted to let partial compliance pass. You will find plausible reasons. All of them are wrong:
+
+| Rationalization | Why it's wrong |
+|-----------------|---------------|
+| "It's a known gap" | Known gaps are still gaps. MISSING. |
+| "It's documented as future work" | Future work means not implemented. MISSING. |
+| "There's a workaround" | Workarounds are not implementations. MISSING. |
+| "The spec assumption section mentions this" | Assumptions don't override MUST requirements. MISSING. |
+| "It's only partially implemented" | Partial is not complete. MISSING. |
+| "The user knows about this" | User awareness doesn't change compliance. MISSING. |
+
+The only valid paths when the gate is FAIL:
+1. Implement the missing requirement, then re-run verify
+2. Run `/speckit-spex-evolve` to formally remove or defer the requirement from the spec, then re-run verify
+
+**If compliance = 100%:** Proceed to next step.
+**If compliance < 100%:** STOP. Do not proceed. Report the MISSING requirements and suggest the two valid resolution paths above.
 
 ### 4. Check for Spec Drift
 
@@ -299,7 +322,7 @@ OR
 **All conditions must be true:**
 - [x] All tests passing
 - [x] Code hygiene review clean (no dead code, no mutation bugs, no orphans)
-- [x] Spec compliance 100%
+- [x] `SPEC_COMPLIANCE_RESULT.gate` is `PASS` (100% compliance, zero MISSING)
 - [x] No spec drift
 - [x] All success criteria met
 
