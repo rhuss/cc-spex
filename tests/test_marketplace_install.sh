@@ -215,18 +215,20 @@ echo "Extension command verification:"
 
 EXPECTED_EXT_COMMANDS=(
   "spex/commands/speckit.spex.ship.md"
-  "spex/commands/speckit.spex.init.md"
   "spex/commands/speckit.spex.brainstorm.md"
   "spex/commands/speckit.spex.extensions.md"
+  "spex/commands/speckit.spex.flow-state.md"
   "spex-gates/commands/speckit.spex-gates.review-code.md"
   "spex-gates/commands/speckit.spex-gates.review-spec.md"
   "spex-gates/commands/speckit.spex-gates.review-plan.md"
   "spex-gates/commands/speckit.spex-gates.stamp.md"
   "spex-worktrees/commands/speckit.spex-worktrees.manage.md"
-  "spex-deep-review/commands/speckit.spex-deep-review.review.md"
+  "spex-deep-review/commands/speckit.spex-deep-review.run.md"
   "spex-collab/commands/speckit.spex-collab.reviewers.md"
   "spex-collab/commands/speckit.spex-collab.phase-split.md"
   "spex-collab/commands/speckit.spex-collab.phase-manager.md"
+  "spex-collab/commands/speckit.spex-collab.revise.md"
+  "spex-collab/commands/speckit.spex-collab.reconcile.md"
 )
 
 if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then
