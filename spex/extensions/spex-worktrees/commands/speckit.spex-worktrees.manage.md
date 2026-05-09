@@ -234,9 +234,15 @@ fi
 
 This prevents both spec-kit commands and the status line from operating on the wrong feature context.
 
-### Step 9: Print Switch Instructions
+### Step 9: Print Output
 
-Print clear instructions for the user showing the worktree path:
+Print a machine-readable line followed by human-readable instructions:
+
+```bash
+echo "WORKTREE_CREATED path=$WORKTREE_PATH"
+```
+
+Then print instructions for the user:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -252,7 +258,9 @@ Print clear instructions for the user showing the worktree path:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output. This ensures the path is correct regardless of the configured `base_path`.
+Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output.
+
+**Ship pipeline note:** When running inside a `speckit-spex-ship` pipeline, ship will automatically `cd` into the worktree and continue the pipeline there. No manual session restart needed.
 
 ## Action: List
 

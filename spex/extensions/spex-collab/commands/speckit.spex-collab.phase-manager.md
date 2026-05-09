@@ -160,8 +160,50 @@ command -v gh >/dev/null 2>&1
 ### If gh is available
 
 Construct PR details:
-- **Title**: "Phase [N]: [Phase Name] - [Feature Name from spec]"
-- **Body**: The phase section just added to REVIEWERS.md (What Changed, Spec Compliance, Focus Areas, AI Assumptions)
+
+**Title format**: `[Feature Name] [Spec + Impl (N/T)]` where N is the current phase and T is the total number of phases.
+
+```bash
+FEATURE_NAME=$(head -1 "$FEATURE_DIR/spec.md" | sed 's/^# Feature Specification: //')
+TOTAL_PHASES=$(jq '.collab.phase_plan | length' .specify/.spex-state 2>/dev/null || echo 1)
+CURRENT_PHASE_NUM=[N]  # current phase number
+
+if [ "$TOTAL_PHASES" -gt 1 ]; then
+  PR_TITLE="${FEATURE_NAME} [Spec + Impl (${CURRENT_PHASE_NUM}/${TOTAL_PHASES})]"
+else
+  PR_TITLE="${FEATURE_NAME} [Spec + Impl]"
+fi
+```
+
+If a spec-only PR was created earlier (titled `... [Spec]`), update its title to reflect the implementation phase using `gh pr edit`.
+
+- **Body**: Start with a link to REVIEWERS.md for full review context, then include the phase section.
+
+Construct a full GitHub URL for REVIEWERS.md and read label config:
+
+```bash
+BRANCH=$(git branch --show-current)
+REVIEWERS_REL="${FEATURE_DIR#$(git rev-parse --show-toplevel)/}/REVIEWERS.md"
+REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
+REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
+
+# Read label config
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
+LABEL_FLAG=""
+if [ "$LABELS_ENABLED" = "true" ]; then
+  LABEL_FLAG="--label ${IMPL_LABEL}"
+fi
+```
+
+The PR body MUST begin with:
+```
+> **[Review Guide](REVIEWERS_URL)** for full context: motivation, key decisions, and scope boundaries.
+```
+
+Followed by the phase section content (What Changed, Spec Compliance, Focus Areas, AI Assumptions).
 
 Use AskUserQuestion to ask:
 
@@ -174,7 +216,9 @@ Use AskUserQuestion to ask:
 **If "Create PR"**:
 
 ```bash
-gh pr create --base "${PR_BASE}" --title "[title]" --body "$(cat <<'PR_BODY'
+gh pr create --base "${PR_BASE}" --title "$PR_TITLE" ${LABEL_FLAG} --body "$(cat <<PR_BODY
+> **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries.
+
 [PR body content from REVIEWERS.md phase section]
 PR_BODY
 )"
@@ -206,8 +250,10 @@ gh CLI not found. To create the PR manually:
 
 Branch: [current branch name]
 Target: [PR_BASE]
-Suggested title: Phase [N]: [Phase Name] - [Feature Name]
-Suggested body: [phase section content]
+Suggested title: [Feature Name] [Spec + Impl (N/T)]
+Suggested body (start with the review guide link):
+  > **[Review Guide](REVIEWERS_URL)** for full context: motivation, key decisions, and scope boundaries.
+  [phase section content]
 ```
 
 Then use AskUserQuestion:

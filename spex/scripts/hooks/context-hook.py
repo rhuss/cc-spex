@@ -102,30 +102,36 @@ def main():
     # already provide instructions inline and should NOT be gated.
     command_short = skill_name.split(':', 1)[1] if ':' in skill_name else skill_name
     # Check extension command files for skill delegation
-    command_file = None
-    for ext_dir in (plugin_root / 'extensions').iterdir():
-        if ext_dir.is_dir():
-            for cmd_file in (ext_dir / 'commands').glob('*.md'):
-                if cmd_file.stem.endswith(f'.{command_short}'):
-                    command_file = cmd_file
-                    break
-        if command_file:
-            break
-    # Fallback: check legacy commands directory
-    if not command_file:
-        legacy = plugin_root / 'commands' / f'{command_short}.md'
-        if legacy.exists():
-            command_file = legacy
-    delegates_to_skill = False
-    if command_file and command_file.exists():
-        try:
-            content = command_file.read_text()
-            delegates_to_skill = '{Skill:' in content
-        except Exception:
-            pass
+    # Commands that exist as standalone plugin skills (not extension commands)
+    # don't need the skill gate because Claude Code loads them directly.
+    STANDALONE_SKILLS = {'init'}
+    if command_short in STANDALONE_SKILLS:
+        delegates_to_skill = False
     else:
-        # No command file means it's skill-only; gate it
-        delegates_to_skill = True
+        command_file = None
+        for ext_dir in (plugin_root / 'extensions').iterdir():
+            if ext_dir.is_dir():
+                for cmd_file in (ext_dir / 'commands').glob('*.md'):
+                    if cmd_file.stem.endswith(f'.{command_short}'):
+                        command_file = cmd_file
+                        break
+            if command_file:
+                break
+        # Fallback: check legacy commands directory
+        if not command_file:
+            legacy = plugin_root / 'commands' / f'{command_short}.md'
+            if legacy.exists():
+                command_file = legacy
+        delegates_to_skill = False
+        if command_file and command_file.exists():
+            try:
+                content = command_file.read_text()
+                delegates_to_skill = '{Skill:' in content
+            except Exception:
+                pass
+        else:
+            # No command file means it's skill-only; gate it
+            delegates_to_skill = True
 
     if delegates_to_skill:
         marker = get_marker_path(session_id)

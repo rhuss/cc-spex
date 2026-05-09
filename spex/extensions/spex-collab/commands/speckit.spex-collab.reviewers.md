@@ -72,7 +72,8 @@ Store any preserved code phase content for later appending.
 Read these files from FEATURE_DIR to extract review guide content:
 
 1. **spec.md** (required):
-   - Feature overview: the first substantive paragraph or user story summaries
+   - Problem statement: extract from "## Problem Statement", "## Background", or the first substantive paragraph explaining what's broken or missing (feeds "Why This Change")
+   - Feature overview: user story summaries or solution description (feeds "What Changes")
    - Scope boundaries: extract from "## Requirements" (in-scope) and "## Out of Scope" (exclusions)
    - Success criteria: from the "## Success Criteria" section
    - Edge cases: from the "### Edge Cases" section if present
@@ -98,11 +99,11 @@ Synthesize a human-readable review guide. This is NOT a dump of automated review
 
 ### Section Guidelines
 
-**Feature Overview**: 2-3 sentences capturing what this feature does and why it matters. Written for someone who has NOT read the spec.
+The structure follows "general to specific": a reviewer should understand the motivation and shape of the change before encountering detailed scope lists.
 
-**Scope Boundaries**: Two bullet lists:
-- "In scope": the concrete deliverables and behaviors
-- "Out of scope": what was explicitly excluded and why
+**Why This Change**: The problem being solved. What's broken, painful, or missing today. 2-4 sentences, written so a reviewer who has NOT read the spec understands the motivation in 30 seconds. Extract from the spec's problem statement, user stories, or the plan's research findings.
+
+**What Changes**: One paragraph summary of the solution. What gets added, removed, or restructured. Mention breaking changes upfront. This is the "elevator pitch" of the PR.
 
 **Key Decisions**: Numbered list of the most significant design choices. For each, include:
 - What was decided
@@ -114,6 +115,10 @@ Synthesize a human-readable review guide. This is NOT a dump of automated review
 - Assumptions that could be wrong
 - Patterns that deviate from project conventions
 - Complexity that might be over-engineered or under-engineered
+
+**Scope Boundaries**: Two bullet lists (this is reference material, not the opening):
+- "In scope": the concrete deliverables and behaviors
+- "Out of scope": what was explicitly excluded and why
 
 **Open Questions**: Remaining ambiguities or deferred decisions. If none, state "No open questions identified."
 
@@ -131,12 +136,68 @@ Write the composed content to `${FEATURE_DIR}/REVIEWERS.md`.
 
 If code phase sections were preserved from an earlier version (step 4), append them after the `---` separator at the end of the spec sections.
 
+## Offer Spec PR
+
+After writing REVIEWERS.md, check if `gh` is available and offer to create a spec-only PR for review before implementation begins.
+
+Use AskUserQuestion (`multiSelect: false`, header: "Spec PR"):
+
+**"REVIEWERS.md is ready. Create a spec PR for team review?"**
+
+Options:
+- "Create spec PR": "Push branch and create a PR with the [Spec] tag for review before implementation"
+- "Skip": "Continue without creating a PR"
+
+**If "Create spec PR":**
+
+```bash
+FEATURE_NAME=$(head -1 "$FEATURE_DIR/spec.md" | sed 's/^# Feature Specification: //')
+REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+BRANCH=$(git branch --show-current)
+REVIEWERS_REL="${FEATURE_DIR#$(git rev-parse --show-toplevel)/}/REVIEWERS.md"
+REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
+REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
+
+# Read label config
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+SPEC_LABEL=$(yq -r '.labels.spec // "spex/spec"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec")
+LABEL_FLAG=""
+if [ "$LABELS_ENABLED" = "true" ]; then
+  LABEL_FLAG="--label ${SPEC_LABEL}"
+fi
+
+git push -u "$REMOTE" "$BRANCH"
+
+gh pr create --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
+> **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries.
+
+## Spec for review
+
+This PR contains the specification artifacts for **${FEATURE_NAME}**. Implementation follows after spec approval.
+
+Assisted-By: 🤖 Claude Code
+PR_BODY
+)"
+```
+
+If the label doesn't exist in the repo, `gh pr create --label` will fail. In that case, retry without the label and warn:
+```
+Warning: Label "${SPEC_LABEL}" not found in this repo. PR created without label.
+To create it: gh label create "${SPEC_LABEL}" --color 0075ca --description "Spec PR awaiting review"
+Or disable labels: set labels.enabled to false in .specify/extensions/spex-collab/collab-config.yml
+```
+
+Report the PR URL.
+
+**If "Skip":** Continue without creating a PR.
+
 ## Report
 
 Output a brief confirmation:
 ```
 Generated REVIEWERS.md in [feature-dir]/
-Sections: Feature Overview, Scope Boundaries, Key Decisions, Areas Needing Attention, Open Questions, Review Checklist
+Sections: Why This Change, What Changes, Key Decisions, Areas Needing Attention, Scope Boundaries, Open Questions, Review Checklist
 ```
 
 If this was a re-run with preserved code phase sections, also note:

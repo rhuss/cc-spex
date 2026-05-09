@@ -1,10 +1,9 @@
 <!-- Sync Impact Report
-Version: 1.2.0 → 2.0.0 (MAJOR: replace overlay/trait system with spec-kit extensions)
+Version: 2.0.0 → 2.1.0 (MINOR: add state management principle)
+Added sections:
+  - VII. State as Scripts
 Modified sections:
-  - II. Overlay Delegation → II. Extension Architecture
-  - III. Trait Composability → III. Extension Composability
-  - Plugin Architecture Constraints (updated file organization, replaced overlay application)
-  - Version bump to 2.0.0
+  - Version bump to 2.1.0
 Follow-up TODOs: none
 -->
 
@@ -109,6 +108,27 @@ Each skill MUST be self-contained with a clear, single purpose.
 - Rationale: Autonomous skills are independently testable, replaceable,
   and comprehensible. Tangled dependencies make the plugin fragile.
 
+### VII. State as Scripts
+
+Workflow state management MUST use external shell scripts, not
+inline bash snippets in skill markdown files.
+
+- State operations (create, update, query) MUST be implemented
+  in dedicated scripts under `spex/scripts/` (e.g.,
+  `spex-ship-state.sh`, `spex-flow-state.sh`).
+- Skill markdown files MUST delegate to these scripts rather than
+  embedding `jq` pipelines or `cat > file` blocks.
+- Scripts execute deterministically. AI-interpreted bash snippets
+  in markdown are unreliable: they get skipped after context
+  compression, ignored at the tail of long skills, or executed
+  with subtle variations.
+- Scripts are testable in isolation and produce consistent results
+  regardless of which AI model interprets the skill.
+- Rationale: The flow state file was repeatedly corrupted or not
+  created because the AI skipped inline bash at the end of long
+  skill files. Moving state management to scripts eliminated
+  the entire class of bugs.
+
 ## Plugin Architecture Constraints
 
 These constraints govern the structure of the spex plugin codebase.
@@ -174,4 +194,4 @@ Implementation plans SHOULD include a "Constitution Check" section.
 - **Compliance reviews** happen during `spex:review-spec` and
   `spex:review-plan` invocations when those gates are used.
 
-**Version**: 2.0.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-04-10
+**Version**: 2.1.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-05-07

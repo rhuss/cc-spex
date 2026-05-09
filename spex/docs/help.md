@@ -93,19 +93,31 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 
   spex-worktrees extension:
     /speckit-specify  → creates git worktree for feature branch,
-                        restores main
-    /speckit-spex-worktree → list active worktrees, cleanup merged ones
+                        restores main (also auto-created by ship)
+    /speckit-spex-worktrees-manage → list, create, finish, or cleanup worktrees
+
+  spex-collab extension:
+    /speckit-tasks    → auto-generates REVIEWERS.md, offers [Spec] PR
+    /speckit-implement → presents phase split proposal (before hook)
+    /speckit-spex-collab-phase-manager → PR creation + REVIEWERS.md updates per phase
+    /speckit-spex-collab-revise   → revise spec from PR feedback, cascade plan/tasks
+    /speckit-spex-collab-reconcile → scan code against revised tasks, produce delta
 
 
 spex COMMANDS (helpers and configuration)
 
   /spex:init                  Initialize spec-kit + configure extensions and permissions
-  /speckit-spex-worktree      List active worktrees or cleanup merged ones
+                                --refresh: update templates without reconfiguring
+                                --update: upgrade specify CLI and refresh
+                                --clear: reset status line state
+  /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to stamp)
                                 Requires: spex-gates + spex-deep-review extensions
                                 Flags: --ask always|smart|never, --create-pr,
                                        --resume, --start-from <stage>
+                                Worktree: auto-creates if spex-worktrees enabled
+                                Completion: offers merge/PR/test options
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec
@@ -116,6 +128,18 @@ spex COMMANDS (helpers and configuration)
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension
     specify extension disable <name>   Disable an extension
+
+
+PR TITLE CONVENTIONS
+
+  Feature Name [Spec]              Spec-only PR for review
+  Feature Name [Spec + Impl]       Spec + implementation (single phase)
+  Feature Name [Spec + Impl (1/3)] Multi-phase implementation
+
+  Labels (auto-applied, configurable in collab-config.yml):
+    spex/spec        Applied to spec-only PRs
+    spex/implement   Applied to implementation PRs
+    Set labels.enabled: false to disable
 
 
 COMMON MISTAKES (do NOT use these)

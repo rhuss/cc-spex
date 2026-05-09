@@ -25,6 +25,12 @@ provides:
     - name: speckit.spex-collab.phase-manager
       file: commands/speckit.spex-collab.phase-manager.md
       description: "Manage phase boundaries, PR creation, and REVIEWERS.md updates"
+    - name: speckit.spex-collab.revise
+      file: commands/speckit.spex-collab.revise.md
+      description: "Revise spec from PR review feedback, cascade to plan/tasks, update REVIEWERS.md"
+    - name: speckit.spex-collab.reconcile
+      file: commands/speckit.spex-collab.reconcile.md
+      description: "Reconcile revised tasks against existing implementation, produce delta for re-implementation"
 
   config:
     - name: "collab-config.yml"

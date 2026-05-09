@@ -28,11 +28,22 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 
 ## Extensions
 
-- `spex`: Core extension with brainstorm, ship, and methodology entry point
+- `spex`: Core extension with brainstorm, ship, flow state, and methodology entry point
 - `spex-gates`: Quality gates on speckit commands (review-spec, review-code, review-plan, stamp, verification)
 - `spex-worktrees`: Git worktree isolation after speckit.specify (creates sibling worktree, restores main)
 - `spex-teams`: Parallel implementation via Claude Code Agent Teams (experimental)
 - `spex-deep-review`: Multi-agent code review with 5 specialized review agents and autonomous fix loop
+- `spex-collab`: Collaborative PR workflows (REVIEWERS.md, phase-split, phase-manager, revise, reconcile)
+
+## Documentation Maintenance
+
+When adding, removing, or changing features, commands, extensions, or workflows, ALWAYS update the documentation in the same change:
+
+- **README.md**: Workflow section, Commands Reference table, extension descriptions, flowchart
+- **spex/docs/help.md**: Quick reference commands, extensions, PR conventions
+- **Constitution** (`.specify/memory/constitution.md`): If the change introduces a new architectural principle
+
+Do not treat documentation as a follow-up task. Stale docs mislead users and erode trust.
 
 ## Recent Changes
 

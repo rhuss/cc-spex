@@ -22,9 +22,6 @@ provides:
     - name: speckit.spex.help
       file: commands/speckit.spex.help.md
       description: "Quick reference for all spex commands and workflow"
-    - name: speckit.spex.init
-      file: commands/speckit.spex.init.md
-      description: "Initialize or update the project with specify CLI and spex configuration"
     - name: speckit.spex.evolve
       file: commands/speckit.spex.evolve.md
       description: "Handle spec/code mismatches through AI-guided analysis and user-controlled evolution"

@@ -88,9 +88,19 @@ configure_statusline() {
   mkdir -p .claude
 
   if [ -f "$settings_file" ]; then
-    # Check if statusLine is already configured (in local or main settings)
+    # Check if statusLine is already configured
     if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
-      # Already has a statusLine config, don't overwrite
+      # Update if the configured script no longer exists (stale plugin cache path)
+      local current_cmd
+      current_cmd="$(jq -r '.statusLine.command // empty' "$settings_file")"
+      if [ -n "$current_cmd" ] && [ -f "$current_cmd" ]; then
+        return 0
+      fi
+      # Stale path or missing file, update it
+      local tmp
+      tmp=$(mktemp)
+      jq --arg cmd "$abs_script" '.statusLine.command = $cmd' "$settings_file" > "$tmp"
+      mv "$tmp" "$settings_file"
       return 0
     fi
     # Merge statusLine into existing local settings

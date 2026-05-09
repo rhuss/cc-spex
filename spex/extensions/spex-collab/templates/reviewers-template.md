@@ -2,34 +2,47 @@
 
 **Generated**: YYYY-MM-DD | **Spec**: [spec.md](spec.md)
 
-## Feature Overview
+## Why This Change
 
-[2-3 sentence summary extracted from spec]
+[The problem being solved: what's broken, painful, or missing today.
+Written so a reviewer who has NOT read the spec understands the
+motivation in 30 seconds.]
+
+## What Changes
+
+[One paragraph summary of the solution: what gets added, removed,
+or restructured. Mention breaking changes upfront if any.]
+
+## Key Decisions
+
+1. [Numbered list of the most significant design choices. For each:
+   what was decided, what alternatives were considered, why this
+   approach was chosen.]
+
+## Areas Needing Attention
+
+[Points where reasonable engineers might disagree. Flag trade-offs,
+assumptions that could be wrong, patterns that deviate from project
+conventions, complexity concerns.]
 
 ## Scope Boundaries
 
 **In scope**:
-- [bullet list from spec requirements]
+- [bullet list of concrete deliverables and behaviors]
 
 **Out of scope**:
-- [bullet list from spec out-of-scope section]
-
-## Key Decisions
-
-1. [Numbered list of architectural/design decisions with trade-off context]
-
-## Areas Needing Attention
-
-[Points where reasonable engineers might disagree, controversial choices]
+- [bullet list of explicit exclusions with brief rationale]
 
 ## Open Questions
 
-[Remaining ambiguities or deferred decisions]
+[Remaining ambiguities or deferred decisions. If none, state
+"No open questions identified."]
 
 ## Review Checklist
 
-- [ ] Scope matches the stated boundaries
 - [ ] Key decisions are justified
+- [ ] Breaking changes are documented with migration guidance
+- [ ] Scope matches the stated boundaries
 - [ ] Success criteria are achievable
 - [ ] No unstated assumptions
 

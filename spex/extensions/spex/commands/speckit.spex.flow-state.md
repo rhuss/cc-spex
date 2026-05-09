@@ -7,131 +7,38 @@ argument-hint: "[running <phase>|clarified|implemented|gate <name>]"
 
 This command manages the `.specify/.spex-state` file with `"mode": "flow"` to enable the status line during step-by-step SDD workflow (as opposed to the autonomous ship pipeline).
 
-## When Invoked
+## Execution
 
-- **No arguments** (via `after_specify` hook): Creates initial flow state after specification.
-- **`running <phase>`** (via `before_*` hooks): Sets the currently active phase (shown as `▶` in status line).
-- **`clarified`** (via `after_clarify` hook): Marks clarification as complete and clears running.
-- **`implemented`** (via `after_implement` hook): Marks implementation as complete and clears running.
-- **`gate <name>`** (via spex-gates hooks): Marks a quality gate as passed (review-spec, review-plan, review-code).
-
-## Action: Create (no arguments)
-
-1. Check if `.specify/.spex-state` already exists with `"mode": "ship"`. If so, do NOT overwrite (ship pipeline takes precedence).
-
-2. Get the current branch and spec directory:
+Locate and run the `spex-flow-state.sh` script, passing through all arguments:
 
 ```bash
-BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-SPEC_DIR="specs/$BRANCH"
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
+[ -x "$FLOW_STATE" ] || { echo "ERROR: spex-flow-state.sh not found"; exit 1; }
+"$FLOW_STATE" "$@"
 ```
 
-3. Create the flow state file:
+If invoked with no arguments (from the `after_specify` hook), pass `create`:
 
 ```bash
-cat > .specify/.spex-state << EOF
-{
-  "mode": "flow",
-  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "feature_branch": "$BRANCH",
-  "spec_dir": "$SPEC_DIR",
-  "implemented": false,
-  "clarified": false
-}
-EOF
+"$FLOW_STATE" create
 ```
 
-4. Do NOT output anything to the user. This runs silently as a hook.
-
-## Action: Set running phase
-
-When invoked with arguments `running <phase>` (e.g., `running plan`, `running implement`, `running clarify`):
-
-1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
-
-2. Set the `running` field to the phase name:
+If invoked with `--spec-dir` context available (e.g., the spec directory is known), pass it:
 
 ```bash
-STATE_FILE=".specify/.spex-state"
-PHASE="$2"  # second argument after "running"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq --arg phase "$PHASE" '.running = $phase' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
+"$FLOW_STATE" create --spec-dir "specs/034-unified-setup-command"
 ```
 
-3. Do NOT output anything to the user. This runs silently as a hook.
+## Available Commands
 
-## Action: Clear running (done)
+| Command | Hook | What it does |
+|---------|------|-------------|
+| `create [--spec-dir <dir>]` | `after_specify` | Create or update flow state (preserves gate fields if already exists) |
+| `running <phase>` | `before_*` | Set active phase shown as `▶` in status line |
+| `running done` | `after_*` | Clear active phase indicator |
+| `clarified` | `after_clarify` | Mark clarification complete |
+| `implemented` | `after_implement` | Mark implementation complete |
+| `gate <name>` | spex-gates hooks | Mark quality gate passed (review-spec, review-plan, review-code) |
+| `cleanup` | (manual) | Remove state file |
 
-When invoked with arguments `running done`:
-
-1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
-
-2. Clear the `running` field:
-
-```bash
-STATE_FILE=".specify/.spex-state"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
-```
-
-3. Do NOT output anything to the user. This runs silently as a hook.
-
-## Action: Update clarified
-
-When invoked with argument `clarified`:
-
-1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
-
-2. Update the `clarified` field to `true` and clear `running`:
-
-```bash
-STATE_FILE=".specify/.spex-state"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.clarified = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
-```
-
-3. Do NOT output anything to the user. This runs silently as a hook.
-
-## Action: Update implemented
-
-When invoked with argument `implemented`:
-
-1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
-
-2. Update the `implemented` field to `true` and clear `running`:
-
-```bash
-STATE_FILE=".specify/.spex-state"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
-```
-
-3. Do NOT output anything to the user. This runs silently as a hook.
-
-## Action: Mark gate passed
-
-When invoked with arguments `gate <name>` (e.g., `gate review-spec`, `gate review-plan`, `gate review-code`):
-
-1. Check if `.specify/.spex-state` exists and has `"mode": "flow"`. If not, skip silently.
-
-2. Map the gate name to a state field and set it to `true`, also clear `running`:
-
-```bash
-STATE_FILE=".specify/.spex-state"
-GATE="$2"  # second argument after "gate"
-case "$GATE" in
-  review-spec) FIELD="review_spec_passed" ;;
-  review-plan) FIELD="review_plan_passed" ;;
-  review-code) FIELD="review_code_passed" ;;
-  *) exit 0 ;;
-esac
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq --arg f "$FIELD" '.[$f] = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
-```
-
-3. Do NOT output anything to the user. This runs silently as a hook.
+All commands are silent (no output) unless an error occurs. Ship mode state files are never overwritten.

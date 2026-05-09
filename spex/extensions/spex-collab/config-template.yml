@@ -1,2 +1,11 @@
 pr_base_branch: "main"
 auto_generate_reviewers: true
+
+# GitHub PR labels applied automatically during PR creation.
+# Set enabled to false to skip labeling entirely (e.g., if the repo
+# doesn't have these labels and you can't create them).
+# Label names are configurable; the defaults use a "spex/" prefix.
+labels:
+  enabled: true
+  spec: "spex/spec"
+  implement: "spex/implement"
