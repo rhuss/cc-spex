@@ -75,17 +75,19 @@ render_context() {
 }
 
 # --- Extension display (appended to both modes) ---
+# Shows only optional extensions (excludes git and spex core which are always on)
 read_extensions() {
   local registry=".specify/extensions/.registry"
   if [ ! -f "$registry" ]; then
     return
   fi
   local names
-  names=$(jq -r '.extensions // {} | to_entries[] | select(.value.enabled == true) | .key' "$registry" 2>/dev/null)
+  names=$(jq -r '.extensions // {} | to_entries[] | select(.value.enabled == true) | select(.key != "git" and .key != "spex") | .key' "$registry" 2>/dev/null)
   if [ -n "$names" ]; then
-    local joined
-    joined=$(echo "$names" | paste -sd ',' - | sed 's/,/, /g')
-    printf " ${DIM}[%s]${RESET}" "$joined"
+    # Use short names: strip "spex-" prefix for brevity
+    local short
+    short=$(echo "$names" | sed 's/^spex-//' | paste -sd ',' - | sed 's/,/, /g')
+    printf " ${DIM}[%s]${RESET}" "$short"
   fi
 }
 
