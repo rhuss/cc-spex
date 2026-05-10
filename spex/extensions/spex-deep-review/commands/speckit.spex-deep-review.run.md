@@ -841,13 +841,11 @@ The invocation context is determined by the caller. When invoked from the superp
 
 ## Update Flow State
 
-After the deep review completes (regardless of gate outcome), mark the review-code gate as passed in the flow state. Deep review completing means the code review phase is done, even if findings remain.
+**MANDATORY: Update flow state.** This MUST run after deep review completes (regardless of gate outcome). Deep review completing means the code review phase is done, even if findings remain. Use the flow state script:
 
 ```bash
-STATE_FILE=".specify/.spex-state"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.review_code_passed = true | .implemented = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
+[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
 ```
 
 This ensures the status line shows `R ✓` after deep review finishes, since review-code delegates to deep review and its own final state update may not execute.

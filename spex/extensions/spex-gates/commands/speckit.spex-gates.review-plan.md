@@ -184,13 +184,11 @@ After all selected fixes are applied, re-present any remaining unaddressed findi
 
 ## 8. Update Flow State
 
-After validation completes (regardless of whether findings were fixed or skipped), mark the review-plan gate as passed in the flow state:
+**MANDATORY: Update flow state.** This MUST run on every exit path, including early returns (e.g., "already passed", "no findings"). Use the flow state script:
 
 ```bash
-STATE_FILE=".specify/.spex-state"
-if [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1; then
-  jq '.review_plan_passed = true | .running = ""' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
-fi
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
+[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-plan
 ```
 
 This updates the status line to show `P ✓`.
