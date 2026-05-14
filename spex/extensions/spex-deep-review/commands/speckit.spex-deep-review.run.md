@@ -844,8 +844,7 @@ The invocation context is determined by the caller. When invoked from the superp
 **MANDATORY: Update flow state.** This MUST run after deep review completes (regardless of gate outcome). Deep review completing means the code review phase is done, even if findings remain. Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
-[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
 ```
 
 This ensures the status line shows `R ✓` after deep review finishes, since review-code delegates to deep review and its own final state update may not execute.

@@ -187,8 +187,7 @@ After all selected fixes are applied, re-present any remaining unaddressed findi
 **MANDATORY: Update flow state.** This MUST run on every exit path, including early returns (e.g., "already passed", "no findings"). Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
-[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-plan
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-plan
 ```
 
 This updates the status line to show `P ✓`.

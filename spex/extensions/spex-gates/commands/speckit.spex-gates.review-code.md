@@ -31,8 +31,7 @@ In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proc
 If review-code is running, implementation is by definition done. Mark it immediately so the status line shows `impl ✓` during the review:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
-[ -x "$FLOW_STATE" ] && "$FLOW_STATE" implemented && "$FLOW_STATE" running review-code
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" implemented && "$FLOW_STATE" running review-code
 ```
 
 ## IMPORTANT: Deep Review Extension Check
@@ -402,8 +401,7 @@ This is not just code quality review; it's **spec validation**.
 **MANDATORY: Update flow state.** This MUST run on every exit path. Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
-[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
 ```
 
 This updates the status line to show both `impl ✓` and `R ✓`. If code review passed, implementation is by definition complete.

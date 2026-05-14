@@ -10,7 +10,7 @@
 #   spex-flow-state.sh gate <name>                # Mark quality gate passed
 #   spex-flow-state.sh cleanup                    # Remove state file
 #
-# All actions are silent (no stdout) unless an error occurs.
+# Gate actions output confirmation to stdout; other actions are silent unless an error occurs.
 # Must be run from the project root.
 
 set -euo pipefail
@@ -102,7 +102,14 @@ do_gate() {
     review-code) field="review_code_passed" ;;
     *) exit 0 ;;
   esac
-  update_state "$(printf '."%s" = true | .running = ""' "$field")"
+  if is_flow; then
+    update_state "$(printf '."%s" = true | .running = ""' "$field")"
+    echo "$gate gate: updated"
+  elif [ -f "$STATE_FILE" ]; then
+    echo "$gate gate: skipped (mode=$(jq -r '.mode // "unknown"' "$STATE_FILE" 2>/dev/null))" >&2
+  else
+    echo "$gate gate: skipped (no state file at $STATE_FILE, cwd=$(pwd))" >&2
+  fi
 }
 
 do_cleanup() {

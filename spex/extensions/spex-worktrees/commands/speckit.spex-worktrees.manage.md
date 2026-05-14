@@ -148,6 +148,21 @@ fi
 
 Using `git add -u` (tracked modifications only) plus explicit paths for new spec artifacts limits the commit scope to intended files. The `git diff --cached --quiet` guard skips the commit when there are no staged changes, avoiding empty commits.
 
+### Step 5b: Capture Feature Directory Before Branch Switch
+
+The next step switches to the default branch, which changes tracked files on disk. Since `.specify/feature.json` is tracked, its contents will revert to whatever the default branch has. Capture the correct `feature_directory` now, while still on the feature branch:
+
+```bash
+FEATURE_DIR=""
+if [ -f ".specify/feature.json" ]; then
+  FEATURE_DIR=$(jq -r '.feature_directory // empty' ".specify/feature.json")
+fi
+# Fallback to branch-derived path if feature.json is missing or empty
+FEATURE_DIR=${FEATURE_DIR:-"specs/$BRANCH_NAME"}
+```
+
+This value is used in Step 8b to set the correct feature context in the worktree.
+
 ### Step 6: Restore Default Branch (before worktree creation)
 
 Git does not allow two worktrees to have the same branch checked out. Since `speckit-specify` just created and checked out the feature branch, we must switch back to the default branch before creating a worktree for that branch.
@@ -211,22 +226,21 @@ This ensures the worktree has the same extensions, hooks, permissions, and skill
 
 ### Step 8b: Update feature.json and flow state for the Worktree Branch
 
-The copied `.specify/feature.json` still points to whatever feature was active in the source repo. Update it to reference the correct spec directory for this worktree's branch:
+The copied `.specify/feature.json` may point to whatever feature was active on the default branch (since feature.json is tracked and reverts on branch switch). Write the correct value captured in Step 5b:
 
 ```bash
 FEATURE_JSON="$WORKTREE_PATH/.specify/feature.json"
-if [ -f "$FEATURE_JSON" ]; then
-  jq --arg dir "specs/$BRANCH_NAME" '.feature_directory = $dir' "$FEATURE_JSON" > "${FEATURE_JSON}.tmp" \
-    && mv "${FEATURE_JSON}.tmp" "$FEATURE_JSON"
-fi
+echo "{\"feature_directory\": \"$FEATURE_DIR\"}" | jq '.' > "$FEATURE_JSON"
 ```
+
+This writes the `FEATURE_DIR` value captured in Step 5b, which reflects the actual spec directory created by speckit-specify (not a branch-name derivation that may differ).
 
 The copied `.specify/.spex-state` also contains the old `feature_branch`. Update it to match the worktree's branch so the status line works correctly (the statusline script deletes state files where `feature_branch` doesn't match the current branch):
 
 ```bash
 STATE_FILE="$WORKTREE_PATH/.specify/.spex-state"
 if [ -f "$STATE_FILE" ]; then
-  jq --arg branch "$BRANCH_NAME" --arg dir "specs/$BRANCH_NAME" \
+  jq --arg branch "$BRANCH_NAME" --arg dir "$FEATURE_DIR" \
     '.feature_branch = $branch | .spec_dir = $dir' "$STATE_FILE" > "${STATE_FILE}.tmp" \
     && mv "${STATE_FILE}.tmp" "$STATE_FILE"
 fi

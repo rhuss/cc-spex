@@ -325,8 +325,7 @@ Output the review findings to the console. Do NOT write a `REVIEW-SPEC.md` file.
 **MANDATORY: Update flow state.** This MUST run on every exit path, including early returns (e.g., "already passed"). Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
-[ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-spec
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-spec
 ```
 
 This updates the status line to show `S ✓`.
