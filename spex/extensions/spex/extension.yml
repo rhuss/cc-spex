@@ -37,6 +37,9 @@ provides:
     - name: speckit.spex.extensions
       file: commands/speckit.spex.extensions.md
       description: "Manage spex extensions: enable, disable, or list active extensions"
+    - name: speckit.spex.finish
+      file: commands/speckit.spex.finish.md
+      description: "Complete a feature: verify, then merge/PR/keep with worktree-aware cleanup"
     - name: speckit.spex.flow-state
       file: commands/speckit.spex.flow-state.md
       description: "Create flow state for step-by-step SDD workflow tracking"

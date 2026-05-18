@@ -63,12 +63,14 @@ Before ANY implementation work:
 3. **Check for relevant skills before ANY task.** spex has skills for each phase.
 4. **Validate spec compliance.** Code review and verification check specs.
 5. **Handle spec/code drift.** Use speckit-spex-evolve when mismatches detected.
+6. **Close out features.** After review passes: `/clear`, then `/speckit-spex-finish` (verifies + merges/creates PR in one step).
 
 ## Available spex Skills
 
 ### Primary Workflow (via spec-kit commands)
 - `/speckit-specify` - Create specifications (spex-gates extension adds review gate)
 - `/speckit-plan` - Generate plan and tasks (spex-gates extension adds spec review + plan review)
+- After `/speckit-plan` (which also runs `/speckit-tasks`), suggest `/clear` before `/speckit-implement` to free context for the implementation phase
 - `/speckit-implement` - Execute implementation (spex-gates extension adds pre/post quality gates)
 
 **NAMESPACE WARNING:** `/spex:specify`, `/spex:plan`, `/spex:tasks`, `/spex:implement` DO NOT EXIST. Always use the `/speckit-*` names above. spex extension commands use the `speckit-spex-*` prefix (e.g., `/speckit-spex-brainstorm`), and speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`).
@@ -79,7 +81,8 @@ Before ANY implementation work:
 - **speckit-spex-gates-review-plan** - Post-planning quality validation (coverage, red flags, task quality)
 - **speckit-spex-gates-review-code** - Review code-to-spec compliance
 - **speckit-spex-evolve** - Handle spec/code mismatches with AI guidance
-- **speckit-spex-gates-stamp** - Final gate: tests + spec compliance validation
+- **speckit-spex-finish** - Verify + merge/PR/keep (all-in-one feature completion)
+- **speckit-spex-gates-stamp** - Verification only (use finish for full flow)
 - **speckit-spex-spec-refactoring** - Consolidate and improve evolved specs
 
 ### Configuration
@@ -154,7 +157,7 @@ If you catch yourself thinking ANY of these thoughts, STOP. You are rationalizin
 
 **Skill-avoidance rationalizations:**
 - "This is just a quick fix" -> WRONG. Quick fixes need spec validation.
-- "I can check the spec manually" -> WRONG. Use speckit-spex-gates-stamp.
+- "I can check the spec manually" -> WRONG. Use speckit-spex-finish.
 - "The spec is good enough" -> WRONG. Use speckit-spex-gates-review-spec before implementing.
 - "I remember this workflow" -> WRONG. Skills evolve. Run the current version.
 

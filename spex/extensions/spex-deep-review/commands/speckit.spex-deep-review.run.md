@@ -831,7 +831,7 @@ In parallel mode (teams extension), agents complete in non-deterministic order. 
 The gate outcome depends on the invocation context:
 
 **Superpowers context** (triggered as quality gate from `/speckit-implement`):
-- **PASS**: Allow proceeding to `speckit-spex-gates-stamp`
+- **PASS**: Allow proceeding to `speckit-spex-finish`
 - **FAIL**: Block completion. The user must resolve remaining findings before the implementation can proceed.
 
 **Manual context** (user runs `/speckit-spex-gates-review-code` directly):
@@ -848,3 +848,15 @@ FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" 
 ```
 
 This ensures the status line shows `R ✓` after deep review finishes, since review-code delegates to deep review and its own final state update may not execute.
+
+## Next Steps (tell the user)
+
+After deep review passes, tell the user:
+
+```
+Deep review complete. To close out this feature:
+  1. /clear                    (free context for final gate)
+  2. /speckit-spex-finish       (verify + merge/PR, all-in-one)
+```
+
+This prompt is mandatory on every PASS exit. The user needs to know how to finalize.

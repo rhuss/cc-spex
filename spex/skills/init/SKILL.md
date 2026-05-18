@@ -34,7 +34,7 @@ You MUST ask all 4 questions below in a SINGLE AskUserQuestion call. Do NOT spli
 
 4. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
-   - "YOLO": "Auto-approve everything: Bash, Read, Edit, Write, MCP, specify CLI"
+   - "YOLO": "Auto-approve everything + enable auto mode for unattended workflows (requires Max/Team/Enterprise)"
    - "None": "Confirm every spex command before execution"
 
 Then apply the selections:
@@ -63,12 +63,13 @@ Combine all selected options into a single `yq` call when multiple are chosen.
 
 - **Standard**:
   ```json
-  {"permissions": {"allow": ["Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  {"permissions": {"allow": ["Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
   ```
 - **YOLO**:
   ```json
-  {"permissions": {"allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "mcp__*__*", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "mcp__*__*", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
   ```
+  Note: `defaultMode: "auto"` enables the classifier-based auto mode that replaces `bypassPermissions`. Auto mode auto-approves routine operations (file edits, skill invocations, local commands) while blocking genuinely dangerous actions. It requires Max, Team, Enterprise, or API plan. The broad `allow` rules serve as fallback for environments where auto mode is unavailable.
 - **None**: Do not modify permissions (leave defaults)
 
 IMPORTANT: The MCP permission rule is `mcp__*__*` (three parts separated by double underscores, NO parentheses). `mcp__*(*)` is INVALID and will cause a settings parse error.

@@ -23,8 +23,8 @@ provides:
 hooks:
   after_specify:
     command: speckit.spex-worktrees.manage
-    optional: true
-    prompt: "Create a worktree for this feature?"
+    args: "create"
+    optional: false
     description: "Create git worktree after specification"
 
 tags:

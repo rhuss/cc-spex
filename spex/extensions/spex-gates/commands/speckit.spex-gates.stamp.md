@@ -26,6 +26,10 @@ fi
 
 In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proceed?", do NOT suggest next steps. Complete the stamp and return.
 
+## Relationship to /speckit-spex-finish
+
+`/speckit-spex-stamp` runs verification only. For verification + merge/PR/cleanup in one step, use `/speckit-spex-finish` instead.
+
 ## Purpose
 
 This is the final gate before claiming work is complete. It delegates to the full verification command.

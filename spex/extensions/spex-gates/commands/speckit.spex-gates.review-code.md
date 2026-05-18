@@ -330,7 +330,7 @@ Resolution logic:
 
 **If 100% compliant (standard review path):**
 - Approve for verification
-- Proceed to `speckit.spex-gates.stamp`
+- Proceed to `speckit.spex.finish`
 
 ## Assessment Criteria
 
@@ -405,3 +405,15 @@ FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" 
 ```
 
 This updates the status line to show both `impl ✓` and `R ✓`. If code review passed, implementation is by definition complete.
+
+## Next Steps (tell the user)
+
+After code review passes, tell the user:
+
+```
+Code review complete. To close out this feature:
+  1. /clear                    (free context for final gate)
+  2. /speckit-spex-finish       (verify + merge/PR, all-in-one)
+```
+
+This prompt is mandatory on every PASS exit. The user needs to know how to finalize.

@@ -24,9 +24,9 @@ WORKFLOW
            │     │                                 │  /speckit-implement
            │     │                                 ▼
            │     │                         ┌──────────┐
-           │     │                         │  VERIFY  │
+           │     │                         │  FINISH  │
            │     │                         └──────────┘
-           │     │                     (auto via spex-gates hooks)
+           │     │                        /speckit-spex-finish
            │     │                                 ▼
            │     │                         ╔══════════╗
            │     └────────────────────────▶║ COMPLETE ║
@@ -45,6 +45,8 @@ SPEC-KIT COMMANDS (core workflow)
   /speckit-specify     Create or update feature specification
   /speckit-plan        Generate implementation plan from spec
   /speckit-tasks       Generate dependency-ordered tasks from plan
+                       TIP: Run /clear after tasks before implementing
+                       to free context for the implementation phase
   /speckit-implement   Execute tasks from the implementation plan
   /speckit-checklist   Generate a custom checklist for the feature
   /speckit-clarify     Identify underspecified areas in the spec
@@ -112,18 +114,29 @@ spex COMMANDS (helpers and configuration)
                                 --clear: reset status line state
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
-  /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to stamp)
+  /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to finish)
                                 Requires: spex-gates + spex-deep-review extensions
                                 Flags: --ask always|smart|never, --create-pr,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
-                                Completion: offers merge/PR/test options
+  /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec
-  /speckit-spex-stamp         Final gate (tests, hygiene, spec compliance)
+  /speckit-spex-stamp         Verification only (use /speckit-spex-finish for full flow)
   /speckit-spex-evolve        Reconcile spec/code drift
   /speckit-spex-help          This quick reference
+
+CLOSING OUT A FEATURE (after review passes)
+
+  After /speckit-spex-review-code (or deep-review) passes:
+
+    1. /clear                    Free context for final verification
+    2. /speckit-spex-finish       Verify + merge/PR (all-in-one)
+
+  /speckit-spex-finish runs all verification gates (tests, spec compliance,
+  drift check), then offers merge/PR/keep options with automatic worktree
+  cleanup. One command to close out a feature.
 
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension

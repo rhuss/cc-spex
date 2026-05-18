@@ -24,6 +24,7 @@ This skill detects divergence, analyzes the mismatch, recommends resolution, and
 **Auto-triggered by:**
 - `speckit-spex-gates-review-code` (when deviations found)
 - `speckit-spex-gates-stamp` (when compliance fails)
+- `speckit-spex-finish` (when verification finds compliance issues)
 
 **Don't use this skill when:**
 - No mismatch exists (everything compliant)

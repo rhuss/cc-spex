@@ -23,7 +23,7 @@ If ship mode is detected, return immediately.
 ## Extension Enabled Check
 
 ```bash
-if [ ! -f "spex/extensions/spex-collab/extension.yml" ]; then
+if [ ! -f ".specify/extensions/spex-collab/extension.yml" ]; then
   echo "spex-collab extension not found, skipping"
 fi
 ```

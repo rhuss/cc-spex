@@ -13,9 +13,9 @@
 
 set -euo pipefail
 
-STATE_FILE=".specify/.spex-state"
+STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
 
-STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "stamp")
+STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "finish")
 
 stage_index() {
   local name="$1"
@@ -120,8 +120,7 @@ verify_stage_artifacts() {
       fi
       ;;
     5) # review-plan -> check state file for review_plan_passed
-      local state_file=".specify/.spex-state"
-      if [ -f "$state_file" ] && jq -e '.review_plan_passed == true' "$state_file" >/dev/null 2>&1; then
+      if [ -f "$STATE_FILE" ] && jq -e '.review_plan_passed == true' "$STATE_FILE" >/dev/null 2>&1; then
         : # passed
       else
         echo "ARTIFACT_MISSING: review-plan gate not passed. Stage 'review-plan' validation must complete."
@@ -129,8 +128,7 @@ verify_stage_artifacts() {
       fi
       ;;
     7) # review-code -> check state file for review_code_passed
-      local state_file=".specify/.spex-state"
-      if [ -f "$state_file" ] && jq -e '.review_code_passed == true' "$state_file" >/dev/null 2>&1; then
+      if [ -f "$STATE_FILE" ] && jq -e '.review_code_passed == true' "$STATE_FILE" >/dev/null 2>&1; then
         : # passed
       else
         echo "ARTIFACT_MISSING: review-code gate not passed. Stage 'review-code' validation must complete."
@@ -143,8 +141,8 @@ verify_stage_artifacts() {
 
 do_advance() {
   if [ ! -f "$STATE_FILE" ]; then
-    echo "ERROR: No state file found" >&2
-    exit 1
+    echo "PIPELINE_COMPLETE"
+    return 0
   fi
 
   local current_index

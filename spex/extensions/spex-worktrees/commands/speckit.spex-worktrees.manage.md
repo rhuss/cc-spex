@@ -17,12 +17,12 @@ This command manages git worktrees to isolate feature development. It supports f
 
 ## Action Routing
 
-Determine the action from context:
+Determine the action from the argument:
 
-- If invoked from the `after_specify` hook (post-specify context), the action is **create**.
-- If invoked with argument `finish`, the action is **finish**.
-- If invoked with argument `cleanup`, the action is **cleanup**.
-- Otherwise (no args, `list`, or invoked directly), the action is **list**.
+- If invoked with argument `create` (from the `after_specify` hook): the action is **create**. Execute immediately, no confirmation needed.
+- If invoked with argument `finish`: the action is **finish**.
+- If invoked with argument `cleanup`: the action is **cleanup**.
+- Otherwise (no args, `list`, or invoked directly): the action is **list**.
 
 ## Prerequisites
 

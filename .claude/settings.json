@@ -6,6 +6,7 @@
     "Write",
     "WebFetch",
     "WebSearch",
+    "Skill",
     "NotebookEdit",
     "mcp__*"
   ],
@@ -15,10 +16,12 @@
       "Read(*)",
       "Edit(*)",
       "Write(*)",
+      "Skill",
       "Bash(*/spex/scripts/spex-init.sh*)",
       "Bash(*/spex/scripts/spex-ship-statusline.sh*)",
       "Bash(specify *)",
-      "Bash(*/.local/bin/specify *)"
+      "Bash(*/.local/bin/specify *)",
+      "mcp__*__*"
     ]
   }
 }

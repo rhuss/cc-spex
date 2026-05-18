@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-STATE_FILE=".specify/.spex-state"
+STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
 
 is_flow() {
   [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1

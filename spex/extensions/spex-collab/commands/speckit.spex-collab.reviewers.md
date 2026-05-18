@@ -26,7 +26,7 @@ If ship mode is detected, output nothing further and return. Do not generate or 
 Verify spex-collab is active. If the extension directory does not exist, skip silently:
 
 ```bash
-if [ ! -f "spex/extensions/spex-collab/extension.yml" ]; then
+if [ ! -f ".specify/extensions/spex-collab/extension.yml" ]; then
   echo "spex-collab extension not found, skipping"
 fi
 ```

@@ -221,7 +221,7 @@ fix_constitution() {
     target=$(readlink ".specify/memory/constitution.md")
     if [ -f ".specify/memory/constitution.md" ]; then
       cp --remove-destination ".specify/memory/constitution.md" ".specify/memory/constitution.md.tmp" 2>/dev/null \
-        || cp "$(cd .specify/memory && pwd -P)/$(readlink constitution.md)" ".specify/memory/constitution.md.tmp"
+        || cat ".specify/memory/constitution.md" > ".specify/memory/constitution.md.tmp"
       rm ".specify/memory/constitution.md"
       mv ".specify/memory/constitution.md.tmp" ".specify/memory/constitution.md"
       echo "Migrated constitution: replaced symlink with real file at .specify/memory/constitution.md"
@@ -351,7 +351,6 @@ do_update() {
   echo ""
   echo "Refreshing project setup..."
   specify init --here --ai claude --force
-
   install_extensions
 
   echo ""

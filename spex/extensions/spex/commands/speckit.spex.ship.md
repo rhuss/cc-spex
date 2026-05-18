@@ -152,11 +152,11 @@ ERROR: Cannot specify a brainstorm file with --resume. The brainstorm file is re
 
 ### Valid Stage Names for --start-from
 
-The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `verify`.
+The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `finish`.
 
 If an invalid stage name is provided, fail with:
 ```
-ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, verify
+ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, finish
 ```
 
 ## Brainstorm File Resolution
@@ -187,12 +187,14 @@ Create a brainstorm document first with /speckit-spex-brainstorm
 
 The pipeline tracks its progress in `.specify/.spex-state` as JSON. **All state file operations use the `spex-ship-state.sh` script. Never write the state file directly.**
 
-Locate the script:
+Locate the script and set the absolute state file path:
 ```bash
-SHIP_STATE="$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")/scripts/spex-ship-state.sh"
-# Or find it via the plugin:
 SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+# Use absolute path so state file location survives CWD changes (e.g., worktree switches)
+export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
 ```
+
+**IMPORTANT:** Both `SHIP_STATE` (script path) and `SHIP_STATE_FILE` (absolute state file path) must be set before any state operations. The `SHIP_STATE_FILE` env var ensures the state script and statusline script always reference the same file, even when CWD changes during worktree creation.
 
 ### Available Commands
 
@@ -209,7 +211,7 @@ SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
 
 **After every stage completes**, run:
 ```bash
-"$SHIP_STATE" advance
+SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance
 ```
 
 This advances `stage` and `stage_index` to the next stage with `status: running`. After the final stage (verify), `advance` automatically removes the state file and outputs `PIPELINE_COMPLETE`.
@@ -419,7 +421,7 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan and task quality |
 | 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
 | 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review |
-| 8 | `stamp` | `/speckit-spex-gates-stamp` (Subagent) | Final gate |
+| 8 | `finish` | `/speckit-spex-finish` (Subagent) | Verify + merge/PR |
 
 ### Suppressing extension overlay gates
 
@@ -553,7 +555,11 @@ This stage runs in an isolated subagent for clean context separation between pla
 
 3. When the subagent returns, capture its summary.
 4. Apply **Oversight Decision Logic** to handle findings.
-5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
+5. After findings are resolved, mark the review-plan gate as passed in the state file:
+   ```bash
+   jq '.review_plan_passed = true' "$SHIP_STATE_FILE" > "$SHIP_STATE_FILE.tmp" && mv "$SHIP_STATE_FILE.tmp" "$SHIP_STATE_FILE"
+   ```
+6. Run `SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement (Forked Subagent)
 
@@ -643,11 +649,15 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
-5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
+5. After findings are resolved, mark the review-code gate as passed in the state file:
+   ```bash
+   jq '.review_code_passed = true' "$SHIP_STATE_FILE" > "$SHIP_STATE_FILE.tmp" && mv "$SHIP_STATE_FILE.tmp" "$SHIP_STATE_FILE"
+   ```
+6. Run `SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
-### Stage 8: Stamp (Forked Subagent)
+### Stage 8: Finish (Forked Subagent)
 
-This stage runs in an isolated subagent for clean final verification without accumulated context from prior stages.
+This stage runs in an isolated subagent for clean final verification and completion without accumulated context from prior stages. It combines verification (stamp) with merge/PR options into a single step.
 
 1. Resolve the spec directory:
    ```bash
@@ -655,31 +665,41 @@ This stage runs in an isolated subagent for clean final verification without acc
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Spawn a subagent using the Agent tool with the following prompt:
+2. Determine if `--create-pr` should be passed:
+   ```bash
+   CREATE_PR_FLAG=""
+   if [ -f ".specify/.spex-state" ]; then
+     CREATE_PR=$(jq -r '.create_pr // false' .specify/.spex-state 2>/dev/null)
+     if [ "$CREATE_PR" = "true" ]; then
+       CREATE_PR_FLAG="--create-pr"
+     fi
+   fi
+   ```
+
+3. Spawn a subagent using the Agent tool with the following prompt:
 
    ```
-   You are executing the final verification stage of a speckit-spex-ship pipeline.
+   You are executing the finish stage of a speckit-spex-ship pipeline.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
-   Plan: <FEATURE_DIR>/plan.md
-   Tasks: <FEATURE_DIR>/tasks.md
 
-   Invoke /speckit-spex-gates-stamp for final verification.
-   This runs tests, validates spec compliance, and checks for drift.
+   Invoke /speckit-spex-finish <CREATE_PR_FLAG> for final verification and completion.
+   This runs tests, validates spec compliance, checks for drift,
+   then merges or creates a PR based on the pipeline configuration.
    The .specify/.spex-state file exists with status "running", so
-   complete the verification autonomously and return immediately.
+   complete autonomously and return immediately.
 
-   Report pass/fail and any findings when done.
+   Report pass/fail and completion action taken.
    ```
 
-3. When the subagent returns, capture its summary.
-4. If stamp passes, run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE` and removes the state file). **Immediately** proceed to Pipeline Completion (do not stop).
-5. If stamp fails, apply **Oversight Decision Logic**.
+4. When the subagent returns, capture its summary.
+5. If finish passes (verification + completion action succeeded), run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE`). Report the subagent's summary as the final pipeline result.
+6. If finish fails (verification did not pass), apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic
 
-After each review stage (review-spec, review-plan, review-code, stamp), evaluate the findings:
+After each review stage (review-spec, review-plan, review-code, finish), evaluate the findings:
 
 ### Finding Classification
 
@@ -787,11 +807,10 @@ After the user responds:
 
 ## Pipeline Completion
 
-After all stages complete successfully:
+After Stage 8 (finish) completes successfully, the finish command handles everything: verification, merge/PR, worktree cleanup, and state file removal.
 
-1. Update state file: `status: "completed"`.
-2. Calculate elapsed time from `started_at`.
-3. Report completion summary:
+1. Calculate elapsed time from `started_at`.
+2. Report completion summary:
 
 ```
 ## Pipeline Complete
@@ -802,197 +821,18 @@ After all stages complete successfully:
 **Elapsed time:** <duration>
 
 All stages passed successfully:
-  0. specify    - spec.md created
-  1. clarify    - spec clarified
+  0. specify     - spec.md created
+  1. clarify     - spec clarified
   2. review-spec - spec validated
-  3. plan       - plan.md generated
-  4. tasks      - tasks.md generated
+  3. plan        - plan.md generated
+  4. tasks       - tasks.md generated
   5. review-plan - plan validated
-  6. implement  - code implemented
+  6. implement   - code implemented
   7. review-code - code reviewed
-  8. verify     - verification passed
+  8. finish      - verified + completed
 ```
 
-4. Clean up: `rm -f .specify/.spex-state`
-
-### PR Creation (if --create-pr)
-
-If `--create-pr` is set and all stages passed:
-
-1. Determine the remote target:
-   ```bash
-   REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
-   ```
-
-2. Push the feature branch:
-   ```bash
-   git push -u "$REMOTE" "$(git branch --show-current)"
-   ```
-
-3. Create the PR. Identify the spec directory from the feature branch:
-   ```bash
-   BRANCH=$(git branch --show-current)
-   SPEC_DIR="specs/${BRANCH}"
-   FEATURE_NAME=$(head -1 "$SPEC_DIR/spec.md" | sed 's/^# Feature Specification: //')
-
-   REVIEWERS_REL="$SPEC_DIR/REVIEWERS.md"
-   REVIEWERS_LINK=""
-   if [ -f "$REVIEWERS_REL" ]; then
-     REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
-     REVIEWERS_URL="${REMOTE_URL}/blob/$(git branch --show-current)/${REVIEWERS_REL}"
-     REVIEWERS_LINK="> **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries."
-   fi
-
-   # Read label config (spex-collab may or may not be enabled)
-   COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
-   LABEL_FLAG=""
-   if [ -f "$COLLAB_CONFIG" ]; then
-     LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
-     IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
-     if [ "$LABELS_ENABLED" = "true" ]; then
-       LABEL_FLAG="--label ${IMPL_LABEL}"
-     fi
-   fi
-
-   gh pr create \
-     --title "$FEATURE_NAME [Spec + Impl]" ${LABEL_FLAG} \
-     --body "$(cat <<PREOF
-   $REVIEWERS_LINK
-
-   ## Summary
-
-   Autonomous pipeline implementation of $FEATURE_NAME.
-
-   ## Artifacts
-
-   - Spec: \`$SPEC_DIR/spec.md\`
-   - Plan: \`$SPEC_DIR/plan.md\`
-   - Tasks: \`$SPEC_DIR/tasks.md\`
-
-   Generated by \`/speckit-spex-ship\` in $AUTONOMY mode.
-
-   Assisted-By: 🤖 Claude Code
-   PREOF
-   )"
-   ```
-
-4. Report the PR URL.
-
-### No PR (default)
-
-If `--create-pr` is not set, present the next steps using `AskUserQuestion`:
-
-**Detect worktree context** to tailor the options:
-```bash
-IN_WORKTREE=false
-GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-if [ "$GIT_DIR" != "$REPO_ROOT/.git" ] && [ "$GIT_DIR" != ".git" ]; then
-  IN_WORKTREE=true
-fi
-```
-
-Ask with (`multiSelect: false`, header: "Next steps"):
-
-**"Pipeline complete. What would you like to do?"**
-
-Options:
-
-1. **"Merge to main"**: "All stages passed. Fast-forward merge the feature branch into main and clean up."
-2. **"Create PR"**: "Push the feature branch and create a pull request for team review."
-3. **"Test first"**: "Leave the branch as-is. Come back later to merge or create a PR."
-
-**If "Merge to main":**
-
-If running in a worktree (`IN_WORKTREE` is true), invoke `/speckit-spex-worktrees-manage finish` which handles merging, worktree removal, and branch cleanup.
-
-If NOT in a worktree, merge directly:
-```bash
-BRANCH=$(git branch --show-current)
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-git checkout "$DEFAULT_BRANCH"
-git merge --ff-only "$BRANCH" 2>&1 || git merge "$BRANCH" -m "Merge branch '$BRANCH'
-
-Assisted-By: 🤖 Claude Code" 2>&1
-git branch -d "$BRANCH"
-```
-
-Report: "Merged `<branch>` into `<default-branch>`. Feature branch deleted."
-
-**If "Create PR":**
-```bash
-REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
-BRANCH=$(git branch --show-current)
-SPEC_DIR="specs/${BRANCH}"
-FEATURE_NAME=$(head -1 "$SPEC_DIR/spec.md" | sed 's/^# Feature Specification: //')
-
-REVIEWERS_REL="$SPEC_DIR/REVIEWERS.md"
-REVIEWERS_LINK=""
-if [ -f "$REVIEWERS_REL" ]; then
-  REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
-  REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
-  REVIEWERS_LINK="> **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries."
-fi
-
-# Read label config (spex-collab may or may not be enabled)
-COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
-LABEL_FLAG=""
-if [ -f "$COLLAB_CONFIG" ]; then
-  LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
-  IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
-  if [ "$LABELS_ENABLED" = "true" ]; then
-    LABEL_FLAG="--label ${IMPL_LABEL}"
-  fi
-fi
-
-git push -u "$REMOTE" "$BRANCH"
-
-gh pr create \
-  --title "$FEATURE_NAME [Spec + Impl]" ${LABEL_FLAG} \
-  --body "$(cat <<PREOF
-$REVIEWERS_LINK
-
-## Summary
-
-Autonomous pipeline implementation of $FEATURE_NAME.
-
-## Artifacts
-
-- Spec: \`$SPEC_DIR/spec.md\`
-- Plan: \`$SPEC_DIR/plan.md\`
-- Tasks: \`$SPEC_DIR/tasks.md\`
-
-Generated by \`/speckit-spex-ship\` in $AUTONOMY mode.
-
-Assisted-By: 🤖 Claude Code
-PREOF
-)"
-```
-
-Report the PR URL. If in a worktree, also suggest: "Run `/speckit-spex-worktrees-manage finish` after the PR is merged to clean up the worktree."
-
-**If "Test first":**
-
-Report based on the detected mode:
-
-If in a worktree:
-```
-Branch <branch> is ready for testing. Nothing was merged or pushed.
-
-When you're ready to finish, run one of:
-  /speckit-spex-worktrees-manage finish    Merge to main, remove worktree
-  gh pr create                             Create a PR for team review
-```
-
-If NOT in a worktree:
-```
-Branch <branch> is ready for testing. Nothing was merged or pushed.
-
-When you're ready to finish, run one of:
-  git checkout main && git merge <branch>  Merge to main
-  git push && gh pr create                 Create a PR for team review
-```
+3. Report the action taken by finish (merge, PR created, or kept as-is) from the subagent summary.
 
 ## Integration
 
@@ -1010,6 +850,6 @@ When you're ready to finish, run one of:
 - `/speckit-spex-gates-review-plan` (Stage 5)
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
-- `/speckit-spex-gates-stamp` (Stage 8)
+- `/speckit-spex-finish` (Stage 8)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`

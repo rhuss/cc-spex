@@ -262,7 +262,8 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
-| `/speckit-spex-gates-stamp` | spex-gates | Final gate before completion |
+| `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion) |
+| `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, create, or clean up git worktrees |
 | `/speckit-spex-collab-reviewers` | spex-collab | Generate REVIEWERS.md review guide, offer `[Spec]` PR (fires automatically via hook) |
@@ -291,7 +292,7 @@ The pipeline runs nine stages in strict order:
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
 | 6 | implement | Execute implementation following task plan |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | stamp | Final gate (tests, hygiene, drift check) |
+| 8 | finish | Verify + merge/PR (tests, hygiene, drift, then complete) |
 
 **Oversight levels** control how findings are handled:
 

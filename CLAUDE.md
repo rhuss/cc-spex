@@ -48,3 +48,8 @@ Do not treat documentation as a follow-up task. Stale docs mislead users and ero
 ## Recent Changes
 
 - 016-traits-to-extensions: Migrated traits to extension bundles, renamed commands from `/spex:*` to `speckit-spex-*` prefix
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

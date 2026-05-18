@@ -10,14 +10,17 @@ if read -t 0 2>/dev/null; then
   STDIN_JSON=$(cat 2>/dev/null)
 fi
 
-# CWD is not guaranteed to be the project root; use CLAUDE_PROJECT_DIR
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
-  cd "$CLAUDE_PROJECT_DIR"
+# Resolve state file: explicit env var > CWD > CLAUDE_PROJECT_DIR
+STATE_FILE=""
+if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
+  STATE_FILE="$SHIP_STATE_FILE"
+elif [ -f ".specify/.spex-state" ]; then
+  STATE_FILE=".specify/.spex-state"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.spex-state" ]; then
+  STATE_FILE="${CLAUDE_PROJECT_DIR}/.specify/.spex-state"
 fi
 
-STATE_FILE=".specify/.spex-state"
-
-if [ ! -f "$STATE_FILE" ]; then
+if [ -z "$STATE_FILE" ]; then
   exit 0
 fi
 
@@ -192,7 +195,7 @@ render_ship() {
     review-plan)  EMOJI="✅"; COLOR="$MAGENTA";;
     implement)    EMOJI="🔨"; COLOR="$YELLOW";;
     review-code)  EMOJI="🔎"; COLOR="$MAGENTA";;
-    stamp)        EMOJI="🏁"; COLOR="$GREEN";;
+    stamp|finish) EMOJI="🏁"; COLOR="$GREEN";;
     done)         EMOJI="✅"; COLOR="$GREEN";;
     *)            EMOJI="⚙️";  COLOR="$WHITE";;
   esac
