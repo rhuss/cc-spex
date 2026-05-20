@@ -11,6 +11,7 @@
     "mcp__*"
   ],
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "Bash(*)",
       "Read(*)",

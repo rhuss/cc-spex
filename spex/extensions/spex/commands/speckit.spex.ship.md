@@ -555,11 +555,7 @@ This stage runs in an isolated subagent for clean context separation between pla
 
 3. When the subagent returns, capture its summary.
 4. Apply **Oversight Decision Logic** to handle findings.
-5. After findings are resolved, mark the review-plan gate as passed in the state file:
-   ```bash
-   jq '.review_plan_passed = true' "$SHIP_STATE_FILE" > "$SHIP_STATE_FILE.tmp" && mv "$SHIP_STATE_FILE.tmp" "$SHIP_STATE_FILE"
-   ```
-6. Run `SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
+5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement (Forked Subagent)
 
@@ -649,11 +645,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
-5. After findings are resolved, mark the review-code gate as passed in the state file:
-   ```bash
-   jq '.review_code_passed = true' "$SHIP_STATE_FILE" > "$SHIP_STATE_FILE.tmp" && mv "$SHIP_STATE_FILE.tmp" "$SHIP_STATE_FILE"
-   ```
-6. Run `SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
+5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
 ### Stage 8: Finish (Forked Subagent)
 

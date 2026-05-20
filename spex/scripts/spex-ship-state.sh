@@ -93,8 +93,10 @@ find_spec_dir() {
 }
 
 verify_stage_artifacts() {
-  # Verify expected artifacts exist for the completed stage before advancing.
-  # Returns 0 if OK, 1 if artifacts missing (with error message on stdout).
+  # Verify expected file artifacts exist for the completed stage before advancing.
+  # Only checks for files on disk. Gate flags (review_plan_passed, review_code_passed)
+  # are a flow-mode concept managed by spex-flow-state.sh. Ship mode's sequential
+  # pipeline already guarantees reviews ran before advance is called.
   local stage_index="$1"
   local brainstorm="$2"
   local spec_dir
@@ -116,22 +118,6 @@ verify_stage_artifacts() {
     4) # tasks -> must have tasks.md
       if [ -z "$spec_dir" ] || [ ! -f "$spec_dir/tasks.md" ]; then
         echo "ARTIFACT_MISSING: tasks.md not found. Stage 'tasks' did not produce a task breakdown."
-        return 1
-      fi
-      ;;
-    5) # review-plan -> check state file for review_plan_passed
-      if [ -f "$STATE_FILE" ] && jq -e '.review_plan_passed == true' "$STATE_FILE" >/dev/null 2>&1; then
-        : # passed
-      else
-        echo "ARTIFACT_MISSING: review-plan gate not passed. Stage 'review-plan' validation must complete."
-        return 1
-      fi
-      ;;
-    7) # review-code -> check state file for review_code_passed
-      if [ -f "$STATE_FILE" ] && jq -e '.review_code_passed == true' "$STATE_FILE" >/dev/null 2>&1; then
-        : # passed
-      else
-        echo "ARTIFACT_MISSING: review-code gate not passed. Stage 'review-code' validation must complete."
         return 1
       fi
       ;;

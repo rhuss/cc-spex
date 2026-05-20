@@ -238,10 +238,13 @@ When ready to finish:
 
 ## Phase 6: State and Status Line Cleanup
 
-After executing any option (merge, PR, or keep):
+After executing any option (merge, PR, or keep), remove the state file from both possible locations (absolute path from ship pipeline, and relative path from flow mode):
 
 ```bash
 rm -f .specify/.spex-state
+if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
+  rm -f "$SHIP_STATE_FILE"
+fi
 ```
 
-This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists).
+This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists). Works for both ship mode (where `SHIP_STATE_FILE` may point to a worktree path) and flow mode (where the state file is always relative).

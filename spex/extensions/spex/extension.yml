@@ -89,6 +89,11 @@ hooks:
     args: "implemented"
     optional: false
     description: "Mark implementation complete in flow state"
+  after_finish:
+    command: speckit.spex.flow-state
+    args: "cleanup"
+    optional: false
+    description: "Remove flow state file after feature completion"
 
 tags:
   - "spex"

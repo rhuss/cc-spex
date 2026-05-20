@@ -16,6 +16,7 @@ Side effects (always run):
 - Set prose-active marker when prose: skill is invoked
 - Remove completed ship state files (ship-done cleanup)
 """
+import fnmatch
 import json
 import os
 import re
@@ -69,10 +70,10 @@ def side_effects(tool_name, tool_input, session_id, cwd):
     if tool_name == 'Skill':
         marker_path('spex-skill-pending', session_id).unlink(missing_ok=True)
 
-    # Prose: set session marker when a prose: skill is invoked
+    # Prose: set session marker when a prose-related skill is invoked
     if tool_name == 'Skill':
         skill = tool_input.get('skill', '')
-        if skill.startswith('prose:'):
+        if skill.startswith('prose:') or skill in PROSE_SKILL_ALIASES:
             marker_path('prose-active', session_id).write_text(skill)
 
     # Ship done cleanup: remove completed ship state file
@@ -339,6 +340,8 @@ def _is_spec_only_commit(cwd):
 # Gate 5: Prose enforcement
 # ---------------------------------------------------------------------------
 
+PROSE_SKILL_ALIASES = {'humanizer'}
+
 CONTENT_EXTENSIONS = {'.md', '.adoc', '.asciidoc'}
 
 PROSE_EXCLUDED_NAMES = {
@@ -353,8 +356,19 @@ PROSE_EXCLUDED_DIRS = {
     'specs', 'brainstorm',
 }
 
+PROSE_EXCLUDED_PATTERNS = {
+    '*/Reports/*',
+    '*/Morning-Paper/*',
+    '*/templates/*',
+    '*/config/*',
+    '*/configs/*',
+    '*/specs/*',
+    '*/plan/*',
+    '*/brainstorm/*',
+}
 
-def check_prose_enforce(tool_name, tool_input, session_id):
+
+def check_prose_enforce(tool_name, tool_input, session_id, cwd='.'):
     """Block Write to content files unless a prose skill was invoked.
 
     Returns deny reason string, or None if gate passes.
@@ -365,7 +379,7 @@ def check_prose_enforce(tool_name, tool_input, session_id):
         return None
 
     file_path = tool_input.get('file_path', '')
-    if not file_path or not _is_content_file(file_path):
+    if not file_path or not _is_content_file(file_path, cwd):
         return None
 
     if not _is_prose_installed():
@@ -383,14 +397,39 @@ def check_prose_enforce(tool_name, tool_input, session_id):
     )
 
 
-def _is_content_file(file_path):
+def _load_user_excluded_patterns(cwd):
+    """Load additional excluded patterns from user config files.
+
+    Reads glob patterns (one per line, # comments) from:
+      ~/.claude/prose/excluded-patterns  (global)
+      .prose/excluded-patterns           (project, relative to cwd)
+    """
+    patterns = set()
+    for path in [
+        Path.home() / '.claude' / 'prose' / 'excluded-patterns',
+        Path(cwd) / '.prose' / 'excluded-patterns',
+    ]:
+        if path.is_file():
+            for line in path.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    patterns.add(line)
+    return patterns
+
+
+def _is_content_file(file_path, cwd='.'):
     """Check if a file path is a content file that should go through prose."""
     p = Path(file_path)
     if p.suffix.lower() not in CONTENT_EXTENSIONS:
         return False
     if p.name in PROSE_EXCLUDED_NAMES:
         return False
-    return not any(d in p.parts for d in PROSE_EXCLUDED_DIRS)
+    if any(d in p.parts for d in PROSE_EXCLUDED_DIRS):
+        return False
+    all_patterns = PROSE_EXCLUDED_PATTERNS | _load_user_excluded_patterns(cwd)
+    if any(fnmatch.fnmatch(file_path, pat) for pat in all_patterns):
+        return False
+    return True
 
 
 def _is_prose_installed():
@@ -446,7 +485,7 @@ def main():
     if verify_ctx:
         contexts.append(verify_ctx)
 
-    prose_deny = check_prose_enforce(tool_name, tool_input, session_id)
+    prose_deny = check_prose_enforce(tool_name, tool_input, session_id, cwd)
     if prose_deny:
         denies.append(prose_deny)
 
