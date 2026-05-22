@@ -159,18 +159,28 @@ configure_gitignore() {
         sed -i 's|\.claude/skills/speckit-\*|.claude/skills/|' "$gitignore" 2>/dev/null || true
       echo "  Migrated .gitignore pattern from speckit-* to skills/"
     fi
+    # Migrate old per-file .specify ignores to blanket ignore with constitution whitelist
+    if grep -qF ".specify/.spex-phase" "$gitignore"; then
+      sed -i '' '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$gitignore" 2>/dev/null || \
+        sed -i '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$gitignore" 2>/dev/null || true
+      # Replace old sentinel with new block
+      sed -i '' "s|$sentinel|$sentinel (only constitution is committed)\n**/.claude/\n**/.specify/**\n!**/.specify/memory/\n!**/.specify/memory/constitution.md|" "$gitignore" 2>/dev/null || \
+        sed -i "s|$sentinel|$sentinel (only constitution is committed)\n**/.claude/\n**/.specify/**\n!**/.specify/memory/\n!**/.specify/memory/constitution.md|" "$gitignore" 2>/dev/null || true
+      echo "  Migrated .gitignore to blanket .specify/ ignore with constitution whitelist"
+      return 0
+    fi
   fi
 
-  # Skip if sentinel already present
+  # Skip if already configured (new or old sentinel)
   [ -f "$gitignore" ] && grep -qF "$sentinel" "$gitignore" && return 0
 
   cat >> "$gitignore" <<'EOF'
 
-# spex: generated/local files
-.claude/skills/
-.claude/settings.local.json
-.specify/.spex-phase
-.specify/.spex-state
+# spex: generated/local files (only constitution is committed)
+**/.claude/
+**/.specify/**
+!**/.specify/memory/
+!**/.specify/memory/constitution.md
 EOF
   echo "  Updated .gitignore with spex patterns"
 }
