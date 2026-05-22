@@ -368,17 +368,39 @@ PROSE_EXCLUDED_PATTERNS = {
 }
 
 
+_BASH_REDIRECT_RE = re.compile(
+    r'>\s*\S+\.(?:md|adoc|asciidoc)(?:\s|$|<<)'
+)
+_BASH_TEE_RE = re.compile(
+    r'\btee\s+(?:-[a-z]\s+)*(\S+\.(?:md|adoc|asciidoc))(?:\s|$)'
+)
+
+
+def _extract_prose_target_from_bash(command):
+    """Extract content file path from a Bash write command, or None."""
+    m = _BASH_TEE_RE.search(command)
+    if m:
+        return m.group(1)
+    if _BASH_REDIRECT_RE.search(command):
+        for token in re.findall(r'>\s*(\S+\.(?:md|adoc|asciidoc))', command):
+            return token
+    return None
+
+
 def check_prose_enforce(tool_name, tool_input, session_id, cwd='.'):
-    """Block Write to content files unless a prose skill was invoked.
+    """Block Write/Bash-write to content files unless a prose skill was invoked.
 
     Returns deny reason string, or None if gate passes.
     Only enforced when the prose plugin is installed.
     """
-    # Only enforce on Write (new content creation), not Edit
-    if tool_name != 'Write':
+    if tool_name == 'Write':
+        file_path = tool_input.get('file_path', '')
+    elif tool_name == 'Bash':
+        file_path = _extract_prose_target_from_bash(
+            tool_input.get('command', ''))
+    else:
         return None
 
-    file_path = tool_input.get('file_path', '')
     if not file_path or not _is_content_file(file_path, cwd):
         return None
 
@@ -389,11 +411,12 @@ def check_prose_enforce(tool_name, tool_input, session_id, cwd='.'):
         return None
 
     return (
-        "PROSE GATE: The prose plugin is installed. "
-        "You MUST invoke a prose skill before creating content files. "
-        "Use Skill(skill=\"prose:write\") to generate content with human voice, "
-        "or Skill(skill=\"prose:check\") to validate existing content. "
-        "This ensures content quality and prevents AI writing patterns."
+        "PROSE GATE: Content file blocked. "
+        "If you already have content ready, run Skill(skill=\"prose:rewrite\") "
+        "to humanize it through the full prose pipeline, then retry the Write. "
+        "If starting fresh, use Skill(skill=\"prose:write\") to generate "
+        "with human voice. Either skill unlocks Write for this session. "
+        "Do NOT bypass via Bash, Edit, or any other workaround."
     )
 
 

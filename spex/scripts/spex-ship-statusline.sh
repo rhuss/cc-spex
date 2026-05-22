@@ -96,10 +96,11 @@ read_extensions() {
 
 # --- Flow mode ---
 render_flow() {
-  # Extract all flow fields in one jq call
+  # Extract all flow fields in one jq call (use pipe delimiter, not @tsv,
+  # because bash read collapses consecutive tabs for empty fields)
   local spec_dir implemented clarified running rev_spec rev_plan rev_code
-  read -r spec_dir implemented clarified running rev_spec rev_plan rev_code < <(
-    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // "", .review_spec_passed // false, .review_plan_passed // false, .review_code_passed // false] | @tsv' 2>/dev/null
+  IFS='|' read -r spec_dir implemented clarified running rev_spec rev_plan rev_code < <(
+    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // "", .review_spec_passed // false, .review_plan_passed // false, .review_code_passed // false] | map(tostring) | join("|")' 2>/dev/null
   )
 
   if [ -z "$spec_dir" ] || [ ! -d "$spec_dir" ]; then
