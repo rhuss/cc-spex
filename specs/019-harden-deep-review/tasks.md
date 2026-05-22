@@ -20,7 +20,7 @@
 **Independent Test**: Run deep review on a project with tests. Verify fix loop output includes test suite execution and test failures appear as findings.
 
 - [ ] T004 [US1] Add Step 7.6 (test suite execution) between current steps 5 and 6 in the fix loop in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: run detected test command with timeout, parse exit code
-- [ ] T005 [US1] Add test failure to findings conversion logic in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: convert failures to Critical findings with `source_agent = "test-suite"`, `category = "regression"`, `confidence = 95`
+- [ ] T005 [US1] Add test failure to findings conversion logic in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: convert failures to Critical findings with `source_agent = "test-suite"`, `category = "regression"`, `confidence = 95`. When the test command exits non-zero but produces no parseable output, treat it as a single Critical finding with the exit code and any available stderr
 - [ ] T006 [US1] Add "no test command detected" skip-with-warning path in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
 - [ ] T007 [US1] Add test timeout handling in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: read `test_timeout_seconds` from config, treat timeout as test failure
 - [ ] T008 [US1] Add "Test Suite (regression)" row to the gate outcome summary table in Step 9 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
@@ -34,7 +34,7 @@
 **Independent Test**: Provide a spec with "confirm via kubectl get" and a test that checks in-memory. Verify the agent flags the mismatch.
 
 - [ ] T011 [P] [US2] Add spec-anchored validation checklist items to Agent 5 (Test Quality) prompt in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: for each acceptance scenario, find the test, check verification method match, flag mismatches
-- [ ] T012 [P] [US2] Add implicit verification method handling to the spec-anchored validation section: when scenario doesn't specify a method, verify test exists but don't flag mismatch
+- [ ] T012 [P] [US2] Add implicit verification method handling to the spec-anchored validation section: when scenario doesn't specify a method, verify test exists but don't flag mismatch. When a scenario references external systems not available in the test environment, note the scenario exists but mark verification method match as informational (not a finding)
 
 ## Phase 5: User Story 3 - Swallowed Error Detection (P3)
 
