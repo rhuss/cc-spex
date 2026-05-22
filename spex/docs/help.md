@@ -95,11 +95,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         scenarios against test verification methods.
                         Project hints via .specify/review-hints.md.
                         Combines with spex-teams for parallel execution.
-                        Optionally includes CodeRabbit, Copilot, + Qodo Merge CLIs.
-                        Note: Qodo Merge requires an open PR (skipped in
-                        ship pipeline; useful in manual PR-first workflows).
-                        Flags: --no-external, --no-coderabbit, --no-copilot, --no-qodo
-                               --external, --coderabbit, --copilot, --qodo
+                        Optionally includes CodeRabbit + Copilot CLIs.
+                        Flags: --no-external, --no-coderabbit, --no-copilot
+                               --external, --coderabbit, --copilot
 
   spex-worktrees extension:
     /speckit-specify  → creates git worktree for feature branch,

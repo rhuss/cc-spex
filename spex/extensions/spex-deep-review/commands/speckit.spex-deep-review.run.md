@@ -18,7 +18,7 @@ The caller (review-code or ship) may provide these values. When not provided, th
 1. **Stage 1 result**: spec compliance score (or null if no spec)
 2. **Invocation context**: `superpowers` or `manual`
 3. **Hint text**: optional focus area from user (or null)
-4. **External tool settings**: `{coderabbit: true/false, copilot: true/false, qodo: true/false}` (see resolution below)
+4. **External tool settings**: `{coderabbit: true/false, copilot: true/false}` (see resolution below)
 5. **Spec path**: path to spec.md (or null, see Spec Resolution below)
 6. **Feature directory**: path to the spec directory for artifact output
 
@@ -41,17 +41,15 @@ If external tool settings are provided by the caller, use them directly. If not 
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_QODO=$(yq -r '.external_tools.qodo // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 ```
 
 ```
 Resolution:
   coderabbit = DEFAULT_CODERABBIT
   copilot    = DEFAULT_COPILOT
-  qodo       = DEFAULT_QODO
 ```
 
-This ensures CodeRabbit, Copilot, and Qodo Merge are enabled by default regardless of how deep-review is invoked.
+This ensures CodeRabbit and Copilot are enabled by default regardless of how deep-review is invoked.
 
 ### Test Suite Configuration
 
@@ -105,18 +103,14 @@ which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 # GitHub Copilot CLI (skip if copilot setting is false)
 which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
-# Qodo Merge / PR-Agent (skip only if explicitly disabled in config)
-which pr-agent >/dev/null 2>&1 && echo "QODO_AVAILABLE=true"
 ```
 
 **External tool resolution:**
 1. Use the external tool settings from Prerequisites (either caller-provided or self-resolved from config)
 2. **CodeRabbit is enabled by default.** Only skip if the config explicitly sets `coderabbit: false`
 3. If `copilot` is `false`, skip Copilot detection entirely
-4. **Qodo Merge is enabled by default.** Only skip if the config explicitly sets `qodo: false`
-5. If a tool is enabled in settings but not installed, proceed silently without it
-6. **When CodeRabbit is available and enabled, it MUST be invoked.** Do not skip it for performance or convenience reasons. CodeRabbit provides external validation that complements the internal review agents.
-7. **When Qodo Merge is available and enabled, it MUST be invoked.** Qodo Merge provides the highest precision bug detection among external tools and complements both internal agents and CodeRabbit.
+4. If a tool is enabled in settings but not installed, proceed silently without it
+5. **When CodeRabbit is available and enabled, it MUST be invoked.** Do not skip it for performance or convenience reasons. CodeRabbit provides external validation that complements the internal review agents.
 
 **Test command auto-detection:**
 
@@ -244,49 +238,6 @@ Parse output:
 3. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
 4. Set category = "external", source_agent = "copilot", confidence = 75
 
-**Qodo Merge / PR-Agent** (if available):
-
-**IMPORTANT: Qodo Merge MUST be run when the CLI is installed, the config allows it, AND an open PR exists. Do NOT skip it when a PR is available. Qodo Merge has the highest precision among external review tools and its findings MUST be included in the fix loop alongside internal agent findings.**
-
-**Limitation:** Qodo Merge requires an open PR to operate (it reviews via the GitHub/GitLab API, not local files). Unlike CodeRabbit, which can review local files with `--files`, Qodo cannot review code before a PR is created. In the ship pipeline, deep review runs before PR creation (Stage 7, before Stage 8 finish), so Qodo will typically be skipped. It is most useful in manual workflows where the developer creates a PR before running `/speckit-spex-gates-review-code`.
-
-Construct the URL from the current branch:
-
-```bash
-# Get the PR URL for the current branch
-PR_URL=$(gh pr view --json url -q .url 2>/dev/null)
-```
-
-If no PR exists for the current branch, skip Qodo Merge with reason "no open PR found" (log for review-findings.md).
-
-If a PR URL is available, invoke Qodo Merge:
-
-```bash
-# Initial review (Stage 2): review the PR
-pr-agent --pr_url="$PR_URL" review \
-  --pr_reviewer.extra_instructions="Output ONLY a structured list of findings. For each finding use this exact format:
-
-### FINDING
-- Severity: Critical|Important|Minor
-- File: <relative path>
-- Line: <number>
-- Description: <what is wrong and how to fix it>
-
-End each finding with ---" 2>&1
-
-# Fix loop re-review rounds: re-invoke with same PR URL (reviews latest state)
-pr-agent --pr_url="$PR_URL" review \
-  --pr_reviewer.extra_instructions="Focus on recently changed files. Output ONLY structured findings using ### FINDING format with Severity, File, Line, Description fields." 2>&1
-```
-
-Parse output:
-1. Split on "### FINDING" markers
-2. For each block: extract Severity, File, Line, Description fields
-3. **Discard findings for files under `specs/` and `brainstorm/`** (spec artifacts are not code to review)
-4. Map severity: critical -> Critical, major -> Important, minor -> Minor
-5. Set category = "external", source_agent = "qodo", confidence = 75
-6. **All Qodo Merge findings with severity Critical or Important MUST enter the fix loop** (Step 7). They are treated identically to internal agent findings for gate and fix purposes.
-
 **Error handling for external tools:**
 If a tool times out, crashes, or returns an error:
 - Log the failure (tool name, error reason) for inclusion in review-findings.md
@@ -311,7 +262,7 @@ If a tool times out, crashes, or returns an error:
      fix: "how to fix it",
      source_agent: "agent-name",
      also_reported_by: [],
-     external_rationale: "full rationale from external tool (CodeRabbit/Copilot/Qodo), or null",
+     external_rationale: "full rationale from external tool (CodeRabbit/Copilot), or null",
      resolution: "pending",
      round_found: N
    }
@@ -489,9 +440,9 @@ burden? Be specific about the failure scenario.]
 [If fixed: explain what was changed and why this fix is correct.
 If remaining: explain what needs to happen to resolve it.]
 
-[If CodeRabbit, Copilot, or Qodo Merge reported this finding, include their analysis:]
+[If CodeRabbit or Copilot reported this finding, include their analysis:]
 
-**External tool analysis (CodeRabbit|Qodo Merge):**
+**External tool analysis (CodeRabbit):**
 > [Preserve the full rationale from the external tool's output. This gives
 > reviewers the external AI's perspective, which may differ from or
 > complement the internal agent's analysis.]
@@ -561,7 +512,6 @@ Review Agents:
 | Test Quality            |     N |     N |         N | completed |
 | CodeRabbit (external)   |     N |     N |         N | completed/skipped/failed |
 | Copilot (external)      |     N |     N |         N | completed/skipped/failed |
-| Qodo Merge (external)   |     N |     N |         N | completed/skipped/failed |
 | Test Suite (regression) |     N |     N |         N | passed/N failures/skipped |
 |-------------------------|-------|-------|-----------|-----------|
 | Total                   |     N |     N |         N |           |
@@ -586,7 +536,7 @@ Details: review-findings.md
 - "Key fixes applied" lists up to 10 most significant fixes, grouped by theme
 - "Remaining findings" lists only Critical and Important severity items
 - If gate PASSED with zero remaining: omit the "Remaining findings" section
-- If an external tool was skipped: show reason (e.g., "skipped (CLI not installed)", "skipped (disabled in config)", or "skipped (no open PR found)" for Qodo Merge)
+- If an external tool was skipped: show reason (e.g., "skipped (CLI not installed)" or "skipped (disabled in config)")
 
 ### Step 10: Update Flow State
 
@@ -1089,7 +1039,6 @@ Stage 2: Multi-perspective review (N changed files)
   Agent 5/5: Test Quality... done, N findings
   [CodeRabbit... done, N findings] (if available)
   [Copilot... done, N findings] (if available)
-  [Qodo Merge... done, N findings] (if available)
 
 Merging findings: N total, N after dedup (N Critical, N Important, N Minor)
 [Fix round 1/3: addressing N Critical + N Important findings...]
