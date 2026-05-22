@@ -93,6 +93,8 @@ A project maintainer creates `.specify/review-hints.md` with framework-specific 
 - **FR-003**: Test failures MUST be converted to Critical findings with `source_agent = "test-suite"`, `category = "regression"`, and `confidence = 95`.
 - **FR-004**: If no test command can be detected, the test step MUST be skipped with a warning logged for inclusion in `review-findings.md`.
 - **FR-005**: A test execution timeout MUST be configurable in `deep-review-config.yml` under `test_timeout_seconds` (default: 300).
+- **FR-005a**: A test command override MUST be configurable in `deep-review-config.yml` under `test_command`. When set, the configured command is used instead of auto-detection (FR-002).
+- **FR-005b**: When the test suite fails after a fix round, the failure MUST consume a fix round (same as a review finding). Test failures become Critical findings and enter the next round for fixing.
 - **FR-006**: The test-quality review agent MUST cross-reference spec acceptance scenarios against test verification methods when a spec is available.
 - **FR-007**: Verification method mismatches between spec and tests MUST produce findings with `category = "test-quality"` and a description that quotes both the spec's expected method and the test's actual method.
 - **FR-008**: When a spec acceptance scenario does not specify a verification method, the test-quality agent MUST verify a test exists for the scenario but MUST NOT flag a verification method mismatch.
@@ -105,7 +107,7 @@ A project maintainer creates `.specify/review-hints.md` with framework-specific 
 ### Key Entities
 
 - **Test Command**: Auto-detected shell command for running the project's test suite. Detected from project structure, not configured by users.
-- **Review Hints**: Optional markdown file at `.specify/review-hints.md` containing framework-specific patterns injected into review agent prompts.
+- **Review Hints**: Optional flat markdown file at `.specify/review-hints.md` containing framework-specific patterns injected into review agent prompts. Projects organize content with markdown headings as they see fit; the injection mechanism reads and injects the entire file without parsing sections.
 - **Spec Acceptance Scenario**: A Given/When/Then acceptance block in the spec that describes how to verify a requirement, including the verification method.
 
 ## Success Criteria
@@ -117,6 +119,14 @@ A project maintainer creates `.specify/review-hints.md` with framework-specific 
 - **SC-003**: When a function swallows an error from an API/IO call, the correctness agent flags it as a finding.
 - **SC-004**: When `.specify/review-hints.md` exists, all 5 review agents receive its content in their prompts.
 - **SC-005**: When no test command can be detected, the deep review completes normally with a logged warning (no crash, no false findings).
+
+## Clarifications
+
+### Session 2026-05-22
+
+- Q: How should fix loop test failures interact with the round counter? → A: A test failure consumes a fix round, same as a review finding. The failure becomes a Critical finding and enters the next round for fixing. This is consistent with the existing fix loop model and avoids complexity of reverting fixes.
+- Q: Can projects override the auto-detected test command? → A: Yes. Projects can set `test_command` in `deep-review-config.yml` to override auto-detection. If set, the configured command is used instead of auto-detection.
+- Q: Should review-hints.md support structured sections per language/framework? → A: No. It is a flat markdown file. Projects can use markdown headings to organize content by framework or language, but the injection mechanism reads and injects the entire file without parsing sections.
 
 ## Assumptions
 
