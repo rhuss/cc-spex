@@ -6,12 +6,12 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `test_command` and `test_timeout_seconds` keys to `spex/extensions/spex-deep-review/config-template.yml` with defaults `""` and `300`
+- [x] T001 Add `test_command` and `test_timeout_seconds` keys to `spex/extensions/spex-deep-review/config-template.yml` with defaults `""` and `300`
 
 ## Phase 2: Foundational
 
-- [ ] T002 Add test command auto-detection logic to Step 2 (Detect External Tools) in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: config override check, then Makefile, go.mod, package.json, pyproject.toml/setup.py detection order
-- [ ] T003 Add review hints detection to Step 2 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: check if `.specify/review-hints.md` exists and is non-empty
+- [x] T002 Add test command auto-detection logic to Step 2 (Detect External Tools) in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: config override check, then Makefile, go.mod, package.json, pyproject.toml/setup.py detection order
+- [x] T003 Add review hints detection to Step 2 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: check if `.specify/review-hints.md` exists and is non-empty
 
 ## Phase 3: User Story 1 - Fix Loop Test Execution (P1)
 
@@ -19,13 +19,13 @@
 
 **Independent Test**: Run deep review on a project with tests. Verify fix loop output includes test suite execution and test failures appear as findings.
 
-- [ ] T004 [US1] Add Step 7.6 (test suite execution) between current steps 5 and 6 in the fix loop in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: run detected test command with timeout, parse exit code
-- [ ] T005 [US1] Add test failure to findings conversion logic in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: convert failures to Critical findings with `source_agent = "test-suite"`, `category = "regression"`, `confidence = 95`. When the test command exits non-zero but produces no parseable output, treat it as a single Critical finding with the exit code and any available stderr
-- [ ] T006 [US1] Add "no test command detected" skip-with-warning path in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
-- [ ] T007 [US1] Add test timeout handling in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: read `test_timeout_seconds` from config, treat timeout as test failure
-- [ ] T008 [US1] Add "Test Suite (regression)" row to the gate outcome summary table in Step 9 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
-- [ ] T009 [US1] Add test suite results section to the `review-findings.md` template in Step 8 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
-- [ ] T010 [US1] Add `[Test suite... passed/N failures]` progress reporting line in the Reference: Progress Reporting section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
+- [x] T004 [US1] Add Step 7.6 (test suite execution) between current steps 5 and 6 in the fix loop in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: run detected test command with timeout, parse exit code
+- [x] T005 [US1] Add test failure to findings conversion logic in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: convert failures to Critical findings with `source_agent = "test-suite"`, `category = "regression"`, `confidence = 95`. When the test command exits non-zero but produces no parseable output, treat it as a single Critical finding with the exit code and any available stderr
+- [x] T006 [US1] Add "no test command detected" skip-with-warning path in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
+- [x] T007 [US1] Add test timeout handling in Step 7.6 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: read `test_timeout_seconds` from config, treat timeout as test failure
+- [x] T008 [US1] Add "Test Suite (regression)" row to the gate outcome summary table in Step 9 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
+- [x] T009 [US1] Add test suite results section to the `review-findings.md` template in Step 8 in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
+- [x] T010 [US1] Add `[Test suite... passed/N failures]` progress reporting line in the Reference: Progress Reporting section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
 
 ## Phase 4: User Story 2 - Spec-Anchored Test Validation (P2)
 
@@ -33,8 +33,8 @@
 
 **Independent Test**: Provide a spec with "confirm via kubectl get" and a test that checks in-memory. Verify the agent flags the mismatch.
 
-- [ ] T011 [P] [US2] Add spec-anchored validation checklist items to Agent 5 (Test Quality) prompt in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: for each acceptance scenario, find the test, check verification method match, flag mismatches
-- [ ] T012 [P] [US2] Add implicit verification method handling to the spec-anchored validation section: when scenario doesn't specify a method, verify test exists but don't flag mismatch. When a scenario references external systems not available in the test environment, note the scenario exists but mark verification method match as informational (not a finding)
+- [x] T011 [P] [US2] Add spec-anchored validation checklist items to Agent 5 (Test Quality) prompt in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: for each acceptance scenario, find the test, check verification method match, flag mismatches
+- [x] T012 [P] [US2] Add implicit verification method handling to the spec-anchored validation section: when scenario doesn't specify a method, verify test exists but don't flag mismatch. When a scenario references external systems not available in the test environment, note the scenario exists but mark verification method match as informational (not a finding)
 
 ## Phase 5: User Story 3 - Swallowed Error Detection (P3)
 
@@ -42,8 +42,8 @@
 
 **Independent Test**: Submit code with a function that logs an API error without returning it. Verify the correctness agent flags it.
 
-- [ ] T013 [P] [US3] Add swallowed error detection checklist items to Agent 1 (Correctness) prompt in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: general pattern plus Go, Python, JavaScript, Bash variants
-- [ ] T014 [P] [US3] Add intentional swallow handling to the correctness agent prompt: documented/commented swallows produce Minor findings with reduced confidence (50-60)
+- [x] T013 [P] [US3] Add swallowed error detection checklist items to Agent 1 (Correctness) prompt in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: general pattern plus Go, Python, JavaScript, Bash variants
+- [x] T014 [P] [US3] Add intentional swallow handling to the correctness agent prompt: documented/commented swallows produce Minor findings with reduced confidence (50-60)
 
 ## Phase 6: User Story 4 - Review Hints Injection (P4)
 
@@ -51,13 +51,13 @@
 
 **Independent Test**: Create a review-hints.md file and run deep review. Verify hints content appears in agent prompts.
 
-- [ ] T015 [P] [US4] Add item 10 (PROJECT REVIEW HINTS) to the Common Preamble in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: conditional injection of `.specify/review-hints.md` content wrapped in clear delimiters
-- [ ] T016 [P] [US4] Add review hints injection instructions to Step 3 (Dispatch Review Agents) in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: read hints file if detected, append to each agent's prompt
+- [x] T015 [P] [US4] Add item 10 (PROJECT REVIEW HINTS) to the Common Preamble in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: conditional injection of `.specify/review-hints.md` content wrapped in clear delimiters
+- [x] T016 [P] [US4] Add review hints injection instructions to Step 3 (Dispatch Review Agents) in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`: read hints file if detected, append to each agent's prompt
 
 ## Phase 7: Polish & Documentation
 
-- [ ] T017 Update `spex/docs/help.md` deep review section to mention test suite execution, review hints, and enhanced agent checks
-- [ ] T018 Add config key documentation (`test_command`, `test_timeout_seconds`) to the Prerequisites section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
+- [x] T017 Update `spex/docs/help.md` deep review section to mention test suite execution, review hints, and enhanced agent checks
+- [x] T018 Add config key documentation (`test_command`, `test_timeout_seconds`) to the Prerequisites section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md`
 
 ## Dependencies
 

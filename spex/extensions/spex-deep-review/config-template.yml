@@ -3,3 +3,9 @@ external_tools:
   coderabbit: true
   copilot: false
   qodo: true
+
+# Test suite configuration (used by fix loop)
+# Override auto-detected test command. When set, skips auto-detection.
+test_command: ""
+# Maximum seconds for test suite execution before timeout (default: 300)
+test_timeout_seconds: 300

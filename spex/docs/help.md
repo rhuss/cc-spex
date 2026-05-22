@@ -88,6 +88,12 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         compliance passes, auto-fixes Critical/Important
                         findings (up to 3 rounds), writes
                         review-findings.md.
+                        Fix loop runs project test suite after each round
+                        (auto-detected or configured via test_command).
+                        Correctness agent detects swallowed errors.
+                        Test-quality agent cross-refs spec acceptance
+                        scenarios against test verification methods.
+                        Project hints via .specify/review-hints.md.
                         Combines with spex-teams for parallel execution.
                         Optionally includes CodeRabbit, Copilot, + Qodo Merge CLIs.
                         Flags: --no-external, --no-coderabbit, --no-copilot, --no-qodo
