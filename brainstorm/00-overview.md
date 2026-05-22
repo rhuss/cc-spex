@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-05-05
+Last updated: 2026-05-22
 
 ## Sessions
 
@@ -17,11 +17,16 @@ Last updated: 2026-05-05
 | 08 | - | workflows-and-integrations | - | - |
 | 09 | - | traits-to-extensions | - | - |
 | 10 | 2026-05-05 | superpowers-wrapping-integration | active | - |
+| 11 | - | cc-deck-badge-auto-config | idea | - |
+| 12 | 2026-05-22 | hardening-review-process | active | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
 - Inline essentials freshness strategy: frozen vs manually refreshed (from #10)
 - Category 3 pass-through spec context injection (from #10)
+- Fix loop test failure interaction with round counter (from #12)
+- Spec-anchored validation for specs with implicit verification methods (from #12)
+- review-hints.md structure: flat file vs per-language sections (from #12)
 
 ## Parked Ideas
 (none)

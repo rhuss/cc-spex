@@ -89,9 +89,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         findings (up to 3 rounds), writes
                         review-findings.md.
                         Combines with spex-teams for parallel execution.
-                        Optionally includes CodeRabbit + Copilot CLIs.
-                        Flags: --no-external, --no-coderabbit, --no-copilot
-                               --external, --coderabbit, --copilot
+                        Optionally includes CodeRabbit, Copilot, + Qodo Merge CLIs.
+                        Flags: --no-external, --no-coderabbit, --no-copilot, --no-qodo
+                               --external, --coderabbit, --copilot, --qodo
 
   spex-worktrees extension:
     /speckit-specify  → creates git worktree for feature branch,

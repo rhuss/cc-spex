@@ -2,3 +2,4 @@
 external_tools:
   coderabbit: true
   copilot: false
+  qodo: true

@@ -264,9 +264,11 @@ When this command is invoked with arguments, extract flags before treating the r
 - `--no-external`: disable all external tools
 - `--no-coderabbit`: disable CodeRabbit only
 - `--no-copilot`: disable Copilot only
+- `--no-qodo`: disable Qodo Merge only
 - `--external`: enable all external tools
 - `--coderabbit`: enable CodeRabbit only
 - `--copilot`: enable Copilot only
+- `--qodo`: enable Qodo Merge only
 
 Flags are consumed and removed from the argument string. The remaining text (if any) becomes the hint text.
 
@@ -277,6 +279,7 @@ Flags are consumed and removed from the argument string. The remaining text (if 
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_QODO=$(yq -r '.external_tools.qodo // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 
 # 2. If config file is missing, default all tools to true
 ```
@@ -287,18 +290,21 @@ Resolution logic:
 1. Start with config defaults:
    coderabbit = DEFAULT_CODERABBIT
    copilot    = DEFAULT_COPILOT
+   qodo       = DEFAULT_QODO
 
 2. Apply flag overrides (flags always win over defaults):
-   --external       -> coderabbit = true,  copilot = true
-   --no-external    -> coderabbit = false, copilot = false
+   --external       -> coderabbit = true,  copilot = true,  qodo = true
+   --no-external    -> coderabbit = false, copilot = false, qodo = false
    --coderabbit     -> coderabbit = true
    --no-coderabbit  -> coderabbit = false
    --copilot        -> copilot = true
    --no-copilot     -> copilot = false
+   --qodo           -> qodo = true
+   --no-qodo        -> qodo = false
 
 3. Flags are applied in order. Later flags override earlier ones:
-   --external --no-copilot -> coderabbit = true, copilot = false
-   --no-external --coderabbit -> coderabbit = true, copilot = false
+   --external --no-copilot -> coderabbit = true, copilot = false, qodo = true
+   --no-external --coderabbit -> coderabbit = true, copilot = false, qodo = false
 ```
 
 **After spec compliance is calculated, check for deep review:**
@@ -308,7 +314,7 @@ Resolution logic:
   - Stage 1 compliance score (or null if no spec)
   - Invocation context: `quality-gate` if called from hook, `manual` if called directly
   - Hint text: remaining argument text after flag extraction
-  - External tool settings: `{coderabbit: true/false, copilot: true/false}` (resolved from defaults + flags)
+  - External tool settings: `{coderabbit: true/false, copilot: true/false, qodo: true/false}` (resolved from defaults + flags)
   - Spec path and feature directory
 - Wait for deep review to complete before proceeding
 - Deep review includes a post-fix spec compliance check (Step 7b) that catches requirements dropped during the fix loop. If deep review reports dropped requirements, treat them as Critical findings that must be resolved before proceeding.
