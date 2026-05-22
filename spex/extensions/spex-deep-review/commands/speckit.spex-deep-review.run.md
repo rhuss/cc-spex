@@ -303,7 +303,7 @@ If a tool times out, crashes, or returns an error:
      file: "relative/path",
      line_start: N,
      line_end: N,
-     category: correctness|architecture|security|production-readiness|test-quality|external,
+     category: correctness|architecture|security|production-readiness|test-quality|external|regression,
      description: "what is wrong",
      rationale: "why it matters",
      fix: "how to fix it",
