@@ -246,16 +246,18 @@ Parse output:
 
 **Qodo Merge / PR-Agent** (if available):
 
-**IMPORTANT: Qodo Merge MUST be run when the CLI is installed and the config allows it. Do NOT skip it. Qodo Merge has the highest precision among external review tools and its findings MUST be included in the fix loop alongside internal agent findings.**
+**IMPORTANT: Qodo Merge MUST be run when the CLI is installed, the config allows it, AND an open PR exists. Do NOT skip it when a PR is available. Qodo Merge has the highest precision among external review tools and its findings MUST be included in the fix loop alongside internal agent findings.**
 
-Qodo Merge requires a PR URL to operate. Construct the URL from the current branch:
+**Limitation:** Qodo Merge requires an open PR to operate (it reviews via the GitHub/GitLab API, not local files). Unlike CodeRabbit, which can review local files with `--files`, Qodo cannot review code before a PR is created. In the ship pipeline, deep review runs before PR creation (Stage 7, before Stage 8 finish), so Qodo will typically be skipped. It is most useful in manual workflows where the developer creates a PR before running `/speckit-spex-gates-review-code`.
+
+Construct the URL from the current branch:
 
 ```bash
 # Get the PR URL for the current branch
 PR_URL=$(gh pr view --json url -q .url 2>/dev/null)
 ```
 
-If no PR exists for the current branch, skip Qodo Merge with reason "no open PR found" (log for review-findings.md). Qodo requires a PR URL, unlike CodeRabbit which can review local files.
+If no PR exists for the current branch, skip Qodo Merge with reason "no open PR found" (log for review-findings.md).
 
 If a PR URL is available, invoke Qodo Merge:
 
