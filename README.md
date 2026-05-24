@@ -258,6 +258,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
 | `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
+| `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |
 | `/speckit-spex-help` | spex | Show a quick reference for all commands |
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |

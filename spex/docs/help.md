@@ -131,6 +131,7 @@ spex COMMANDS (helpers and configuration)
   /speckit-spex-review-code   Check code compliance against spec
   /speckit-spex-stamp         Verification only (use /speckit-spex-finish for full flow)
   /speckit-spex-evolve        Reconcile spec/code drift
+  /speckit-spex-clear         Clear stuck state, dismiss status line
   /speckit-spex-help          This quick reference
 
 CLOSING OUT A FEATURE (after review passes)
@@ -142,7 +143,8 @@ CLOSING OUT A FEATURE (after review passes)
 
   /speckit-spex-finish runs all verification gates (tests, spec compliance,
   drift check), then offers merge/PR/keep options with automatic worktree
-  cleanup. One command to close out a feature.
+  cleanup. If a PR already exists for the branch, the "create PR" option
+  becomes "push to PR #N" instead. One command to close out a feature.
 
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension

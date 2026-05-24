@@ -83,13 +83,22 @@ if [ -z "$DEFAULT_BRANCH" ]; then
   done
 fi
 DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
+
+EXISTING_PR_NUMBER=""
+EXISTING_PR_URL=""
+if command -v gh >/dev/null 2>&1; then
+  EXISTING_PR_NUMBER=$(gh pr view "$CURRENT_BRANCH" --json number -q '.number' 2>/dev/null || true)
+  if [ -n "$EXISTING_PR_NUMBER" ]; then
+    EXISTING_PR_URL=$(gh pr view "$CURRENT_BRANCH" --json url -q '.url' 2>/dev/null || true)
+  fi
+fi
 ```
 
 **If already on the default branch:** Report "Verification passed. You are already on the default branch; no merge needed." Clean up state file (`rm -f .specify/.spex-state`). STOP.
 
 ## Phase 4: Select Action
 
-If `AUTO_CREATE_PR` is true (from `--create-pr` argument or state file): skip the prompt and go directly to **Option B: Create PR**.
+If `AUTO_CREATE_PR` is true (from `--create-pr` argument or state file): skip the prompt and go directly to **Option B1** if `EXISTING_PR_NUMBER` is set (push to existing PR), otherwise **Option B2** (create new PR).
 
 If `AUTONOMOUS_MODE` is true: skip the prompt and go directly to **Option A: Merge to default branch**.
 
@@ -99,7 +108,8 @@ Otherwise, present options using `AskUserQuestion` (`multiSelect: false`, header
 
 Options:
 1. **"Merge to default branch (Recommended)"**: "Fast-forward merge into the default branch, clean up branch and worktree"
-2. **"Push and create PR"**: "Push branch and open a pull request for team review"
+2. **If `EXISTING_PR_NUMBER` is set:** **"Push to PR #${EXISTING_PR_NUMBER}"**: "Push new commits to the existing pull request"
+   **Otherwise:** **"Push and create PR"**: "Push branch and open a pull request for team review"
 3. **"Keep branch as-is"**: "Leave branch for manual handling later"
 
 ## Phase 5: Execute Action
@@ -164,7 +174,23 @@ Report:
 Merged `<branch>` into `<default-branch>`. Feature branch deleted.
 ```
 
-### Option B: Push and Create PR
+### Option B1: Push to Existing PR
+
+When `EXISTING_PR_NUMBER` is set and the user selected "Push to PR #...":
+
+```bash
+REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+git push "$REMOTE" "$CURRENT_BRANCH"
+```
+
+Report:
+```
+Pushed to PR #<number>: <EXISTING_PR_URL>
+```
+
+If in a worktree, also report: "Run `/speckit-spex-finish` again after the PR is merged to merge and clean up the worktree."
+
+### Option B2: Push and Create PR
 
 ```bash
 REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)

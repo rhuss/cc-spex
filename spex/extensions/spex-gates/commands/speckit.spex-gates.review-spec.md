@@ -268,6 +268,43 @@ Output the review findings to the console. Do NOT write a `REVIEW-SPEC.md` file.
 - Significant rework needed
 - May need re-brainstorming
 
+### 11. Offer to Fix Issues
+
+After presenting the review report:
+
+**Autonomous mode:** Fix all issues (both Important and Minor) automatically without prompting.
+
+**If Important issues exist (with or without Minor):**
+
+Present a summary of all Important findings as a numbered list, then ask using `AskUserQuestion` (`multiSelect: false`, header: "Fix"):
+
+**"Found N Important issue(s). Fix them now?"**
+
+Options (if Minor issues also exist):
+1. **"Fix Important issues"**: "Apply fixes to the spec for all Important findings"
+2. **"Fix all (Important + Minor)"**: "Also fix Minor issues in the same pass"
+3. **"Skip fixes"**: "Proceed without fixing, review the findings manually"
+
+Options (if no Minor issues):
+1. **"Fix Important issues"**: "Apply fixes to the spec for all Important findings"
+2. **"Skip fixes"**: "Proceed without fixing, review the findings manually"
+
+If the user selects to fix: apply the fixes directly to `spec.md`, then re-display only the changed sections so the user can verify.
+
+**If only Minor issues exist (no Important):**
+
+Present a summary of all Minor findings, then ask using `AskUserQuestion` (`multiSelect: false`, header: "Fix"):
+
+**"Found N Minor issue(s). Fix them now?"**
+
+Options:
+1. **"Fix Minor issues"**: "Apply fixes to the spec"
+2. **"Skip fixes"**: "Proceed without fixing"
+
+If the user selects to fix: apply the fixes directly to `spec.md`, then re-display only the changed sections.
+
+**If no issues:** Skip this step entirely.
+
 ## Review Checklist
 
 - [ ] Load and read spec thoroughly
@@ -280,6 +317,7 @@ Output the review findings to the console. Do NOT write a `REVIEW-SPEC.md` file.
 - [ ] Run `/speckit-analyze` for cross-artifact consistency (if available)
 - [ ] Generate review report
 - [ ] Make recommendation (ready/needs work/major issues)
+- [ ] Offer to fix Important/Minor issues
 
 ## Quality Standards
 
