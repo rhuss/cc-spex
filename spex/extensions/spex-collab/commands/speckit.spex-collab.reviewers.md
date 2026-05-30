@@ -179,10 +179,25 @@ fi
 
 git push -u "$REMOTE" "$BRANCH"
 
-gh pr create ${REPO_FLAG} --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
-> **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries.
+Extract the "Why This Change", "What Changes", and "How It Works" sections from the REVIEWERS.md just written. Use the actual content, not placeholders. If "How It Works" was omitted (no plan.md yet), skip it.
 
-## Spec for review
+```bash
+gh pr create ${REPO_FLAG} --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
+> **[Review Guide](${REVIEWERS_URL})** for full context, key decisions, scope boundaries, and review checklist.
+
+## Why This Change
+
+[extracted from REVIEWERS.md "Why This Change" section]
+
+## What Changes
+
+[extracted from REVIEWERS.md "What Changes" section]
+
+## How It Works
+
+[extracted from REVIEWERS.md "How It Works" section, omit if absent]
+
+---
 
 This PR contains the specification artifacts for **${FEATURE_NAME}**. Implementation follows after spec approval.
 
