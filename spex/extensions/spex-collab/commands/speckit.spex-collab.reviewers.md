@@ -183,8 +183,6 @@ Extract the "Why This Change", "What Changes", and "How It Works" sections from 
 
 ```bash
 gh pr create ${REPO_FLAG} --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
-> **[Review Guide](${REVIEWERS_URL})** for full context, key decisions, scope boundaries, and review checklist.
-
 ## Why This Change
 
 [extracted from REVIEWERS.md "Why This Change" section]
@@ -198,6 +196,9 @@ gh pr create ${REPO_FLAG} --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_F
 [extracted from REVIEWERS.md "How It Works" section, omit if absent]
 
 ---
+
+> [!IMPORTANT]
+> **[Review Guide](${REVIEWERS_URL})** contains the full review guidance: key decisions, scope boundaries, areas needing attention, and review checklist.
 
 This PR contains the specification artifacts for **${FEATURE_NAME}**. Implementation follows after spec approval.
 
