@@ -157,6 +157,13 @@ Options:
 FEATURE_NAME=$(head -1 "$FEATURE_DIR/spec.md" | sed 's/^# Feature Specification: //')
 REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
 BRANCH=$(git branch --show-current)
+
+# When working in a fork, target PRs against the upstream repository
+REPO_FLAG=""
+if git remote | grep -qx upstream 2>/dev/null; then
+  UPSTREAM_REPO=$(git remote get-url upstream 2>/dev/null | sed 's|.*github\.com[:/]||; s|\.git$||')
+  [ -n "$UPSTREAM_REPO" ] && REPO_FLAG="--repo $UPSTREAM_REPO"
+fi
 REVIEWERS_REL="${FEATURE_DIR#$(git rev-parse --show-toplevel)/}/REVIEWERS.md"
 REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
 REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
@@ -172,7 +179,7 @@ fi
 
 git push -u "$REMOTE" "$BRANCH"
 
-gh pr create --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
+gh pr create ${REPO_FLAG} --base main --title "${FEATURE_NAME} [Spec]" ${LABEL_FLAG} --body "$(cat <<PR_BODY
 > **[Review Guide](${REVIEWERS_URL})** for full context: motivation, key decisions, and scope boundaries.
 
 ## Spec for review

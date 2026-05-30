@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "spex",
-      "version": "5.6.0",
+      "version": "5.7.0",
       "description": "Specification-Driven Development with Process Discipline for Claude Code",
       "author": {
         "name": "Roland Huss",

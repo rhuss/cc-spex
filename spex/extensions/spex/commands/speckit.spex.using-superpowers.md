@@ -85,6 +85,14 @@ Before ANY implementation work:
 - **speckit-spex-gates-stamp** - Verification only (use finish for full flow)
 - **speckit-spex-spec-refactoring** - Consolidate and improve evolved specs
 
+### Collaboration (spex-collab extension)
+Use these skills between planning and implementation when the feature involves multiple phases, PRs, or reviewers:
+- **speckit-spex-collab-phase-split** - Propose how to split implementation into separate PRs (use after plan review, before implement)
+- **speckit-spex-collab-reviewers** - Generate REVIEWERS.md review guide for spec and code PRs
+- **speckit-spex-collab-phase-manager** - Manage phase boundaries, PR creation, and REVIEWERS.md updates during implementation
+- **speckit-spex-collab-revise** - Revise spec artifacts based on PR review feedback, cascade to plan/tasks
+- **speckit-spex-collab-reconcile** - Reconcile revised tasks against existing implementation after spec revision
+
 ### Configuration
 - **speckit-spex-extensions** - Enable/disable spex extensions (spex-gates, spex-teams, etc.)
 - **spex:init** - Initialize project with spec-kit and spex configuration
@@ -108,6 +116,10 @@ Is this a new feature/project?
                     Yes -> speckit-spex-evolve
                     No -> Need plan/tasks?
                             Yes -> /speckit-plan
+                                    |
+                                Plan review passed. Multiple phases or collaborators?
+                                    Yes -> speckit-spex-collab-phase-split + speckit-spex-collab-reviewers
+                                    No  -> /speckit-implement
                             No -> /speckit-implement
             No -> Create spec first using /speckit-specify
 ```
@@ -277,8 +289,12 @@ User: "Add GET /api/stats endpoint returning JSON with user_count and post_count
 
 1. Recognize: Clear requirements
 2. Create spec using /speckit-specify
-3. Route to: /speckit-implement
-4. Implementation will:
+3. Plan using /speckit-plan (includes /speckit-tasks and plan review)
+4. Collab checkpoint: Does the plan have multiple phases or collaborators?
+   Yes -> speckit-spex-collab-phase-split, speckit-spex-collab-reviewers
+   No  -> skip
+5. Route to: /speckit-implement
+6. Implementation will:
    - Quality gates from spex-gates extension
    - Use TDD
    - Verify spec compliance

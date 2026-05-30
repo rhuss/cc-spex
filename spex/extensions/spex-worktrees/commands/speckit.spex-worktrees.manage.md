@@ -474,7 +474,7 @@ fi
 DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
 
 # Get all feature branches merged into the default branch
-MERGED_BRANCHES=$(git branch --merged "$DEFAULT_BRANCH" | sed 's/^[* ]*//' | grep -E '^[0-9]{3}-')
+MERGED_BRANCHES=$(git branch --merged "$DEFAULT_BRANCH" | sed 's/^[+* ]*//' | grep -E '^[0-9]{3}-')
 ```
 
 ### Step 2: Cross-Reference with Worktrees

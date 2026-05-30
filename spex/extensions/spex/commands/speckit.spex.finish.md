@@ -198,6 +198,13 @@ BRANCH=$(git branch --show-current)
 SPEC_DIR="specs/${BRANCH}"
 FEATURE_NAME=$(head -1 "$SPEC_DIR/spec.md" | sed 's/^# Feature Specification: //')
 
+# When working in a fork, target PRs against the upstream repository
+REPO_FLAG=""
+if git remote | grep -qx upstream 2>/dev/null; then
+  UPSTREAM_REPO=$(git remote get-url upstream 2>/dev/null | sed 's|.*github\.com[:/]||; s|\.git$||')
+  [ -n "$UPSTREAM_REPO" ] && REPO_FLAG="--repo $UPSTREAM_REPO"
+fi
+
 REVIEWERS_REL="$SPEC_DIR/REVIEWERS.md"
 REVIEWERS_LINK=""
 if [ -f "$REVIEWERS_REL" ]; then
@@ -218,7 +225,7 @@ fi
 
 git push -u "$REMOTE" "$BRANCH"
 
-gh pr create \
+gh pr create ${REPO_FLAG} \
   --title "$FEATURE_NAME [Spec + Impl]" ${LABEL_FLAG} \
   --body "$(cat <<PREOF
 $REVIEWERS_LINK
