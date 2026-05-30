@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-05-22
+Last updated: 2026-05-30
 
 ## Sessions
 
@@ -19,6 +19,7 @@ Last updated: 2026-05-22
 | 10 | 2026-05-05 | superpowers-wrapping-integration | active | - |
 | 11 | - | cc-deck-badge-auto-config | idea | - |
 | 12 | 2026-05-22 | hardening-review-process | active | - |
+| 13 | 2026-05-30 | pr-review-triage | active | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -27,6 +28,9 @@ Last updated: 2026-05-22
 - Fix loop test failure interaction with round counter (from #12)
 - Spec-anchored validation for specs with implicit verification methods (from #12)
 - review-hints.md structure: flat file vs per-language sections (from #12)
+- Reply signature/tag format for open-detection logic (from #13)
+- Re-request review from bots after pushing fixes (from #13)
+- Handling bot comments that reference code changed by another fix in the same batch (from #13)
 
 ## Parked Ideas
 (none)
