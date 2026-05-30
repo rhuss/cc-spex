@@ -233,6 +233,13 @@ PR_BODY
 )"
 ```
 
+If the label doesn't exist in the repo, `gh pr create --label` will fail. In that case, retry without the label and warn:
+```
+Warning: Label "${IMPL_LABEL}" not found in this repo. PR created without label.
+To create it: gh label create "${IMPL_LABEL}" --color 0e8a16 --description "Implementation PR"
+Or disable labels: set labels.enabled to false in .specify/extensions/spex-collab/collab-config.yml
+```
+
 After PR creation:
 - Capture the PR URL from gh output
 - If labels are enabled, update labels on the PR to reflect the implementation phase:

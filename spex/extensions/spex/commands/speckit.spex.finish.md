@@ -214,13 +214,11 @@ if [ -f "$REVIEWERS_REL" ]; then
 fi
 
 COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
 LABEL_FLAG=""
-if [ -f "$COLLAB_CONFIG" ]; then
-  LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
-  IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
-  if [ "$LABELS_ENABLED" = "true" ]; then
-    LABEL_FLAG="--label ${IMPL_LABEL}"
-  fi
+if [ "$LABELS_ENABLED" = "true" ]; then
+  LABEL_FLAG="--label ${IMPL_LABEL}"
 fi
 
 git push -u "$REMOTE" "$BRANCH"
@@ -243,6 +241,13 @@ Implementation of $FEATURE_NAME.
 Assisted-By: 🤖 Claude Code
 PREOF
 )"
+```
+
+If the label doesn't exist in the repo, `gh pr create --label` will fail. In that case, retry without the label and warn:
+```
+Warning: Label "${IMPL_LABEL}" not found in this repo. PR created without label.
+To create it: gh label create "${IMPL_LABEL}" --color 0e8a16 --description "Implementation PR"
+Or disable labels: set labels.enabled to false in .specify/extensions/spex-collab/collab-config.yml
 ```
 
 Report the PR URL.
