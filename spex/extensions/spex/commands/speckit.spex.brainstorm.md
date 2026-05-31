@@ -31,7 +31,7 @@ You MUST create a task for each of these items and complete them in order:
 4. **Ask clarifying questions** - one at a time, understand purpose/constraints/success criteria
 5. **Propose 2-3 approaches** - with trade-offs and your recommendation
 6. **Reach agreement** - confirm the chosen approach and scope with the user
-7. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`
+7. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`, optionally create GitHub/GitLab issue
 8. **Update overview** - create or refresh `brainstorm/00-overview.md` with index, open threads, parked ideas
 9. **Transition** - offer next steps
 
@@ -45,7 +45,7 @@ digraph brainstorming {
     "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "User chooses approach?" [shape=diamond];
-    "Write brainstorm document" [shape=box];
+    "Write brainstorm document\n(+ optional issue)" [shape=box];
     "Update overview" [shape=box];
     "Offer next steps" [shape=box];
     "Done" [shape=doublecircle];
@@ -57,8 +57,8 @@ digraph brainstorming {
     "Ask clarifying questions" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "User chooses approach?";
     "User chooses approach?" -> "Ask clarifying questions" [label="needs more exploration"];
-    "User chooses approach?" -> "Write brainstorm document" [label="agreed"];
-    "Write brainstorm document" -> "Update overview";
+    "User chooses approach?" -> "Write brainstorm document\n(+ optional issue)" [label="agreed"];
+    "Write brainstorm document\n(+ optional issue)" -> "Update overview";
     "Update overview" -> "Offer next steps";
     "Offer next steps" -> "Done";
 }
@@ -142,6 +142,7 @@ Each brainstorm session produces a structured summary document. The document use
 
 **Date:** YYYY-MM-DD
 **Status:** active | parked | abandoned | spec-created
+**Issue:** <URL> *(optional, present when a GitHub/GitLab issue was created)*
 
 ## Problem Framing
 [What problem is being explored and why it matters]
@@ -183,11 +184,11 @@ Last updated: YYYY-MM-DD
 
 ## Sessions
 
-| # | Date | Topic | Status | Spec |
-|---|------|-------|--------|------|
-| 01 | YYYY-MM-DD | topic-slug | spec-created | 0003 |
-| 02 | YYYY-MM-DD | topic-slug | active | - |
-| 03 | YYYY-MM-DD | topic-slug | parked | - |
+| # | Date | Topic | Status | Spec | Issue |
+|---|------|-------|--------|------|-------|
+| 01 | YYYY-MM-DD | topic-slug | spec-created | 0003 | - |
+| 02 | YYYY-MM-DD | topic-slug | active | - | [#42](url) |
+| 03 | YYYY-MM-DD | topic-slug | parked | - | - |
 
 ## Open Threads
 - [Thread description] (from #NN)
@@ -264,7 +265,64 @@ You MUST write the brainstorm document at session end. This step is NOT optional
 
 5. **Write the document** using the Brainstorm Document Structure defined above.
 
-6. **Commit the brainstorm document**:
+6. **Offer issue creation** (only for `active` status, skip for parked/abandoned):
+
+   Detect platform from git remote:
+   ```bash
+   REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+   ```
+
+   Determine platform:
+   - If URL contains `github.com`: PLATFORM=github, CLI=`gh`
+   - If URL contains `gitlab.com` or `gitlab.`: PLATFORM=gitlab, CLI=`glab`
+   - Otherwise: skip issue creation (no prompt shown)
+
+   If a platform was detected, verify the CLI is available:
+   ```bash
+   command -v $CLI >/dev/null 2>&1
+   ```
+
+   If the CLI is available, use AskUserQuestion:
+   - header: "Create issue?"
+   - multiSelect: false
+   - Options:
+     - **"Yes, create $PLATFORM issue"**: "Create an issue with the brainstorm content on $PLATFORM"
+     - **"No, local document only"**: "Keep only the local brainstorm file"
+
+   If the user chooses yes:
+
+   Handle fork detection (prefer `upstream` remote for issue creation):
+   ```bash
+   REPO_FLAG=""
+   if git remote | grep -qx upstream 2>/dev/null; then
+     UPSTREAM_REPO=$(git remote get-url upstream 2>/dev/null | sed 's|.*github\.com[:/]||; s|\.git$||')
+     [ -n "$UPSTREAM_REPO" ] && REPO_FLAG="--repo $UPSTREAM_REPO"
+   fi
+   ```
+
+   Create the issue (the body is the brainstorm document content):
+
+   For GitHub:
+   ```bash
+   ISSUE_URL=$(gh issue create $REPO_FLAG \
+     --title "Brainstorm: [topic]" \
+     --label "brainstorm" \
+     --body "$ISSUE_BODY" 2>&1)
+   ```
+
+   For GitLab:
+   ```bash
+   ISSUE_URL=$(glab issue create \
+     --title "Brainstorm: [topic]" \
+     --label "brainstorm" \
+     --description "$ISSUE_BODY" 2>&1)
+   ```
+
+   If label creation fails (label does not exist), retry without `--label` and warn.
+
+   On success, append `**Issue:** <ISSUE_URL>` to the brainstorm document header (after the Status line) using the Edit tool.
+
+7. **Commit the brainstorm document**:
    ```bash
    git add brainstorm/NN-topic-slug.md
    git commit -m "Add brainstorm: [topic]
@@ -285,12 +343,12 @@ You MUST update the overview after every brainstorm document write or update. Th
 
 2. **Always regenerate by scanning all documents** (idempotent full rebuild):
    - List all `NN-*.md` files in `brainstorm/` (excluding `00-overview.md`)
-   - For each file, extract: number, date, status, spec reference (from frontmatter)
+   - For each file, extract: number, date, status, spec reference, issue URL (from header metadata)
    - For each file, extract all items under `## Open Questions`
    - For each file with status `parked`, collect the idea and reason
 
 3. **Build the overview** using the Overview Document Structure defined above:
-   - Sessions table: one row per document, sorted by number
+   - Sessions table: one row per document, sorted by number (include Issue column, use `-` when no issue exists)
    - Open Threads: aggregated from all documents, tagged with source `(from #NN)`
    - Parked Ideas: collected from all `parked` documents
 
