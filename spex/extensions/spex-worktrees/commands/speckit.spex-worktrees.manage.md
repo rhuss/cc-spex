@@ -148,9 +148,9 @@ fi
 
 Using `git add -u` (tracked modifications only) plus explicit paths for new spec artifacts limits the commit scope to intended files. The `git diff --cached --quiet` guard skips the commit when there are no staged changes, avoiding empty commits.
 
-### Step 5b: Capture Feature Directory Before Branch Switch
+### Step 5b: Capture Feature Directory and Flow State Before Branch Switch
 
-The next step switches to the default branch, which changes tracked files on disk. Since `.specify/feature.json` is tracked, its contents will revert to whatever the default branch has. Capture the correct `feature_directory` now, while still on the feature branch:
+The next step switches to the default branch, which changes tracked files on disk. Since `.specify/feature.json` is tracked, its contents will revert to whatever the default branch has. And `.specify/.spex-state` is gitignored, so it won't survive the branch switch. Capture both now, while still on the feature branch:
 
 ```bash
 FEATURE_DIR=""
@@ -159,9 +159,15 @@ if [ -f ".specify/feature.json" ]; then
 fi
 # Fallback to branch-derived path if feature.json is missing or empty
 FEATURE_DIR=${FEATURE_DIR:-"specs/$BRANCH_NAME"}
+
+# Capture flow state content (gitignored, will be lost on branch switch)
+SPEX_STATE_CONTENT=""
+if [ -f ".specify/.spex-state" ]; then
+  SPEX_STATE_CONTENT=$(cat ".specify/.spex-state")
+fi
 ```
 
-This value is used in Step 8b to set the correct feature context in the worktree.
+These values are used in Step 8b to set the correct feature context in the worktree.
 
 ### Step 6: Restore Default Branch (before worktree creation)
 
@@ -235,18 +241,17 @@ echo "{\"feature_directory\": \"$FEATURE_DIR\"}" | jq '.' > "$FEATURE_JSON"
 
 This writes the `FEATURE_DIR` value captured in Step 5b, which reflects the actual spec directory created by speckit-specify (not a branch-name derivation that may differ).
 
-The copied `.specify/.spex-state` also contains the old `feature_branch`. Update it to match the worktree's branch so the status line works correctly (the statusline script deletes state files where `feature_branch` doesn't match the current branch):
+The `.specify/.spex-state` file is gitignored, so the rsync in Step 8 won't copy it (the main repo is on the default branch at that point, where the file doesn't exist). Restore it from the content captured in Step 5b, with the branch and spec_dir updated to match the worktree:
 
 ```bash
 STATE_FILE="$WORKTREE_PATH/.specify/.spex-state"
-if [ -f "$STATE_FILE" ]; then
-  jq --arg branch "$BRANCH_NAME" --arg dir "$FEATURE_DIR" \
-    '.feature_branch = $branch | .spec_dir = $dir' "$STATE_FILE" > "${STATE_FILE}.tmp" \
-    && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+if [ -n "$SPEX_STATE_CONTENT" ]; then
+  echo "$SPEX_STATE_CONTENT" | jq --arg branch "$BRANCH_NAME" --arg dir "$FEATURE_DIR" \
+    '.feature_branch = $branch | .spec_dir = $dir' > "$STATE_FILE"
 fi
 ```
 
-This prevents both spec-kit commands and the status line from operating on the wrong feature context.
+This restores the flow state (including any quality gate results from the specify phase) and ensures both spec-kit commands and the status line operate on the correct feature context.
 
 ### Step 9: Print Output
 
