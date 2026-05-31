@@ -219,6 +219,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 - `phase-manager`: coordinates PR creation, code review updates, and phase boundaries
 - `revise`: handles spec revision from PR review feedback, cascades to plan/tasks, runs quality gates, documents changes in revision history
 - `reconcile`: after spec revision, scans existing implementation against revised tasks, classifies each as DONE/REWORK/NEW, and produces a delta for re-implementation
+- `triage`: autonomously handles bot review comments (assess, apply fixes, reject with justification, reply), then interactively presents human comments for approval. Supports loop mode for continuous triage and spec-aware assessment
 
 ### Managing Extensions
 
@@ -272,6 +273,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-collab-phase-manager` | spex-collab | Manage phase boundaries, PR creation, and REVIEWERS.md updates |
 | `/speckit-spex-collab-revise` | spex-collab | Revise spec from PR review feedback, cascade to plan/tasks, update REVIEWERS.md |
 | `/speckit-spex-collab-reconcile` | spex-collab | Reconcile revised tasks against existing implementation, produce delta |
+| `/speckit-spex-collab-triage` | spex-collab | Triage PR review comments: handle bot suggestions autonomously, review human comments interactively |
 
 ## Ship Command
 

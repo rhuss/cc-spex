@@ -229,6 +229,7 @@ EXPECTED_EXT_COMMANDS=(
   "spex-collab/commands/speckit.spex-collab.phase-manager.md"
   "spex-collab/commands/speckit.spex-collab.revise.md"
   "spex-collab/commands/speckit.spex-collab.reconcile.md"
+  "spex-collab/commands/speckit.spex-collab.triage.md"
 )
 
 if [[ -n "$PLUGIN_CACHE_BASE" ]] && [[ -d "$EXT_DIR" ]]; then

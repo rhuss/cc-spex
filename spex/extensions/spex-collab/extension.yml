@@ -4,7 +4,7 @@ extension:
   id: spex-collab
   name: "Spex Collaboration"
   version: "1.0.0"
-  description: "Generate REVIEWERS.md guides for PR reviewers and split implementation into phase-based PRs with pause points"
+  description: "Collaborative PR workflows: REVIEWERS.md guides, phase-based PR splitting, spec revision, implementation reconciliation, and PR review comment triage"
   author: cc-spex
   license: MIT
 
@@ -31,6 +31,9 @@ provides:
     - name: speckit.spex-collab.reconcile
       file: commands/speckit.spex-collab.reconcile.md
       description: "Reconcile revised tasks against existing implementation, produce delta for re-implementation"
+    - name: speckit.spex-collab.triage
+      file: commands/speckit.spex-collab.triage.md
+      description: "Triage PR review comments: autonomously handle bot suggestions, interactively review human comments"
 
   config:
     - name: "collab-config.yml"

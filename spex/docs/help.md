@@ -110,6 +110,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     /speckit-spex-collab-phase-manager → PR creation + REVIEWERS.md updates per phase
     /speckit-spex-collab-revise   → revise spec from PR feedback, cascade plan/tasks
     /speckit-spex-collab-reconcile → scan code against revised tasks, produce delta
+    /speckit-spex-collab-triage   → triage PR review comments (bot autonomous + human interactive)
+                                    Flags: --pr <number>
+                                    Loop:  /loop 5m /speckit-spex-collab-triage
 
 
 spex COMMANDS (helpers and configuration)

@@ -10,3 +10,14 @@ labels:
   spec: "spex/spec"
   spec_approved: "spex/spec-approved"
   implement: "spex/implement"
+
+# Bot reviewer profiles for PR comment triage.
+# Override built-in profiles (CodeRabbit, Copilot) or add custom bots.
+triage:
+  bot-profiles: []
+    # - login: "my-custom-bot[bot]"
+    #   self-resolves: false
+    #   auto-resolve: true
+  overrides: {}
+    # coderabbitai[bot]:
+    #   auto-resolve: true
