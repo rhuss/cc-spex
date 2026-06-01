@@ -40,7 +40,9 @@ If external tool settings are provided by the caller, use them directly. If not 
 # Read config defaults from deep-review extension config (all default to true if key is missing)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
 DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
 ```
 
 ```
