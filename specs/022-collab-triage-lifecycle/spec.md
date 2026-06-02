@@ -48,7 +48,7 @@ A developer running the triage workflow needs visual feedback in the Claude Code
 
 **Acceptance Scenarios**:
 
-1. **Given** the flow state has `triage_spec_passed: false` and `running: "triage-spec"`, **When** the status line renders, **Then** a `T` badge with a spinner indicator (`▶`) is shown.
+1. **Given** the flow state has `triage_spec_passed: false` and `running: "triage-spec"`, **When** the status line renders, **Then** a `T` badge with an active indicator (`▶`) is shown.
 2. **Given** the flow state has `triage_spec_passed: true`, **When** the status line renders, **Then** a `T` badge with a checkmark (`✓`) is shown.
 3. **Given** spex-collab is not enabled, **When** the status line renders, **Then** no `T` badge appears.
 
@@ -88,17 +88,17 @@ A project maintainer wants to customize the review comment threshold for the spl
 - **FR-005**: The suggestion message MUST include a notice that bot reviewers need 1-2 minutes to post comments and the `/loop` command with the configured interval.
 - **FR-006**: The `/loop` interval in the suggestion MUST be read from `collab-config.yml` at `triage.loop_interval`, defaulting to `"5m"` if the key is missing or the config file doesn't exist.
 - **FR-007**: Triage completion MUST be signaled by marking `triage_spec_passed: true` (or `triage_impl_passed: true`) in the flow state via `spex-flow-state.sh gate triage-spec` (or `gate triage-impl`). The user invokes the phase-manager manually after triage completes.
-- **FR-018**: After triage-spec is marked complete, the phase-manager MUST read the triage state file (`.specify/.pr-triage-state.json`) and count total review comments handled.
-- **FR-008**: The phase-manager MUST compare the comment count against `triage.split_threshold` from `collab-config.yml` (default 100).
-- **FR-009**: When the comment count is below the threshold, the phase-manager MUST recommend continuing on the same PR, offering to update the PR title to include "[Spec + Impl]" and update labels.
-- **FR-010**: When the comment count exceeds the threshold, the phase-manager MUST recommend merging the spec PR as-is and creating separate implementation PR(s). This MUST be a recommendation with user choice, not forced.
-- **FR-011**: The status line MUST display a `T` badge for triage state, using the same visual pattern as existing gates (spinner `▶` when active, checkmark `✓` when complete, circle `○` when pending).
-- **FR-012**: The `T` badge MUST only appear when the `spex-collab` extension is enabled.
-- **FR-013**: The flow state script (`spex-flow-state.sh`) MUST support a new `gate triage-spec` and `gate triage-impl` action to mark triage gates as passed.
-- **FR-014**: When the deep-review extension is enabled, the system MUST show a deep review suggestion with delay before the triage-impl suggestion, after implementation is complete but before pushing to the PR.
-- **FR-015**: The `collab-config.yml` template MUST include `triage.split_threshold` (default 100) and `triage.loop_interval` (default "5m") entries.
-- **FR-016**: The existing triage command (`/speckit-spex-collab-triage`) MUST NOT be modified. The new work is about when and how it's invoked in the workflow.
-- **FR-017**: The existing implementation phase-split (`before_implement` hook) MUST NOT be modified.
+- **FR-008**: After triage-spec is marked complete, the phase-manager MUST read the triage state file (`.specify/.pr-triage-state.json`) and count total review comments handled.
+- **FR-009**: The phase-manager MUST compare the comment count against `triage.split_threshold` from `collab-config.yml` (default 100).
+- **FR-010**: When the comment count is below the threshold, the phase-manager MUST recommend continuing on the same PR, offering to update the PR title to include "[Spec + Impl]" and update labels.
+- **FR-011**: When the comment count exceeds the threshold, the phase-manager MUST recommend merging the spec PR as-is and creating separate implementation PR(s). This MUST be a recommendation with user choice, not forced.
+- **FR-012**: The status line script (`spex-ship-statusline.sh`) MUST display a `T` badge for triage state in `render_flow()`, using the same visual pattern as existing gates (`▶` when active, `✓` when complete, `○` when pending). This requires reading `triage_spec_passed` and `triage_impl_passed` from the state JSON and rendering them alongside the existing `C S P R` gate badges.
+- **FR-013**: The `T` badge MUST only appear when the `spex-collab` extension is enabled (check `.specify/extensions/.registry` for `spex-collab` with `enabled: true`).
+- **FR-014**: The flow state script (`spex-flow-state.sh`) MUST support new `gate triage-spec` and `gate triage-impl` actions in its `do_gate()` case statement to mark triage gates as passed, mapping to `triage_spec_passed` and `triage_impl_passed` fields respectively.
+- **FR-015**: When the deep-review extension is enabled, the system MUST show a deep review suggestion with delay before the triage-impl suggestion, after implementation is complete but before pushing to the PR.
+- **FR-016**: The `collab-config.yml` template MUST include `triage.split_threshold` (default 100) and `triage.loop_interval` (default "5m") entries.
+- **FR-017**: The existing triage command (`/speckit-spex-collab-triage`) MUST NOT be modified. The new work is about when and how it's invoked in the workflow.
+- **FR-018**: The existing implementation phase-split (`before_implement` hook) MUST NOT be modified.
 
 ### Key Entities
 
