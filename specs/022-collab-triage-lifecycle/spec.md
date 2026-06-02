@@ -87,7 +87,8 @@ A project maintainer wants to customize the review comment threshold for the spl
 - **FR-004**: After implementation is pushed to a PR via the collab workflow, the system MUST transition the flow state to `triage-impl` and display a suggestion message with a delay notice and ready-to-paste `/loop` command.
 - **FR-005**: The suggestion message MUST include a notice that bot reviewers need 1-2 minutes to post comments and the `/loop` command with the configured interval.
 - **FR-006**: The `/loop` interval in the suggestion MUST be read from `collab-config.yml` at `triage.loop_interval`, defaulting to `"5m"` if the key is missing or the config file doesn't exist.
-- **FR-007**: After triage-spec completes, the phase-manager MUST read the triage state file (`.specify/.pr-triage-state.json`) and count total review comments handled.
+- **FR-007**: Triage completion MUST be signaled by marking `triage_spec_passed: true` (or `triage_impl_passed: true`) in the flow state via `spex-flow-state.sh gate triage-spec` (or `gate triage-impl`). The user invokes the phase-manager manually after triage completes.
+- **FR-018**: After triage-spec is marked complete, the phase-manager MUST read the triage state file (`.specify/.pr-triage-state.json`) and count total review comments handled.
 - **FR-008**: The phase-manager MUST compare the comment count against `triage.split_threshold` from `collab-config.yml` (default 100).
 - **FR-009**: When the comment count is below the threshold, the phase-manager MUST recommend continuing on the same PR, offering to update the PR title to include "[Spec + Impl]" and update labels.
 - **FR-010**: When the comment count exceeds the threshold, the phase-manager MUST recommend merging the spec PR as-is and creating separate implementation PR(s). This MUST be a recommendation with user choice, not forced.
@@ -114,6 +115,13 @@ A project maintainer wants to customize the review comment threshold for the spl
 - **SC-003**: The status line accurately reflects triage state (pending, active, complete) using the `T` badge whenever collab is enabled.
 - **SC-004**: A developer using the collab workflow can complete the full lifecycle (specify → triage-spec → gate check → plan → implement → triage-impl) without leaving the spex workflow or manually tracking triage state.
 - **SC-005**: Projects without spex-collab enabled experience no workflow changes; triage phases are entirely invisible.
+
+## Clarifications
+
+### Session 2026-06-02
+
+- Q: How does the phase-manager know triage-spec is complete? → A: The triage command (or user) marks `triage_spec_passed: true` in the flow state via `spex-flow-state.sh gate triage-spec`. Phase-manager checks this field before running the gate check. Consistent with existing gate pattern.
+- Q: Who triggers the gate check after triage-spec? → A: The user invokes phase-manager manually after triage completes. Consistent with the suggest-with-delay pattern (user-driven transitions, not automatic).
 
 ## Assumptions
 
