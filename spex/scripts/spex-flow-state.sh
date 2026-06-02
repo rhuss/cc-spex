@@ -63,7 +63,28 @@ do_create() {
       '.feature_branch = $branch | .spec_dir = $dir' \
       "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
   else
-    cat > "$STATE_FILE" <<EOF
+    # Check if spex-collab extension is enabled
+    local collab_enabled=false
+    local registry=".specify/extensions/.registry"
+    if [ -f "$registry" ] && jq -e '.extensions["spex-collab"].enabled == true' "$registry" >/dev/null 2>&1; then
+      collab_enabled=true
+    fi
+
+    if [ "$collab_enabled" = true ]; then
+      cat > "$STATE_FILE" <<EOF
+{
+  "mode": "flow",
+  "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "feature_branch": "$branch",
+  "spec_dir": "$spec_dir",
+  "implemented": false,
+  "clarified": false,
+  "triage_spec_passed": false,
+  "triage_impl_passed": false
+}
+EOF
+    else
+      cat > "$STATE_FILE" <<EOF
 {
   "mode": "flow",
   "started_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -73,6 +94,7 @@ do_create() {
   "clarified": false
 }
 EOF
+    fi
   fi
 }
 
@@ -100,6 +122,8 @@ do_gate() {
     review-spec) field="review_spec_passed" ;;
     review-plan) field="review_plan_passed" ;;
     review-code) field="review_code_passed" ;;
+    triage-spec) field="triage_spec_passed" ;;
+    triage-impl) field="triage_impl_passed" ;;
     *) exit 0 ;;
   esac
   if is_flow; then

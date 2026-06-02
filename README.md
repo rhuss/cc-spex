@@ -216,10 +216,10 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 **`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR
 - `before_implement`: presents phase split proposal for implementation PRs
-- `phase-manager`: coordinates PR creation, code review updates, and phase boundaries
+- `phase-manager`: coordinates PR creation, code review updates, and phase boundaries. After spec PR creation, suggests triage with a `/loop` command and delay notice. After spec triage completes, runs a gate check comparing review comment count against `triage.split_threshold` (default 100) to recommend continuing on the same PR or splitting into separate implementation PR(s). After implementation push, suggests triage (with deep-review first if that extension is enabled).
 - `revise`: handles spec revision from PR review feedback, cascades to plan/tasks, runs quality gates, documents changes in revision history
 - `reconcile`: after spec revision, scans existing implementation against revised tasks, classifies each as DONE/REWORK/NEW, and produces a delta for re-implementation
-- `triage`: autonomously handles bot review comments (assess, apply fixes, reject with justification, reply), then interactively presents human comments for approval. Supports loop mode for continuous triage and spec-aware assessment
+- `triage`: autonomously handles bot review comments (assess, apply fixes, reject with justification, reply), then interactively presents human comments for approval. Supports loop mode for continuous triage and spec-aware assessment. The triage lifecycle is integrated into the flow state with `triage-spec` and `triage-impl` phases, visible in the status line as a `T` badge.
 
 ### Managing Extensions
 

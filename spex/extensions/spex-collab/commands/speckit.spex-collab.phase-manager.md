@@ -304,6 +304,156 @@ tmp=$(mktemp) && jq \
   .specify/.spex-state > "$tmp" && mv "$tmp" .specify/.spex-state
 ```
 
+## Triage Suggestion (after PR creation or push)
+
+After a PR is created or implementation is pushed, check if triage should be suggested.
+
+### Spec Triage Suggestion
+
+When a spec PR has just been created (Phase 1 or spec-only PR), display the triage suggestion:
+
+```bash
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+LOOP_INTERVAL=$(yq -r '.triage.loop_interval // "5m"' "$COLLAB_CONFIG" 2>/dev/null || echo "5m")
+```
+
+Output the suggest-with-delay message:
+
+```
+Bot reviewers typically need 1-2 minutes to post comments.
+When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
+```
+
+Then set the flow state to triage-spec:
+
+```bash
+bash spex/scripts/spex-flow-state.sh running triage-spec
+```
+
+### Implementation Triage Suggestion
+
+When implementation has been pushed to a PR (after an implementation phase completes and PR is created), display the triage suggestion:
+
+First, check if the deep-review extension is enabled:
+
+```bash
+DEEP_REVIEW_ENABLED=$(jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null || echo "false")
+```
+
+If deep-review is enabled, show the deep review suggestion first:
+
+```
+Deep review is available. Consider running /speckit-spex-deep-review-run before triaging review comments.
+```
+
+Then show the triage suggestion:
+
+```bash
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+LOOP_INTERVAL=$(yq -r '.triage.loop_interval // "5m"' "$COLLAB_CONFIG" 2>/dev/null || echo "5m")
+```
+
+```
+Bot reviewers typically need 1-2 minutes to post comments.
+When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
+```
+
+Then set the flow state to triage-impl:
+
+```bash
+bash spex/scripts/spex-flow-state.sh running triage-impl
+```
+
+### Determining Which Suggestion to Show
+
+- If this is the **first phase** and the PR is a spec-only PR (title contains `[Spec]`), show the **spec triage suggestion**.
+- If this is an **implementation phase** (not spec-only), show the **implementation triage suggestion**.
+- The suggestion is only shown when a PR was actually created (not when the user chose "Skip PR" or "Pause here").
+
+## Triage Gate Check (after triage-spec completes)
+
+When the phase-manager is invoked and `triage_spec_passed` is true in the flow state, run the gate check before proceeding to the next phase.
+
+### Read Triage State
+
+```bash
+TRIAGE_STATE_FILE=".specify/.pr-triage-state.json"
+PR_NUM=$(gh pr view --json number --jq .number 2>/dev/null || echo "")
+
+if [ -f "$TRIAGE_STATE_FILE" ] && [ -n "$PR_NUM" ]; then
+  COMMENT_COUNT=$(jq --arg pr "$PR_NUM" '.[$pr] // {} | length' "$TRIAGE_STATE_FILE" 2>/dev/null || echo "0")
+else
+  COMMENT_COUNT=0
+fi
+```
+
+### Compare Against Threshold
+
+```bash
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+SPLIT_THRESHOLD=$(yq -r '.triage.split_threshold // 100' "$COLLAB_CONFIG" 2>/dev/null || echo "100")
+```
+
+### Recommend Action
+
+If `COMMENT_COUNT` < `SPLIT_THRESHOLD`:
+
+Output:
+
+```
+Triage complete: ${COMMENT_COUNT} review comments handled (threshold: ${SPLIT_THRESHOLD}).
+Recommendation: Continue on the same PR. The review surface is manageable.
+```
+
+Use AskUserQuestion:
+
+**Question**: "Update this PR to include implementation?"
+**Options**:
+- "Yes, update title to [Spec + Impl] and continue" - update PR title and labels via `gh pr edit`, then proceed to implementation
+- "No, keep as spec-only PR" - leave the PR as-is, proceed without changes
+
+If the user chooses to update:
+
+```bash
+FEATURE_NAME=$(head -1 "$FEATURE_DIR/spec.md" | sed 's/^# Feature Specification: //')
+TOTAL_PHASES=$(jq '.collab.phase_plan | length' .specify/.spex-state 2>/dev/null || echo 1)
+
+if [ "$TOTAL_PHASES" -gt 1 ]; then
+  NEW_TITLE="${FEATURE_NAME} [Spec + Impl (1/${TOTAL_PHASES})]"
+else
+  NEW_TITLE="${FEATURE_NAME} [Spec + Impl]"
+fi
+
+gh pr edit "$PR_NUM" --title "$NEW_TITLE"
+
+# Update labels
+LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+if [ "$LABELS_ENABLED" = "true" ]; then
+  SPEC_LABEL=$(yq -r '.labels.spec // "spex/spec"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec")
+  SPEC_APPROVED_LABEL=$(yq -r '.labels.spec_approved // "spex/spec-approved"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec-approved")
+  IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
+  gh pr edit "$PR_NUM" --remove-label "$SPEC_LABEL" --add-label "$SPEC_APPROVED_LABEL","$IMPL_LABEL" 2>/dev/null || true
+fi
+```
+
+If `COMMENT_COUNT` >= `SPLIT_THRESHOLD`:
+
+Output:
+
+```
+Triage complete: ${COMMENT_COUNT} review comments handled (threshold: ${SPLIT_THRESHOLD}).
+Recommendation: The review surface is large. Consider merging this spec PR as-is
+and creating separate implementation PR(s) to keep reviews focused.
+```
+
+Use AskUserQuestion:
+
+**Question**: "How would you like to proceed?"
+**Options**:
+- "Merge spec PR, create separate impl PR(s)" - leave the spec PR for merging, implementation will create new PR(s)
+- "Continue on same PR anyway" - update PR title and labels as above
+- "Pause to decide later" - stop execution for manual decision
+
 ## Final Report
 
 After processing the phase, output a summary:

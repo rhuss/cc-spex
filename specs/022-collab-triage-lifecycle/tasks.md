@@ -13,7 +13,7 @@
 
 **Purpose**: Add triage configuration to the collab extension config template
 
-- [ ] T001 Add `triage.split_threshold` (default 100) and `triage.loop_interval` (default "5m") to `spex/extensions/spex-collab/config-template.yml`
+- [x] T001 Add `triage.split_threshold` (default 100) and `triage.loop_interval` (default "5m") to `spex/extensions/spex-collab/config-template.yml`
 
 ---
 
@@ -21,8 +21,8 @@
 
 **Purpose**: Extend the flow state script with triage gate support. Must complete before US1/US2 can use the gates.
 
-- [ ] T002 Add `triage-spec` and `triage-impl` cases to the `do_gate()` function in `spex/scripts/spex-flow-state.sh`, mapping to `triage_spec_passed` and `triage_impl_passed` fields respectively
-- [ ] T003 Update the `do_create()` function in `spex/scripts/spex-flow-state.sh` to include `triage_spec_passed: false` and `triage_impl_passed: false` in the initial state JSON (only when spex-collab is enabled, checked via `.specify/extensions/.registry`)
+- [x] T002 Add `triage-spec` and `triage-impl` cases to the `do_gate()` function in `spex/scripts/spex-flow-state.sh`, mapping to `triage_spec_passed` and `triage_impl_passed` fields respectively
+- [x] T003 Update the `do_create()` function in `spex/scripts/spex-flow-state.sh` to include `triage_spec_passed: false` and `triage_impl_passed: false` in the initial state JSON (only when spex-collab is enabled, checked via `.specify/extensions/.registry`)
 
 ---
 
@@ -32,9 +32,9 @@
 
 **Independent Test**: Create a spec PR with collab enabled, verify triage suggestion appears, mark triage gate, invoke phase-manager, verify gate check logic.
 
-- [ ] T004 [US1] Add suggest-with-delay message output to the spec PR creation step in `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: read `triage.loop_interval` from collab-config.yml (default "5m"), display delay notice and `/loop {interval} /speckit-spex-collab-triage` command, set flow state running phase to `triage-spec` via `spex-flow-state.sh running triage-spec`
-- [ ] T005 [US1] Add gate check logic to `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: after `triage_spec_passed` is true, read `.specify/.pr-triage-state.json`, count total entries for the current PR, compare against `triage.split_threshold` from collab-config.yml (default 100). Below threshold: offer to update PR title to "[Spec + Impl]" and update labels. Above threshold: recommend merging spec PR as-is and creating separate impl PR(s). Present as user choice via AskUserQuestion.
-- [ ] T006 [US1] Add the PR title update and label change logic to `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: when user chooses same-PR, use `gh pr edit` to update title and labels. When user chooses split, use `gh pr merge` for spec PR and document that impl PR(s) will be created during implementation phases.
+- [x] T004 [US1] Add suggest-with-delay message output to the spec PR creation step in `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: read `triage.loop_interval` from collab-config.yml (default "5m"), display delay notice and `/loop {interval} /speckit-spex-collab-triage` command, set flow state running phase to `triage-spec` via `spex-flow-state.sh running triage-spec`
+- [x] T005 [US1] Add gate check logic to `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: after `triage_spec_passed` is true, read `.specify/.pr-triage-state.json`, count total entries for the current PR, compare against `triage.split_threshold` from collab-config.yml (default 100). Below threshold: offer to update PR title to "[Spec + Impl]" and update labels. Above threshold: recommend merging spec PR as-is and creating separate impl PR(s). Present as user choice via AskUserQuestion.
+- [x] T006 [US1] Add the PR title update and label change logic to `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: when user chooses same-PR, use `gh pr edit` to update title and labels. When user chooses split, use `gh pr merge` for spec PR and document that impl PR(s) will be created during implementation phases.
 
 ---
 
@@ -44,7 +44,7 @@
 
 **Independent Test**: Push impl commits to PR, verify triage-impl suggestion appears, verify deep review suggestion when deep-review extension is enabled.
 
-- [ ] T007 [US2] Add suggest-with-delay message output after implementation push in `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: check if deep-review extension is enabled (from `.specify/extensions/.registry`), if yes show deep review suggestion first, then show triage-impl suggestion with `/loop {interval} /speckit-spex-collab-triage` command, set flow state running phase to `triage-impl` via `spex-flow-state.sh running triage-impl`
+- [x] T007 [US2] Add suggest-with-delay message output after implementation push in `spex/extensions/spex-collab/commands/speckit.spex-collab.phase-manager.md`: check if deep-review extension is enabled (from `.specify/extensions/.registry`), if yes show deep review suggestion first, then show triage-impl suggestion with `/loop {interval} /speckit-spex-collab-triage` command, set flow state running phase to `triage-impl` via `spex-flow-state.sh running triage-impl`
 
 ---
 
@@ -54,8 +54,8 @@
 
 **Independent Test**: Set flow state with triage fields, run statusline script, verify T badge appears with correct indicator.
 
-- [ ] T008 [P] [US3] Add collab extension detection to the `render_flow()` function in `spex/scripts/spex-ship-statusline.sh`: read `.specify/extensions/.registry` to check if `spex-collab` is enabled. Only render the T badge when enabled.
-- [ ] T009 [P] [US3] Add `T` badge rendering to `render_flow()` in `spex/scripts/spex-ship-statusline.sh`: extract `triage_spec_passed` and `triage_impl_passed` from state JSON (add to the existing `IFS='|' read` line), render `T` badge using the same pattern as C/S/P/R badges (active `▶` when running is `triage-spec` or `triage-impl`, checkmark `✓` when either triage passed field is true, circle `○` when pending). Place the T badge after the R badge in the gate section.
+- [x] T008 [P] [US3] Add collab extension detection to the `render_flow()` function in `spex/scripts/spex-ship-statusline.sh`: read `.specify/extensions/.registry` to check if `spex-collab` is enabled. Only render the T badge when enabled.
+- [x] T009 [P] [US3] Add `T` badge rendering to `render_flow()` in `spex/scripts/spex-ship-statusline.sh`: extract `triage_spec_passed` and `triage_impl_passed` from state JSON (add to the existing `IFS='|' read` line), render `T` badge using the same pattern as C/S/P/R badges (active `▶` when running is `triage-spec` or `triage-impl`, checkmark `✓` when either triage passed field is true, circle `○` when pending). Place the T badge after the R badge in the gate section.
 
 ---
 
@@ -65,7 +65,7 @@
 
 **Independent Test**: Set custom values in collab-config.yml, verify gate check uses custom threshold and suggestion shows custom interval.
 
-- [ ] T010 [US4] Verify that T004, T005, and T007 correctly read from `collab-config.yml` with shell-level fallback defaults (`${VAR:-default}` pattern). No separate task needed if the reading logic in T004/T005/T007 already uses the fallback pattern. This is a validation-only task: read the phase-manager command, confirm the config reads include fallback defaults, fix if missing.
+- [x] T010 [US4] Verify that T004, T005, and T007 correctly read from `collab-config.yml` with shell-level fallback defaults (`${VAR:-default}` pattern). No separate task needed if the reading logic in T004/T005/T007 already uses the fallback pattern. This is a validation-only task: read the phase-manager command, confirm the config reads include fallback defaults, fix if missing.
 
 ---
 
@@ -73,8 +73,8 @@
 
 **Purpose**: Update documentation to reflect the new triage lifecycle
 
-- [ ] T011 [P] Update `spex/docs/help.md` to document the triage lifecycle flow, the T badge, and the configurable thresholds
-- [ ] T012 [P] Update `README.md` to mention triage lifecycle in the spex-collab extension description and workflow section
+- [x] T011 [P] Update `spex/docs/help.md` to document the triage lifecycle flow, the T badge, and the configurable thresholds
+- [x] T012 [P] Update `README.md` to mention triage lifecycle in the spex-collab extension description and workflow section
 
 ---
 

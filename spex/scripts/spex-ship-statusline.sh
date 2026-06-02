@@ -98,9 +98,9 @@ read_extensions() {
 render_flow() {
   # Extract all flow fields in one jq call (use pipe delimiter, not @tsv,
   # because bash read collapses consecutive tabs for empty fields)
-  local spec_dir implemented clarified running rev_spec rev_plan rev_code
-  IFS='|' read -r spec_dir implemented clarified running rev_spec rev_plan rev_code < <(
-    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // "", .review_spec_passed // false, .review_plan_passed // false, .review_code_passed // false] | map(tostring) | join("|")' 2>/dev/null
+  local spec_dir implemented clarified running rev_spec rev_plan rev_code tri_spec tri_impl
+  IFS='|' read -r spec_dir implemented clarified running rev_spec rev_plan rev_code tri_spec tri_impl < <(
+    echo "$STATE_JSON" | jq -r '[.spec_dir // "", .implemented // false, .clarified // false, .running // "", .review_spec_passed // false, .review_plan_passed // false, .review_code_passed // false, .triage_spec_passed // false, .triage_impl_passed // false] | map(tostring) | join("|")' 2>/dev/null
   )
 
   if [ -z "$spec_dir" ] || [ ! -d "$spec_dir" ]; then
@@ -129,11 +129,18 @@ render_flow() {
   elif [ "$has_impl" = false ]; then next_step="implement"
   fi
 
-  # All done = milestones + all gates
+  # All done = milestones + all gates (+ triage gates when collab is enabled)
   local all_done=false
   if [ "$has_spec" = true ] && [ "$has_plan" = true ] && [ "$has_tasks" = true ] && [ "$has_impl" = true ] \
      && [ "$has_clar" = true ] && [ "$has_rev_spec" = true ] && [ "$has_rev_plan" = true ] && [ "$has_rev_code" = true ]; then
     all_done=true
+    # If collab is enabled, triage gates must also pass
+    local collab_registry=".specify/extensions/.registry"
+    if [ -f "$collab_registry" ] && jq -e '.extensions["spex-collab"].enabled == true' "$collab_registry" >/dev/null 2>&1; then
+      if [ "$tri_spec" != "true" ] || [ "$tri_impl" != "true" ]; then
+        all_done=false
+      fi
+    fi
   fi
 
   # Render milestones (linear, ▶ on next step, dim after)
@@ -162,8 +169,29 @@ render_flow() {
   if [ "$running" = "review-code" ]; then gate_r="${CYAN}${BOLD}R ▶${RESET}";
   elif [ "$has_rev_code" = true ]; then gate_r="${GREEN}R ✓${RESET}"; else gate_r="${DIM}R ○${RESET}"; fi
 
+  # Triage gate (only when spex-collab extension is enabled)
+  local gate_t=""
+  local collab_registry=".specify/extensions/.registry"
+  local collab_enabled=false
+  if [ -f "$collab_registry" ] && jq -e '.extensions["spex-collab"].enabled == true' "$collab_registry" >/dev/null 2>&1; then
+    collab_enabled=true
+  fi
+  if [ "$collab_enabled" = true ]; then
+    if [ "$running" = "triage-spec" ] || [ "$running" = "triage-impl" ]; then
+      gate_t="${CYAN}${BOLD}T ▶${RESET}"
+    elif [ "$tri_spec" = "true" ] || [ "$tri_impl" = "true" ]; then
+      gate_t="${GREEN}T ✓${RESET}"
+    else
+      gate_t="${DIM}T ○${RESET}"
+    fi
+  fi
+
   # Build output
-  printf "🧬 ${CYAN}${BOLD}spex${RESET}${marks} ${DIM}|${RESET} ${gate_c} ${gate_s} ${gate_p} ${gate_r}"
+  local gate_section="${gate_c} ${gate_s} ${gate_p} ${gate_r}"
+  if [ -n "$gate_t" ]; then
+    gate_section="${gate_section} ${gate_t}"
+  fi
+  printf "🧬 ${CYAN}${BOLD}spex${RESET}${marks} ${DIM}|${RESET} ${gate_section}"
   if [ "$all_done" = true ]; then
     printf " ${GREEN}${BOLD}🏁${RESET}"
   fi

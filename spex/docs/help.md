@@ -108,11 +108,24 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     /speckit-tasks    → auto-generates REVIEWERS.md, offers [Spec] PR
     /speckit-implement → presents phase split proposal (before hook)
     /speckit-spex-collab-phase-manager → PR creation + REVIEWERS.md updates per phase
+                                         After spec PR: suggests triage with /loop command
+                                         After spec triage: gate check recommends same-PR or split
+                                         After impl push: suggests triage (deep-review first if enabled)
     /speckit-spex-collab-revise   → revise spec from PR feedback, cascade plan/tasks
     /speckit-spex-collab-reconcile → scan code against revised tasks, produce delta
     /speckit-spex-collab-triage   → triage PR review comments (bot autonomous + human interactive)
                                     Flags: --pr <number>
                                     Loop:  /loop 5m /speckit-spex-collab-triage
+
+  Triage lifecycle (spex-collab):
+    After spec PR  → flow state: triage-spec, suggest /loop with delay notice
+    After triage   → gate check: comment count vs split_threshold (default 100)
+                     Below threshold: offer [Spec + Impl] title update
+                     Above threshold: recommend separate impl PR(s)
+    After impl PR  → flow state: triage-impl, suggest /loop with delay notice
+    Status line    → T badge: ○ pending, ▶ active, ✓ complete
+    Config         → triage.split_threshold (100), triage.loop_interval ("5m")
+                     in .specify/extensions/spex-collab/collab-config.yml
 
 
 spex COMMANDS (helpers and configuration)
