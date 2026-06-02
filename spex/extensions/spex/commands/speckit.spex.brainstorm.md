@@ -282,6 +282,13 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    command -v $CLI >/dev/null 2>&1
    ```
 
+   Read the brainstorm label from the collab extension config (if it exists):
+   ```bash
+   COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+   BRAINSTORM_LABEL=$(yq -r '.labels.brainstorm // "brainstorm"' "$COLLAB_CONFIG" 2>/dev/null)
+   BRAINSTORM_LABEL=${BRAINSTORM_LABEL:-brainstorm}
+   ```
+
    If the CLI is available, use AskUserQuestion:
    - header: "Create issue?"
    - multiSelect: false
@@ -306,7 +313,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    ```bash
    ISSUE_URL=$(gh issue create $REPO_FLAG \
      --title "Brainstorm: [topic]" \
-     --label "brainstorm" \
+     --label "$BRAINSTORM_LABEL" \
      --body "$ISSUE_BODY" 2>&1)
    ```
 
@@ -314,7 +321,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    ```bash
    ISSUE_URL=$(glab issue create \
      --title "Brainstorm: [topic]" \
-     --label "brainstorm" \
+     --label "$BRAINSTORM_LABEL" \
      --description "$ISSUE_BODY" 2>&1)
    ```
 

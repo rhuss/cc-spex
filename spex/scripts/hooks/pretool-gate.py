@@ -9,14 +9,11 @@ Gates (checked in order, all results collected):
 2. Teams enforce  - blocks background Agent during implementation when teams active
 3. Ship pipeline  - enforces stage ordering during ship workflow
 4. Verification   - reminds about verification before git commit
-5. Prose enforce  - requires prose skills before content file creation
 
 Side effects (always run):
 - Clear skill-pending marker when Skill tool is called
-- Set prose-active marker when prose: skill is invoked
 - Remove completed ship state files (ship-done cleanup)
 """
-import fnmatch
 import json
 import os
 import re
@@ -69,12 +66,6 @@ def side_effects(tool_name, tool_input, session_id, cwd):
     # Skill gate: clear pending marker when Skill tool is invoked
     if tool_name == 'Skill':
         marker_path('spex-skill-pending', session_id).unlink(missing_ok=True)
-
-    # Prose: set session marker when a prose-related skill is invoked
-    if tool_name == 'Skill':
-        skill = tool_input.get('skill', '')
-        if skill.startswith('prose:') or skill in PROSE_SKILL_ALIASES:
-            marker_path('prose-active', session_id).write_text(skill)
 
     # Ship done cleanup: remove completed ship state file
     state_file = Path(cwd) / '.specify' / '.spex-state'
@@ -337,137 +328,6 @@ def _is_spec_only_commit(cwd):
 
 
 # ---------------------------------------------------------------------------
-# Gate 5: Prose enforcement
-# ---------------------------------------------------------------------------
-
-PROSE_SKILL_ALIASES = {'humanizer'}
-
-CONTENT_EXTENSIONS = {'.md', '.adoc', '.asciidoc'}
-
-PROSE_EXCLUDED_NAMES = {
-    'CLAUDE.md', 'AGENTS.md', 'GEMINI.md', 'MEMORY.md',
-    'tasks.md', 'plan.md', 'spec.md',
-}
-
-PROSE_EXCLUDED_DIRS = {
-    '.claude', '.specify', '.github', '.git',
-    'commands', 'skills', 'overlays', 'scripts',
-    'node_modules', 'memory',
-    'specs', 'brainstorm',
-}
-
-PROSE_EXCLUDED_PATTERNS = {
-    '*/Reports/*',
-    '*/Morning-Paper/*',
-    '*/templates/*',
-    '*/config/*',
-    '*/configs/*',
-    '*/specs/*',
-    '*/plan/*',
-    '*/brainstorm/*',
-}
-
-
-_BASH_REDIRECT_RE = re.compile(
-    r'>\s*\S+\.(?:md|adoc|asciidoc)(?:\s|$|<<)'
-)
-_BASH_TEE_RE = re.compile(
-    r'\btee\s+(?:-[a-z]\s+)*(\S+\.(?:md|adoc|asciidoc))(?:\s|$)'
-)
-
-
-def _extract_prose_target_from_bash(command):
-    """Extract content file path from a Bash write command, or None."""
-    m = _BASH_TEE_RE.search(command)
-    if m:
-        return m.group(1)
-    if _BASH_REDIRECT_RE.search(command):
-        for token in re.findall(r'>\s*(\S+\.(?:md|adoc|asciidoc))', command):
-            return token
-    return None
-
-
-def check_prose_enforce(tool_name, tool_input, session_id, cwd='.'):
-    """Block Write/Bash-write to content files unless a prose skill was invoked.
-
-    Returns deny reason string, or None if gate passes.
-    Only enforced when the prose plugin is installed.
-    """
-    if tool_name == 'Write':
-        file_path = tool_input.get('file_path', '')
-    elif tool_name == 'Bash':
-        file_path = _extract_prose_target_from_bash(
-            tool_input.get('command', ''))
-    else:
-        return None
-
-    if not file_path or not _is_content_file(file_path, cwd):
-        return None
-
-    if not _is_prose_installed():
-        return None
-
-    if marker_path('prose-active', session_id).exists():
-        return None
-
-    return (
-        "PROSE GATE: Content file blocked. "
-        "If you already have content ready, run Skill(skill=\"prose:rewrite\") "
-        "to humanize it through the full prose pipeline, then retry the Write. "
-        "If starting fresh, use Skill(skill=\"prose:write\") to generate "
-        "with human voice. Either skill unlocks Write for this session. "
-        "Do NOT bypass via Bash, Edit, or any other workaround."
-    )
-
-
-def _load_user_excluded_patterns(cwd):
-    """Load additional excluded patterns from user config files.
-
-    Reads glob patterns (one per line, # comments) from:
-      ~/.claude/prose/excluded-patterns  (global)
-      .prose/excluded-patterns           (project, relative to cwd)
-    """
-    patterns = set()
-    for path in [
-        Path.home() / '.claude' / 'prose' / 'excluded-patterns',
-        Path(cwd) / '.prose' / 'excluded-patterns',
-    ]:
-        if path.is_file():
-            for line in path.read_text().splitlines():
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    patterns.add(line)
-    return patterns
-
-
-def _is_content_file(file_path, cwd='.'):
-    """Check if a file path is a content file that should go through prose."""
-    p = Path(file_path)
-    if p.suffix.lower() not in CONTENT_EXTENSIONS:
-        return False
-    if p.name in PROSE_EXCLUDED_NAMES:
-        return False
-    if any(d in p.parts for d in PROSE_EXCLUDED_DIRS):
-        return False
-    all_patterns = PROSE_EXCLUDED_PATTERNS | _load_user_excluded_patterns(cwd)
-    if any(fnmatch.fnmatch(file_path, pat) for pat in all_patterns):
-        return False
-    return True
-
-
-def _is_prose_installed():
-    """Check if the prose plugin is installed via Claude Code plugin registry."""
-    plugins_file = Path.home() / '.claude' / 'plugins' / 'installed_plugins.json'
-    if not plugins_file.exists():
-        return False
-    try:
-        data = json.loads(plugins_file.read_text())
-        return any(k.startswith('prose@') for k in data.get('plugins', {}))
-    except Exception:
-        return False
-
-
-# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -507,10 +367,6 @@ def main():
     verify_ctx = check_verification_gate(tool_name, tool_input, session_id, cwd)
     if verify_ctx:
         contexts.append(verify_ctx)
-
-    prose_deny = check_prose_enforce(tool_name, tool_input, session_id, cwd)
-    if prose_deny:
-        denies.append(prose_deny)
 
     # --- Output ---
     if denies:

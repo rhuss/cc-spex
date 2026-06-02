@@ -80,22 +80,7 @@ Use the existing project `.claude/settings.json` (create if missing). Merge perm
 
 Scan the available skills list from the system reminder for companion plugins:
 
-### 3a: Prose plugin
-
-Check for the `prose:check` skill. If found, write a reminder to auto-memory so future sessions know to use it:
-
-Write to the auto-memory `MEMORY.md` (create the file if it doesn't exist, or append a new section if it does). Only add this section if it isn't already present:
-
-```markdown
-## Content Creation: Always Use Prose Plugin
-
-- When creating prose content (discussions, blog posts, PR descriptions, documentation), run `/prose:check` and `/prose:rewrite` before finalizing
-- Applies to GitHub discussions, issue bodies, long-form text, anything beyond short inline responses
-```
-
-If the prose plugin is not detected, skip this step silently.
-
-### 3b: Superpowers plugin
+### 3a: Superpowers plugin
 
 Check for any of these upstream superpowers skills: `test-driven-development`, `systematic-debugging`, `brainstorming`, `writing-plans`. These are skills from [obra/superpowers](https://github.com/obra/superpowers) that complement spex but are NOT bundled with it.
 

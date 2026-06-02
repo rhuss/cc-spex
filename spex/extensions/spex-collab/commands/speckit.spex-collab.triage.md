@@ -135,16 +135,24 @@ For each unresolved bot thread, process the bot's suggestion:
 
 ### 6b: Assess Validity
 
-Evaluate the bot suggestion against the actual code:
+Evaluate the bot suggestion against the actual code. **Code correctness is the primary concern**, not spec compliance. A bot comment that identifies a real bug or inconsistency is valid even if the spec doesn't mention it. A rejection that only argues "the spec says X" without verifying the code actually does X is not acceptable.
 
-- **Valid**: The suggestion improves the code, fixes a real issue, or aligns with best practices. Does not conflict with spec requirements.
-- **Invalid**: The suggestion is incorrect, unnecessary, conflicts with spec requirements, or would introduce a regression.
+Assessment approach:
+
+1. **Verify the specific claim.** If the bot says "code does X but should do Y", confirm what the code *actually* does. Read the relevant lines and trace the logic. Do not assume alignment.
+2. **Check for real issues.** Does the code have the bug/inconsistency the bot describes? Would the suggestion improve correctness, clarity, or robustness?
+3. **Then check spec alignment.** If both code and suggestion are valid, prefer the approach that aligns with spec requirements. If the spec contradicts correct behavior, flag the spec for update.
+
+Verdicts:
+
+- **Valid**: The suggestion identifies a real issue (bug, inconsistency, misleading documentation) or improves code quality.
+- **Invalid**: The code is demonstrably correct at the specific lines cited, and the suggestion would not improve it. The rejection MUST cite the specific line(s) or function(s) that prove the bot wrong.
 
 ### 6c: Apply or Skip
 
 - **If valid**: Apply the fix using the Edit tool. Track the file path and a 1-line summary for the batch commit message.
 - **If fix application fails** (file changed, line mismatch, syntax error): Skip the fix, mark for a reply noting the fix could not be applied automatically, and continue.
-- **If invalid**: Skip the fix. Prepare a rejection reply with 1-2 sentence justification.
+- **If invalid**: Skip the fix. Prepare a rejection reply with 1-5 sentence justification.
 
 ### 6d: Conflict Detection
 
@@ -193,22 +201,22 @@ gh api "repos/$OWNER/$REPO/pulls/$PR_NUM/comments/$COMMENT_DB_ID/replies" \
 
 ### Acceptance Reply Format
 
-When a fix was applied:
+When a fix was applied. Include a brief assessment of why the suggestion is valid before noting the applied fix:
 
 ```
-Applied: <1-sentence summary of the change>.
+<1-5 sentence assessment explaining why the suggestion is correct and what it improves.>
 
-See commit <SHA>.
+Applied in <SHA>.
 
 <!-- spex-triage -->
 ```
 
 ### Rejection Reply Format
 
-When a suggestion was rejected:
+When a suggestion was rejected. Every rejection MUST cite specific evidence (line number, function name, or quoted code) that disproves the bot's claim. Generic assertions like "the code is correct" or "this is by design" without pointing to the proof are not acceptable.
 
 ```
-<1-2 sentence justification for why the suggestion was not applied.>
+<1-5 sentence justification citing the specific code/line that disproves the claim.>
 
 <!-- spex-triage -->
 ```

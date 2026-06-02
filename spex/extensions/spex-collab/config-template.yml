@@ -10,6 +10,7 @@ labels:
   spec: "spex/spec"
   spec_approved: "spex/spec-approved"
   implement: "spex/implement"
+  brainstorm: "brainstorm"
 
 # Bot reviewer profiles for PR comment triage.
 # Override built-in profiles (CodeRabbit, Copilot) or add custom bots.
