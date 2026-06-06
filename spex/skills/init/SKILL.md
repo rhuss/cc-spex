@@ -67,7 +67,7 @@ Combine all selected options into a single `yq` call when multiple are chosen.
   ```
 - **YOLO**:
   ```json
-  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch", "WebSearch", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
   ```
   Note: `defaultMode: "auto"` enables the classifier-based auto mode that replaces `bypassPermissions`. Auto mode auto-approves routine operations (file edits, skill invocations, local commands) while blocking genuinely dangerous actions. It requires Max, Team, Enterprise, or API plan. The broad `allow` rules serve as fallback for environments where auto mode is unavailable.
   
