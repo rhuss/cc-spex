@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Synced with superpowers@6fd4507 (2026-05-29)
+  - `writing-plans`: evaluated, no new patterns to absorb into spex:plan
+  - `brainstorming`, `verification-before-completion`, `review-code`: no upstream changes
+  - Companion skills updated upstream: `finishing-a-development-branch` (worktree-aware cleanup), `requesting-code-review` (restructured reviewer template)
+  - All spex spec-compliance enhancements preserved
+
 ## [5.0.0] - 2026-04-25
 
 ### Changed (BREAKING)
