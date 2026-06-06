@@ -367,3 +367,19 @@ FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" 
 ```
 
 This updates the status line to show `S ✓`.
+
+## Auto-Commit
+
+After all gate work is done, commit any uncommitted changes (spec modifications from fixes, flow state updates):
+
+```bash
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard specs/ .specify/ 2>/dev/null)" ]; then
+  git add -u
+  git add specs/ .specify/ 2>/dev/null || true
+  git commit -m "review-spec: gate passed, spec updated
+
+Assisted-By: 🤖 Claude Code"
+fi
+```
+
+Do NOT suggest manual commit commands or next steps. The workflow continues automatically.
