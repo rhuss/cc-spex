@@ -121,7 +121,9 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
    ```bash
    DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
    DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
    DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
    ```
 
 2. Start with config defaults:
