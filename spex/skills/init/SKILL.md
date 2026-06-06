@@ -67,12 +67,12 @@ Combine all selected options into a single `yq` call when multiple are chosen.
   ```
 - **YOLO**:
   ```json
-  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "mcp__*__*", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
   ```
   Note: `defaultMode: "auto"` enables the classifier-based auto mode that replaces `bypassPermissions`. Auto mode auto-approves routine operations (file edits, skill invocations, local commands) while blocking genuinely dangerous actions. It requires Max, Team, Enterprise, or API plan. The broad `allow` rules serve as fallback for environments where auto mode is unavailable.
+  
+  **MCP tools**: Claude Code does not support wildcard MCP server names in allow rules (e.g., `mcp__*__*` is invalid). To allow MCP tools, add server-specific entries like `mcp__playwright__*` or `mcp__slack__*` for each MCP server the project uses. Since available MCP servers vary by project, do NOT add MCP allow rules by default. The user can add them manually if needed.
 - **None**: Do not modify permissions (leave defaults)
-
-IMPORTANT: The MCP permission rule is `mcp__*__*` (three parts separated by double underscores, NO parentheses). `mcp__*(*)` is INVALID and will cause a settings parse error.
 
 Use the existing project `.claude/settings.json` (create if missing). Merge permission entries without overwriting existing settings.
 
