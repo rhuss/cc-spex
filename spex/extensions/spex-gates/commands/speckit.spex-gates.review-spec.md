@@ -368,9 +368,17 @@ FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" 
 
 This updates the status line to show `S ✓`.
 
-## Auto-Commit
+## Auto-Commit (if enabled)
 
-After all gate work is done, commit any uncommitted changes (spec modifications from fixes, flow state updates):
+Check the git extension's auto-commit config. Only commit if the user has enabled auto-commit for this stage:
+
+```bash
+GIT_CONFIG=".specify/extensions/git/git-config.yml"
+AUTO_COMMIT=$(yq -r '.auto_commit.after_specify.enabled // .auto_commit.default // false' "$GIT_CONFIG" 2>/dev/null)
+AUTO_COMMIT=${AUTO_COMMIT:-false}
+```
+
+If `AUTO_COMMIT` is `true` and there are uncommitted changes:
 
 ```bash
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard specs/ .specify/ 2>/dev/null)" ]; then
