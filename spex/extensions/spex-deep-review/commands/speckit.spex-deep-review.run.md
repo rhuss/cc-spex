@@ -203,10 +203,10 @@ REVIEW_FILES=$(git diff --name-only "${MAIN_BRANCH}...HEAD" 2>/dev/null | grep -
 Then invoke CodeRabbit with the explicit file list:
 ```bash
 # Initial review (Stage 2): review changed source files only
-coderabbit review --agent --no-color --files $REVIEW_FILES 2>&1
+coderabbit review --agent --files $REVIEW_FILES 2>&1
 
 # Fix loop re-review rounds: review only the files that were modified by fixes
-coderabbit review --agent --type uncommitted --no-color 2>&1
+coderabbit review --agent --type uncommitted 2>&1
 ```
 
 The `--agent` flag produces structured, detailed findings with rationale (preferred over `--prompt-only` which only shows prompts). The `--files` flag ensures spec artifacts under `specs/` and `brainstorm/` are never reviewed.
