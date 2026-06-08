@@ -78,6 +78,14 @@ When spex is initialized for a specific agent, the generated instruction file (C
 - What happens when Codex's hook JSON contract changes between versions? Hook adapters should validate input format and fail with a clear error rather than silently misbehaving.
 - What happens when a skill references AskUserQuestion but runs on an agent without it? The model should follow the instruction file guidance and fall back to inline prompts, not hallucinate the tool.
 
+## Clarifications
+
+### Session 2026-06-08
+
+- Q: What is the exact agent detection priority order for FR-008? → A: (1) Agent-specific env vars (CLAUDE_PROJECT_DIR, CODEX_SESSION_ID), (2) directory presence (.claude/, .codex/, .opencode/), (3) --ai value from .specify/init-options.json.
+- Q: What language should the shared enforcement logic use? → A: Shell functions (POSIX-compatible) as the lowest common denominator. Claude Code/Codex adapters invoke from Python hooks. OpenCode adapter invokes from TypeScript plugin via child_process.exec.
+- Q: What specific degradation applies per extension on limited agents? → A: spex-teams degrades to sequential execution (no parallel). spex-worktrees degrades to manual git worktree commands. spex-deep-review degrades to single-agent review. spex-gates and spex-collab work fully on all agents.
+
 ## Requirements
 
 ### Functional Requirements
@@ -87,9 +95,9 @@ When spex is initialized for a specific agent, the generated instruction file (C
 - **FR-003**: The context-hook logic (command validation, context injection) MUST be implemented as hook scripts for agents with UserPromptSubmit (Claude Code, Codex) and as skill preambles for agents without it (OpenCode).
 - **FR-004**: System MUST generate agent-specific instruction files (CLAUDE.md or AGENTS.md) with correct tool references, enforcement expectations, and interactive prompt patterns for each agent.
 - **FR-005**: Instruction files MUST include AskUserQuestion discrimination: the correct tool or fallback pattern for the target agent.
-- **FR-006**: All spex extensions (spex-gates, spex-teams, spex-deep-review, spex-collab, spex-worktrees) MUST work on all supported agents, with graceful degradation where agent capabilities are limited.
+- **FR-006**: All spex extensions MUST work on all supported agents. Degradation behavior: spex-gates and spex-collab work fully on all agents. spex-teams degrades to sequential execution on agents without background tasks. spex-worktrees degrades to manual git worktree commands. spex-deep-review degrades to single-agent review on agents without subagent support.
 - **FR-007**: The spex-teams extension MUST map parallel task dispatch to each agent's subagent mechanism (Agent tool for Claude Code, Task for OpenCode, subagents for Codex).
-- **FR-008**: System MUST detect the active agent at runtime (via environment variables or directory presence) to select the correct adapter.
+- **FR-008**: System MUST detect the active agent at runtime using this priority order: (1) agent-specific environment variables (CLAUDE_PROJECT_DIR, CODEX_SESSION_ID), (2) agent directory presence (.claude/, .codex/, .opencode/), (3) --ai value from .specify/init-options.json.
 - **FR-009**: The `spex:init` command MUST install the correct hook adapter files for the detected or specified agent.
 - **FR-010**: System MUST provide a local draft of an upstream spec-kit issue proposing a hook adapter framework for the spec-kit extension system.
 
@@ -117,5 +125,5 @@ When spex is initialized for a specific agent, the generated instruction file (C
 - OpenCode's `tool.execute.before` plugin event can deny tool calls by throwing an Error (documented behavior), but context injection via this event needs verification.
 - OpenCode's `question` tool supports simple option lists. Multi-select with grouped headers may need simplification.
 - Gemini CLI is explicitly deferred due to the ongoing Antigravity transition. No adapter is built for Gemini in this feature.
-- The shared enforcement logic module is written in a language accessible to all adapters (Python for Claude Code/Codex, with a TypeScript wrapper or shell shim for OpenCode).
+- The shared enforcement logic is written as POSIX-compatible shell functions. Claude Code/Codex adapters invoke from Python hooks. OpenCode adapter invokes from TypeScript plugin via child_process.exec.
 - Existing Claude Code functionality has zero regressions from this change.
