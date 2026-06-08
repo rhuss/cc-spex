@@ -64,6 +64,7 @@ Before ANY implementation work:
 4. **Validate spec compliance.** Code review and verification check specs.
 5. **Handle spec/code drift.** Use speckit-spex-evolve when mismatches detected.
 6. **Close out features.** After review passes: `/clear`, then `/speckit-spex-finish` (verifies + merges/creates PR in one step).
+7. **Phase-appropriate gates only.** Stamp, verify, and code review apply **after implementation only**. Do not remind about or invoke these during spec, planning, or task generation phases. They require code to verify.
 
 ## Available spex Skills
 
@@ -82,7 +83,7 @@ Before ANY implementation work:
 - **speckit-spex-gates-review-code** - Review code-to-spec compliance
 - **speckit-spex-evolve** - Handle spec/code mismatches with AI guidance
 - **speckit-spex-finish** - Verify + merge/PR/keep (all-in-one feature completion)
-- **speckit-spex-gates-stamp** - Verification only (use finish for full flow)
+- **speckit-spex-gates-stamp** - Verification only, **post-implementation only** (use finish for full flow)
 - **speckit-spex-spec-refactoring** - Consolidate and improve evolved specs
 
 ### Collaboration (spex-collab extension)

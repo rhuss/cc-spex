@@ -75,6 +75,8 @@ Skip any step = lying, not verifying
 - Before committing/merging/deploying
 - As final gate in the implementation pipeline (via spex-gates hook)
 
+**NOT during spec, planning, or task generation phases.** Verification requires code to verify. If the flow state shows `implemented: false` or there are no code changes on the branch (only `specs/` or `.specify/` files), this command does not apply. Do not remind the user about verification during pre-implementation phases.
+
 ## Spec Selection
 
 If a spec path is provided as an argument, use it directly.

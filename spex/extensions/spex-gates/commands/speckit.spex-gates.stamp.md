@@ -30,6 +30,24 @@ In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proc
 
 `/speckit-spex-stamp` runs verification only. For verification + merge/PR/cleanup in one step, use `/speckit-spex-finish` instead.
 
+## Phase Guard
+
+Stamp and verification only apply **after implementation**. If the flow state shows implementation has not completed, skip this command entirely.
+
+```bash
+if [ -f ".specify/.spex-state" ]; then
+  IMPL=$(jq -r '.implemented // false' .specify/.spex-state 2>/dev/null)
+  if [ "$IMPL" != "true" ]; then
+    echo "SKIP: stamp applies post-implementation only (current phase is pre-implementation)"
+    exit 0
+  fi
+fi
+```
+
+If no state file exists, check whether there are meaningful code changes on the branch (not just spec artifacts). If the only changes are in `specs/` or `.specify/`, this is still a planning phase and stamp does not apply.
+
+**Do NOT remind the user about stamp during spec, planning, or task generation phases.** It creates noise and does not apply until code exists to verify.
+
 ## Purpose
 
 This is the final gate before claiming work is complete. It delegates to the full verification command.

@@ -295,6 +295,16 @@ def check_verification_gate(tool_name, tool_input, session_id, cwd):
     if marker_path('spex-verified', session_id).exists():
         return None
 
+    # Skip reminder during pre-implementation phases
+    state_file = Path(cwd) / '.specify' / '.spex-state'
+    if state_file.exists():
+        try:
+            state = json.loads(state_file.read_text())
+            if state.get('mode') == 'flow' and state.get('implemented') is not True:
+                return None
+        except Exception:
+            pass
+
     # Allow spec-only commits without verification
     if _is_spec_only_commit(cwd):
         return None
