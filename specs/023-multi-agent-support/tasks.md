@@ -30,6 +30,8 @@
 - [ ] T006 [P] Extract teams-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 117-158) into `spex/scripts/hooks/shared/teams-gate.sh`. Shell function takes tool_name, tool_input_json, cwd, returns "deny:reason" or "allow". Reads extension registry and phase file.
 - [ ] T007 [P] Extract verify-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 280-327) into `spex/scripts/hooks/shared/verify-gate.sh`. Shell function takes tool_name, command, session_id, cwd, returns "context:text" or "allow". Reads .spex-state and marker files.
 - [ ] T008 Refactor `spex/scripts/hooks/pretool-gate.py` to call shared shell functions via subprocess instead of inline logic. Verify Claude Code behavior is identical (run `make release` to confirm).
+- [ ] T008b Extract context-hook logic from `spex/scripts/hooks/context-hook.py` into `spex/scripts/hooks/shared/context-hook.sh`. Shell function takes user_prompt, session_id, cwd, returns "inject:context_json" or "skip". Handles command validation (known command list check) and skill-pending marker creation.
+- [ ] T008c Refactor `spex/scripts/hooks/context-hook.py` to call shared `context-hook.sh` via subprocess. Verify Claude Code behavior is identical.
 - [ ] T009 Create `spex/scripts/hooks/shared/detect-agent.sh`. Shell function with no arguments, returns agent key string ("claude", "codex", "opencode"). Priority: (1) env vars CLAUDE_PROJECT_DIR/CODEX_SESSION_ID, (2) directory presence .claude/.codex/.opencode/, (3) --ai from .specify/init-options.json.
 
 **Checkpoint**: Existing Claude Code hooks refactored to use shared logic. `make release` passes. Agent detection works.
