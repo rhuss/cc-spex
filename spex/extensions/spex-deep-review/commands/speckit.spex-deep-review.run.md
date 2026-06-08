@@ -160,8 +160,8 @@ If `REVIEW_HINTS` is non-empty, the content will be injected into every review a
 
 Read `.specify/extensions/.registry` and check if `spex-teams` extension is enabled (query: `.extensions["spex-teams"].enabled`).
 
-**Sequential mode** (teams NOT enabled):
-- Dispatch each agent one at a time using the Agent tool
+**Sequential mode** (teams NOT enabled, or agent lacks subagent support):
+- Dispatch each review agent one at a time using the agent's subagent mechanism
 - Each agent gets a fresh, isolated context (no session history)
 - Report progress after each agent completes:
   ```
@@ -169,9 +169,12 @@ Read `.specify/extensions/.registry` and check if `spex-teams` extension is enab
   Agent 2/5: Architecture & Idioms... done, N findings
   ...
   ```
+- **Single-agent fallback**: If the current agent has no subagent mechanism at all, execute all 5 review perspectives sequentially in the current session. Run each perspective's prompt as a separate analysis pass, collecting findings between passes.
 
-**Parallel mode** (teams IS enabled):
-- Dispatch all 5 agents in a single message using multiple Agent tool calls
+**Parallel mode** (teams IS enabled and agent supports parallel dispatch):
+- **Claude Code**: Dispatch all 5 agents using multiple Agent tool calls in a single message
+- **OpenCode**: Dispatch using Task tool for parallel execution
+- **Codex**: Dispatch using subagents
 - Each agent runs in isolated context
 - Report progress as each agent completes:
   ```
@@ -180,8 +183,8 @@ Read `.specify/extensions/.registry` and check if `spex-teams` extension is enab
   ...
   ```
 
-**For each agent dispatch**, use the Agent tool with:
-- `subagent_type: "general-purpose"`
+**For each agent dispatch**, use the agent's subagent mechanism with:
+- On Claude Code: `subagent_type: "general-purpose"` via the Agent tool
 - The full agent prompt (from the Agent Prompts section below)
 - Include the list of changed files and their contents
 - **Include the spec text** (spec.md content, if available). Agents need the spec to check code behavior against requirements. Without it, they can only find code-level issues, not spec compliance gaps.

@@ -180,6 +180,31 @@ PR TITLE CONVENTIONS
     Set labels.enabled: false to disable
 
 
+MULTI-AGENT SUPPORT
+
+  spex works across Claude Code, Codex CLI, and OpenCode.
+  Enforcement adapts to each agent's hook API.
+
+  Agent detection priority:
+    1. Environment variables (CLAUDE_PROJECT_DIR, CODEX_SESSION_ID)
+    2. Directory presence (.claude/, .codex/, .opencode/)
+    3. --ai value from .specify/init-options.json
+
+  Per-agent adapters:
+    Claude Code  Python hooks in .claude/settings.json (existing)
+    Codex CLI    Python hooks in .codex/hooks.json
+    OpenCode     TypeScript plugin in .opencode/plugins/
+
+  Shared enforcement logic lives in spex/scripts/hooks/shared/.
+  All adapters call the same POSIX shell functions for gate decisions.
+
+  Extensions degrade gracefully:
+    spex-gates, spex-collab     Full functionality on all agents
+    spex-teams                  Sequential fallback (no parallel)
+    spex-worktrees              Manual git worktree commands
+    spex-deep-review            Single-session sequential review
+
+
 COMMON MISTAKES (do NOT use these)
 
   /spex:specify   ✗  Does not exist → use /speckit-specify

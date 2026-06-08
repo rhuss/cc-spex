@@ -214,7 +214,7 @@ The PR body MUST begin with:
 
 Followed by the phase section content (What Changed, Spec Compliance, Focus Areas, AI Assumptions).
 
-Use AskUserQuestion to ask:
+Present options to the user:
 
 **Question**: "Phase [N] is ready. What would you like to do?"
 **Options**:
@@ -280,7 +280,7 @@ Suggested body (start with the review guide link):
   [phase section content]
 ```
 
-Then use AskUserQuestion:
+Then present options to the user:
 - "Mark phase complete and continue" - proceed
 - "Pause here" - stop for manual action
 
@@ -405,7 +405,7 @@ Triage complete: ${COMMENT_COUNT} review comments handled (threshold: ${SPLIT_TH
 Recommendation: Continue on the same PR. The review surface is manageable.
 ```
 
-Use AskUserQuestion:
+Present options to the user:
 
 **Question**: "Update this PR to include implementation?"
 **Options**:
@@ -446,7 +446,7 @@ Recommendation: The review surface is large. Consider merging this spec PR as-is
 and creating separate implementation PR(s) to keep reviews focused.
 ```
 
-Use AskUserQuestion:
+Present options to the user:
 
 **Question**: "How would you like to proceed?"
 **Options**:

@@ -142,6 +142,18 @@ When teams cannot be used (feature flag not active, single research topic, simpl
 
 Research the codebase directly in the current session, then generate the plan. This is the normal behavior when the teams extension is not active.
 
+## Multi-Agent Dispatch
+
+The parallel dispatch mechanism varies by agent:
+
+**Claude Code**: Use the **Agent** tool with `team_name` to spawn research agents. Each agent explores in its own context.
+
+**OpenCode**: Use the **Task** tool to dispatch independent research topics in parallel.
+
+**Codex**: Use **subagents** for parallel research when available.
+
+**Fallback (no parallel mechanism)**: Research all topics sequentially in the current session.
+
 ## Key Principles
 
 - **Research is read-only**: Agents explore, they never modify files

@@ -89,7 +89,7 @@ Display the parsed phases as a table:
 Each phase becomes a separate PR for focused review.
 ```
 
-Use AskUserQuestion to ask:
+Present options to the user:
 
 **Question**: "Does this phase split look right for your PRs?"
 **Options**:

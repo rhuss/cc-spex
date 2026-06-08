@@ -132,6 +132,18 @@ Execute tasks sequentially in the current session following the standard impleme
 
 **Mixed independence**: When some tasks are independent and others are sequential (e.g., 1 of 3 tasks is independent, 2 are sequential), group the sequential tasks together as one teammate's workload and assign the independent task to a separate teammate. If only one independent group results, fall back to sequential execution.
 
+## Multi-Agent Dispatch
+
+The parallel dispatch mechanism varies by agent:
+
+**Claude Code**: Use the **Agent** tool with `team_name` to spawn teammates in isolated worktrees.
+
+**OpenCode**: Use the **Task** tool to dispatch independent task groups in parallel. Each task runs in its own context.
+
+**Codex**: Use **subagents** when explicitly requested. Each subagent handles an independent task group.
+
+**Fallback (no parallel mechanism)**: Execute tasks sequentially in the current session. Report to the user: "Parallel dispatch is not available on this agent. Executing tasks sequentially."
+
 ## Key Principles
 
 - **Teams for parallelism, not complexity**: Only use teams when genuine parallel work exists

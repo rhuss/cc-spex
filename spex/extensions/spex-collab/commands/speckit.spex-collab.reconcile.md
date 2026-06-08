@@ -134,7 +134,7 @@ These tasks were added by the spec revision:
 ...
 ```
 
-Use AskUserQuestion (`multiSelect: false`, header: "Reconcile"):
+Present options to the user (single-select, header: "Reconcile"):
 
 **"Apply this reconciliation to tasks.md?"**
 
@@ -146,7 +146,7 @@ Use AskUserQuestion (`multiSelect: false`, header: "Reconcile"):
 
 For each task classified as DONE, ask for confirmation:
 
-Use AskUserQuestion (`multiSelect: true`, header: "Confirm"):
+Present options to the user (multi-select, header: "Confirm"):
 
 **"Which DONE classifications are correct? Unselected tasks will remain [ ]."**
 

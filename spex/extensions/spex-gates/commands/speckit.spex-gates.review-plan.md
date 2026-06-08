@@ -7,7 +7,7 @@ description: "Post-planning quality validation with coverage matrix, red flag sc
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of an autonomous pipeline. Check the `ask` field:
-- If `ask` is `"smart"` or `"never"`: suppress all user prompts (do NOT use AskUserQuestion), complete the review autonomously, and return immediately so the pipeline can advance.
+- If `ask` is `"smart"` or `"never"`: suppress all user prompts (do NOT prompt the user interactively), complete the review autonomously, and return immediately so the pipeline can advance.
 - If `ask` is `"always"`: prompt the user as normal.
 
 ```bash
@@ -161,17 +161,16 @@ Findings:
 
 Then ask the user how to proceed (skip in autonomous mode, default to "Fix all"):
 
-Use AskUserQuestion with:
+Present options to the user:
 - header: "Findings"
-- multiSelect: false
-- Options:
+- Options (single-select):
   - "Fix all": "Address every finding automatically"
   - "Let me pick": "Select specific findings to fix (you can add comments)"
   - "Skip": "Proceed without changes"
 
 **If "Fix all"**: Apply fixes to plan.md and/or tasks.md for each finding, then re-run the relevant checks to confirm resolution.
 
-**If "Let me pick"**: Use AskUserQuestion with multiSelect: true, listing up to 4 findings as options (if more than 4, batch them across multiple rounds). Each option's label is the short finding (e.g., "#1 Task T003 not actionable") and the description is the detail. The user can select which to fix and use "Other" to add comments or instructions for specific findings.
+**If "Let me pick"**: Present a multi-select prompt, listing up to 4 findings as options (if more than 4, batch them across multiple rounds). Each option's label is the short finding (e.g., "#1 Task T003 not actionable") and the description is the detail. The user can select which to fix and use "Other" to add comments or instructions for specific findings.
 
 After the user selects findings, apply fixes to plan.md and/or tasks.md. For each selected finding:
 1. Read the user's comment (if any) to understand their intent

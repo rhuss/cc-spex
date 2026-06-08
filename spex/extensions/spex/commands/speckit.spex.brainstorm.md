@@ -119,7 +119,7 @@ This is the decision point. The brainstorm document captures this agreement.
 
 After the brainstorm document is written and overview updated, offer the user a choice of how to proceed:
 
-Use AskUserQuestion with:
+Present options to the user:
 - header: "Next steps"
 - multiSelect: false
 - Options:
@@ -208,7 +208,7 @@ Last updated: YYYY-MM-DD
 2. List all `NN-*.md` files in `brainstorm/` (excluding `00-overview.md`).
 3. Extract topic slugs from filenames (the part after the number prefix).
 4. Compare the current brainstorm topic against existing slugs using keyword overlap.
-5. If a related brainstorm document is found, use AskUserQuestion:
+5. If a related brainstorm document is found, present options to the user:
    - **Option A: "Create new document"** - session produces a new numbered file
    - **Option B: "Update existing"** - session appends a new dated section to the existing document
 
@@ -289,7 +289,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    BRAINSTORM_LABEL=${BRAINSTORM_LABEL:-brainstorm}
    ```
 
-   If the CLI is available, use AskUserQuestion:
+   If the CLI is available, present options to the user:
    - header: "Create issue?"
    - multiSelect: false
    - Options:
@@ -377,7 +377,7 @@ You MUST update the overview after every brainstorm document write or update. Th
 
 **For sessions with meaningful interaction** (approaches were discussed, questions were answered):
 
-Use AskUserQuestion to ask: **"Save this brainstorm session?"**
+Present to the user: **"Save this brainstorm session?"**
 
 - **Option A: "Save as parked"** - Write the document with status `parked`, update overview
 - **Option B: "Save as abandoned"** - Write the document with status `abandoned`, update overview

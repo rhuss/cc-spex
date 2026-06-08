@@ -343,6 +343,36 @@ When the `spex-teams` extension is also enabled, all five agents run in parallel
 - `review-findings.md` with detailed findings including severity, confidence, file/line, and resolution status
 - An appended section in `REVIEWERS.md` summarizing what was found, what was fixed automatically, and what still needs human attention
 
+## Multi-Agent Support
+
+spex supports multiple AI coding agents beyond Claude Code. The enforcement model adapts to each agent's hook API and available tools.
+
+### Supported Agents
+
+| Agent | Tool Gating | Prompt Interception | Interactive Prompts | Parallel Dispatch |
+|-------|------------|--------------------|--------------------|------------------|
+| **Claude Code** | PreToolUse hooks | UserPromptSubmit hooks | AskUserQuestion | Agent tool (teams) |
+| **Codex CLI** | PreToolUse hooks | UserPromptSubmit hooks | Inline numbered list | Subagents |
+| **OpenCode** | TypeScript plugin | Skill preambles | question tool | Task tool |
+
+### Architecture
+
+Enforcement logic is extracted into shared POSIX shell functions (`spex/scripts/hooks/shared/`). Per-agent adapters (`spex/scripts/adapters/{agent}/`) call the shared functions and format responses for each agent's hook API. This keeps enforcement behavior identical across agents while adapting to different hook contracts.
+
+Agent detection follows this priority: (1) agent-specific environment variables, (2) agent directory presence (`.claude/`, `.codex/`, `.opencode/`), (3) `--ai` value from `.specify/init-options.json`.
+
+### Graceful Degradation
+
+Extensions degrade gracefully on agents with fewer capabilities:
+
+| Extension | Claude Code | Codex / OpenCode |
+|-----------|------------|-----------------|
+| spex-gates | Full enforcement | Full enforcement |
+| spex-collab | Full functionality | Full functionality |
+| spex-teams | Parallel via Agent Teams | Sequential fallback |
+| spex-worktrees | EnterWorktree tool | Manual git worktree commands |
+| spex-deep-review | Parallel 5-agent review | Sequential single-session review |
+
 ## Migrating from v4.x
 
 If you were using the traits-based v4.x, follow these steps:

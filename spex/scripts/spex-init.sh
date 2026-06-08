@@ -185,6 +185,102 @@ EOF
   echo "  Updated .gitignore with spex patterns"
 }
 
+# --- Detect active agent ---
+detect_agent() {
+  local script_dir
+  script_dir="$(dirname "$0")"
+  local detect_script="$script_dir/hooks/shared/detect-agent.sh"
+  if [ -f "$detect_script" ]; then
+    sh "$detect_script" "$(pwd)"
+  else
+    echo "claude"
+  fi
+}
+
+# --- Install agent-specific adapter hooks ---
+install_agent_adapter() {
+  local agent="${1:-claude}"
+  local script_dir
+  script_dir="$(dirname "$0")"
+  local plugin_root
+  plugin_root="$(cd "$script_dir/.." && pwd)"
+
+  case "$agent" in
+    codex)
+      # Create .codex directory if needed
+      mkdir -p .codex
+
+      # Resolve absolute paths for adapter scripts
+      local codex_pretool
+      codex_pretool="$(cd "$script_dir/adapters/codex" 2>/dev/null && pwd)/pretool-gate.py"
+      local codex_context
+      codex_context="$(cd "$script_dir/adapters/codex" 2>/dev/null && pwd)/context-hook.py"
+
+      if [ ! -f "$codex_pretool" ] || [ ! -f "$codex_context" ]; then
+        echo "  WARNING: Codex adapter scripts not found at $script_dir/adapters/codex/" >&2
+        return 1
+      fi
+
+      # Write .codex/hooks.json with spex hook configuration
+      cat > .codex/hooks.json << HOOKEOF
+{
+  "hooks": [
+    {
+      "type": "command",
+      "event": "UserPromptSubmit",
+      "command": "python3 $codex_context"
+    },
+    {
+      "type": "command",
+      "event": "PreToolUse",
+      "command": "python3 $codex_pretool"
+    }
+  ]
+}
+HOOKEOF
+      echo "  Codex adapter hooks installed to .codex/hooks.json"
+
+      # Install AGENTS.md from template if available
+      local agents_template="$plugin_root/templates/agents-md/codex.md"
+      if [ -f "$agents_template" ]; then
+        cp "$agents_template" AGENTS.md
+        echo "  AGENTS.md generated for Codex"
+      fi
+      ;;
+
+    opencode)
+      # Create .opencode/plugins directory if needed
+      mkdir -p .opencode/plugins
+
+      # Copy TypeScript plugin
+      local opencode_plugin="$script_dir/adapters/opencode/spex-plugin.ts"
+      if [ -f "$opencode_plugin" ]; then
+        cp "$opencode_plugin" .opencode/plugins/spex-plugin.ts
+        echo "  OpenCode plugin installed to .opencode/plugins/"
+      else
+        echo "  WARNING: OpenCode plugin not found at $opencode_plugin" >&2
+      fi
+
+      # Install AGENTS.md from template if available
+      local agents_template="$plugin_root/templates/agents-md/opencode.md"
+      if [ -f "$agents_template" ]; then
+        cp "$agents_template" AGENTS.md
+        echo "  AGENTS.md generated for OpenCode"
+      fi
+      ;;
+
+    claude|*)
+      # Claude Code uses existing hooks in .claude/settings.json
+      # Install CLAUDE.md template if available and not already present
+      local claude_template="$plugin_root/templates/agents-md/claude.md"
+      if [ -f "$claude_template" ]; then
+        # Claude Code CLAUDE.md is managed by specify init, don't overwrite
+        :
+      fi
+      ;;
+  esac
+}
+
 # --- Install bundled extensions ---
 install_extensions() {
   local plugin_root
@@ -290,6 +386,7 @@ do_init() {
   if [ "$had_skills" = false ] && ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1; then
     fix_constitution
     install_extensions
+    install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
     echo ""
@@ -312,8 +409,8 @@ do_init() {
 
     migrate_phase_marker
 
-
     install_extensions
+    install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
     echo ""
@@ -339,6 +436,7 @@ do_refresh() {
 
   fix_constitution
   install_extensions
+  install_agent_adapter "$(detect_agent)"
 
   echo ""
   echo "RESTART_REQUIRED"
@@ -362,6 +460,7 @@ do_update() {
   echo "Refreshing project setup..."
   specify init --here --ai claude --force
   install_extensions
+  install_agent_adapter "$(detect_agent)"
 
   echo ""
   specify version

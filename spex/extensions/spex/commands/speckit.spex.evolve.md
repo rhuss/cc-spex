@@ -44,7 +44,7 @@ If no spec is specified, discover available specs:
 find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
-**If specs found:** Present list and ask user to select one using AskUserQuestion.
+**If specs found:** Present list and ask user to select one using the agent's interactive prompt mechanism.
 
 Example:
 ```

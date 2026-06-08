@@ -76,6 +76,22 @@ hooks:
 - How to handle agents that can't support a hook at all (graceful degradation vs skip)?
 - Should the shared logic layer be Python, shell, or something else?
 
+## Implementation evidence from cc-spex
+
+cc-spex has implemented this pattern as a proof-of-concept (see `specs/023-multi-agent-support/`):
+
+- **Shared enforcement functions** in `spex/scripts/hooks/shared/` (POSIX shell): skill-gate.sh, stage-gate.sh, teams-gate.sh, verify-gate.sh, context-hook.sh, detect-agent.sh
+- **Per-agent adapters** in `spex/scripts/adapters/{codex,opencode}/`: Python scripts for Codex, TypeScript plugin for OpenCode
+- **Agent detection** via env vars, directory presence, and init-options.json
+- **String return protocol**: "deny:reason", "context:text", or "allow" (simple, no JSON parsing needed in shared functions)
+
+Key learnings:
+- POSIX shell as the shared language works well (lowest common denominator, all adapters can call it)
+- The string protocol is simpler than JSON for allow/deny decisions
+- Agent detection needs a clear priority order to avoid ambiguity when multiple agent directories exist
+- Graceful degradation is essential (not all agents have UserPromptSubmit or subagent tools)
+- Existing Claude Code hooks can be refactored to use shared functions without behavior changes
+
 ## Prior art
 
 - `CommandRegistrar` already does this for commands (write once, generate per agent)

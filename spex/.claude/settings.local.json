@@ -6,9 +6,14 @@
       "WebFetch(domain:code.claude.com)",
       "Bash(mv:*)",
       "Bash(git commit:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Read(//Users/rhuss/Development/context-engineering/cc-spex/**)",
+      "Bash(rtk grep *)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }

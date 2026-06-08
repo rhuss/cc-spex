@@ -25,7 +25,7 @@ if [ -f ".specify/.spex-state" ]; then
 fi
 ```
 
-In autonomous mode: suppress all AskUserQuestion prompts. Auto-select "Merge to default branch" (or "Create PR" if `create_pr` is true in state or `--create-pr` argument is passed).
+In autonomous mode: suppress all interactive prompts. Auto-select "Merge to default branch" (or "Create PR" if `create_pr` is true in state or `--create-pr` argument is passed).
 
 ## Argument Parsing
 
@@ -102,7 +102,7 @@ If `AUTO_CREATE_PR` is true (from `--create-pr` argument or state file): skip th
 
 If `AUTONOMOUS_MODE` is true: skip the prompt and go directly to **Option A: Merge to default branch**.
 
-Otherwise, present options using `AskUserQuestion` (`multiSelect: false`, header: "Finish"):
+Otherwise, present options to the user (single-select, header: "Finish"):
 
 **"Feature verified. How would you like to complete it?"**
 
@@ -136,7 +136,7 @@ If fast-forward fails (branches diverged), ask the user (unless autonomous mode)
 
 In autonomous mode: create a merge commit automatically.
 
-Otherwise use `AskUserQuestion` (`multiSelect: false`, header: "Merge"):
+Otherwise present options to the user (`multiSelect: false`, header: "Merge"):
 - "Create merge commit": "Branches have diverged, merge with a merge commit"
 - "Abort": "Keep worktree, resolve manually"
 

@@ -329,7 +329,7 @@ Create one by running /speckit-specify with the worktrees extension enabled.
 
 Merges the current worktree's feature branch into the default branch and removes the worktree. This is the recommended way to complete work in a spex worktree.
 
-**IMPORTANT:** Do NOT use Claude Code's `ExitWorktree` tool. Spex worktrees are created via `git worktree add`, not `EnterWorktree`, so `ExitWorktree` will refuse to operate on them. Always use git commands directly.
+**IMPORTANT:** Do NOT use the `ExitWorktree` tool (Claude Code only). Spex worktrees are created via `git worktree add`, not `EnterWorktree`, so `ExitWorktree` will refuse to operate on them. Always use git commands directly. On agents without `EnterWorktree` (Codex, OpenCode), worktrees are always managed via git commands.
 
 ### Step 1: Verify We're in a Worktree
 
@@ -377,13 +377,10 @@ fi
 
 ### Step 4: Ask User How to Proceed
 
-Use AskUserQuestion with:
-- header: "Finish"
-- multiSelect: false
-- Options:
-  - "Merge and remove (Recommended)": "Fast-forward merge branch into default, remove worktree and branch"
-  - "Remove only": "Remove worktree and branch without merging (changes stay in git reflog)"
-  - "Cancel": "Keep worktree as-is"
+Present options to the user (single-select, header: "Finish"):
+- "Merge and remove (Recommended)": "Fast-forward merge branch into default, remove worktree and branch"
+- "Remove only": "Remove worktree and branch without merging (changes stay in git reflog)"
+- "Cancel": "Keep worktree as-is"
 
 If "Cancel": stop.
 
@@ -407,12 +404,9 @@ git merge --ff-only "$BRANCH_NAME" 2>&1
 
 If fast-forward merge fails (branches diverged), ask the user:
 
-Use AskUserQuestion with:
-- header: "Merge"
-- multiSelect: false
-- Options:
-  - "Create merge commit": "Merge with a merge commit (branches have diverged)"
-  - "Abort": "Keep worktree, resolve manually"
+Present options to the user (single-select, header: "Merge"):
+- "Create merge commit": "Merge with a merge commit (branches have diverged)"
+- "Abort": "Keep worktree, resolve manually"
 
 If "Create merge commit":
 ```bash

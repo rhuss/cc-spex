@@ -7,7 +7,7 @@ description: "Review code against spec compliance with deviation tracking and ev
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of an autonomous pipeline. Check the `ask` field:
-- If `ask` is `"smart"` or `"never"`: suppress all user prompts (do NOT use AskUserQuestion), complete the review autonomously, and return immediately so the pipeline can advance.
+- If `ask` is `"smart"` or `"never"`: suppress all user prompts (do NOT prompt the user interactively), complete the review autonomously, and return immediately so the pipeline can advance.
 - If `ask` is `"always"`: prompt the user as normal.
 
 ```bash
@@ -80,7 +80,7 @@ If this fails (not on a feature branch, no matching spec directory), fall back t
 find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
-**If specs found:** Present list and ask user to select one using AskUserQuestion (skip in autonomous mode).
+**If specs found:** Present list and ask user to select one using the agent's interactive prompt mechanism (skip in autonomous mode).
 
 **If no specs found:** Inform user:
 ```

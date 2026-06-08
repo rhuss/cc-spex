@@ -7,8 +7,7 @@
     "WebFetch",
     "WebSearch",
     "Skill",
-    "NotebookEdit",
-    "mcp__*"
+    "NotebookEdit"
   ],
   "permissions": {
     "defaultMode": "auto",
@@ -21,8 +20,7 @@
       "Bash(*/spex/scripts/spex-init.sh*)",
       "Bash(*/spex/scripts/spex-ship-statusline.sh*)",
       "Bash(specify *)",
-      "Bash(*/.local/bin/specify *)",
-      "mcp__*__*"
+      "Bash(*/.local/bin/specify *)"
     ]
   }
 }

@@ -13,9 +13,9 @@
 
 **Purpose**: Create directory structure for adapters and shared logic
 
-- [ ] T001 Create adapter directories: `spex/scripts/adapters/codex/`, `spex/scripts/adapters/opencode/`, `spex/scripts/hooks/shared/`
-- [ ] T002 [P] Create instruction template directory: `spex/templates/agents-md/`
-- [ ] T003 [P] Create skill preamble directory: `spex/templates/skill-preamble/`
+- [x] T001 Create adapter directories: `spex/scripts/adapters/codex/`, `spex/scripts/adapters/opencode/`, `spex/scripts/hooks/shared/`
+- [x] T002 [P] Create instruction template directory: `spex/templates/agents-md/`
+- [x] T003 [P] Create skill preamble directory: `spex/templates/skill-preamble/`
 
 ---
 
@@ -25,14 +25,14 @@
 
 **Note**: This phase refactors existing hooks. Claude Code behavior MUST remain identical after extraction (zero regression).
 
-- [ ] T004 Extract skill-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 85-110) into `spex/scripts/hooks/shared/skill-gate.sh`. Shell function takes tool_name and session_id, returns "deny:reason" or "allow". Reads marker file from $TMPDIR.
-- [ ] T005 Extract stage-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 165-273) into `spex/scripts/hooks/shared/stage-gate.sh`. Shell function takes tool_name, skill_name, state_file_path, returns "deny:reason" or "context:text" or "allow". Reads .spex-state.
-- [ ] T006 [P] Extract teams-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 117-158) into `spex/scripts/hooks/shared/teams-gate.sh`. Shell function takes tool_name, tool_input_json, cwd, returns "deny:reason" or "allow". Reads extension registry and phase file.
-- [ ] T007 [P] Extract verify-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 280-327) into `spex/scripts/hooks/shared/verify-gate.sh`. Shell function takes tool_name, command, session_id, cwd, returns "context:text" or "allow". Reads .spex-state and marker files.
-- [ ] T008 Refactor `spex/scripts/hooks/pretool-gate.py` to call shared shell functions via subprocess instead of inline logic. Verify Claude Code behavior is identical (run `make release` to confirm).
-- [ ] T008b Extract context-hook logic from `spex/scripts/hooks/context-hook.py` into `spex/scripts/hooks/shared/context-hook.sh`. Shell function takes user_prompt, session_id, cwd, returns "inject:context_json" or "skip". Handles command validation (known command list check) and skill-pending marker creation.
-- [ ] T008c Refactor `spex/scripts/hooks/context-hook.py` to call shared `context-hook.sh` via subprocess. Verify Claude Code behavior is identical.
-- [ ] T009 Create `spex/scripts/hooks/shared/detect-agent.sh`. Shell function with no arguments, returns agent key string ("claude", "codex", "opencode"). Priority: (1) env vars CLAUDE_PROJECT_DIR/CODEX_SESSION_ID, (2) directory presence .claude/.codex/.opencode/, (3) --ai from .specify/init-options.json.
+- [x] T004 Extract skill-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 85-110) into `spex/scripts/hooks/shared/skill-gate.sh`. Shell function takes tool_name and session_id, returns "deny:reason" or "allow". Reads marker file from $TMPDIR.
+- [x] T005 Extract stage-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 165-273) into `spex/scripts/hooks/shared/stage-gate.sh`. Shell function takes tool_name, skill_name, state_file_path, returns "deny:reason" or "context:text" or "allow". Reads .spex-state.
+- [x] T006 [P] Extract teams-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 117-158) into `spex/scripts/hooks/shared/teams-gate.sh`. Shell function takes tool_name, tool_input_json, cwd, returns "deny:reason" or "allow". Reads extension registry and phase file.
+- [x] T007 [P] Extract verify-gate logic from `spex/scripts/hooks/pretool-gate.py` (lines 280-327) into `spex/scripts/hooks/shared/verify-gate.sh`. Shell function takes tool_name, command, session_id, cwd, returns "context:text" or "allow". Reads .spex-state and marker files.
+- [x] T008 Refactor `spex/scripts/hooks/pretool-gate.py` to call shared shell functions via subprocess instead of inline logic. Verify Claude Code behavior is identical (run `make release` to confirm).
+- [x] T008b Extract context-hook logic from `spex/scripts/hooks/context-hook.py` into `spex/scripts/hooks/shared/context-hook.sh`. Shell function takes user_prompt, session_id, cwd, returns "inject:context_json" or "skip". Handles command validation (known command list check) and skill-pending marker creation.
+- [x] T008c Refactor `spex/scripts/hooks/context-hook.py` to call shared `context-hook.sh` via subprocess. Verify Claude Code behavior is identical.
+- [x] T009 Create `spex/scripts/hooks/shared/detect-agent.sh`. Shell function with no arguments, returns agent key string ("claude", "codex", "opencode"). Priority: (1) env vars CLAUDE_PROJECT_DIR/CODEX_SESSION_ID, (2) directory presence .claude/.codex/.opencode/, (3) --ai from .specify/init-options.json.
 
 **Checkpoint**: Existing Claude Code hooks refactored to use shared logic. `make release` passes. Agent detection works.
 
@@ -46,9 +46,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Create `spex/scripts/adapters/codex/pretool-gate.py`. Read JSON from stdin per Codex hook contract (session_id, cwd, tool_name, tool_input). Call shared shell functions (skill-gate.sh, stage-gate.sh, teams-gate.sh, verify-gate.sh). Format deny/allow/context responses per Codex expected output.
-- [ ] T011 [US1] Create `spex/scripts/adapters/codex/context-hook.py`. Read JSON from stdin per Codex UserPromptSubmit contract. Validate /speckit-* commands against known command list. Write skill-pending marker file. Inject spex context as additional context. Format response per Codex expected output.
-- [ ] T012 [US1] Update `spex/scripts/spex-init.sh` to detect agent via detect-agent.sh and install Codex adapter hooks to `.codex/hooks.json` when agent is "codex". Preserve existing Claude Code install path.
+- [x] T010 [US1] Create `spex/scripts/adapters/codex/pretool-gate.py`. Read JSON from stdin per Codex hook contract (session_id, cwd, tool_name, tool_input). Call shared shell functions (skill-gate.sh, stage-gate.sh, teams-gate.sh, verify-gate.sh). Format deny/allow/context responses per Codex expected output.
+- [x] T011 [US1] Create `spex/scripts/adapters/codex/context-hook.py`. Read JSON from stdin per Codex UserPromptSubmit contract. Validate /speckit-* commands against known command list. Write skill-pending marker file. Inject spex context as additional context. Format response per Codex expected output.
+- [x] T012 [US1] Update `spex/scripts/spex-init.sh` to detect agent via detect-agent.sh and install Codex adapter hooks to `.codex/hooks.json` when agent is "codex". Preserve existing Claude Code install path.
 
 **Checkpoint**: Codex CLI enforces skill-first loading and stage ordering via its hooks.
 
@@ -62,10 +62,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T013 [P] [US4] Create `spex/templates/agents-md/claude.md` template. AskUserQuestion instructions, Agent tool for teams, /clear for context, hooks enforce mechanically. Extract from current CLAUDE.md generation logic in spex-init.sh.
-- [ ] T014 [P] [US4] Create `spex/templates/agents-md/codex.md` template. Inline numbered list for interactive prompts (no AskUserQuestion), subagents for parallel work, new session for context clearing, hooks enforce mechanically.
-- [ ] T015 [P] [US4] Create `spex/templates/agents-md/opencode.md` template. `question` tool for interactive prompts, Task tool for parallel work, new session for context clearing, tool gates enforce + skill preambles validate.
-- [ ] T016 [US4] Update `spex/scripts/spex-init.sh` to select and install the correct instruction template based on detected agent. Claude gets CLAUDE.md, Codex and OpenCode get AGENTS.md from their respective templates.
+- [x] T013 [P] [US4] Create `spex/templates/agents-md/claude.md` template. AskUserQuestion instructions, Agent tool for teams, /clear for context, hooks enforce mechanically. Extract from current CLAUDE.md generation logic in spex-init.sh.
+- [x] T014 [P] [US4] Create `spex/templates/agents-md/codex.md` template. Inline numbered list for interactive prompts (no AskUserQuestion), subagents for parallel work, new session for context clearing, hooks enforce mechanically.
+- [x] T015 [P] [US4] Create `spex/templates/agents-md/opencode.md` template. `question` tool for interactive prompts, Task tool for parallel work, new session for context clearing, tool gates enforce + skill preambles validate.
+- [x] T016 [US4] Update `spex/scripts/spex-init.sh` to select and install the correct instruction template based on detected agent. Claude gets CLAUDE.md, Codex and OpenCode get AGENTS.md from their respective templates.
 
 **Checkpoint**: Each agent gets correct instruction file. No hallucinated tool references.
 
@@ -79,9 +79,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Create `spex/scripts/adapters/opencode/spex-plugin.ts`. TypeScript OpenCode plugin subscribing to `tool.execute.before`. Call shared shell functions via `child_process.execSync`. Throw Error to deny, return to allow. Handle skill-gate, stage-gate, teams-gate, verify-gate.
-- [ ] T018 [US2] Create `spex/templates/skill-preamble/opencode-preamble.md`. Markdown snippet that OpenCode skills include at the top. Performs command validation (checks skill name against known list), injects spex context (plugin root, session state), replaces what context-hook.py does on Claude Code.
-- [ ] T019 [US2] Update `spex/scripts/spex-init.sh` to install OpenCode adapter: copy plugin to `.opencode/plugins/`, install skill preamble, generate AGENTS.md from opencode template.
+- [x] T017 [US2] Create `spex/scripts/adapters/opencode/spex-plugin.ts`. TypeScript OpenCode plugin subscribing to `tool.execute.before`. Call shared shell functions via `child_process.execSync`. Throw Error to deny, return to allow. Handle skill-gate, stage-gate, teams-gate, verify-gate.
+- [x] T018 [US2] Create `spex/templates/skill-preamble/opencode-preamble.md`. Markdown snippet that OpenCode skills include at the top. Performs command validation (checks skill name against known list), injects spex context (plugin root, session state), replaces what context-hook.py does on Claude Code.
+- [x] T019 [US2] Update `spex/scripts/spex-init.sh` to install OpenCode adapter: copy plugin to `.opencode/plugins/`, install skill preamble, generate AGENTS.md from opencode template.
 
 **Checkpoint**: OpenCode enforces tool gating via plugin. Skills self-validate via preamble.
 
@@ -95,12 +95,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Update `spex/extensions/spex-gates/` command files: replace hard-coded AskUserQuestion references with agent-neutral prompt pattern ("present options to the user using the agent's interactive prompt mechanism"). Gate logic and review output unchanged.
-- [ ] T021 [P] [US3] Update `spex/extensions/spex-teams/` command files: add agent-specific subagent dispatch. Claude Code uses Agent tool, OpenCode uses Task tool, Codex uses subagents. Add sequential execution fallback when no parallel mechanism available.
-- [ ] T022 [P] [US3] Update `spex/extensions/spex-deep-review/` command files: add single-agent review fallback for agents without subagent support. Review logic and report format unchanged.
-- [ ] T023 [P] [US3] Update `spex/extensions/spex-worktrees/` command files: add manual git worktree instructions for agents without native EnterWorktree. Claude Code path unchanged.
-- [ ] T024 [P] [US3] Update `spex/extensions/spex-collab/` command files: replace AskUserQuestion references with agent-neutral prompt pattern. Verify REVIEWERS.md generation works without agent-specific tools.
-- [ ] T025 [US3] Update `spex/extensions/spex/commands/speckit.spex.using-superpowers.md`: add multi-agent awareness section documenting which tools are available per agent and the correct prompt pattern.
+- [x] T020 [P] [US3] Update `spex/extensions/spex-gates/` command files: replace hard-coded AskUserQuestion references with agent-neutral prompt pattern ("present options to the user using the agent's interactive prompt mechanism"). Gate logic and review output unchanged.
+- [x] T021 [P] [US3] Update `spex/extensions/spex-teams/` command files: add agent-specific subagent dispatch. Claude Code uses Agent tool, OpenCode uses Task tool, Codex uses subagents. Add sequential execution fallback when no parallel mechanism available.
+- [x] T022 [P] [US3] Update `spex/extensions/spex-deep-review/` command files: add single-agent review fallback for agents without subagent support. Review logic and report format unchanged.
+- [x] T023 [P] [US3] Update `spex/extensions/spex-worktrees/` command files: add manual git worktree instructions for agents without native EnterWorktree. Claude Code path unchanged.
+- [x] T024 [P] [US3] Update `spex/extensions/spex-collab/` command files: replace AskUserQuestion references with agent-neutral prompt pattern. Verify REVIEWERS.md generation works without agent-specific tools.
+- [x] T025 [US3] Update `spex/extensions/spex/commands/speckit.spex.using-superpowers.md`: add multi-agent awareness section documenting which tools are available per agent and the correct prompt pattern.
 
 **Checkpoint**: All extensions produce correct output on Claude Code, Codex, and OpenCode.
 
@@ -110,10 +110,10 @@
 
 **Purpose**: Documentation, upstream proposal, and validation
 
-- [ ] T026 [P] Update `README.md`: add Multi-Agent Support section describing supported agents, enforcement quality per agent, and adapter architecture.
-- [ ] T027 [P] Update `spex/docs/help.md`: add multi-agent commands, adapter references, and agent-specific guidance.
-- [ ] T028 [P] Finalize `brainstorm/16-speckit-hook-adapter-proposal.md` as ready-to-post upstream issue.
-- [ ] T029 Run `make release` to validate schema, integration test, and confirm zero regressions on Claude Code.
+- [x] T026 [P] Update `README.md`: add Multi-Agent Support section describing supported agents, enforcement quality per agent, and adapter architecture.
+- [x] T027 [P] Update `spex/docs/help.md`: add multi-agent commands, adapter references, and agent-specific guidance.
+- [x] T028 [P] Finalize `brainstorm/16-speckit-hook-adapter-proposal.md` as ready-to-post upstream issue.
+- [x] T029 Run `make release` to validate schema, integration test, and confirm zero regressions on Claude Code.
 
 ---
 

@@ -227,7 +227,7 @@ The `.specify/.spex-state` file serves as a signal to sub-commands running insid
 - Complete its work normally
 - Do NOT output a completion summary
 - Do NOT ask "Shall I proceed?" or similar
-- Do NOT use AskUserQuestion (unless `ask` is `always`)
+- Do NOT prompt the user interactively (unless `ask` is `always`)
 - Return immediately so the pipeline can advance
 
 ### speckit-specify guard
@@ -480,7 +480,7 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
 
 1. Read the `ask` level from the state file (default: `smart`).
 3. **BEFORE invoking clarify**, determine the interaction mode:
-   - If `ask` is `smart` or `never`: You are the decision-maker. Do NOT use `AskUserQuestion` or present options to the user. When the clarify process identifies ambiguities, YOU select the recommended option for each question. If no recommendation exists, use your best judgment based on the spec context. Answer all questions yourself, then encode the answers into the spec.
+   - If `ask` is `smart` or `never`: You are the decision-maker. Do NOT prompt the user interactively. When the clarify process identifies ambiguities, YOU select the recommended option for each question. If no recommendation exists, use your best judgment based on the spec context. Answer all questions yourself, then encode the answers into the spec.
    - If `ask` is `always`: Present each question to the user interactively.
 
 4. Invoke `/speckit-clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**

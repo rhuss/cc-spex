@@ -300,7 +300,7 @@ For each unresolved human thread:
 
 3. **Draft a reply**: Compose a proposed reply based on the assessment.
 
-4. **Present for approval**: Use AskUserQuestion with these options:
+4. **Present for approval**: Present these options to the user:
    - **Approve**: Post the reply as-is (with `<!-- spex-triage -->` signature)
    - **Edit**: Let the user modify the reply, then post the edited version
    - **Skip**: Do not post a reply, leave the comment open for the next triage pass

@@ -52,7 +52,7 @@ Found N review comments:
 Which comments should we address in this revision?
 ```
 
-Use AskUserQuestion (`multiSelect: true`, header: "Feedback"):
+Present options to the user (multi-select, header: "Feedback"):
 **"Which review comments should this revision address?"**
 
 Options: one per comment (label: truncated comment, description: full text)
@@ -84,7 +84,7 @@ Based on the feedback, these changes are needed:
 Proceed with revision?
 ```
 
-Use AskUserQuestion (`multiSelect: false`, header: "Revise"):
+Present options to the user (single-select, header: "Revise"):
 **"Proceed with the revision plan?"**
 - "Yes, revise all": "Update spec, regenerate plan and tasks, update REVIEWERS.md"
 - "Spec only": "Update spec.md only, skip plan/tasks regeneration"
