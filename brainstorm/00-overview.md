@@ -1,6 +1,7 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-02
+Last updated: 2026-06-08
+Note: Brainstorm 16 has a companion file `16-speckit-hook-adapter-proposal.md` (upstream issue draft, pending review)
 
 ## Sessions
 
@@ -21,6 +22,8 @@ Last updated: 2026-06-02
 | 12 | 2026-05-22 | hardening-review-process | active | - | - |
 | 13 | 2026-05-30 | pr-review-triage | active | - | - |
 | 14 | 2026-06-02 | collab-triage-lifecycle | active | - | - |
+| 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
+| 16 | 2026-06-08 | multi-agent-support | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -36,6 +39,15 @@ Last updated: 2026-06-02
 - Auto-merge spec PR on split or require user confirmation? (from #14)
 - Should triage-impl also have a gate check for recommending impl splits? (from #14)
 - Deep review suggestion + triage-impl suggestion: sequential or combined message? (from #14)
+- OpenCode variant: separate npm package or `--ai opencode` flag? (from #15)
+- Enforcement degradation tolerance: is spex without hooks still spex? (from #15)
+- Feature request to OpenCode for `prompt.before` plugin event? (from #15)
+- OpenCode `question` tool: does it support multi-select with grouped options? (from #15)
+- Codex stdin/stdout JSON contract for UserPromptSubmit and PreToolUse: needs testing (from #16)
+- OpenCode tool.execute.before: can it add context or only deny? (from #16)
+- Agent detection: static (init-time) vs dynamic (runtime) for multi-agent projects? (from #16)
+- AGENTS.md AskUser pattern: generic ("ask the user") vs agent-specific tool name? (from #16)
+- Upstream spec-kit hook adapter framework proposal: pending review (from #16)
 
 ## Parked Ideas
 (none)
