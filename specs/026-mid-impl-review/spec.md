@@ -125,3 +125,11 @@ A developer runs `/speckit-spex-ship` with checkpoints enabled. After the final 
 - Checkpoint review subagents have access to the spec and the current code via the file system (same as the implementing subagent).
 - The "unique findings" calculation is approximate: it compares finding descriptions/locations across layers. Exact deduplication is not required; reasonable text matching is sufficient.
 - Projects using checkpoints have enough tasks (3+) to make the 1/3 and 2/3 split meaningful. Features with 1-2 tasks skip checkpoints automatically.
+
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: How does the implementing subagent know when to trigger checkpoints? → A: The ship pipeline calculates checkpoint positions (task numbers) before spawning the implement subagent and passes them in the subagent prompt as explicit instructions: "After completing task N, pause and spawn a correctness review subagent before continuing."
+- Q: What format should checkpoint findings use in the state file? → A: Simple counts per checkpoint: `checkpoint_1_findings`, `checkpoint_1_fixed`, `checkpoint_2_findings`, `checkpoint_2_fixed`. Finding descriptions are not stored in the state file; they're only in the console output. The layer comparison uses counts, not individual finding details.
+- Q: Should the checkpoint review scope include all code so far or just the diff since the last checkpoint? → A: All code so far (cumulative). The first checkpoint reviews tasks 1-N, the second reviews tasks 1-M. This catches issues in earlier code that become apparent only with later context.
