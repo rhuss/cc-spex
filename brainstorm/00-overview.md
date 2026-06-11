@@ -1,7 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-08
-Note: Brainstorm 16 has a companion file `16-speckit-hook-adapter-proposal.md` (upstream issue draft, pending review)
+Last updated: 2026-06-11
 
 ## Sessions
 
@@ -23,7 +22,7 @@ Note: Brainstorm 16 has a companion file `16-speckit-hook-adapter-proposal.md` (
 | 13 | 2026-05-30 | pr-review-triage | active | - | - |
 | 14 | 2026-06-02 | collab-triage-lifecycle | active | - | - |
 | 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
-| 16 | 2026-06-08 | multi-agent-support | active | - | - |
+| 17 | 2026-06-11 | backpressure-loops | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -43,11 +42,11 @@ Note: Brainstorm 16 has a companion file `16-speckit-hook-adapter-proposal.md` (
 - Enforcement degradation tolerance: is spex without hooks still spex? (from #15)
 - Feature request to OpenCode for `prompt.before` plugin event? (from #15)
 - OpenCode `question` tool: does it support multi-select with grouped options? (from #15)
-- Codex stdin/stdout JSON contract for UserPromptSubmit and PreToolUse: needs testing (from #16)
-- OpenCode tool.execute.before: can it add context or only deny? (from #16)
-- Agent detection: static (init-time) vs dynamic (runtime) for multi-agent projects? (from #16)
-- AGENTS.md AskUser pattern: generic ("ask the user") vs agent-specific tool name? (from #16)
-- Upstream spec-kit hook adapter framework proposal: pending review (from #16)
+- Post-PR watch mechanism: `/loop`, cron, or manual `--watch` flag? (from #17)
+- Per-task checkpoints: test suite only or also linting? (from #17)
+- State file lifecycle for watch mode (survive past PR creation, eventual cleanup) (from #17)
+- Watch mode merge conflict handling (rebase against target branch?) (from #17)
+- Ship pipeline integration: auto-enter watch mode after finish? (from #17)
 
 ## Parked Ideas
 (none)
