@@ -5,6 +5,18 @@
 **Status**: Draft
 **Input**: brainstorm/17-backpressure-loops.md
 
+## Overview
+
+Adds two backpressure mechanisms to the spex workflow: (1) inter-task test checkpoints during `/speckit-implement` that catch regressions before they compound across tasks, and (2) a post-PR watch mode for `/speckit-spex-finish` that monitors CI, auto-fixes failures, and optionally triages review comments.
+
+## Out of Scope
+
+- Test checkpoints during brainstorm, planning, or spec phases (only implementation)
+- Cross-session watch persistence via external schedulers (watch runs within a single Claude Code session)
+- Parallel test execution or test suite optimization
+- Custom CI provider integrations beyond what `gh` CLI supports
+- Watch mode for non-PR finishes (direct merges to default branch)
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Per-Task Test Checkpoints Catch Compounding Failures (Priority: P1)
@@ -104,6 +116,19 @@ A developer uses watch mode. The `.specify/.spex-state` file persists after PR c
 - **FR-017**: Fix attempts during watch mode MUST be scoped to files included in the PR diff. The watch loop MUST NOT make changes outside the PR's changed file set.
 - **FR-018**: When watch mode invokes collab triage, it MUST pass the current `ask` level from the ship pipeline state to control triage autonomy (autonomous in `smart`/`never`, interactive in `always`).
 
+### Non-Functional Requirements
+
+- **NFR-001**: The watch mode polling loop MUST NOT consume significant CPU while waiting. It MUST sleep between polls rather than busy-waiting.
+- **NFR-002**: Inter-task test checkpoints MUST NOT add more than 10 seconds of overhead beyond the test suite's own execution time.
+- **NFR-003**: The `.spex-state` file MUST remain under 1 KB during watch mode operations.
+
+### Dependencies
+
+- `gh` CLI (authenticated): Required for watch mode (PR checks, run logs, PR state). Already a dependency for finish PR creation.
+- `spex-collab` extension (optional): Required only for Story 3 (review comment triage). Watch mode functions without it.
+- Test detection logic from verify/stamp: Reused for inter-task checkpoints (FR-002).
+- `.specify/.spex-state`: Extended with watch-mode fields; existing state management scripts handle read/write.
+
 ### Key Entities
 
 - **Test Checkpoint**: A test suite execution between tasks during implementation. Has a result (pass/fail), fix attempts count, and associated task ID.
@@ -116,7 +141,7 @@ A developer uses watch mode. The `.specify/.spex-state` file persists after PR c
 
 - **SC-001**: Implementation failures caused by compounding task breakage are detected before the next task begins, not at verify/stamp.
 - **SC-002**: PRs created via `/speckit-spex-finish --watch` have CI failures detected and fix attempts made within 2 minutes of the failure appearing.
-- **SC-003**: Watch mode reduces the manual intervention needed for CI fixes to zero for fixable failures (linting, formatting, minor test issues).
+- **SC-003**: Watch mode reduces the manual intervention needed for CI fixes to zero for fixable failures. A failure is "fixable" when the fix requires only changes to files already in the PR diff and falls into one of these categories: linting violations, formatting issues, import ordering, minor test assertion updates, or missing type annotations.
 - **SC-004**: The watch loop exits cleanly (no orphaned state, no zombie processes) in all termination scenarios: success, timeout, external PR close, and user interrupt.
 
 ## Assumptions

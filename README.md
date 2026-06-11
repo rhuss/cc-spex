@@ -264,7 +264,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
-| `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion) |
+| `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion). `--watch`: monitor CI after PR creation, auto-fix failures |
 | `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, create, or clean up git worktrees |
@@ -293,9 +293,9 @@ The pipeline runs nine stages in strict order:
 | 3 | plan | Generate implementation plan with research |
 | 4 | tasks | Generate dependency-ordered task breakdown |
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
-| 6 | implement | Execute implementation following task plan |
+| 6 | implement | Execute implementation following task plan (with per-task test checkpoints) |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | finish | Verify + merge/PR (tests, hygiene, drift, then complete) |
+| 8 | finish | Verify + merge/PR (tests, hygiene, drift, then complete). With `--create-pr`: monitors CI via `--watch` |
 
 **Oversight levels** control how findings are handled:
 
@@ -306,6 +306,14 @@ The pipeline runs nine stages in strict order:
 | `never` | Auto-fix | Auto-fix | Pause |
 
 Pipeline state is persisted to `.specify/.spex-state`, so interrupted runs can be resumed with `--resume`. Use `--start-from <stage>` to begin at a specific stage when artifacts from earlier stages already exist.
+
+### Backpressure loops
+
+The ship pipeline includes two automated feedback mechanisms that catch problems early:
+
+**Per-task test checkpoints** (Stage 6): After completing each task during implementation, the test suite runs automatically. If tests fail, the agent attempts to fix the regression before moving to the next task (max 2 attempts). This prevents compounding breakage where tasks 3-5 build on a broken foundation from task 2. Disable with `implement.test_between_tasks: false` in `.specify/extensions/spex/spex-config.yml`.
+
+**Post-PR watch mode** (Stage 8): When `--create-pr` is set, the finish stage automatically enters watch mode after PR creation. It polls CI status, reads failure logs, and attempts fixes within the PR's changed file set (max 2 attempts). If `spex-collab` is enabled, watch mode also triages new review comments via `/speckit-spex-collab-triage`. Watch mode exits on CI success, timeout (default 30 minutes), or when the PR is closed/merged externally. Configure timeouts and intervals in `.specify/extensions/spex/spex-config.yml` under `watch.timeout_minutes` and `watch.poll_interval_seconds`.
 
 ### Worktree integration
 

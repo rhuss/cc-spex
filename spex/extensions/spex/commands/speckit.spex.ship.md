@@ -575,6 +575,42 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    INDEPENDENT_TASKS=$(grep -c '\[P\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
    ```
 
+   Before spawning the subagent, check if per-task test checkpoints are enabled:
+   ```bash
+   SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
+   TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks // true' "$SPEX_CONFIG" 2>/dev/null)
+   TEST_BETWEEN_TASKS=${TEST_BETWEEN_TASKS:-true}
+   ```
+
+   Build the test checkpoint instruction block (only when `TEST_BETWEEN_TASKS` is `true`):
+
+   ```
+   TEST_CHECKPOINT_INSTRUCTIONS=""
+   if [ "$TEST_BETWEEN_TASKS" = "true" ]; then
+     TEST_CHECKPOINT_INSTRUCTIONS="
+   IMPORTANT: Per-task test checkpoints are ENABLED. After completing each task
+   in tasks.md (before starting the next task), you MUST:
+
+   1. Auto-detect the project's test command using this priority:
+      - If a Makefile exists with a 'test' target: run 'make test'
+      - If package.json exists with a 'test' script: run 'npm test'
+      - If go.mod exists: run 'go test ./...'
+      - If pytest is available and Python files exist: run 'pytest'
+      - If Cargo.toml exists: run 'cargo test'
+      - If none detected: skip checkpoints with a warning ('No test command detected, skipping inter-task checks')
+
+   2. Run the detected test command after each completed task.
+
+   3. If tests PASS: proceed to the next task without interruption.
+
+   4. If tests FAIL: attempt to fix the failure. You get a maximum of 2 fix
+      attempts per checkpoint. If the fix succeeds, continue to the next task.
+      If both attempts fail, STOP implementation and report the failing tests
+      with context about which task introduced the regression.
+   "
+   fi
+   ```
+
    If `TEAMS_ENABLED` is `true` AND `INDEPENDENT_TASKS` >= 2, route to teams implement by spawning a subagent with:
 
    ```
@@ -588,6 +624,8 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Read these files, then invoke /speckit.spex-teams.implement to execute parallel implementation.
    The .specify/.spex-state file exists with status "running", so the
    implement command will run in pipeline mode (no completion summary, no user questions).
+
+   <TEST_CHECKPOINT_INSTRUCTIONS>
 
    When marking tasks complete in tasks.md, use the Edit tool.
    Report a brief summary of completed tasks when done.
@@ -606,6 +644,8 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Read these files, then invoke /speckit-implement to execute the implementation.
    The .specify/.spex-state file exists with status "running", so the
    implement command will run in pipeline mode (no completion summary, no user questions).
+
+   <TEST_CHECKPOINT_INSTRUCTIONS>
 
    When marking tasks complete in tasks.md, use the Edit tool.
    Report a brief summary of completed tasks when done.
@@ -659,16 +699,21 @@ This stage runs in an isolated subagent for clean final verification and complet
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Determine if `--create-pr` should be passed:
+2. Determine if `--create-pr` and `--watch` should be passed:
    ```bash
    CREATE_PR_FLAG=""
+   WATCH_FLAG=""
    if [ -f ".specify/.spex-state" ]; then
      CREATE_PR=$(jq -r '.create_pr // false' .specify/.spex-state 2>/dev/null)
      if [ "$CREATE_PR" = "true" ]; then
        CREATE_PR_FLAG="--create-pr"
+       WATCH_FLAG="--watch"
      fi
    fi
+   FINISH_FLAGS="$CREATE_PR_FLAG $WATCH_FLAG"
    ```
+
+   Note: `--watch` is passed automatically when `--create-pr` is set, since watch mode requires a PR. If the user ran ship without `--create-pr`, neither flag is passed and finish behaves as before.
 
 3. Spawn a subagent using the Agent tool with the following prompt:
 
@@ -678,12 +723,14 @@ This stage runs in an isolated subagent for clean final verification and complet
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
 
-   Invoke /speckit-spex-finish <CREATE_PR_FLAG> for final verification and completion.
+   Invoke /speckit-spex-finish <FINISH_FLAGS> for final verification and completion.
    This runs tests, validates spec compliance, checks for drift,
    then presents merge/PR options to the user.
    The .specify/.spex-state file exists with status "running".
    If in a worktree, the user will be prompted for the completion action
    (the finish command never auto-merges or auto-deletes worktrees).
+   If --watch is passed, the finish command will monitor CI status after
+   PR creation and attempt to fix failures automatically.
 
    Report pass/fail and completion action taken.
    ```

@@ -8,6 +8,9 @@
 #   spex-ship-state.sh pause                   # Set status to paused
 #   spex-ship-state.sh fail                    # Set status to failed
 #   spex-ship-state.sh cleanup                 # Remove state file (pipeline done)
+#   spex-ship-state.sh watch-start [--pr-number N] [--pr-url URL] [--timeout M] [--interval S]
+#   spex-ship-state.sh watch-update <key> <value> [<key> <value> ...]
+#   spex-ship-state.sh watch-cleanup           # Remove state file, output WATCH_COMPLETE
 #
 # Must be run from the project root.
 
@@ -199,6 +202,96 @@ do_cleanup() {
   echo "CLEANUP_DONE"
 }
 
+# --- Watch mode commands ---
+
+do_watch_start() {
+  local pr_number="" pr_url="" timeout_minutes=30 poll_interval=60
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --pr-number) shift; pr_number="${1:-}" ;;
+      --pr-url) shift; pr_url="${1:-}" ;;
+      --timeout) shift; timeout_minutes="${1:-30}" ;;
+      --interval) shift; poll_interval="${1:-60}" ;;
+      *) echo "ERROR: Unknown flag '$1'" >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  if [ -z "$pr_number" ]; then
+    echo "ERROR: --pr-number is required" >&2
+    exit 2
+  fi
+
+  local feature_branch
+  feature_branch="$(git branch --show-current 2>/dev/null || echo 'unknown')"
+
+  cat > "$STATE_FILE" <<EOF
+{
+  "mode": "watch",
+  "pr_number": $pr_number,
+  "pr_url": "$pr_url",
+  "watch_started_at": "$(now_iso)",
+  "watch_timeout_minutes": $timeout_minutes,
+  "watch_poll_interval_seconds": $poll_interval,
+  "last_ci_status": "pending",
+  "last_ci_check_at": null,
+  "ci_fix_attempts": 0,
+  "last_triage_at": null,
+  "triage_count": 0,
+  "feature_branch": "$feature_branch"
+}
+EOF
+  echo "WATCH_STARTED pr=$pr_number timeout=${timeout_minutes}m interval=${poll_interval}s"
+}
+
+do_watch_update() {
+  if [ ! -f "$STATE_FILE" ]; then
+    echo "ERROR: No state file found" >&2
+    exit 1
+  fi
+
+  # Accept key-value pairs: watch-update key1 value1 key2 value2 ...
+  local tmp
+  tmp=$(mktemp)
+  cp "$STATE_FILE" "$tmp"
+
+  while [ $# -ge 2 ]; do
+    local key="$1" value="$2"
+    shift 2
+
+    # Determine if value is numeric, null, or string
+    case "$value" in
+      [0-9]*) # numeric
+        local tmp2
+        tmp2=$(mktemp)
+        jq --arg k "$key" --argjson v "$value" '.[$k] = $v' "$tmp" > "$tmp2"
+        mv "$tmp2" "$tmp"
+        ;;
+      null)
+        local tmp2
+        tmp2=$(mktemp)
+        jq --arg k "$key" '.[$k] = null' "$tmp" > "$tmp2"
+        mv "$tmp2" "$tmp"
+        ;;
+      *)
+        local tmp2
+        tmp2=$(mktemp)
+        jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$tmp" > "$tmp2"
+        mv "$tmp2" "$tmp"
+        ;;
+    esac
+  done
+
+  mv "$tmp" "$STATE_FILE"
+  echo "WATCH_UPDATED"
+}
+
+do_watch_cleanup() {
+  rm -f "$STATE_FILE"
+  echo "WATCH_COMPLETE"
+}
+
 case "${1:-}" in
   create)
     shift
@@ -219,8 +312,19 @@ case "${1:-}" in
   cleanup)
     do_cleanup
     ;;
+  watch-start)
+    shift
+    do_watch_start "$@"
+    ;;
+  watch-update)
+    shift
+    do_watch_update "$@"
+    ;;
+  watch-cleanup)
+    do_watch_cleanup
+    ;;
   *)
-    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup}" >&2
+    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|watch-start|watch-update|watch-cleanup}" >&2
     exit 2
     ;;
 esac

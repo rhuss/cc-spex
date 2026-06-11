@@ -142,6 +142,9 @@ spex COMMANDS (helpers and configuration)
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
   /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
+                                Flags: --create-pr, --watch
+                                --watch: monitor CI after PR, auto-fix failures,
+                                         triage comments (if spex-collab enabled)
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec
@@ -203,6 +206,22 @@ MULTI-AGENT SUPPORT
     spex-teams                  Sequential fallback (no parallel)
     spex-worktrees              Manual git worktree commands
     spex-deep-review            Single-session sequential review
+
+
+BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
+
+  implement:
+    test_between_tasks: true     # Run tests after each task (default: true)
+                                 # Set false to skip inter-task checkpoints
+  watch:
+    timeout_minutes: 30          # Max watch duration (default: 30)
+    poll_interval_seconds: 60    # CI polling interval (default: 60)
+
+  Per-task test checkpoints run during ship Stage 6 (implement).
+  Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
+  Watch mode runs during ship Stage 8 (finish) when --create-pr is set.
+  Watch monitors CI, auto-fixes failures (max 2 attempts), and triages
+  review comments when spex-collab is enabled.
 
 
 COMMON MISTAKES (do NOT use these)

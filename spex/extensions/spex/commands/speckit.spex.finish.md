@@ -29,7 +29,34 @@ In autonomous mode: suppress all interactive prompts, UNLESS running inside a wo
 
 ## Argument Parsing
 
-If the argument `--create-pr` is passed, set `AUTO_CREATE_PR=true`. This skips the options prompt and goes directly to PR creation.
+Parse the following flags from arguments:
+
+- If `--create-pr` is passed, set `AUTO_CREATE_PR=true`. This skips the options prompt and goes directly to PR creation.
+- If `--watch` is passed, set `WATCH_MODE=true`. After PR creation/push, enter a monitoring loop instead of cleaning up state immediately.
+
+```bash
+WATCH_MODE=false
+# Parse --watch from arguments
+for arg in "$@"; do
+  case "$arg" in
+    --watch) WATCH_MODE=true ;;
+  esac
+done
+```
+
+### Watch Mode Configuration
+
+When `WATCH_MODE` is true, read watch configuration from `.specify/extensions/spex/spex-config.yml`:
+
+```bash
+if [ "$WATCH_MODE" = true ]; then
+  SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
+  WATCH_TIMEOUT=$(yq -r '.watch.timeout_minutes // 30' "$SPEX_CONFIG" 2>/dev/null)
+  WATCH_TIMEOUT=${WATCH_TIMEOUT:-30}
+  WATCH_INTERVAL=$(yq -r '.watch.poll_interval_seconds // 60' "$SPEX_CONFIG" 2>/dev/null)
+  WATCH_INTERVAL=${WATCH_INTERVAL:-60}
+fi
+```
 
 ## Phase 1: Verification
 
@@ -159,6 +186,7 @@ if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
   rm -f "$SHIP_STATE_FILE"
 fi
 STATE_CLEANED=true
+ACTION_TAKEN="merge"
 
 git worktree remove "$WORKTREE_PATH" 2>&1
 git branch -d "$CURRENT_BRANCH" 2>&1 || git branch -D "$CURRENT_BRANCH" 2>&1
@@ -176,6 +204,7 @@ If fast-forward fails: same divergence handling as worktree path above.
 After merge:
 ```bash
 git branch -d "$CURRENT_BRANCH"
+ACTION_TAKEN="merge"
 ```
 
 Report:
@@ -190,6 +219,9 @@ When `EXISTING_PR_NUMBER` is set and the user selected "Push to PR #...":
 ```bash
 REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
 git push "$REMOTE" "$CURRENT_BRANCH"
+ACTION_TAKEN="pr"
+PR_NUMBER="$EXISTING_PR_NUMBER"
+PR_URL="$EXISTING_PR_URL"
 ```
 
 Report:
@@ -259,11 +291,22 @@ To create it: gh label create "${IMPL_LABEL}" --color 0e8a16 --description "Impl
 Or disable labels: set labels.enabled to false in .specify/extensions/spex-collab/collab-config.yml
 ```
 
+After PR creation, capture the PR number and URL:
+```bash
+ACTION_TAKEN="pr"
+PR_URL=$(gh pr view "$BRANCH" --json url -q '.url' 2>/dev/null || true)
+PR_NUMBER=$(gh pr view "$BRANCH" --json number -q '.number' 2>/dev/null || true)
+```
+
 Report the PR URL.
 
 If in a worktree, also report: "Run `/speckit-spex-finish` again after the PR is merged to merge and clean up the worktree."
 
 ### Option C: Keep Branch
+
+```bash
+ACTION_TAKEN="keep"
+```
 
 Report based on context:
 
@@ -285,7 +328,27 @@ When ready to finish:
 
 ## Phase 6: State and Status Line Cleanup
 
-After executing any option (merge, PR, or keep), remove the state file. Skip if already cleaned during worktree removal (Option A sets `STATE_CLEANED=true`):
+After executing any option (merge, PR, or keep), handle the state file. If watch mode is active AND a PR was created or pushed to (Options B1 or B2), skip cleanup and proceed to Phase 7 instead. Otherwise, remove the state file immediately.
+
+**Watch mode guard**: If `WATCH_MODE` is true but no PR was involved (Option A merge or Option C keep), warn and skip watch mode:
+```bash
+if [ "$WATCH_MODE" = true ] && [ "$ACTION_TAKEN" != "pr" ]; then
+  echo "Watch mode requires a PR. Ignoring --watch."
+  WATCH_MODE=false
+fi
+```
+
+**Also check `gh` availability for watch mode**:
+```bash
+if [ "$WATCH_MODE" = true ] && ! command -v gh >/dev/null 2>&1; then
+  echo "Watch mode requires the gh CLI. Falling back to normal finish."
+  WATCH_MODE=false
+fi
+```
+
+If `WATCH_MODE` is true and a PR exists (`ACTION_TAKEN` is `"pr"`), skip cleanup and proceed to Phase 7.
+
+Otherwise, clean up normally. Skip if already cleaned during worktree removal (Option A sets `STATE_CLEANED=true`):
 
 ```bash
 if [ "${STATE_CLEANED:-false}" != "true" ]; then
@@ -297,3 +360,225 @@ fi
 ```
 
 This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists). Works for both ship mode (where `SHIP_STATE_FILE` may point to a worktree path) and flow mode (where the state file is always relative). In the worktree merge path, cleanup happens before the worktree directory is deleted to avoid ENOENT errors.
+
+**After cleanup (when watch mode is NOT active), the command is complete. STOP here.**
+
+## Phase 7: Watch Mode (Post-PR Monitoring Loop)
+
+This phase only executes when `WATCH_MODE` is true and a PR was created or pushed to.
+
+### Step 1: Initialize Watch State
+
+Locate the state script and create the watch state:
+
+```bash
+SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+
+# PR_NUMBER and PR_URL come from Option B1 (existing PR) or B2 (newly created PR)
+"$SHIP_STATE" watch-start \
+  --pr-number "$PR_NUMBER" \
+  --pr-url "$PR_URL" \
+  --timeout "$WATCH_TIMEOUT" \
+  --interval "$WATCH_INTERVAL"
+```
+
+Where `PR_NUMBER` is set during Option B1 (`EXISTING_PR_NUMBER`) or Option B2 (extracted from `gh pr create` output), and `PR_URL` is the corresponding URL.
+
+### Step 2: Initial CI Wait
+
+CI checks may not appear immediately after push. Wait up to 5 polling cycles for checks to appear:
+
+```bash
+INITIAL_WAIT_POLLS=0
+MAX_INITIAL_POLLS=5
+while [ "$INITIAL_WAIT_POLLS" -lt "$MAX_INITIAL_POLLS" ]; do
+  CHECK_OUTPUT=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+  if [ -n "$CHECK_OUTPUT" ] && ! echo "$CHECK_OUTPUT" | grep -q "no checks"; then
+    break
+  fi
+  INITIAL_WAIT_POLLS=$((INITIAL_WAIT_POLLS + 1))
+  if [ "$INITIAL_WAIT_POLLS" -ge "$MAX_INITIAL_POLLS" ]; then
+    echo "No CI checks detected after 5 minutes. Exiting watch mode."
+    "$SHIP_STATE" watch-cleanup
+    exit 0
+  fi
+  sleep "$WATCH_INTERVAL"
+done
+```
+
+### Step 3: Watch Loop
+
+Each iteration of the watch loop performs these checks in order:
+
+```
+LOOP:
+  (a) Check timeout
+  (b) Check PR state (closed/merged externally)
+  (c) Poll CI status
+  (d) If all checks pass → check for review comments → possibly exit
+  (e) If checks failing → attempt fix
+  (f) Schedule next poll
+```
+
+#### (a) Timeout Check
+
+```bash
+WATCH_STATE=$(cat .specify/.spex-state 2>/dev/null)
+STARTED_AT=$(echo "$WATCH_STATE" | jq -r '.watch_started_at')
+TIMEOUT_MIN=$(echo "$WATCH_STATE" | jq -r '.watch_timeout_minutes')
+
+# Calculate elapsed time
+NOW_EPOCH=$(date -u +%s)
+STARTED_EPOCH=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || date -u -d "$STARTED_AT" +%s 2>/dev/null)
+ELAPSED_SEC=$((NOW_EPOCH - STARTED_EPOCH))
+TIMEOUT_SEC=$((TIMEOUT_MIN * 60))
+
+if [ "$ELAPSED_SEC" -ge "$TIMEOUT_SEC" ]; then
+  FINAL_CI=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+  echo "Watch timeout reached (${TIMEOUT_MIN}m). Final CI status:"
+  echo "$FINAL_CI"
+  "$SHIP_STATE" watch-cleanup
+  # STOP - timeout reached
+fi
+```
+
+#### (b) PR State Check
+
+```bash
+PR_STATE=$(gh pr view "$PR_NUMBER" --json state -q '.state' 2>/dev/null || echo "UNKNOWN")
+if [ "$PR_STATE" = "CLOSED" ] || [ "$PR_STATE" = "MERGED" ]; then
+  echo "PR #$PR_NUMBER has been ${PR_STATE,,} externally. Exiting watch mode."
+  "$SHIP_STATE" watch-cleanup
+  # STOP - PR no longer active
+fi
+```
+
+#### (c) CI Status Poll
+
+```bash
+CHECK_OUTPUT=$(gh pr checks "$PR_NUMBER" 2>&1 || true)
+"$SHIP_STATE" watch-update last_ci_check_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Determine overall CI status
+if echo "$CHECK_OUTPUT" | grep -qi "fail\|error"; then
+  CI_STATUS="failing"
+elif echo "$CHECK_OUTPUT" | grep -qi "pending\|queued\|in_progress\|waiting"; then
+  CI_STATUS="pending"
+elif echo "$CHECK_OUTPUT" | grep -qi "pass\|success"; then
+  CI_STATUS="passing"
+else
+  CI_STATUS="pending"
+fi
+
+"$SHIP_STATE" watch-update last_ci_status "$CI_STATUS"
+```
+
+#### (d) All Checks Passing
+
+When `CI_STATUS` is `"passing"`:
+
+1. Check if spex-collab is enabled:
+   ```bash
+   COLLAB_ENABLED=$(jq -r '.extensions["spex-collab"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+   ```
+
+2. **If spex-collab is enabled**: Check for new review comments since last triage:
+   ```bash
+   LAST_TRIAGE=$(echo "$WATCH_STATE" | jq -r '.last_triage_at // empty')
+   REPO_INFO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+
+   if [ -n "$LAST_TRIAGE" ]; then
+     NEW_COMMENTS=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/comments" --jq "[.[] | select(.created_at > \"$LAST_TRIAGE\")] | length" 2>/dev/null || echo "0")
+     NEW_REVIEW_COMMENTS=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/reviews" --jq "[.[] | select(.submitted_at > \"$LAST_TRIAGE\" and .state != \"APPROVED\")] | length" 2>/dev/null || echo "0")
+   else
+     NEW_COMMENTS=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/comments" --jq 'length' 2>/dev/null || echo "0")
+     NEW_REVIEW_COMMENTS=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/reviews" --jq '[.[] | select(.state != "APPROVED")] | length' 2>/dev/null || echo "0")
+   fi
+
+   TOTAL_NEW=$((NEW_COMMENTS + NEW_REVIEW_COMMENTS))
+   ```
+
+   If `TOTAL_NEW` > 0: Invoke `/speckit-spex-collab-triage --pr $PR_NUMBER`. The triage command inherits the current `ask` level from the ship pipeline state to control triage autonomy. After triage completes, update state:
+   ```bash
+   "$SHIP_STATE" watch-update last_triage_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+   CURRENT_TRIAGE=$(echo "$WATCH_STATE" | jq -r '.triage_count // 0')
+   "$SHIP_STATE" watch-update triage_count "$((CURRENT_TRIAGE + 1))"
+   ```
+   Then continue the loop (schedule next poll).
+
+   If `TOTAL_NEW` is 0: CI passing and no new comments. Watch is complete:
+   ```bash
+   echo "CI passing, no pending review comments. Watch complete."
+   echo "PR: $PR_URL"
+   "$SHIP_STATE" watch-cleanup
+   # STOP - success
+   ```
+
+3. **If spex-collab is NOT enabled**: Check for review comments but do not triage:
+   ```bash
+   COMMENT_COUNT=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/comments" --jq 'length' 2>/dev/null || echo "0")
+   REVIEW_COUNT=$(gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/reviews" --jq '[.[] | select(.state != "APPROVED")] | length' 2>/dev/null || echo "0")
+   TOTAL_COMMENTS=$((COMMENT_COUNT + REVIEW_COUNT))
+
+   if [ "$TOTAL_COMMENTS" -gt 0 ]; then
+     echo "CI passing. $TOTAL_COMMENTS review comment(s) found but spex-collab is not enabled."
+     echo "Enable spex-collab for automated comment triage: specify extension enable spex-collab"
+   fi
+
+   echo "CI passing. Watch complete."
+   echo "PR: $PR_URL"
+   "$SHIP_STATE" watch-cleanup
+   # STOP - success (without triage)
+   ```
+
+#### (e) CI Failing
+
+When `CI_STATUS` is `"failing"`:
+
+1. Read current fix attempts:
+   ```bash
+   FIX_ATTEMPTS=$(echo "$WATCH_STATE" | jq -r '.ci_fix_attempts // 0')
+   ```
+
+2. If `FIX_ATTEMPTS` >= 2: Pause and report:
+   ```bash
+   echo "CI has failed after 2 fix attempts. Manual intervention required."
+   echo "Failing checks:"
+   gh pr checks "$PR_NUMBER" 2>&1 | grep -i "fail\|error" || true
+   echo ""
+   echo "PR: $PR_URL"
+   "$SHIP_STATE" watch-cleanup
+   # STOP - unresolvable failure
+   ```
+
+3. If `FIX_ATTEMPTS` < 2: Attempt a fix:
+   - Get the failing run ID: `gh pr checks "$PR_NUMBER" --json name,state,detailsUrl --jq '.[] | select(.state == "FAILURE") | .detailsUrl' 2>/dev/null`
+   - Extract the run ID from the URL and read the failure log: `gh run view <RUN_ID> --log-failed 2>/dev/null`
+   - Scope the fix to files in the PR diff: `gh pr diff "$PR_NUMBER" --name-only 2>/dev/null`
+   - Attempt to fix the issue based on the failure log, restricted to the PR's changed files
+   - If a fix is made, commit and push:
+     ```bash
+     git add -u
+     git commit -m "fix: address CI failure (watch mode attempt $((FIX_ATTEMPTS + 1)))
+
+     Assisted-By: 🤖 Claude Code"
+     REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+     git push "$REMOTE" "$(git branch --show-current)"
+     ```
+   - Update fix attempts: `"$SHIP_STATE" watch-update ci_fix_attempts "$((FIX_ATTEMPTS + 1))"`
+   - Continue the loop (schedule next poll)
+
+#### (f) CI Pending
+
+When `CI_STATUS` is `"pending"`: No action needed. Schedule next poll.
+
+#### Schedule Next Poll
+
+At the end of each iteration (unless the loop exited), wait for the configured interval before the next iteration:
+
+```bash
+sleep "$WATCH_INTERVAL"
+# Then go back to LOOP
+```
+
+The watch loop continues until one of the exit conditions is met: success, timeout, PR closed/merged, or unresolvable failure.

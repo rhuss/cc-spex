@@ -261,10 +261,65 @@ render_ship() {
   render_context
 }
 
+# --- Watch mode ---
+render_watch() {
+  # Extract watch fields in one jq call
+  local PR_NUMBER CI_STATUS STARTED_AT TIMEOUT TRIAGE_COUNT FIX_ATTEMPTS
+  read -r PR_NUMBER CI_STATUS STARTED_AT TIMEOUT TRIAGE_COUNT FIX_ATTEMPTS < <(
+    echo "$STATE_JSON" | jq -r '[.pr_number // "", .last_ci_status // "pending", .watch_started_at // "", .watch_timeout_minutes // 30, .triage_count // 0, .ci_fix_attempts // 0] | @tsv' 2>/dev/null
+  )
+
+  if [ -z "$PR_NUMBER" ] || [ -z "$STARTED_AT" ]; then
+    exit 0
+  fi
+
+  # Calculate elapsed time
+  local now_epoch started_epoch elapsed_seconds elapsed_min
+  now_epoch=$(date -u +%s 2>/dev/null)
+  # Parse ISO 8601 date - handle both GNU and BSD date
+  started_epoch=$(date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || date -u -d "$STARTED_AT" +%s 2>/dev/null || echo "$now_epoch")
+  elapsed_seconds=$((now_epoch - started_epoch))
+  elapsed_min=$((elapsed_seconds / 60))
+
+  # CI status color coding
+  local CI_ICON CI_COLOR
+  case "$CI_STATUS" in
+    passing) CI_ICON="✓"; CI_COLOR="$GREEN" ;;
+    failing) CI_ICON="✗"; CI_COLOR="$RED" ;;
+    pending) CI_ICON="…"; CI_COLOR="$YELLOW" ;;
+    none)    CI_ICON="—"; CI_COLOR="$DIM" ;;
+    *)       CI_ICON="?"; CI_COLOR="$WHITE" ;;
+  esac
+
+  # Build output: 👀 PR #42 | 5m | CI ✓ | T:2
+  printf "👀 ${CYAN}${BOLD}PR #%s${RESET}" "$PR_NUMBER"
+  printf " ${DIM}|${RESET} ${DIM}%sm${RESET}" "$elapsed_min"
+  printf " ${DIM}|${RESET} ${CI_COLOR}CI %s${RESET}" "$CI_ICON"
+
+  # Show fix attempts if any
+  if [ "$FIX_ATTEMPTS" -gt 0 ] 2>/dev/null; then
+    printf " ${RED}F:%s${RESET}" "$FIX_ATTEMPTS"
+  fi
+
+  # Show triage count if > 0
+  if [ "$TRIAGE_COUNT" -gt 0 ] 2>/dev/null; then
+    printf " ${DIM}|${RESET} ${MAGENTA}T:%s${RESET}" "$TRIAGE_COUNT"
+  fi
+
+  # Show timeout warning if close to expiry
+  if [ "$elapsed_min" -ge "$((TIMEOUT - 5))" ] 2>/dev/null; then
+    printf " ${RED}${BOLD}⏰${RESET}"
+  fi
+
+  read_extensions
+  render_context
+}
+
 # --- Mode dispatch ---
 case "$MODE" in
   flow) render_flow ;;
   ship) render_ship ;;
+  watch) render_watch ;;
   *)
     # Backward compatibility: no mode field means old ship format
     # Check if it has ship-specific fields
