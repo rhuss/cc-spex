@@ -49,6 +49,17 @@ check_version() {
   return 1
 }
 
+# --- Run specify init with the agent flag this CLI version supports ---
+# spec-kit renamed --ai to --integration (spec-kit 0.8.x+). Probe the help
+# text once and use whichever spelling the installed CLI accepts.
+specify_init_here() {
+  local agent_flag="--ai"
+  if specify init --help 2>/dev/null | grep -q -- '--integration'; then
+    agent_flag="--integration"
+  fi
+  specify init --here "$agent_flag" claude --force
+}
+
 # --- Fast path: single check for everything ---
 check_ready() {
   command -v specify &>/dev/null || return 1
@@ -281,7 +292,7 @@ do_init() {
   ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1 && had_skills=true
 
   echo "Initializing spec-kit..."
-  if ! specify init --here --ai claude --force; then
+  if ! specify_init_here; then
     echo "ERROR: specify init failed"
     exit 1
   fi
@@ -332,7 +343,7 @@ do_refresh() {
   fi
 
   echo "Refreshing project templates..."
-  if ! specify init --here --ai claude --force; then
+  if ! specify_init_here; then
     echo "ERROR: specify init failed"
     exit 1
   fi
@@ -360,7 +371,7 @@ do_update() {
 
   echo ""
   echo "Refreshing project setup..."
-  specify init --here --ai claude --force
+  specify_init_here
   install_extensions
 
   echo ""

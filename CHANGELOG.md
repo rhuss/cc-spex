@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `/spex:init` works with newer spec-kit CLIs that renamed `specify init --ai` to `--integration`: `spex-init.sh` now probes `specify init --help` once and uses whichever flag spelling the installed CLI accepts.
+
 ### Changed
 - Synced with superpowers@6fd4507 (2026-05-29)
   - `writing-plans`: evaluated, no new patterns to absorb into spex:plan
