@@ -23,8 +23,9 @@ Last updated: 2026-06-11
 | 14 | 2026-06-02 | collab-triage-lifecycle | active | - | - |
 | 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
 | 17 | 2026-06-11 | backpressure-loops | spec-created | 024 | - |
-| 18 | 2026-06-11 | guided-smoke-test | active | - | - |
+| 18 | 2026-06-11 | guided-smoke-test | spec-created | 025 | - |
 | 19 | 2026-06-11 | cross-feature-amendments | active | - | - |
+| 20 | 2026-06-11 | mid-impl-review | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -58,6 +59,11 @@ Last updated: 2026-06-11
 - Reliability of entity/API overlap detection via text scanning (from #19)
 - Should amendment blocks be machine-parseable or free-form markdown? (from #19)
 - Handling concurrent amendments to the same older spec from parallel branches (from #19)
+- Statistics report format: file (REVIEW-STATS.md) or console only? (from #20)
+- Checkpoint findings vs test checkpoint ordering (review before or after tests?) (from #20)
+- Task count handling after checkpoint fixes (restart or continue?) (from #20)
+- Checkpoint review scope: diff since last checkpoint or entire implementation so far? (from #20)
+- Cross-run statistics aggregation for per-project trends (from #20)
 
 ## Parked Ideas
 (none)

@@ -1,7 +1,7 @@
 # Brainstorm: Guided Smoke Test and Ship Pipeline Safety
 
 **Date:** 2026-06-11
-**Status:** active
+**Status:** spec-created (specs/025-guided-smoke-test)
 
 ## Problem Framing
 
