@@ -376,11 +376,8 @@ do_init() {
   local had_skills=false
   ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1 && had_skills=true
 
-  local detected_agent
-  detected_agent="$(detect_agent)"
-
-  echo "Initializing spec-kit for agent: $detected_agent..."
-  if ! specify init --here --ai "$detected_agent" --force; then
+  echo "Initializing spec-kit..."
+  if ! specify init --here --ai claude --force; then
     echo "ERROR: specify init failed"
     exit 1
   fi
@@ -389,7 +386,7 @@ do_init() {
   if [ "$had_skills" = false ] && ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1; then
     fix_constitution
     install_extensions
-    install_agent_adapter "$detected_agent"
+    install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
     echo ""
@@ -413,7 +410,7 @@ do_init() {
     migrate_phase_marker
 
     install_extensions
-    install_agent_adapter "$detected_agent"
+    install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
     echo ""
@@ -431,18 +428,15 @@ do_refresh() {
     exit 2
   fi
 
-  local detected_agent
-  detected_agent="$(detect_agent)"
-
-  echo "Refreshing project templates for agent: $detected_agent..."
-  if ! specify init --here --ai "$detected_agent" --force; then
+  echo "Refreshing project templates..."
+  if ! specify init --here --ai claude --force; then
     echo "ERROR: specify init failed"
     exit 1
   fi
 
   fix_constitution
   install_extensions
-  install_agent_adapter "$detected_agent"
+  install_agent_adapter "$(detect_agent)"
 
   echo ""
   echo "RESTART_REQUIRED"
@@ -462,14 +456,11 @@ do_update() {
   # Migrate old command-format files if present
   migrate_old_commands
 
-  local detected_agent
-  detected_agent="$(detect_agent)"
-
   echo ""
-  echo "Refreshing project setup for agent: $detected_agent..."
-  specify init --here --ai "$detected_agent" --force
+  echo "Refreshing project setup..."
+  specify init --here --ai claude --force
   install_extensions
-  install_agent_adapter "$detected_agent"
+  install_agent_adapter "$(detect_agent)"
 
   echo ""
   specify version

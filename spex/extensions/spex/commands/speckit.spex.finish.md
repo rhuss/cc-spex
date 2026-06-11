@@ -25,7 +25,7 @@ if [ -f ".specify/.spex-state" ]; then
 fi
 ```
 
-In autonomous mode: suppress all interactive prompts. Auto-select "Merge to default branch" (or "Create PR" if `create_pr` is true in state or `--create-pr` argument is passed).
+In autonomous mode: suppress all interactive prompts, UNLESS running inside a worktree (`IN_WORKTREE` is true, detected in Phase 3). When in a worktree, always present the user with the action prompt (Phase 4) regardless of autonomous mode. Never auto-merge or auto-delete a worktree.
 
 ## Argument Parsing
 
@@ -98,18 +98,20 @@ fi
 
 ## Phase 4: Select Action
 
-If `AUTO_CREATE_PR` is true (from `--create-pr` argument or state file): skip the prompt and go directly to **Option B1** if `EXISTING_PR_NUMBER` is set (push to existing PR), otherwise **Option B2** (create new PR).
+If `AUTO_CREATE_PR` is true (from `--create-pr` argument or state file) AND `IN_WORKTREE` is false: skip the prompt and go directly to **Option B1** if `EXISTING_PR_NUMBER` is set (push to existing PR), otherwise **Option B2** (create new PR).
 
-If `AUTONOMOUS_MODE` is true: skip the prompt and go directly to **Option A: Merge to default branch**.
+If `AUTONOMOUS_MODE` is true AND `IN_WORKTREE` is false: skip the prompt and go directly to **Option A: Merge to default branch**.
 
-Otherwise, present options to the user (single-select, header: "Finish"):
+**Worktree override:** When `IN_WORKTREE` is true, ALWAYS present the prompt below regardless of autonomous mode or `--create-pr`. Worktrees are never auto-merged or auto-deleted.
+
+Present options to the user (single-select, header: "Finish"):
 
 **"Feature verified. How would you like to complete it?"**
 
 Options:
-1. **"Merge to default branch (Recommended)"**: "Fast-forward merge into the default branch, clean up branch and worktree"
-2. **If `EXISTING_PR_NUMBER` is set:** **"Push to PR #${EXISTING_PR_NUMBER}"**: "Push new commits to the existing pull request"
-   **Otherwise:** **"Push and create PR"**: "Push branch and open a pull request for team review"
+1. **If `EXISTING_PR_NUMBER` is set:** **"Push to PR #${EXISTING_PR_NUMBER}" (Recommended)**: "Push new commits to the existing pull request"
+   **Otherwise:** **"Push and create PR" (Recommended)**: "Push branch and open a pull request for team review"
+2. **"Merge to default branch"**: "Fast-forward merge into the default branch, clean up branch and worktree"
 3. **"Keep branch as-is"**: "Leave branch for manual handling later"
 
 ## Phase 5: Execute Action
@@ -149,8 +151,15 @@ git merge "$CURRENT_BRANCH" -m "Merge branch '$CURRENT_BRANCH'
 Assisted-By: 🤖 Claude Code" 2>&1
 ```
 
-After merge succeeds, remove worktree and branch:
+After merge succeeds, clean up state files BEFORE removing the worktree (state files live inside the worktree directory and become inaccessible after removal):
 ```bash
+# Clean state while worktree still exists
+rm -f "$WORKTREE_PATH/.specify/.spex-state"
+if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
+  rm -f "$SHIP_STATE_FILE"
+fi
+STATE_CLEANED=true
+
 git worktree remove "$WORKTREE_PATH" 2>&1
 git branch -d "$CURRENT_BRANCH" 2>&1 || git branch -D "$CURRENT_BRANCH" 2>&1
 ```
@@ -276,13 +285,15 @@ When ready to finish:
 
 ## Phase 6: State and Status Line Cleanup
 
-After executing any option (merge, PR, or keep), remove the state file from both possible locations (absolute path from ship pipeline, and relative path from flow mode):
+After executing any option (merge, PR, or keep), remove the state file. Skip if already cleaned during worktree removal (Option A sets `STATE_CLEANED=true`):
 
 ```bash
-rm -f .specify/.spex-state
-if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
-  rm -f "$SHIP_STATE_FILE"
+if [ "${STATE_CLEANED:-false}" != "true" ]; then
+  rm -f .specify/.spex-state
+  if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
+    rm -f "$SHIP_STATE_FILE"
+  fi
 fi
 ```
 
-This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists). Works for both ship mode (where `SHIP_STATE_FILE` may point to a worktree path) and flow mode (where the state file is always relative).
+This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists). Works for both ship mode (where `SHIP_STATE_FILE` may point to a worktree path) and flow mode (where the state file is always relative). In the worktree merge path, cleanup happens before the worktree directory is deleted to avoid ENOENT errors.

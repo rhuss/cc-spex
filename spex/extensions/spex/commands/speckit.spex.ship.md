@@ -680,15 +680,16 @@ This stage runs in an isolated subagent for clean final verification and complet
 
    Invoke /speckit-spex-finish <CREATE_PR_FLAG> for final verification and completion.
    This runs tests, validates spec compliance, checks for drift,
-   then merges or creates a PR based on the pipeline configuration.
-   The .specify/.spex-state file exists with status "running", so
-   complete autonomously and return immediately.
+   then presents merge/PR options to the user.
+   The .specify/.spex-state file exists with status "running".
+   If in a worktree, the user will be prompted for the completion action
+   (the finish command never auto-merges or auto-deletes worktrees).
 
    Report pass/fail and completion action taken.
    ```
 
 4. When the subagent returns, capture its summary.
-5. If finish passes (verification + completion action succeeded), run `"$SHIP_STATE" advance` (this outputs `PIPELINE_COMPLETE`). Report the subagent's summary as the final pipeline result.
+5. If finish passes (verification + completion action succeeded): the finish command already cleaned up the state file during worktree removal. Run `"$SHIP_STATE" advance` only if the state file still exists (`[ -f "$SHIP_STATE_FILE" ]`); otherwise, the pipeline is already complete. Report the subagent's summary as the final pipeline result.
 6. If finish fails (verification did not pass), apply **Oversight Decision Logic**.
 
 ## Oversight Decision Logic

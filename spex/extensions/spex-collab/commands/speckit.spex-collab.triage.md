@@ -44,7 +44,9 @@ bash spex/scripts/spex-triage-state.sh init "$PR_NUM"
 
 ## Step 3: Fetch Review Threads
 
-Fetch all review threads with their comments using GraphQL. Use cursor-based pagination to handle PRs with many threads:
+Fetch all review threads with their comments using GraphQL. Use cursor-based pagination to handle PRs with many threads.
+
+**Important**: GitHub API responses can contain raw control characters (U+0000–U+001F) in comment bodies, which break `jq` and Python's `json` module. Always pipe `gh api graphql` output through the sanitizer before any JSON processing:
 
 ```bash
 # Fetch page of review threads (repeat with cursor for pagination)
@@ -79,7 +81,8 @@ THREADS_JSON=$(gh api graphql -f query='
       }
     }
   }
-' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM")
+' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" \
+  | python3 spex/scripts/sanitize-gh-json.py)
 ```
 
 **Pagination**: If `reviewThreads.pageInfo.hasNextPage` is true, fetch the next page using `endCursor` as the `$cursor` variable. Accumulate all thread nodes across pages before proceeding. Most PRs will complete in a single page (100 threads).

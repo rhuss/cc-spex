@@ -4,15 +4,6 @@
 # Input: JSON via stdin from Claude Code with context_window info
 # Output: Colored status line for ship or flow mode, or empty if no active state
 
-# Debug logging: set SPEX_DEBUG=1 to trace status line failures
-_log_dir="${CLAUDE_PROJECT_DIR:-.}/.specify"
-_log_file="$_log_dir/.spex-statusline.log"
-debug_log() {
-  [ "${SPEX_DEBUG:-0}" = "1" ] || return 0
-  [ -d "$_log_dir" ] || return 0
-  printf '%s [statusline] %s\n' "$(date +%H:%M:%S)" "$*" >> "$_log_file" 2>/dev/null
-}
-
 # Read stdin non-blocking (Claude Code may pass context JSON)
 STDIN_JSON=""
 if read -t 0 2>/dev/null; then
@@ -30,14 +21,12 @@ elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.s
 fi
 
 if [ -z "$STATE_FILE" ]; then
-  debug_log "no state file found (checked: .specify/.spex-state, SHIP_STATE_FILE=${SHIP_STATE_FILE:-}, CLAUDE_PROJECT_DIR=${CLAUDE_PROJECT_DIR:-})"
   exit 0
 fi
 
 # Read entire state file once for atomicity and performance
-STATE_JSON=$(cat "$STATE_FILE" 2>/dev/null) || { debug_log "failed to read state file: $STATE_FILE"; exit 0; }
+STATE_JSON=$(cat "$STATE_FILE" 2>/dev/null) || exit 0
 MODE=$(echo "$STATE_JSON" | jq -r '.mode // empty' 2>/dev/null)
-[ -z "$MODE" ] && debug_log "empty mode in state file: $STATE_FILE"
 
 # Staleness check: if a FLOW state references a feature branch and we're not on it
 # (e.g., merged back to main), auto-clear the stale state file.
@@ -50,7 +39,7 @@ if [ "$MODE" = "flow" ]; then
   if [ -n "$FEATURE_BRANCH" ]; then
     CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
     if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$FEATURE_BRANCH" ]; then
-      debug_log "branch mismatch: current=$CURRENT_BRANCH expected=$FEATURE_BRANCH, skipping render"
+      rm -f "$STATE_FILE"
       exit 0
     fi
   fi
@@ -115,7 +104,6 @@ render_flow() {
   )
 
   if [ -z "$spec_dir" ] || [ ! -d "$spec_dir" ]; then
-    debug_log "flow: spec_dir missing or not a directory: '${spec_dir:-<empty>}'"
     exit 0
   fi
 
@@ -220,7 +208,6 @@ render_ship() {
   )
 
   if [ -z "$STAGE" ] || [ -z "$INDEX" ]; then
-    debug_log "ship: missing stage='${STAGE:-<empty>}' or index='${INDEX:-<empty>}'"
     exit 0
   fi
 

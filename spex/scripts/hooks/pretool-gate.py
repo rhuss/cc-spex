@@ -13,13 +13,10 @@ Gates (checked in order, all results collected):
 Side effects (always run):
 - Clear skill-pending marker when Skill tool is called
 - Remove completed ship state files (ship-done cleanup)
-
-This hook delegates enforcement decisions to shared POSIX shell functions
-under hooks/shared/, making the logic reusable across agent adapters.
 """
 import json
 import os
-import subprocess
+import re
 import sys
 from pathlib import Path
 
@@ -27,9 +24,6 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
-
-SHARED_DIR = Path(__file__).parent / 'shared'
-
 
 def tmpdir():
     return Path(os.environ.get('TMPDIR', '/tmp'))
@@ -62,44 +56,6 @@ def context(text):
     sys.exit(0)
 
 
-def run_shared(script_name, args):
-    """Run a shared shell function and return its stdout.
-
-    Returns the output string, or None on failure.
-    Fails open: if the shared script is missing or errors, returns None
-    so the hook does not block the developer.
-    """
-    script = SHARED_DIR / script_name
-    if not script.exists():
-        return None
-    try:
-        result = subprocess.run(
-            ['sh', str(script)] + [str(a) for a in args],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode != 0:
-            print(f"WARNING: {script_name} failed: {result.stderr.strip()}", file=sys.stderr)
-            return None
-        return result.stdout.strip()
-    except Exception as e:
-        print(f"WARNING: {script_name} error: {e}", file=sys.stderr)
-        return None
-
-
-def parse_result(result):
-    """Parse a shared function result string.
-
-    Returns (result_type, content) where result_type is 'deny', 'context', or 'allow'.
-    """
-    if result is None:
-        return 'allow', None
-    if result.startswith('deny:'):
-        return 'deny', result[5:]
-    if result.startswith('context:'):
-        return 'context', result[8:]
-    return 'allow', None
-
-
 # ---------------------------------------------------------------------------
 # Side effects (always run, before gate checks)
 # ---------------------------------------------------------------------------
@@ -123,6 +79,255 @@ def side_effects(tool_name, tool_input, session_id, cwd):
 
 
 # ---------------------------------------------------------------------------
+# Gate 1: Skill gate
+# ---------------------------------------------------------------------------
+
+def check_skill_gate(tool_name, session_id):
+    """Block non-Skill tools when a /spex: command is pending.
+
+    Returns deny reason string, or None if gate passes.
+    Short-circuits: if this gate fires, no other gate matters because
+    the model must invoke the skill before doing anything else.
+    """
+    marker = marker_path('spex-skill-pending', session_id)
+    if not marker.exists():
+        return None
+
+    # ToolSearch must pass so the deferred Skill tool can be loaded
+    if tool_name == 'ToolSearch':
+        return None
+
+    # Skill tool was already handled in side_effects (marker cleared)
+    if tool_name == 'Skill':
+        return None
+
+    pending_skill = marker.read_text().strip()
+    return (
+        f"SKILL GATE: You MUST call Skill(skill=\"{pending_skill}\") "
+        f"as your FIRST tool call. Do NOT read files, explore code, or "
+        f"analyze anything before invoking the skill. The skill document "
+        f"contains the process to follow. Call it NOW."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Gate 2: Teams enforcement
+# ---------------------------------------------------------------------------
+
+def check_teams_enforce(tool_name, tool_input, cwd):
+    """Block background Agent during implementation when teams trait is active.
+
+    Returns deny reason string, or None if gate passes.
+    """
+    if tool_name != 'Agent':
+        return None
+
+    if tool_input.get('subagent_type') or tool_input.get('team_name'):
+        return None
+
+    if not tool_input.get('run_in_background'):
+        return None
+
+    registry_file = Path(cwd) / '.specify' / 'extensions' / '.registry'
+    try:
+        registry = json.loads(registry_file.read_text())
+        extensions = registry.get('extensions', {})
+        teams_ext = extensions.get('spex-teams', {})
+        teams_enabled = teams_ext.get('enabled', False)
+    except Exception:
+        return None
+
+    if not teams_enabled:
+        return None
+
+    phase_file = Path(cwd) / '.specify' / '.spex-phase'
+    try:
+        phase = phase_file.read_text().strip()
+    except FileNotFoundError:
+        return None
+
+    if phase != 'implement':
+        return None
+
+    return (
+        "TEAMS ENFORCEMENT (implement phase): You are using Agent with "
+        "run_in_background, which bypasses Agent Teams. Instead, delegate "
+        "to {Skill: spex:teams-orchestrate} which provides: "
+        "(1) worktree isolation for each teammate, "
+        "(2) spec compliance review before merge."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Gate 3: Ship pipeline discipline
+# ---------------------------------------------------------------------------
+
+STAGE_SKILLS = {
+    0: "speckit-specify",
+    1: "speckit-clarify",
+    2: "spex:review-spec",
+    3: "speckit-plan",
+    4: "speckit-tasks",
+    5: "spex:review-plan",
+    6: "speckit-implement",
+    7: "spex:review-code",
+    8: "spex:verification-before-completion",
+}
+
+STAGE_NAMES = {
+    0: "specify",
+    1: "clarify",
+    2: "review-spec",
+    3: "plan",
+    4: "tasks",
+    5: "review-plan",
+    6: "implement",
+    7: "review-code",
+    8: "stamp",
+}
+
+SKILL_TO_STAGE = {v: k for k, v in STAGE_SKILLS.items()}
+
+
+def check_ship_pipeline(tool_name, tool_input, cwd):
+    """Enforce stage ordering during ship workflow.
+
+    Returns (deny_reason, context_text) tuple. Both may be None.
+    """
+    state_file = Path(cwd) / '.specify' / '.spex-state'
+    if not state_file.exists():
+        return None, None
+
+    try:
+        state = json.loads(state_file.read_text())
+    except Exception:
+        return None, None
+
+    status = state.get('status', '')
+    if status not in ('running', 'paused'):
+        return None, None
+
+    current_index = state.get('stage_index', -1)
+    current_stage = state.get('stage', 'unknown')
+
+    # For Skill tool calls, enforce stage ordering
+    if tool_name == 'Skill':
+        skill_name = tool_input.get('skill', '')
+        if skill_name in SKILL_TO_STAGE:
+            target_index = SKILL_TO_STAGE[skill_name]
+            if target_index > current_index:
+                skipped = [
+                    f"  {i}. {STAGE_NAMES[i]} ({STAGE_SKILLS[i]})"
+                    for i in range(current_index, target_index)
+                ]
+                return (
+                    f"PIPELINE DISCIPLINE: You are trying to invoke "
+                    f"{skill_name} (stage {target_index}: "
+                    f"{STAGE_NAMES[target_index]}) but the pipeline is "
+                    f"at stage {current_index}: {current_stage}. "
+                    f"You MUST complete these stages first, in order:\n"
+                    + "\n".join(skipped) + "\n\n"
+                    f"Do NOT skip stages. Do NOT shortcut. "
+                    f"Invoke {STAGE_SKILLS[current_index]} now."
+                ), None
+        return None, None
+
+    # For non-Skill tools, inject a stage reminder with stage-specific briefs
+    expected_skill = STAGE_SKILLS.get(current_index, 'unknown')
+    brief = _stage_brief(current_index)
+    ctx = (
+        f"<ship-pipeline stage=\"{current_stage}\" index=\"{current_index}\" "
+        f"expected-skill=\"{expected_skill}\">"
+        f"Active ship pipeline at stage {current_index}/{8}: {current_stage}. "
+        f"Next action: invoke {expected_skill}. "
+        f"Do not explore or shortcut. Follow the pipeline."
+        f"{brief}"
+        f"</ship-pipeline>"
+    )
+    return None, ctx
+
+
+# Stage-specific briefs for review stages (where context dilution is worst)
+def _stage_brief(stage_index):
+    briefs = {
+        7: (
+            "\n--- STAGE 7 REQUIREMENTS ---"
+            "\nYou MUST invoke {Skill: spex:review-code} which runs:"
+            "\n  1. Spec compliance check (compliance score)"
+            "\n  2. Code Review Guide -> REVIEW-CODE.md"
+            "\n  3. Deep review: 5 agents (correctness, architecture, security, production, tests)"
+            "\n  4. CodeRabbit CLI: coderabbit review --agent --type all (LOCAL, no PR needed)"
+            "\n  5. Fix loop for Critical/Important findings"
+            "\n  6. Deep Review Report -> REVIEW-CODE.md"
+            "\nThe advance script WILL REJECT advancement if REVIEW-CODE.md lacks a Deep Review Report section."
+        ),
+        8: (
+            "\n--- STAGE 8 REQUIREMENTS ---"
+            "\nYou MUST invoke {Skill: spex:verification-before-completion} which runs:"
+            "\n  1. Test suite execution"
+            "\n  2. Spec compliance validation"
+            "\n  3. Drift check"
+            "\nDo NOT claim completion without running actual verification commands."
+        ),
+    }
+    return briefs.get(stage_index, '')
+
+
+# ---------------------------------------------------------------------------
+# Gate 4: Verification reminder
+# ---------------------------------------------------------------------------
+
+def check_verification_gate(tool_name, tool_input, session_id, cwd):
+    """Remind about verification before git commit in spex projects.
+
+    Returns context string (non-blocking reminder), or None.
+    """
+    if tool_name != 'Bash':
+        return None
+
+    command = tool_input.get('command', '')
+    if not re.search(r'\bgit\s+commit\b', command):
+        return None
+
+    if not (Path(cwd) / '.specify').is_dir():
+        return None
+
+    if marker_path('spex-verified', session_id).exists():
+        return None
+
+    # Allow spec-only commits without verification
+    if _is_spec_only_commit(cwd):
+        return None
+
+    return (
+        "spex stamp reminder: Final verification has not been run this session. "
+        "Consider running /speckit-spex-gates-stamp first, or confirm with the user that "
+        "they want to proceed without the final gate."
+    )
+
+
+def _is_spec_only_commit(cwd):
+    """Check if staged changes are spec/doc-only (no code to verify)."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['git', 'diff', '--cached', '--name-only'],
+            capture_output=True, text=True, cwd=cwd, timeout=5,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return False
+        for f in result.stdout.strip().splitlines():
+            f = f.strip()
+            if (f.startswith(('specs/', 'brainstorm/', 'docs/', '.specify/'))
+                    or f.endswith('.md')):
+                continue
+            return False
+        return True
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -141,43 +346,27 @@ def main():
     side_effects(tool_name, tool_input, session_id, cwd)
 
     # --- Gate 1: Skill gate (short-circuits) ---
-    skill_result = run_shared('skill-gate.sh', [tool_name, session_id])
-    skill_type, skill_reason = parse_result(skill_result)
-    if skill_type == 'deny':
-        deny(skill_reason)
+    skill_deny = check_skill_gate(tool_name, session_id)
+    if skill_deny:
+        deny(skill_deny)
 
-    # --- Gates 2-4: collected ---
+    # --- Gates 2-5: collected ---
     denies = []
     contexts = []
 
-    # Gate 2: Teams enforcement
-    teams_result = run_shared('teams-gate.sh', [
-        tool_name, json.dumps(tool_input), cwd
-    ])
-    teams_type, teams_content = parse_result(teams_result)
-    if teams_type == 'deny':
-        denies.append(teams_content)
+    teams_deny = check_teams_enforce(tool_name, tool_input, cwd)
+    if teams_deny:
+        denies.append(teams_deny)
 
-    # Gate 3: Ship pipeline
-    skill_name = tool_input.get('skill', '') if tool_name == 'Skill' else ''
-    state_file = str(Path(cwd) / '.specify' / '.spex-state')
-    ship_result = run_shared('stage-gate.sh', [
-        tool_name, skill_name, state_file
-    ])
-    ship_type, ship_content = parse_result(ship_result)
-    if ship_type == 'deny':
-        denies.append(ship_content)
-    elif ship_type == 'context':
-        contexts.append(ship_content)
+    ship_deny, ship_ctx = check_ship_pipeline(tool_name, tool_input, cwd)
+    if ship_deny:
+        denies.append(ship_deny)
+    if ship_ctx:
+        contexts.append(ship_ctx)
 
-    # Gate 4: Verification reminder
-    command = tool_input.get('command', '')
-    verify_result = run_shared('verify-gate.sh', [
-        tool_name, command, session_id, cwd
-    ])
-    verify_type, verify_content = parse_result(verify_result)
-    if verify_type == 'context':
-        contexts.append(verify_content)
+    verify_ctx = check_verification_gate(tool_name, tool_input, session_id, cwd)
+    if verify_ctx:
+        contexts.append(verify_ctx)
 
     # --- Output ---
     if denies:
