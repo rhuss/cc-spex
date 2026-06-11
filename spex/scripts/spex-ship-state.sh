@@ -8,6 +8,7 @@
 #   spex-ship-state.sh pause                   # Set status to paused
 #   spex-ship-state.sh fail                    # Set status to failed
 #   spex-ship-state.sh cleanup                 # Remove state file (pipeline done)
+#   spex-ship-state.sh smoke-test-record [--completed BOOL] [--scenarios N] [--total N] [--skipped N]
 #   spex-ship-state.sh watch-start [--pr-number N] [--pr-url URL] [--timeout M] [--interval S]
 #   spex-ship-state.sh watch-update <key> <value> [<key> <value> ...]
 #   spex-ship-state.sh watch-cleanup           # Remove state file, output WATCH_COMPLETE

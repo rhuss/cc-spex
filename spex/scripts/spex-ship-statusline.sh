@@ -189,7 +189,7 @@ render_flow() {
   # Smoke test indicator (shown when smoke test results exist in state)
   local gate_st=""
   local smoke_completed
-  smoke_completed=$(echo "$STATE_JSON" | jq -r '.smoke_test_completed // empty' 2>/dev/null)
+  smoke_completed=$(echo "$STATE_JSON" | jq -r '.smoke_test_completed | tostring' 2>/dev/null)
   if [ "$smoke_completed" = "true" ]; then
     gate_st="${GREEN}ST ✓${RESET}"
   elif [ "$smoke_completed" = "false" ]; then
