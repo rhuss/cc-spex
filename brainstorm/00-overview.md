@@ -24,6 +24,7 @@ Last updated: 2026-06-11
 | 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
 | 17 | 2026-06-11 | backpressure-loops | spec-created | 024 | - |
 | 18 | 2026-06-11 | guided-smoke-test | active | - | - |
+| 19 | 2026-06-11 | cross-feature-amendments | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -53,6 +54,10 @@ Last updated: 2026-06-11
 - Ship pipeline stop behavior: explicit next-step instructions or silent stop? (from #18)
 - Smoke test interaction with existing `/run` skill: delegate or independent? (from #18)
 - Marking acceptance scenarios as "manual only" vs "automatable" in spec? (from #18)
+- How to store confirmed amendments between review-spec and finish? (from #19)
+- Reliability of entity/API overlap detection via text scanning (from #19)
+- Should amendment blocks be machine-parseable or free-form markdown? (from #19)
+- Handling concurrent amendments to the same older spec from parallel branches (from #19)
 
 ## Parked Ideas
 (none)
