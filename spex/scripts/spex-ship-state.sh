@@ -8,6 +8,7 @@
 #   spex-ship-state.sh pause                   # Set status to paused
 #   spex-ship-state.sh fail                    # Set status to failed
 #   spex-ship-state.sh cleanup                 # Remove state file (pipeline done)
+#   spex-ship-state.sh checkpoint-record --checkpoint <1|2> --findings <N> --fixed <N>
 #   spex-ship-state.sh smoke-test-record [--completed BOOL] [--scenarios N] [--total N] [--skipped N]
 #   spex-ship-state.sh watch-start [--pr-number N] [--pr-url URL] [--timeout M] [--interval S]
 #   spex-ship-state.sh watch-update <key> <value> [<key> <value> ...]
@@ -293,6 +294,61 @@ do_watch_cleanup() {
   echo "WATCH_COMPLETE"
 }
 
+do_checkpoint_record() {
+  local checkpoint="" findings=0 fixed=0
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --checkpoint) shift; checkpoint="${1:-}" ;;
+      --findings) shift; findings="${1:-0}" ;;
+      --fixed) shift; fixed="${1:-0}" ;;
+      *) echo "ERROR: Unknown flag '$1'" >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  if [ -z "$checkpoint" ] || { [ "$checkpoint" != "1" ] && [ "$checkpoint" != "2" ]; }; then
+    echo "ERROR: --checkpoint must be 1 or 2" >&2
+    exit 2
+  fi
+
+  # Validate numeric inputs to prevent JSON corruption in heredoc path
+  case "$findings" in
+    ''|*[!0-9]*) echo "ERROR: --findings must be a non-negative integer" >&2; exit 2 ;;
+  esac
+  case "$fixed" in
+    ''|*[!0-9]*) echo "ERROR: --fixed must be a non-negative integer" >&2; exit 2 ;;
+  esac
+
+  if [ ! -f "$STATE_FILE" ]; then
+    # No state file exists; create a minimal one with checkpoint results
+    mkdir -p "$(dirname "$STATE_FILE")"
+    cat > "$STATE_FILE" <<EOF
+{
+  "checkpoint_${checkpoint}_findings": $findings,
+  "checkpoint_${checkpoint}_fixed": $fixed,
+  "checkpoint_${checkpoint}_at": "$(now_iso)"
+}
+EOF
+    echo "CHECKPOINT_RECORDED checkpoint=$checkpoint findings=$findings fixed=$fixed"
+    return 0
+  fi
+
+  # Merge checkpoint fields into existing state file
+  local tmp
+  tmp=$(mktemp)
+  jq --argjson findings "$findings" \
+     --argjson fixed "$fixed" \
+     --arg at "$(now_iso)" \
+     --arg fkey "checkpoint_${checkpoint}_findings" \
+     --arg xkey "checkpoint_${checkpoint}_fixed" \
+     --arg akey "checkpoint_${checkpoint}_at" \
+     '.[$fkey] = $findings | .[$xkey] = $fixed | .[$akey] = $at' \
+     "$STATE_FILE" > "$tmp"
+  mv "$tmp" "$STATE_FILE"
+  echo "CHECKPOINT_RECORDED checkpoint=$checkpoint findings=$findings fixed=$fixed"
+}
+
 do_smoke_test_record() {
   local completed="false" scenarios=0 total=0 skipped=0
 
@@ -356,6 +412,10 @@ case "${1:-}" in
   cleanup)
     do_cleanup
     ;;
+  checkpoint-record)
+    shift
+    do_checkpoint_record "$@"
+    ;;
   smoke-test-record)
     shift
     do_smoke_test_record "$@"
@@ -372,7 +432,7 @@ case "${1:-}" in
     do_watch_cleanup
     ;;
   *)
-    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|smoke-test-record|watch-start|watch-update|watch-cleanup}" >&2
+    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|checkpoint-record|smoke-test-record|watch-start|watch-update|watch-cleanup}" >&2
     exit 2
     ;;
 esac

@@ -611,6 +611,56 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    fi
    ```
 
+   Check if mid-implementation review checkpoints should be enabled:
+   ```bash
+   DEEP_REVIEW_ENABLED=$(jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+   SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
+   REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints // true' "$SPEX_CONFIG" 2>/dev/null)
+   REVIEW_CHECKPOINTS=${REVIEW_CHECKPOINTS:-true}
+   TOTAL_TASKS=$(grep -c '^\- \[.\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
+   ```
+
+   Build the checkpoint instruction block (only when `DEEP_REVIEW_ENABLED` is `true`, `REVIEW_CHECKPOINTS` is `true`, and `TOTAL_TASKS` >= 3):
+
+   ```
+   CHECKPOINT_INSTRUCTIONS=""
+   if [ "$DEEP_REVIEW_ENABLED" = "true" ] && [ "$REVIEW_CHECKPOINTS" = "true" ] && [ "$TOTAL_TASKS" -ge 3 ]; then
+     CP1=$(( TOTAL_TASKS / 3 ))
+     CP2=$(( TOTAL_TASKS * 2 / 3 ))
+     CHECKPOINT_INSTRUCTIONS="
+   IMPORTANT: Mid-implementation review checkpoints are ENABLED.
+   Total tasks: $TOTAL_TASKS. Checkpoint 1 after task $CP1, checkpoint 2 after task $CP2.
+
+   After completing task $CP1 (checkpoint 1/3), pause implementation and spawn a
+   fresh-context Agent (subagent_type: general-purpose) with this prompt:
+
+     'You are a correctness review agent for a mid-implementation checkpoint.
+     Review the implementation so far against the spec at <SPEC_PATH>.
+     Focus ONLY on correctness: does the code match the spec requirements
+     for the tasks completed so far? Report findings with file paths and
+     line numbers. Do NOT review architecture, security, production readiness,
+     or test quality. If you find no issues after careful review, confirm
+     with: No correctness issues found.'
+
+   After the review agent returns:
+   - If findings exist, fix them (max 2 attempts per finding).
+   - Record results: run the spex-ship-state.sh script with:
+     checkpoint-record --checkpoint 1 --findings <N> --fixed <N>
+     (where N is the count of findings found and fixed respectively)
+   - If the review agent times out or fails, skip the checkpoint with a
+     warning ('Checkpoint 1/3 skipped: review agent failed'), record
+     findings=0 fixed=0, and continue implementation.
+   - Then continue to the next task.
+
+   After completing task $CP2 (checkpoint 2/3), repeat the same process:
+   spawn a fresh correctness review agent, fix findings, and record results
+   with --checkpoint 2.
+   "
+   fi
+   ```
+
+   If `TOTAL_TASKS` < 3 and checkpoints would otherwise be enabled, the checkpoint instructions are simply omitted (no explicit comment needed in the prompt).
+
    If `TEAMS_ENABLED` is `true` AND `INDEPENDENT_TASKS` >= 2, route to teams implement by spawning a subagent with:
 
    ```
@@ -626,6 +676,8 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    implement command will run in pipeline mode (no completion summary, no user questions).
 
    <TEST_CHECKPOINT_INSTRUCTIONS>
+
+   <CHECKPOINT_INSTRUCTIONS>
 
    When marking tasks complete in tasks.md, use the Edit tool.
    Report a brief summary of completed tasks when done.
@@ -646,6 +698,8 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    implement command will run in pipeline mode (no completion summary, no user questions).
 
    <TEST_CHECKPOINT_INSTRUCTIONS>
+
+   <CHECKPOINT_INSTRUCTIONS>
 
    When marking tasks complete in tasks.md, use the Edit tool.
    Report a brief summary of completed tasks when done.

@@ -314,6 +314,8 @@ The ship pipeline includes two automated feedback mechanisms that catch problems
 
 **Per-task test checkpoints** (Stage 6): After completing each task during implementation, the test suite runs automatically. If tests fail, the agent attempts to fix the regression before moving to the next task (max 2 attempts). This prevents compounding breakage where tasks 3-5 build on a broken foundation from task 2. Disable with `implement.test_between_tasks: false` in `.specify/extensions/spex/spex-config.yml`.
 
+**Mid-implementation review checkpoints** (Stage 6): When `spex-deep-review` is enabled and a feature has 3 or more tasks, fresh-context correctness review agents are spawned at the 1/3 and 2/3 task completion marks. Each checkpoint reviews all code so far against the spec, focusing only on correctness (not architecture, security, or test quality). Findings are fixed before implementation continues, preventing drift from compounding across the remaining tasks. Checkpoint results are recorded in the state file so the final deep review can show a layer comparison of what each review layer caught. Disable with `implement.review_checkpoints: false` in `.specify/extensions/spex/spex-config.yml`.
+
 **Post-PR watch mode** (Stage 8): When `--create-pr` is set, the finish stage automatically enters watch mode after PR creation. It polls CI status, reads failure logs, and attempts fixes within the PR's changed file set (max 2 attempts). If `spex-collab` is enabled, watch mode also triages new review comments via `/speckit-spex-collab-triage`. Watch mode exits on CI success, timeout (default 30 minutes), or when the PR is closed/merged externally. Configure timeouts and intervals in `.specify/extensions/spex/spex-config.yml` under `watch.timeout_minutes` and `watch.poll_interval_seconds`.
 
 ### Worktree integration
@@ -347,6 +349,8 @@ The deep-review process is a two-stage code review pipeline that runs automatica
 When the `spex-teams` extension is also enabled, all five agents run in parallel via Claude Code Agent Teams. Otherwise they run sequentially.
 
 **Autonomous Fix Loop.** After all agents report their findings, Critical and Important issues are collected and fixed automatically (up to 3 rounds). Each round applies fixes and re-reviews only the modified files. The loop ends when no Critical or Important findings remain, or when the maximum rounds are reached.
+
+**Agent Leaderboard.** After every deep review run, a per-agent statistics summary is displayed showing findings found, fixed, and remaining for each agent, plus a total row. The agent with the most findings is highlighted as MVP. In ship mode with checkpoints enabled, a layer comparison table shows what each review layer (checkpoint 1/3, checkpoint 2/3, final review) caught, including unique findings per layer.
 
 **Output.** The process produces two artifacts:
 - `review-findings.md` with detailed findings including severity, confidence, file/line, and resolution status

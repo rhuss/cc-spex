@@ -93,6 +93,8 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         Correctness agent detects swallowed errors.
                         Test-quality agent cross-refs spec acceptance
                         scenarios against test verification methods.
+                        Agent leaderboard with MVP after every run.
+                        Layer comparison (checkpoint vs final) in ship mode.
                         Project hints via .specify/review-hints.md.
                         Combines with spex-teams for parallel execution.
                         Optionally includes CodeRabbit + Copilot CLIs.
@@ -216,12 +218,17 @@ BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
   implement:
     test_between_tasks: true     # Run tests after each task (default: true)
                                  # Set false to skip inter-task checkpoints
+    review_checkpoints: true     # Mid-impl correctness reviews at 1/3 and 2/3
+                                 # Requires spex-deep-review, min 3 tasks
+                                 # Set false to skip mid-implementation reviews
   watch:
     timeout_minutes: 30          # Max watch duration (default: 30)
     poll_interval_seconds: 60    # CI polling interval (default: 60)
 
   Per-task test checkpoints run during ship Stage 6 (implement).
   Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
+  Mid-impl review checkpoints at 1/3 and 2/3 (requires spex-deep-review, 3+ tasks).
+  Agent leaderboard with MVP shown after every deep review run.
   Ship Stage 8 is now smoke-test (interactive acceptance scenarios).
   The pipeline stops after smoke-test; run /speckit-spex-finish manually.
   Watch mode runs during finish (when --create-pr is set after manual finish).

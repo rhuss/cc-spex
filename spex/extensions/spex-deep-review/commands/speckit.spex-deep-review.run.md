@@ -521,6 +521,9 @@ Review Agents:
 |-------------------------|-------|-------|-----------|-----------|
 | Total                   |     N |     N |         N |           |
 
+Agent Leaderboard MVP: [agent name] ([N] findings)
+  (or: "Clean review: no findings across [N] agents" if all agents found 0)
+
 Key fixes applied:
   1. [Brief description of fix] (agent-name)
   2. [Brief description of fix] (agent-name)
@@ -542,6 +545,40 @@ Details: review-findings.md
 - "Remaining findings" lists only Critical and Important severity items
 - If gate PASSED with zero remaining: omit the "Remaining findings" section
 - If an external tool was skipped: show reason (e.g., "skipped (CLI not installed)" or "skipped (disabled in config)")
+
+**Agent Leaderboard MVP designation:**
+- After the agent table output, identify the agent with the highest "Found" count (excluding external tools and test-suite rows). If multiple agents tie, pick the first alphabetically.
+- Output: `MVP: {agent name} ({count} findings)`
+- If ALL internal review agents (the 5 core agents) found 0 findings, output instead: `Clean review: no findings across {N} agents` (where N is the count of internal review agents that ran, typically 5). Do not designate an MVP in this case.
+- The MVP line appears between the agent table and the "Key fixes applied" section.
+
+**Layer Comparison (ship mode with checkpoints):**
+After the MVP designation and before "Key fixes applied", check the state file for checkpoint data:
+
+```bash
+SHIP_STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
+CP1_FINDINGS=$(jq -r '.checkpoint_1_findings // empty' "$SHIP_STATE_FILE" 2>/dev/null)
+CP2_FINDINGS=$(jq -r '.checkpoint_2_findings // empty' "$SHIP_STATE_FILE" 2>/dev/null)
+```
+
+If `CP1_FINDINGS` or `CP2_FINDINGS` is non-empty (meaning checkpoints ran in this pipeline), output a layer comparison table:
+
+```
+Layer Comparison:
+
+| Layer            | Findings | Fixed | Unique |
+|------------------|----------|-------|--------|
+| Checkpoint 1/3   |        N |     N |      N |
+| Checkpoint 2/3   |        N |     N |      N |
+| Final Review     |        N |     N |      N |
+```
+
+Where:
+- Checkpoint findings/fixed come from the state file (`checkpoint_N_findings`, `checkpoint_N_fixed`)
+- Final Review findings/fixed come from the current deep review run totals
+- "Unique" for each layer represents findings caught only by that layer and not by any other. For checkpoint layers, compare finding descriptions (substring match) against the final review findings. For the final review layer, compare against both checkpoint layers. Since checkpoint findings are stored as counts only (not descriptions), the unique calculation is approximate: if checkpoint findings > 0 and final review also found findings, estimate unique as `max(0, checkpoint_findings - final_findings_in_same_categories)`. If line-level comparison is not possible, show "~N" (approximate) for unique counts.
+
+If no checkpoint data exists in the state file (regular flow, checkpoints disabled, or non-ship invocation), skip the layer comparison entirely. Only show the agent leaderboard.
 
 ### Step 10: Update Flow State
 
