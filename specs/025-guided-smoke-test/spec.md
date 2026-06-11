@@ -106,7 +106,7 @@ The smoke test records its results (scenarios tested, pass/fail per scenario, ti
 - **FR-007**: The command MUST record smoke test results in `.specify/.spex-state` with fields: `smoke_test_completed` (boolean), `smoke_test_at` (timestamp), `smoke_test_scenarios` (count completed), `smoke_test_total` (total count).
 - **FR-008**: `/speckit-spex-gates-verify` MUST display a reminder when acceptance scenarios exist in the spec but no smoke test is recorded in the state file.
 - **FR-009**: The verify reminder MUST be informational only and MUST NOT block verification.
-- **FR-010**: The ship pipeline MUST invoke `/speckit-spex-smoke-test` as a new stage after review-code (Stage 7.5).
+- **FR-010**: The ship pipeline MUST invoke `/speckit-spex-smoke-test` as the final stage (replacing the current finish stage). The pipeline stage sequence becomes: implement (6) → review-code (7) → smoke-test (8). Finish is no longer a pipeline stage; the user invokes it manually after the pipeline stops.
 - **FR-011**: The smoke test stage in the ship pipeline MUST always be interactive, regardless of the `ask` level.
 - **FR-012**: The ship pipeline MUST NOT invoke `/speckit-spex-finish` automatically. After the smoke test (or after review-code if no scenarios exist), the pipeline MUST stop and instruct the user to run finish manually.
 - **FR-013**: When a spec has no acceptance scenarios, the smoke test command MUST report this and exit without error.
@@ -140,3 +140,11 @@ The smoke test records its results (scenarios tested, pass/fail per scenario, ti
 - The `/run` skill exists and can launch common project types. When it's not available, the smoke test falls back to its own auto-detection.
 - The smoke test runs within a single Claude Code session. It does not persist across sessions or use cron/loop for continuity.
 - The ship pipeline stop behavior is a deliberate design choice that trades full autonomy for safety. Users who want fully unattended pipelines must accept the pause point.
+
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: How does the smoke test fit into the ship pipeline's fixed 0-8 stage indexing? → A: Smoke test replaces the finish stage (index 8). The pipeline becomes: specify(0), clarify(1), review-spec(2), plan(3), tasks(4), review-plan(5), implement(6), review-code(7), smoke-test(8). Finish is no longer a pipeline stage; the user runs it manually.
+- Q: In the regular (non-ship) flow, what ordering is recommended? → A: Smoke test before deep review. The user runs `/speckit-spex-smoke-test` after implementation, then `/speckit-spex-gates-review-code`, then `/speckit-spex-finish`. Verify/stamp reminds about the smoke test if it wasn't run.
+- Q: Should the smoke test clean up the app process it started when the session ends? → A: Yes. If the smoke test started the app, it must attempt to stop it (kill the background process) when all scenarios are complete or the user exits early.
