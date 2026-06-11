@@ -100,6 +100,9 @@ A developer uses watch mode. The `.specify/.spex-state` file persists after PR c
 - **FR-013**: The watch loop MUST detect externally closed/merged PRs and exit cleanly.
 - **FR-014**: The status line script (`spex-ship-statusline.sh`) MUST render watch mode state, showing PR number, elapsed time, and last CI status.
 - **FR-015**: The ship pipeline (`/speckit-spex-ship`) MUST pass `--watch` through to the finish stage when `--create-pr` is also set.
+- **FR-016**: `--watch` MUST work when pushing to an existing PR (Option B1 in finish), not only when creating a new PR. The watch loop reads the PR number from the push target.
+- **FR-017**: Fix attempts during watch mode MUST be scoped to files included in the PR diff. The watch loop MUST NOT make changes outside the PR's changed file set.
+- **FR-018**: When watch mode invokes collab triage, it MUST pass the current `ask` level from the ship pipeline state to control triage autonomy (autonomous in `smart`/`never`, interactive in `always`).
 
 ### Key Entities
 
@@ -122,4 +125,12 @@ A developer uses watch mode. The `.specify/.spex-state` file persists after PR c
 - The `gh` CLI is available and authenticated for watch mode. This is already a requirement for other spex features (finish PR creation, collab triage).
 - CI checks appear on the PR within 5 minutes of pushing. If no checks appear, watch mode assumes no CI is configured.
 - The watch loop runs within a single Claude Code session. Cross-session persistence (via `/loop` or cron) is used to keep the session alive but the watch logic itself is stateless between polls (reads state file each iteration).
-- Fix attempts during watch mode are limited to the same scope as the original implementation (same files, same test suite). The watch loop does not make architectural changes.
+- Fix attempts during watch mode are limited to files in the PR diff. The watch loop does not make architectural changes or touch files outside the changeset.
+
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: Should `--watch` work only when creating a new PR, or also when pushing to an existing PR? → A: Both. The watch loop reads the PR number from whichever path is taken (B1 existing or B2 new).
+- Q: What is the scope of fix attempts during watch mode? → A: Limited to files in the PR diff. No changes outside the PR's changed file set.
+- Q: When watch mode invokes collab triage, should triage run autonomously or interactively? → A: It inherits the current `ask` level from the ship pipeline state.
