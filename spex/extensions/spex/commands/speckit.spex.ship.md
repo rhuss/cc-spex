@@ -17,7 +17,7 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
 1. `ask` is `always` AND a review stage has findings requiring user input.
 2. A blocker error occurs (test failure, syntax error, security issue).
-3. All 9 stages have completed.
+3. Stage 8 (smoke-test) is reached: the smoke test is always interactive and the pipeline stops after it completes. The user runs `/speckit-spex-finish` manually.
 
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
@@ -154,11 +154,11 @@ ERROR: Cannot specify a brainstorm file with --resume. The brainstorm file is re
 
 ### Valid Stage Names for --start-from
 
-The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `finish`.
+The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `smoke-test`.
 
 If an invalid stage name is provided, fail with:
 ```
-ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, finish
+ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, smoke-test
 ```
 
 ## Brainstorm File Resolution
@@ -334,7 +334,7 @@ When `--start-from <stage>` is set:
 
 ### Rule 1: Every stage runs, in order, no exceptions
 
-When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, verify.
+When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, smoke-test.
 
 You MUST NOT:
 - Skip a stage because its output artifact already exists
@@ -423,7 +423,7 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan and task quality |
 | 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
 | 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review |
-| 8 | `finish` | `/speckit-spex-finish` (Subagent) | Verify + merge/PR |
+| 8 | `smoke-test` | `/speckit-spex-smoke-test` (Interactive) | Interactive smoke test, then pipeline stops |
 
 ### Suppressing extension overlay gates
 
@@ -689,55 +689,43 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
-### Stage 8: Finish (Forked Subagent)
+### Stage 8: Smoke Test (Always Interactive)
 
-This stage runs in an isolated subagent for clean final verification and completion without accumulated context from prior stages. It combines verification (stamp) with merge/PR options into a single step.
+This stage runs the interactive smoke test, which walks through acceptance scenarios from the spec. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped because no scenarios exist), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
 
 1. Resolve the spec directory:
    ```bash
    PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   SPEC_FILE="$FEATURE_DIR/spec.md"
    ```
 
-2. Determine if `--create-pr` and `--watch` should be passed:
+2. Check if the spec has acceptance scenarios:
    ```bash
-   CREATE_PR_FLAG=""
-   WATCH_FLAG=""
-   if [ -f ".specify/.spex-state" ]; then
-     CREATE_PR=$(jq -r '.create_pr // false' .specify/.spex-state 2>/dev/null)
-     if [ "$CREATE_PR" = "true" ]; then
-       CREATE_PR_FLAG="--create-pr"
-       WATCH_FLAG="--watch"
-     fi
-   fi
-   FINISH_FLAGS="$CREATE_PR_FLAG $WATCH_FLAG"
+   HAS_SCENARIOS=$(grep -c '\*\*Given\*\*' "$SPEC_FILE" 2>/dev/null || echo 0)
    ```
 
-   Note: `--watch` is passed automatically when `--create-pr` is set, since watch mode requires a PR. If the user ran ship without `--create-pr`, neither flag is passed and finish behaves as before.
+3. **If scenarios exist** (`HAS_SCENARIOS` > 0):
 
-3. Spawn a subagent using the Agent tool with the following prompt:
+   Invoke `/speckit-spex-smoke-test` directly (not as a subagent, because the smoke test must be interactive with the user). The smoke test always pauses for user input regardless of the pipeline's `ask` level.
 
+   After the smoke test completes, output:
    ```
-   You are executing the finish stage of a speckit-spex-ship pipeline.
-
-   Feature directory: <FEATURE_DIR>
-   Spec: <FEATURE_DIR>/spec.md
-
-   Invoke /speckit-spex-finish <FINISH_FLAGS> for final verification and completion.
-   This runs tests, validates spec compliance, checks for drift,
-   then presents merge/PR options to the user.
-   The .specify/.spex-state file exists with status "running".
-   If in a worktree, the user will be prompted for the completion action
-   (the finish command never auto-merges or auto-deletes worktrees).
-   If --watch is passed, the finish command will monitor CI status after
-   PR creation and attempt to fix failures automatically.
-
-   Report pass/fail and completion action taken.
+   Pipeline complete through review and smoke test.
+   Run `/speckit-spex-finish` to merge or create a PR.
    ```
 
-4. When the subagent returns, capture its summary.
-5. If finish passes (verification + completion action succeeded): the finish command already cleaned up the state file during worktree removal. Run `"$SHIP_STATE" advance` only if the state file still exists (`[ -f "$SHIP_STATE_FILE" ]`); otherwise, the pipeline is already complete. Report the subagent's summary as the final pipeline result.
-6. If finish fails (verification did not pass), apply **Oversight Decision Logic**.
+4. **If no scenarios exist** (`HAS_SCENARIOS` = 0):
+
+   Skip the smoke test and output:
+   ```
+   Pipeline complete through review. No acceptance scenarios for smoke test.
+   Run `/speckit-spex-finish` to merge or create a PR.
+   ```
+
+5. Run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 8 outputs `PIPELINE_COMPLETE`.
+
+6. **STOP the pipeline.** Do NOT invoke `/speckit-spex-finish` automatically. The user decides when and how to complete the feature.
 
 ## Oversight Decision Logic
 
@@ -871,10 +859,12 @@ All stages passed successfully:
   5. review-plan - plan validated
   6. implement   - code implemented
   7. review-code - code reviewed
-  8. finish      - verified + completed
+  8. smoke-test  - acceptance scenarios verified
+
+Run `/speckit-spex-finish` to merge or create a PR.
 ```
 
-3. Report the action taken by finish (merge, PR created, or kept as-is) from the subagent summary.
+3. The pipeline stops here. The user runs `/speckit-spex-finish` manually for final verification and merge/PR.
 
 ## Integration
 
@@ -892,6 +882,8 @@ All stages passed successfully:
 - `/speckit-spex-gates-review-plan` (Stage 5)
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
-- `/speckit-spex-finish` (Stage 8)
+
+**This skill invokes (interactive, always pauses):**
+- `/speckit-spex-smoke-test` (Stage 8)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`

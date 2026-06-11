@@ -264,6 +264,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
+| `/speckit-spex-smoke-test` | spex | Interactive acceptance scenario walkthrough from spec (always interactive, even in ship pipeline) |
 | `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion). `--watch`: monitor CI after PR creation, auto-fix failures |
 | `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
@@ -295,7 +296,7 @@ The pipeline runs nine stages in strict order:
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
 | 6 | implement | Execute implementation following task plan (with per-task test checkpoints) |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | finish | Verify + merge/PR (tests, hygiene, drift, then complete). With `--create-pr`: monitors CI via `--watch` |
+| 8 | smoke-test | Interactive acceptance scenario walkthrough (always pauses). Pipeline stops here; run `/speckit-spex-finish` manually |
 
 **Oversight levels** control how findings are handled:
 

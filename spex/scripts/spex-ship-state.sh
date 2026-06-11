@@ -18,7 +18,7 @@ set -euo pipefail
 
 STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
 
-STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "finish")
+STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "smoke-test")
 
 stage_index() {
   local name="$1"
@@ -292,6 +292,49 @@ do_watch_cleanup() {
   echo "WATCH_COMPLETE"
 }
 
+do_smoke_test_record() {
+  local completed="false" scenarios=0 total=0 skipped=0
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --completed) shift; completed="${1:-false}" ;;
+      --scenarios) shift; scenarios="${1:-0}" ;;
+      --total) shift; total="${1:-0}" ;;
+      --skipped) shift; skipped="${1:-0}" ;;
+      *) echo "ERROR: Unknown flag '$1'" >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  if [ ! -f "$STATE_FILE" ]; then
+    # No state file exists; create a minimal one with smoke test results
+    cat > "$STATE_FILE" <<EOF
+{
+  "smoke_test_completed": $completed,
+  "smoke_test_at": "$(now_iso)",
+  "smoke_test_scenarios": $scenarios,
+  "smoke_test_total": $total,
+  "smoke_test_skipped": $skipped
+}
+EOF
+    echo "SMOKE_TEST_RECORDED"
+    return 0
+  fi
+
+  # Merge smoke test fields into existing state file
+  local tmp
+  tmp=$(mktemp)
+  jq --argjson completed "$completed" \
+     --arg at "$(now_iso)" \
+     --argjson scenarios "$scenarios" \
+     --argjson total "$total" \
+     --argjson skipped "$skipped" \
+     '.smoke_test_completed = $completed | .smoke_test_at = $at | .smoke_test_scenarios = $scenarios | .smoke_test_total = $total | .smoke_test_skipped = $skipped' \
+     "$STATE_FILE" > "$tmp"
+  mv "$tmp" "$STATE_FILE"
+  echo "SMOKE_TEST_RECORDED"
+}
+
 case "${1:-}" in
   create)
     shift
@@ -312,6 +355,10 @@ case "${1:-}" in
   cleanup)
     do_cleanup
     ;;
+  smoke-test-record)
+    shift
+    do_smoke_test_record "$@"
+    ;;
   watch-start)
     shift
     do_watch_start "$@"
@@ -324,7 +371,7 @@ case "${1:-}" in
     do_watch_cleanup
     ;;
   *)
-    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|watch-start|watch-update|watch-cleanup}" >&2
+    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|smoke-test-record|watch-start|watch-update|watch-cleanup}" >&2
     exit 2
     ;;
 esac

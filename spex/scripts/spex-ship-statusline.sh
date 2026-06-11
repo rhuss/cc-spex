@@ -186,10 +186,26 @@ render_flow() {
     fi
   fi
 
+  # Smoke test indicator (shown when smoke test results exist in state)
+  local gate_st=""
+  local smoke_completed
+  smoke_completed=$(echo "$STATE_JSON" | jq -r '.smoke_test_completed // empty' 2>/dev/null)
+  if [ "$smoke_completed" = "true" ]; then
+    gate_st="${GREEN}ST ✓${RESET}"
+  elif [ "$smoke_completed" = "false" ]; then
+    local st_done st_total
+    st_done=$(echo "$STATE_JSON" | jq -r '.smoke_test_scenarios // 0' 2>/dev/null)
+    st_total=$(echo "$STATE_JSON" | jq -r '.smoke_test_total // 0' 2>/dev/null)
+    gate_st="${YELLOW}ST ${st_done}/${st_total}${RESET}"
+  fi
+
   # Build output
   local gate_section="${gate_c} ${gate_s} ${gate_p} ${gate_r}"
   if [ -n "$gate_t" ]; then
     gate_section="${gate_section} ${gate_t}"
+  fi
+  if [ -n "$gate_st" ]; then
+    gate_section="${gate_section} ${gate_st}"
   fi
   printf "🧬 ${CYAN}${BOLD}spex${RESET}${marks} ${DIM}|${RESET} ${gate_section}"
   if [ "$all_done" = true ]; then
@@ -224,6 +240,7 @@ render_ship() {
     review-plan)  EMOJI="✅"; COLOR="$MAGENTA";;
     implement)    EMOJI="🔨"; COLOR="$YELLOW";;
     review-code)  EMOJI="🔎"; COLOR="$MAGENTA";;
+    smoke-test)   EMOJI="🧪"; COLOR="$YELLOW";;
     stamp|finish) EMOJI="🏁"; COLOR="$GREEN";;
     done)         EMOJI="✅"; COLOR="$GREEN";;
     *)            EMOJI="⚙"; COLOR="$WHITE";;

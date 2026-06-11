@@ -105,6 +105,41 @@ Use `speckit-spex-brainstorm` or `/speckit-specify` to create one first.
 
 ## The Process
 
+### 0. Smoke Test Reminder
+
+Before running verification, check if the spec has acceptance scenarios and whether a smoke test has been recorded:
+
+```bash
+# Check if spec has acceptance scenarios
+SPEC_FILE=""
+PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null) || true
+if [ -n "$PREREQS" ]; then
+  FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR' 2>/dev/null)
+  SPEC_FILE="$FEATURE_DIR/spec.md"
+fi
+
+HAS_SCENARIOS=0
+if [ -n "$SPEC_FILE" ] && [ -f "$SPEC_FILE" ]; then
+  HAS_SCENARIOS=$(grep -c '\*\*Given\*\*' "$SPEC_FILE" 2>/dev/null || echo 0)
+fi
+
+# Check if smoke test was recorded
+SMOKE_TEST_DONE=false
+if [ -f ".specify/.spex-state" ]; then
+  SMOKE_TEST_DONE=$(jq -r '.smoke_test_completed // false' .specify/.spex-state 2>/dev/null)
+fi
+```
+
+**If the spec has acceptance scenarios AND no smoke test was recorded** (`HAS_SCENARIOS` > 0 AND `SMOKE_TEST_DONE` is not `true`):
+
+Display a reminder (informational only, does NOT block verification):
+```
+NOTE: Acceptance scenarios exist but no smoke test was recorded.
+Consider running `/speckit-spex-smoke-test` first to validate runtime behavior.
+```
+
+**If a smoke test was recorded** or **no acceptance scenarios exist**: proceed silently.
+
 ### 1. Run Tests
 
 **Execute all tests:**

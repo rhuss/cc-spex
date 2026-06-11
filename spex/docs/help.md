@@ -141,6 +141,9 @@ spex COMMANDS (helpers and configuration)
                                 Flags: --ask always|smart|never, --create-pr,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
+  /speckit-spex-smoke-test    Interactive acceptance scenario walkthrough from spec
+                                Always interactive (even in ship pipeline)
+                                Records results for verify/stamp reminder
   /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
                                 Flags: --create-pr, --watch
                                 --watch: monitor CI after PR, auto-fix failures,
@@ -219,7 +222,9 @@ BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
 
   Per-task test checkpoints run during ship Stage 6 (implement).
   Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
-  Watch mode runs during ship Stage 8 (finish) when --create-pr is set.
+  Ship Stage 8 is now smoke-test (interactive acceptance scenarios).
+  The pipeline stops after smoke-test; run /speckit-spex-finish manually.
+  Watch mode runs during finish (when --create-pr is set after manual finish).
   Watch monitors CI, auto-fixes failures (max 2 attempts), and triages
   review comments when spex-collab is enabled.
 

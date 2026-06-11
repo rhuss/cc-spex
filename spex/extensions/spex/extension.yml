@@ -43,6 +43,9 @@ provides:
     - name: speckit.spex.flow-state
       file: commands/speckit.spex.flow-state.md
       description: "Create flow state for step-by-step SDD workflow tracking"
+    - name: speckit.spex.smoke-test
+      file: commands/speckit.spex.smoke-test.md
+      description: "Interactive spec-driven acceptance scenario walkthrough"
     - name: speckit.spex.clear
       file: commands/speckit.spex.clear.md
       description: "Clear spex state: dismiss status line, remove stale flow/ship artifacts"

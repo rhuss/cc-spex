@@ -97,7 +97,7 @@ The smoke test records its results (scenarios tested, pass/fail per scenario, ti
 
 ### Functional Requirements
 
-- **FR-001**: The `/speckit-spex-smoke-test` command MUST parse all Given/When/Then acceptance scenarios from the feature spec.
+- **FR-001**: The `/speckit-spex-smoke-test` command MUST parse all Given/When/Then acceptance scenarios from the feature spec. Parsing rules: scan only the "User Scenarios & Testing" section (and its subsections) for numbered list items containing bold `**Given**`/`**When**`/`**Then**` keywords. Each numbered item is one scenario. The "Edge Cases" section MUST NOT be scanned for scenarios. Each parsed scenario consists of the full text of the numbered list item.
 - **FR-002**: For each scenario, the command MUST explain the step it will execute, execute it, display the result, and wait for user confirmation before proceeding.
 - **FR-003**: The command MUST auto-detect the project type and start command using the same detection logic as the verify command (Makefile, package.json, go.mod, etc.).
 - **FR-004**: When the project cannot be started automatically, the command MUST ask the user to start it manually and confirm when ready.
@@ -106,11 +106,11 @@ The smoke test records its results (scenarios tested, pass/fail per scenario, ti
 - **FR-007**: The command MUST record smoke test results in `.specify/.spex-state` with fields: `smoke_test_completed` (boolean), `smoke_test_at` (timestamp), `smoke_test_scenarios` (count completed), `smoke_test_total` (total count).
 - **FR-008**: `/speckit-spex-gates-verify` MUST display a reminder when acceptance scenarios exist in the spec but no smoke test is recorded in the state file.
 - **FR-009**: The verify reminder MUST be informational only and MUST NOT block verification.
-- **FR-010**: The ship pipeline MUST invoke `/speckit-spex-smoke-test` as the final stage (replacing the current finish stage). The pipeline stage sequence becomes: implement (6) → review-code (7) → smoke-test (8). Finish is no longer a pipeline stage; the user invokes it manually after the pipeline stops.
+- **FR-010**: The ship pipeline MUST invoke `/speckit-spex-smoke-test` as the final stage (replacing the current finish stage). The pipeline stage sequence becomes: specify(0), clarify(1), review-spec(2), plan(3), tasks(4), review-plan(5), implement(6), review-code(7), smoke-test(8). Finish is no longer a pipeline stage; the user invokes it manually after the pipeline stops. The `--start-from` flag MUST accept `smoke-test` instead of `finish`, and the valid stage names list and error message template in the ship command MUST be updated accordingly.
 - **FR-011**: The smoke test stage in the ship pipeline MUST always be interactive, regardless of the `ask` level.
 - **FR-012**: The ship pipeline MUST NOT invoke `/speckit-spex-finish` automatically. After the smoke test (or after review-code if no scenarios exist), the pipeline MUST stop and instruct the user to run finish manually.
 - **FR-013**: When a spec has no acceptance scenarios, the smoke test command MUST report this and exit without error.
-- **FR-014**: The command MUST delegate app startup to the `/run` skill when available, falling back to auto-detection when `/run` is not available.
+- **FR-014**: The command MUST delegate app startup to the `/run` skill when available (detected at runtime via the active skill list, not a hard installation dependency), falling back to its own auto-detection logic (Makefile, package.json, go.mod, etc.) when `/run` is not available.
 - **FR-015**: For library projects (no runnable app), the command MUST adapt by suggesting function-call or test-based verification and asking the user how to exercise the behavior.
 
 ### Non-Functional Requirements
