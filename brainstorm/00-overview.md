@@ -22,7 +22,8 @@ Last updated: 2026-06-11
 | 13 | 2026-05-30 | pr-review-triage | active | - | - |
 | 14 | 2026-06-02 | collab-triage-lifecycle | active | - | - |
 | 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
-| 17 | 2026-06-11 | backpressure-loops | active | - | - |
+| 17 | 2026-06-11 | backpressure-loops | spec-created | 024 | - |
+| 18 | 2026-06-11 | guided-smoke-test | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -47,6 +48,11 @@ Last updated: 2026-06-11
 - State file lifecycle for watch mode (survive past PR creation, eventual cleanup) (from #17)
 - Watch mode merge conflict handling (rebase against target branch?) (from #17)
 - Ship pipeline integration: auto-enter watch mode after finish? (from #17)
+- Smoke test for projects that can't be started locally (cloud, DB, external services)? (from #18)
+- Smoke test results: persistent file (like REVIEW-CODE.md) or state file only? (from #18)
+- Ship pipeline stop behavior: explicit next-step instructions or silent stop? (from #18)
+- Smoke test interaction with existing `/run` skill: delegate or independent? (from #18)
+- Marking acceptance scenarios as "manual only" vs "automatable" in spec? (from #18)
 
 ## Parked Ideas
 (none)

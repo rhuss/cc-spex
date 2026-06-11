@@ -1,7 +1,7 @@
 # Brainstorm: Backpressure Loops for Implementation and Post-PR
 
 **Date:** 2026-06-11
-**Status:** active
+**Status:** spec-created (specs/024-backpressure-loops)
 
 ## Problem Framing
 
