@@ -73,10 +73,13 @@ Invoke `/speckit-spex-gates-verify` (the full verification gate). This runs:
 
 ## Phase 2: Commit Outstanding Changes
 
-Stage and commit any remaining tracked modifications:
+Stage and commit ALL changes, including untracked new files created during implementation:
 
 ```bash
-git add -u
+# IMPORTANT: Use git add -A (not -u) to catch untracked files.
+# Implementation subagents may create new files that were never staged.
+# Using -u would silently lose these files on worktree removal.
+git add -A
 if ! git diff --cached --quiet; then
   git commit -m "chore: final changes before merge
 
@@ -84,7 +87,7 @@ Assisted-By: 🤖 Claude Code"
 fi
 ```
 
-If the working tree is clean, skip this step.
+If the working tree is clean (no staged or untracked changes), skip this step.
 
 ## Phase 3: Context Detection
 
@@ -178,7 +181,30 @@ git merge "$CURRENT_BRANCH" -m "Merge branch '$CURRENT_BRANCH'
 Assisted-By: 🤖 Claude Code" 2>&1
 ```
 
-After merge succeeds, clean up state files BEFORE removing the worktree (state files live inside the worktree directory and become inaccessible after removal):
+After merge succeeds, check for uncommitted changes in the worktree BEFORE removing it:
+
+```bash
+# Safety check: ensure no uncommitted files remain in the worktree.
+# The implementation subagent may have created files that Phase 2 missed.
+cd "$WORKTREE_PATH"
+UNCOMMITTED=$(git status --porcelain 2>/dev/null | grep -v -E '^\?\? \.specify/' || true)
+if [ -n "$UNCOMMITTED" ]; then
+  echo "WARNING: Worktree has uncommitted changes that would be lost:"
+  echo "$UNCOMMITTED"
+  git add -A
+  git commit -m "chore: rescue uncommitted files before worktree removal
+
+Assisted-By: 🤖 Claude Code"
+  # Re-merge the new commit into the default branch
+  cd "$MAIN_WORKTREE"
+  git merge --ff-only "$CURRENT_BRANCH" 2>&1 || git merge "$CURRENT_BRANCH" -m "Merge rescued commit from '$CURRENT_BRANCH'
+
+Assisted-By: 🤖 Claude Code" 2>&1
+fi
+cd "$MAIN_WORKTREE"
+```
+
+Then clean up state files BEFORE removing the worktree (state files live inside the worktree directory and become inaccessible after removal):
 ```bash
 # Clean state while worktree still exists
 rm -f "$WORKTREE_PATH/.specify/.spex-state"
