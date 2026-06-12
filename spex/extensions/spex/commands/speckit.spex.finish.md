@@ -291,6 +291,19 @@ if [ "$LABELS_ENABLED" = "true" ]; then
   LABEL_FLAG="--label ${IMPL_LABEL}"
 fi
 
+# Exclude brainstorm files from the PR branch.
+# Brainstorms belong on main, not in feature PRs.
+BRAINSTORM_FILES=$(git diff "$DEFAULT_BRANCH"..."$BRANCH" --name-only | grep '^brainstorm/' || true)
+if [ -n "$BRAINSTORM_FILES" ]; then
+  git reset HEAD -- brainstorm/ >/dev/null 2>&1 || true
+  git checkout -- brainstorm/ >/dev/null 2>&1 || true
+  if ! git diff --cached --quiet 2>/dev/null; then
+    git commit -m "chore: exclude brainstorm files from PR branch
+
+Assisted-By: 🤖 Claude Code"
+  fi
+fi
+
 git push -u "$REMOTE" "$BRANCH"
 
 gh pr create ${REPO_FLAG} \
