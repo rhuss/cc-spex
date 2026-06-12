@@ -761,9 +761,25 @@ This stage runs the interactive smoke test, which walks through acceptance scena
 
 3. **If scenarios exist** (`HAS_SCENARIOS` > 0):
 
-   Invoke `/speckit-spex-smoke-test` directly (not as a subagent, because the smoke test must be interactive with the user). The smoke test always pauses for user input regardless of the pipeline's `ask` level.
+   Spawn the smoke test as a **fresh-context subagent** using the Agent tool. This ensures the smoke test has no implementation bias (it doesn't remember writing the code). The subagent is still interactive: it uses AskUserQuestion to confirm each scenario with the user.
 
-   After the smoke test completes, output:
+   ```
+   You are executing the smoke test stage of a speckit-spex-ship pipeline.
+
+   Feature directory: <FEATURE_DIR>
+   Spec: <FEATURE_DIR>/spec.md
+
+   Invoke /speckit-spex-smoke-test to walk through acceptance scenarios interactively.
+   The .specify/.spex-state file exists with status "running" (pipeline mode).
+
+   You have NO context about how this code was implemented. Approach each
+   scenario with fresh eyes. Execute the steps, observe the actual behavior,
+   and let the user confirm whether each scenario passes or fails.
+
+   Report the smoke test summary when done.
+   ```
+
+   After the subagent returns, output:
    ```
    Pipeline complete through review and smoke test.
    Run `/speckit-spex-finish` to merge or create a PR.
@@ -937,7 +953,7 @@ Run `/speckit-spex-finish` to merge or create a PR.
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
 
-**This skill invokes (interactive, always pauses):**
-- `/speckit-spex-smoke-test` (Stage 8)
+**This skill invokes (forked subagent, interactive, always pauses):**
+- `/speckit-spex-smoke-test` (Stage 8, fresh context for unbiased testing)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`

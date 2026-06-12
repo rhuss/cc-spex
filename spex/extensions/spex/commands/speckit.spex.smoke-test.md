@@ -22,6 +22,20 @@ if [ -f ".specify/.spex-state" ]; then
 fi
 ```
 
+## Context Freshness
+
+**When NOT in pipeline mode**: If this command is invoked directly (not from the ship pipeline), display this recommendation before proceeding:
+
+```
+Tip: For best results, run /clear before the smoke test to remove
+implementation context. A fresh context catches issues that familiarity
+with the code masks.
+```
+
+This is informational only. Do not block or require confirmation.
+
+**When in pipeline mode**: Skip this message (the ship pipeline handles context isolation via subagent).
+
 ## Prerequisites
 
 ### Spec Resolution
