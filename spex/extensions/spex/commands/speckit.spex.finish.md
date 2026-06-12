@@ -204,10 +204,13 @@ fi
 cd "$MAIN_WORKTREE"
 ```
 
-Then clean up state files BEFORE removing the worktree (state files live inside the worktree directory and become inaccessible after removal):
+Then clean up state files in BOTH locations: the worktree AND the main repo. The ship pipeline creates the state file in the main repo before the worktree exists, so both copies must be removed:
 ```bash
-# Clean state while worktree still exists
+# Clean state in the worktree (while it still exists)
 rm -f "$WORKTREE_PATH/.specify/.spex-state"
+# Clean state in the main worktree (created before worktree switch)
+rm -f "$MAIN_WORKTREE/.specify/.spex-state"
+# Clean state via absolute path (ship pipeline env var)
 if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
   rm -f "$SHIP_STATE_FILE"
 fi
