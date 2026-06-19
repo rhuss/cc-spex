@@ -58,6 +58,45 @@ if [ "$WATCH_MODE" = true ]; then
 fi
 ```
 
+## Pre-Execution Checks
+
+**Check for extension hooks (before finish)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_finish` key
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- Convert hook command names from dot notation to hyphen notation for slash command invocation (e.g., `speckit.spex.smoke-test` becomes `/speckit-spex-smoke-test`)
+- Determine prompt behavior based on autonomous mode: when `.specify/.spex-state` exists with `ask` of `smart` or `never`, optional hooks execute without prompting (treated as mandatory). When `ask` is `"always"` or no state file exists, optional hooks prompt as normal.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`) in interactive mode:
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Optional hook** (`optional: true`) in autonomous mode (`ask` is `smart` or `never`):
+    Treat as mandatory (auto-execute without prompting).
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to Phase 1 Verification.
+    ```
+  - If a mandatory hook fails or is declined by the user, STOP. Output an error message indicating which hook failed and do NOT proceed to Phase 1 Verification.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
 ## Phase 1: Verification
 
 Invoke `/speckit-spex-gates-verify` (the full verification gate). This runs:
@@ -403,7 +442,49 @@ fi
 
 This removes the state file, which dismisses the status line (the statusline script exits silently when no state file exists). Works for both ship mode (where `SHIP_STATE_FILE` may point to a worktree path) and flow mode (where the state file is always relative). In the worktree merge path, cleanup happens before the worktree directory is deleted to avoid ENOENT errors.
 
-**After cleanup (when watch mode is NOT active), the command is complete. STOP here.**
+**After cleanup (when watch mode is NOT active), execute after_finish hooks, then the command is complete.**
+
+## Post-Completion Hooks
+
+**Check for extension hooks (after finish)**:
+
+This section runs after Phase 6 cleanup completes, but only when watch mode is NOT active. When watch mode IS active (`WATCH_MODE` is true and `ACTION_TAKEN` is `"pr"`), skip this section entirely; the after_finish hooks fire during the watch cleanup paths instead (after watch mode exits in Phase 7).
+
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.after_finish` key
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- Convert hook command names from dot notation to hyphen notation for slash command invocation (e.g., `speckit.spex.flow-state` becomes `/speckit-spex-flow-state`)
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`) in interactive mode:
+    ```
+    ## Extension Hooks
+
+    **Optional Post-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Optional hook** (`optional: true`) in autonomous mode (`ask` is `smart` or `never`):
+    Treat as mandatory (auto-execute without prompting).
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Post-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding.
+    ```
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+**After post-completion hooks execute (or are skipped), the command is complete. STOP here.**
 
 ## Phase 7: Watch Mode (Post-PR Monitoring Loop)
 

@@ -162,13 +162,17 @@ CLOSING OUT A FEATURE (after review passes)
 
   After /speckit-spex-review-code (or deep-review) passes:
 
-    1. /clear                    Free context for final verification
-    2. /speckit-spex-finish       Verify + merge/PR (all-in-one)
+    1. /speckit-spex-smoke-test    Walk through acceptance scenarios
+    2. /clear                      Free context for final verification
+    3. /speckit-spex-finish         Verify + merge/PR (all-in-one)
 
-  /speckit-spex-finish runs all verification gates (tests, spec compliance,
-  drift check), then offers merge/PR/keep options with automatic worktree
-  cleanup. If a PR already exists for the branch, the "create PR" option
-  becomes "push to PR #N" instead. One command to close out a feature.
+  /speckit-spex-finish checks for before_finish hooks first (e.g., the
+  smoke test prompt fires automatically via hook if not run manually).
+  Then it runs all verification gates (tests, spec compliance, drift
+  check), offers merge/PR/keep options with automatic worktree cleanup,
+  and fires after_finish hooks (e.g., flow state cleanup). If a PR
+  already exists for the branch, the "create PR" option becomes
+  "push to PR #N" instead. One command to close out a feature.
 
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension

@@ -414,8 +414,9 @@ After code review passes, tell the user:
 
 ```
 Code review complete. To close out this feature:
-  1. /clear                    (free context for final gate)
-  2. /speckit-spex-finish       (verify + merge/PR, all-in-one)
+  1. /speckit-spex-smoke-test    (walk through acceptance scenarios)
+  2. /clear                      (free context for final gate)
+  3. /speckit-spex-finish         (verify + merge/PR, all-in-one)
 ```
 
 This prompt is mandatory on every PASS exit. The user needs to know how to finalize.

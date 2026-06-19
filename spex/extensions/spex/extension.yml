@@ -95,6 +95,11 @@ hooks:
     args: "implemented"
     optional: false
     description: "Mark implementation complete in flow state"
+  before_finish:
+    command: speckit.spex.smoke-test
+    optional: true
+    prompt: "Run interactive smoke test before finishing?"
+    description: "Walk through spec acceptance scenarios interactively"
   after_finish:
     command: speckit.spex.flow-state
     args: "cleanup"

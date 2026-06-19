@@ -20,9 +20,9 @@
 
 **Independent Test**: Run `/speckit-spex-finish` with a `before_finish` hook registered in extensions.yml and verify the prompt appears before verification.
 
-- [ ] T001 [US1] Read the hook-reading boilerplate from the core spec-kit implement template. Reference: run `cat /Users/rhuss/.local/share/uv/tools/specify-cli/lib/python3.12/site-packages/specify_cli/core_pack/commands/implement.md` and extract the "Pre-Execution Checks" section (lines 16-48). This is the pattern to copy.
-- [ ] T002 [US1] Add "## Pre-Execution Checks" section to `spex/extensions/spex/commands/speckit.spex.finish.md` BEFORE the existing "## Phase 1: Verification" section. The section must: (a) check if `.specify/extensions.yml` exists, (b) read `hooks.before_finish` entries, (c) filter out `enabled: false` hooks, (d) skip hooks with non-empty `condition` fields, (e) convert dot-notation command names to hyphen notation for slash commands, (f) for optional hooks output the prompt text, (g) for mandatory hooks auto-execute, (h) if extensions.yml missing or malformed skip silently. Add autonomous mode handling: when `.specify/.spex-state` exists with `ask` of `smart` or `never`, optional hooks execute without prompting.
-- [ ] T003 [US1] Add `before_finish` hook registration to `spex/extensions/spex/extension.yml` under the `hooks:` section. Add: `before_finish:` with `command: speckit.spex.smoke-test`, `optional: true`, `prompt: "Run interactive smoke test before finishing?"`, `description: "Walk through spec acceptance scenarios interactively"`.
+- [x] T001 [US1] Read the hook-reading boilerplate from the core spec-kit implement template. Reference: run `cat /Users/rhuss/.local/share/uv/tools/specify-cli/lib/python3.12/site-packages/specify_cli/core_pack/commands/implement.md` and extract the "Pre-Execution Checks" section (lines 16-48). This is the pattern to copy.
+- [x] T002 [US1] Add "## Pre-Execution Checks" section to `spex/extensions/spex/commands/speckit.spex.finish.md` BEFORE the existing "## Phase 1: Verification" section. The section must: (a) check if `.specify/extensions.yml` exists, (b) read `hooks.before_finish` entries, (c) filter out `enabled: false` hooks, (d) skip hooks with non-empty `condition` fields, (e) convert dot-notation command names to hyphen notation for slash commands, (f) for optional hooks output the prompt text, (g) for mandatory hooks auto-execute, (h) if extensions.yml missing or malformed skip silently. Add autonomous mode handling: when `.specify/.spex-state` exists with `ask` of `smart` or `never`, optional hooks execute without prompting.
+- [x] T003 [US1] Add `before_finish` hook registration to `spex/extensions/spex/extension.yml` under the `hooks:` section. Add: `before_finish:` with `command: speckit.spex.smoke-test`, `optional: true`, `prompt: "Run interactive smoke test before finishing?"`, `description: "Walk through spec acceptance scenarios interactively"`.
 
 ## Phase 3: User Story 2 - after_finish Hook Support (P2)
 
@@ -30,7 +30,7 @@
 
 **Independent Test**: Verify the existing `after_finish` flow-state hook fires after finish completes.
 
-- [ ] T004 [US2] Add after_finish hook-reading logic to `spex/extensions/spex/commands/speckit.spex.finish.md` AFTER Phase 6 (State and Status Line Cleanup) and BEFORE Phase 7 (Watch Mode). Same pattern as T002 but reads `hooks.after_finish` entries. Only fires when watch mode is NOT active (`WATCH_MODE` is false or `ACTION_TAKEN` is not `"pr"`). When watch mode IS active, the after_finish hooks fire during the watch cleanup paths instead.
+- [x] T004 [US2] Add after_finish hook-reading logic to `spex/extensions/spex/commands/speckit.spex.finish.md` AFTER Phase 6 (State and Status Line Cleanup) and BEFORE Phase 7 (Watch Mode). Same pattern as T002 but reads `hooks.after_finish` entries. Only fires when watch mode is NOT active (`WATCH_MODE` is false or `ACTION_TAKEN` is not `"pr"`). When watch mode IS active, the after_finish hooks fire during the watch cleanup paths instead.
 
 ## Phase 4: User Story 3 - Next-Steps Text Updates (P3)
 
@@ -38,15 +38,15 @@
 
 **Independent Test**: Run review-code or deep-review and verify `/speckit-spex-smoke-test` appears in the next-steps output.
 
-- [ ] T005 [P] [US3] Update the "Next Steps" section in `spex/extensions/spex-gates/commands/speckit.spex-gates.review-code.md` (around line 416). Change the existing two-step list to three steps: (1) `/speckit-spex-smoke-test (walk through acceptance scenarios)`, (2) `/clear (free context for final gate)`, (3) `/speckit-spex-finish (verify + merge/PR, all-in-one)`.
-- [ ] T006 [P] [US3] Update the "Next Steps" section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` (around line 598). Same three-step list as T005.
+- [x] T005 [P] [US3] Update the "Next Steps" section in `spex/extensions/spex-gates/commands/speckit.spex-gates.review-code.md` (around line 416). Change the existing two-step list to three steps: (1) `/speckit-spex-smoke-test (walk through acceptance scenarios)`, (2) `/clear (free context for final gate)`, (3) `/speckit-spex-finish (verify + merge/PR, all-in-one)`.
+- [x] T006 [P] [US3] Update the "Next Steps" section in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` (around line 598). Same three-step list as T005.
 
 ## Phase 5: Polish & Documentation
 
 **Purpose**: Documentation updates per constitution requirement.
 
-- [ ] T007 [P] Update `README.md` to mention the `before_finish` hook for smoke test integration in the workflow description and the extension hooks section.
-- [ ] T008 [P] Update `spex/docs/help.md` to mention `/speckit-spex-smoke-test` in the workflow quick reference and note that it fires automatically via hook before finish.
+- [x] T007 [P] Update `README.md` to mention the `before_finish` hook for smoke test integration in the workflow description and the extension hooks section.
+- [x] T008 [P] Update `spex/docs/help.md` to mention `/speckit-spex-smoke-test` in the workflow quick reference and note that it fires automatically via hook before finish.
 
 ## Dependencies
 
