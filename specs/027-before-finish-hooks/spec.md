@@ -57,7 +57,7 @@ After a code review or deep review passes, the "next steps" output includes the 
 
 ### Edge Cases
 
-- What happens when the finish skill runs in autonomous mode (ship pipeline) with `before_finish` hooks? The hook prompt behavior should respect the `ask` level from the state file.
+- What happens when the finish skill runs in autonomous mode (ship pipeline) with `before_finish` hooks? When `ask` is `"smart"` or `"never"`, optional hooks execute automatically without prompting (treated as mandatory). When `ask` is `"always"`, optional hooks prompt as normal.
 - What happens when a mandatory `before_finish` hook fails? The finish command should stop and not proceed to verification.
 - What happens when `.specify/extensions.yml` does not exist or is malformed? The finish skill should skip hook checking silently and proceed normally.
 - What happens when the finish skill runs in a worktree? Hook reading should work identically regardless of CWD.
@@ -72,12 +72,13 @@ After a code review or deep review passes, the "next steps" output includes the 
 - **FR-004**: For mandatory hooks (`optional: false`), the system MUST execute the hook command automatically without prompting.
 - **FR-005**: Hooks with `enabled: false` MUST be skipped entirely.
 - **FR-006**: Hooks with a non-empty `condition` field MUST be skipped (condition evaluation is deferred to the HookExecutor).
-- **FR-007**: The hook-reading boilerplate MUST match the pattern used by core spec-kit commands (implement.md Pre-Execution Checks section is the reference).
+- **FR-007**: The hook-reading boilerplate MUST match the pattern used by core spec-kit commands. The reference pattern is in the installed implement template's Pre-Execution Checks section (inspect via `specify template show implement` or check the HookExecutor source in `.specify/`).
 - **FR-008**: The spex extension manifest (`spex/extensions/spex/extension.yml`) MUST register a `before_finish` hook for the smoke test command with `optional: true`.
 - **FR-009**: The review-code skill MUST include `/speckit-spex-smoke-test` in its next-steps output text.
 - **FR-010**: The deep-review skill MUST include `/speckit-spex-smoke-test` in its next-steps output text.
 - **FR-011**: When `.specify/extensions.yml` does not exist or cannot be parsed, hook checking MUST be skipped silently.
 - **FR-012**: Hook command names MUST be converted from dot notation to hyphen notation for slash command invocation (e.g., `speckit.spex.smoke-test` becomes `/speckit-spex-smoke-test`).
+- **FR-013**: When a mandatory hook (`optional: false`) fails or is declined by the user, the finish skill MUST stop and not proceed to Phase 1 verification. An error message MUST indicate which hook failed.
 
 ## Success Criteria *(mandatory)*
 
