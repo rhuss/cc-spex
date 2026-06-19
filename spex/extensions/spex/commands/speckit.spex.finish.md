@@ -130,38 +130,21 @@ If the working tree is clean (no staged or untracked changes), skip this step.
 
 ## Phase 3: Context Detection
 
-Detect the current environment to determine how to proceed:
+Detect the current environment by running the context detection script:
 
 ```bash
-GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-IN_WORKTREE=false
-if [ "$GIT_DIR" != "$REPO_ROOT/.git" ] && [ "$GIT_DIR" != ".git" ]; then
-  IN_WORKTREE=true
-fi
-
-CURRENT_BRANCH=$(git branch --show-current)
-
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-if [ -z "$DEFAULT_BRANCH" ]; then
-  for candidate in main master; do
-    if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
-      DEFAULT_BRANCH="$candidate"
-      break
-    fi
-  done
-fi
-DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-
-EXISTING_PR_NUMBER=""
-EXISTING_PR_URL=""
-if command -v gh >/dev/null 2>&1; then
-  EXISTING_PR_NUMBER=$(gh pr view "$CURRENT_BRANCH" --json number -q '.number' 2>/dev/null || true)
-  if [ -n "$EXISTING_PR_NUMBER" ]; then
-    EXISTING_PR_URL=$(gh pr view "$CURRENT_BRANCH" --json url -q '.url' 2>/dev/null || true)
-  fi
-fi
+FINISH_CONTEXT=$(find ~/.claude -name 'spex-finish-context.sh' 2>/dev/null | head -1)
+CTX=$("$FINISH_CONTEXT")
 ```
+
+Parse the JSON output to extract context variables:
+
+- `IN_WORKTREE`: boolean, whether the current directory is a git worktree
+- `CURRENT_BRANCH`: the current branch name
+- `DEFAULT_BRANCH`: the default branch (main/master)
+- `MAIN_WORKTREE`: path to the main worktree (only set when `IN_WORKTREE` is true)
+- `EXISTING_PR_NUMBER`: PR number if one exists for this branch (empty if none)
+- `EXISTING_PR_URL`: PR URL if one exists
 
 **If already on the default branch:** Report "Verification passed. You are already on the default branch; no merge needed." Clean up state file (`rm -f .specify/.spex-state`). STOP.
 
@@ -189,10 +172,9 @@ Options:
 
 **If in a worktree (`IN_WORKTREE` is true):**
 
-```bash
-MAIN_WORKTREE=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-WORKTREE_PATH=$(git rev-parse --show-toplevel)
+Use `MAIN_WORKTREE` and `REPO_ROOT` (as `WORKTREE_PATH`) from the Phase 3 context detection output.
 
+```bash
 # CRITICAL: Switch cwd to main worktree BEFORE any destructive operations.
 # If cwd is inside the worktree being removed, subsequent commands fail.
 cd "$MAIN_WORKTREE"
