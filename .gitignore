@@ -1,3 +1,6 @@
+# MCP server configuration (contains auth tokens)
+.mcp.json
+
 # Local Claude Code settings (user-specific)
 .claude/state/
 .claude/history/
