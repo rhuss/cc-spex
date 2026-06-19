@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-11
+Last updated: 2026-06-19
 
 ## Sessions
 
@@ -26,6 +26,7 @@ Last updated: 2026-06-11
 | 18 | 2026-06-11 | guided-smoke-test | spec-created | 025 | - |
 | 19 | 2026-06-11 | cross-feature-amendments | active | - | - |
 | 20 | 2026-06-11 | mid-impl-review | active | - | - |
+| 21 | 2026-06-19 | before-finish-hooks | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -64,6 +65,8 @@ Last updated: 2026-06-11
 - Task count handling after checkpoint fixes (restart or continue?) (from #20)
 - Checkpoint review scope: diff since last checkpoint or entire implementation so far? (from #20)
 - Cross-run statistics aggregation for per-project trends (from #20)
+- Should finish skill also gain after_finish hook boilerplate (fixing existing dead config)? (from #21)
+- Extract hook-reading boilerplate into shared include to avoid copy-pasting across extension commands? (from #21)
 
 ## Parked Ideas
 (none)
