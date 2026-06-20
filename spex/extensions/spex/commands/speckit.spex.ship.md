@@ -42,7 +42,7 @@ if [ "$GATES" = "0" ] || [ "$DEEP_REVIEW" = "0" ]; then
   echo "ERROR: speckit-spex-ship requires both spex-gates and spex-deep-review extensions."
   echo ""
   echo "Enable them with:"
-  echo "  specify extension enable spex-gates spex-deep-review"
+  echo "  specify extension enable spex-gates && specify extension enable spex-deep-review"
   echo ""
   echo "Missing extensions:"
   [ "$GATES" = "0" ] && echo "  - spex-gates"
