@@ -8,6 +8,18 @@ description: "Interactive spec-driven acceptance scenario walkthrough"
 
 Walk through the acceptance scenarios defined in the feature spec, executing each one interactively. For each scenario, the command explains what it will do, executes the action, shows the result, and waits for user confirmation before proceeding. This validates runtime behavior that unit tests cannot catch.
 
+<HARD-GATE>
+## No Simulated Tests
+
+You MUST NOT simulate, fake, or manually reproduce what the system under test would do. Every scenario must exercise the actual system (run the real command, call the real API, invoke the real skill). If a scenario cannot be properly tested in the current session (e.g., requires a separate run, external infrastructure, or state that cannot be set up), you MUST:
+
+1. Mark it as **skip** immediately
+2. State clearly why it cannot be tested (e.g., "Requires two independent distillation runs")
+3. Provide concrete manual test instructions the user can follow later (exact commands, expected output, what to verify)
+
+A simulated test that manually edits files to mimic system output is worse than no test. It creates false confidence.
+</HARD-GATE>
+
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of a ship pipeline. The smoke test is **always interactive** regardless of the `ask` level. It never runs autonomously. However, it should not output a completion summary or ask "Shall I proceed?" after finishing. Complete the walkthrough and return.
@@ -161,7 +173,9 @@ If the action is unclear from the scenario text, ask the user for guidance on ho
 
 ### 3c. Execute the Action
 
-Execute the planned command or action. Show the full output to the user.
+Execute the planned command or action against the **real system**. Show the full output to the user.
+
+If the action cannot be executed against the real system in this session (e.g., requires a prior run to have completed, needs infrastructure not available, or requires state from a different session), do NOT manually produce the expected output. Instead, skip the scenario with manual test instructions (see the "No Simulated Tests" gate above).
 
 ### 3d. Display Results
 
