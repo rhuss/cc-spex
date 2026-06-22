@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-19
+Last updated: 2026-06-22
 
 ## Sessions
 
@@ -27,6 +27,7 @@ Last updated: 2026-06-19
 | 19 | 2026-06-11 | cross-feature-amendments | active | - | - |
 | 20 | 2026-06-11 | mid-impl-review | active | - | - |
 | 21 | 2026-06-19 | before-finish-hooks | active | - | - |
+| 22 | 2026-06-22 | smoke-test-v2 | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -67,6 +68,9 @@ Last updated: 2026-06-19
 - Cross-run statistics aggregation for per-project trends (from #20)
 - Should finish skill also gain after_finish hook boilerplate (fixing existing dead config)? (from #21)
 - Extract hook-reading boilerplate into shared include to avoid copy-pasting across extension commands? (from #21)
+- Should the subagent also start/stop the application, or handle app lifecycle in main session? (from #22)
+- Should SMOKE-TEST.md include timing information per scenario? (from #22)
+- How to pass structured evidence from Phase 1 to Phase 2: file or subagent return text? (from #22)
 
 ## Parked Ideas
 (none)
