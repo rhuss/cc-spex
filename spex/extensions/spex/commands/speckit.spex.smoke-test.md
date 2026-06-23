@@ -6,7 +6,7 @@ description: "Interactive spec-driven acceptance scenario walkthrough"
 
 ## Overview
 
-Walk through the acceptance scenarios defined in the feature spec, executing each one interactively. For each scenario, the command explains what it will do, executes the action, shows the result, and waits for user confirmation before proceeding. This validates runtime behavior that unit tests cannot catch.
+Walk through the acceptance scenarios defined in the feature spec using a two-phase architecture. Phase 1 spawns a fresh-context subagent (no implementation memory) to execute scenarios and collect evidence. Phase 2 presents the evidence interactively in the main session for human judgement. Results are persisted as SMOKE-TEST.md in the spec directory.
 
 <HARD-GATE>
 ## No Simulated Tests
@@ -92,7 +92,9 @@ Exit without error. If in pipeline mode, return immediately so the pipeline can 
 Found N acceptance scenarios across M user stories.
 ```
 
-## Step 2: Project Type Detection and App Startup
+## Step 2: App Lifecycle (Main Session)
+
+The main session owns app startup and shutdown. The subagent (Phase 1) assumes the app is already running if needed.
 
 ### Check for /run Skill
 
@@ -119,11 +121,11 @@ If the project appears to be a library (no server, no CLI entry point, no start 
 Report:
 ```
 This appears to be a library project (no runnable app detected).
-Instead of starting an app, scenarios will be verified through function calls,
-test invocations, or manual verification.
+Scenarios will be verified through function calls, test invocations,
+or manual verification.
 ```
 
-Ask the user how they would like to exercise the behavior, then proceed with manual scenario verification.
+Set `APP_RUNNING=false` and proceed to Step 3. The subagent will categorize scenarios accordingly.
 
 ### Start the App
 
@@ -142,17 +144,119 @@ Cannot auto-detect how to start this project.
 Please start the app manually and confirm when ready.
 ```
 
-Wait for user confirmation before proceeding to scenario execution.
+Wait for user confirmation before proceeding to Step 3.
 
-Track whether the smoke test started the app process (for cleanup later). Store the process ID if applicable.
+Track whether the smoke test started the app process (for cleanup in Step 7). Store the process ID if applicable. Set `APP_RUNNING=true` once the app is confirmed running, `APP_RUNNING=false` otherwise.
 
-## Step 3: Interactive Scenario Walkthrough
+## Step 3: Execute via Subagent (Phase 1)
 
-For each parsed scenario, execute the following loop:
+Spawn a subagent via the Agent tool to execute scenarios with fresh context. The subagent has no memory of the implementation session, removing self-testing bias.
 
-### 3a. Present the Scenario
+### Subagent Prompt
 
-Display the scenario with full context:
+Use the Agent tool to spawn a subagent with the following prompt. Substitute the actual values for `SPEC_FILE`, `PROJECT_ROOT`, and `APP_RUNNING`:
+
+```
+You are a smoke test execution agent. Your job is to exercise acceptance
+scenarios from a feature spec and collect evidence. You have NO context
+about how this code was implemented. Approach each scenario with fresh eyes.
+
+IMPORTANT RULES:
+- You MUST NOT simulate, fake, or manually reproduce expected output.
+  Every scenario must exercise the actual system. If you cannot exercise
+  a scenario, mark it as "skip" with a reason and manual instructions.
+- You MUST NOT read plan.md, tasks.md, or any implementation artifacts.
+  Only read the spec file for scenario definitions.
+- Return your findings as structured text (format below).
+
+Spec file: <SPEC_FILE>
+Project root: <PROJECT_ROOT>
+App running: <APP_RUNNING> (true/false)
+
+INSTRUCTIONS:
+
+1. Read the spec file at <SPEC_FILE>.
+2. Extract all acceptance scenarios from the "User Scenarios & Testing"
+   section. Stop at "Edge Cases". Each numbered item with Given/When/Then
+   is one scenario. Track which User Story each belongs to.
+3. For each scenario, categorize it:
+   - **automated**: You can run a command to exercise it (curl, CLI tool,
+     make test, script invocation, etc.)
+   - **manual**: Requires human action (UI interaction, visual inspection,
+     browser check) but you can prepare step-by-step instructions
+   - **skip**: Cannot be exercised in this session (requires prior separate
+     run, external infrastructure, state from another session). Provide
+     a clear reason and manual test instructions for later.
+4. For automated scenarios: run the actual command, capture the full output.
+5. For manual scenarios: prepare precise step-by-step instructions including
+   exact commands, URLs, and what to look for.
+6. For skip scenarios: explain why and provide manual test instructions.
+
+RETURN FORMAT (one block per scenario, separated by ---):
+
+## Scenario N of TOTAL (User Story: <story title>)
+**Type**: automated | manual | skip
+**Given** <precondition text from spec>
+**When** <action text from spec>
+**Then** <expected outcome text from spec>
+**Why it matters**: <one sentence explaining what risk this scenario catches>
+
+### Evidence
+<for automated>
+**Command**: <exact command run>
+**Output**:
+```
+<full command output>
+```
+**Observation**: <your factual observation about what the output shows>
+
+<for manual>
+**Instructions**:
+1. <step 1>
+2. <step 2>
+...
+**What to verify**: <what the human should look for>
+
+<for skip>
+**Skip reason**: <why this cannot be exercised>
+**Manual test instructions**:
+1. <step 1>
+2. <step 2>
+...
+
+---
+```
+
+### Handling Subagent Failure
+
+If the subagent fails or times out:
+
+1. Report the failure to the user
+2. Offer to retry (spawn a new subagent)
+3. If the user declines retry, offer to skip the smoke test entirely
+
+If the subagent returns but its output cannot be parsed (no recognizable scenario blocks):
+
+1. Show the raw output to the user
+2. Ask whether to proceed with manual review of each scenario or abort
+
+## Step 4: Interactive Review (Phase 2)
+
+Parse the subagent's return text and present each scenario to the user one at a time for human judgement. The user makes the final pass/fail/skip decision for every scenario.
+
+### 4a. Parse Evidence
+
+Parse the subagent's return text into individual scenario blocks. Each block is delimited by `---` and starts with `## Scenario N of TOTAL`. Extract:
+- Scenario number and total
+- User story title
+- Type (automated/manual/skip)
+- Given/When/Then text
+- Why it matters
+- Evidence section (command+output, instructions, or skip reason)
+
+### 4b. Present Each Scenario
+
+For each parsed scenario, display:
 
 ```
 ## Scenario N of TOTAL (User Story: <story title>)
@@ -160,63 +264,162 @@ Display the scenario with full context:
 **Given** <precondition>
 **When** <action>
 **Then** <expected outcome>
+
+**Why it matters**: <explanation>
 ```
 
-### 3b. Explain the Execution Plan
+Then present the evidence based on type:
 
-Before executing, explain what command or action will be performed to test this scenario. For example:
-- For HTTP endpoints: "I will run `curl -X POST http://localhost:8080/api/endpoint` with the following payload..."
-- For CLI commands: "I will run `./my-tool --flag value` and check the output..."
-- For UI interactions: "I will navigate to the page and check for the expected element..."
-
-If the action is unclear from the scenario text, ask the user for guidance on how to exercise this specific behavior.
-
-### 3c. Execute the Action
-
-Execute the planned command or action against the **real system**. Show the full output to the user.
-
-If the action cannot be executed against the real system in this session (e.g., requires a prior run to have completed, needs infrastructure not available, or requires state from a different session), do NOT manually produce the expected output. Instead, skip the scenario with manual test instructions (see the "No Simulated Tests" gate above).
-
-### 3d. Display Results
-
-Present the result alongside the expected outcome:
-
+**For automated scenarios:**
 ```
-### Result
+### Evidence (automated)
 
-<actual output or observation>
-
-### Expected (from spec)
-
-**Then** <expected outcome from scenario>
+**Command**: `<command>`
+**Output**:
+```
+<output>
 ```
 
-### 3e. Ask for Confirmation
+**Subagent observation**: <observation>
+```
 
-Ask the user to confirm the scenario result. Accept one of:
-- **pass** (or "yes", "y", "ok", "confirmed"): Scenario passed. Move to the next scenario.
-- **fail** (or "no", "n", "failed"): Scenario failed. Enter debugging mode (see 3f).
-- **skip**: Skip this scenario. Mark as skipped and move to the next scenario.
+Ask: "Does this scenario pass? (pass / fail / skip)"
 
-### 3f. Interactive Debugging (on failure)
+**For manual scenarios:**
+```
+### Evidence (manual - requires your action)
 
-When a scenario fails:
+**Instructions**:
+1. <step>
+2. <step>
+...
 
-1. **Suggest potential causes** based on the expected vs actual output
-2. **Offer to inspect** logs, code, or configuration related to the failure
-3. **Help the user fix the issue**: edit code, adjust configuration, etc.
-4. **After fixing**, offer to **retry the scenario** or **move on** to the next one
+**What to verify**: <criteria>
+```
 
-### 3g. App Crash Detection
+Ask: "Please perform the steps above and report: pass / fail / skip"
 
-If the app process crashes during scenario execution (process exits unexpectedly):
+**For skip scenarios:**
+```
+### Evidence (skip)
 
-1. Detect the crash (check if background process is still running)
-2. Report: "The app appears to have crashed during this scenario."
+**Reason**: <skip reason>
+
+**Manual test instructions** (for later):
+1. <step>
+2. <step>
+...
+```
+
+Ask: "Confirm skip, or would you like to attempt manual verification? (skip / try)"
+
+If the user chooses "try" for a skip scenario, present the manual test instructions and wait for their pass/fail verdict.
+
+### 4c. Record Verdicts
+
+For each scenario, record:
+- Scenario number
+- Verdict: pass, fail, or skip
+- Any notes from the reviewer
+- Retry result (if the scenario was retried after a fix)
+
+### 4d. Debugging Loop (on failure)
+
+When a scenario is marked "fail":
+
+1. **Ask what went wrong**: "What went wrong? (describe the issue, or press enter for automatic analysis)"
+2. **Analyze the evidence**: Compare expected outcome (from Then clause) with actual output. Suggest possible causes based on the discrepancy.
+3. **Offer to inspect**: Suggest relevant files, logs, or configuration to investigate. Offer to read and analyze them.
+4. **Offer to fix**: If the cause is identified, offer to make the fix (edit code, adjust configuration, etc.)
+5. **Offer to retry**: After a fix is applied, ask: "Would you like to retry this scenario? (yes / no / skip)"
+   - If yes: re-run the command (for automated scenarios) or re-present instructions (for manual)
+   - Record both the initial failure and the retry result
+6. **Move on**: If the user declines retry or retry also fails, proceed to the next scenario
+
+### 4e. App Crash Detection
+
+If the main session started the app (Step 2) and the app process crashes during the review phase:
+
+1. Detect the crash (check if the background process is still running)
+2. Report: "The app appears to have crashed. This may affect remaining scenarios."
 3. Show any available crash output or error logs
-4. Offer to restart the app before retrying the scenario
+4. Offer to restart the app before continuing
 
-## Step 4: Record Results
+## Step 5: Write SMOKE-TEST.md
+
+After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory.
+
+### Report Structure
+
+```markdown
+# Smoke Test Report
+
+**Feature**: <feature name from spec title>
+**Date**: <YYYY-MM-DD>
+**Spec**: <relative path to spec.md>
+**Result**: N passed, M skipped, K failed (out of TOTAL)
+
+## Scenario 1 of TOTAL (User Story: <story title>)
+
+**Given** <precondition>
+**When** <action>
+**Then** <expected outcome>
+
+**Why it matters**: <explanation>
+
+### Evidence
+
+**Command**: `<exact command>`
+**Output**:
+```
+<full output>
+```
+**Observation**: <subagent's factual observation about the output>
+
+### Verdict: PASS
+
+<reviewer notes if any>
+
+---
+
+## Scenario 2 of TOTAL (User Story: <story title>)
+
+...
+```
+
+### Evidence Variants
+
+**For automated scenarios**: Show Command + Output + Observation.
+
+**For manual scenarios**: Show Instructions + What to verify.
+
+**For skip scenarios**: Show Skip reason + Manual test instructions for later.
+
+### Retry Documentation
+
+If a scenario failed and was debugged/retried, include both results:
+
+```markdown
+### Verdict: PASS (after retry)
+
+**Initial result**: FAIL
+**Issue**: <description of the failure>
+**Fix applied**: <what was changed>
+**Retry result**: PASS
+
+<any additional notes>
+```
+
+### Write the File
+
+Write the report to `$FEATURE_DIR/SMOKE-TEST.md`. If a previous report exists, overwrite it (each run is a fresh validation).
+
+Announce:
+```
+Smoke test report written to <relative path to SMOKE-TEST.md>.
+```
+
+## Step 6: Record Results
 
 After all scenarios are processed (or the user exits early), record the results.
 
@@ -244,7 +447,7 @@ Where:
 - `total` is the total number of scenarios found in the spec
 - `skipped` is the number of scenarios the user explicitly skipped
 
-## Step 5: Cleanup
+## Step 7: Cleanup
 
 ### Stop the App Process
 
@@ -269,6 +472,7 @@ Display a brief summary:
 
 Scenarios: N passed, M skipped, K failed (out of TOTAL)
 Status: <COMPLETE | INCOMPLETE (exited early)>
+Report: <path to SMOKE-TEST.md>
 ```
 
 If in pipeline mode (`PIPELINE_MODE=true`):
@@ -284,5 +488,6 @@ If in pipeline mode (`PIPELINE_MODE=true`):
 
 **This command invokes:**
 - `.specify/scripts/bash/check-prerequisites.sh` (spec resolution)
+- Agent tool (subagent for Phase 1 execution)
 - `spex-ship-state.sh smoke-test-record` (state recording)
 - Optionally: `/run` skill (app startup delegation)

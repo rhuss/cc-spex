@@ -745,7 +745,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 ### Stage 8: Smoke Test (Always Interactive)
 
-This stage runs the interactive smoke test, which walks through acceptance scenarios from the spec. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped because no scenarios exist), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
+This stage runs the interactive smoke test, which walks through acceptance scenarios from the spec using a two-phase architecture: a fresh-context subagent executes scenarios and collects evidence, then the main session presents evidence for human judgement. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
 
 1. Resolve the spec directory:
    ```bash
@@ -761,7 +761,26 @@ This stage runs the interactive smoke test, which walks through acceptance scena
 
 3. **If scenarios exist** (`HAS_SCENARIOS` > 0):
 
-   Spawn the smoke test as a **fresh-context subagent** using the Agent tool. This ensures the smoke test has no implementation bias (it doesn't remember writing the code). The subagent is still interactive: it uses AskUserQuestion to confirm each scenario with the user.
+   Announce that the pipeline is technically complete and present the smoke test:
+
+   ```
+   ## Pipeline technically complete
+
+   All automated stages (specify through review-code) have passed.
+   N acceptance scenarios found in the spec.
+
+   The smoke test uses a two-phase approach:
+   1. A fresh-context subagent executes automatable scenarios and collects evidence
+   2. You review the evidence and make pass/fail judgements interactively
+
+   Ready to walk through the verification?
+   ```
+
+   Wait for user response.
+
+   **On opt-in** (user says yes, ready, proceed, go, etc.):
+
+   Spawn the smoke test as a **fresh-context subagent** using the Agent tool. This ensures the smoke test has no implementation bias (it doesn't remember writing the code). The subagent invokes the smoke test skill, which handles both phases internally.
 
    ```
    You are executing the smoke test stage of a speckit-spex-ship pipeline.
@@ -773,8 +792,9 @@ This stage runs the interactive smoke test, which walks through acceptance scena
    The .specify/.spex-state file exists with status "running" (pipeline mode).
 
    You have NO context about how this code was implemented. Approach each
-   scenario with fresh eyes. Execute the steps, observe the actual behavior,
-   and let the user confirm whether each scenario passes or fails.
+   scenario with fresh eyes. The smoke test skill handles both phases:
+   Phase 1 spawns a nested subagent for execution, Phase 2 presents
+   evidence for human review.
 
    Report the smoke test summary when done.
    ```
@@ -783,6 +803,19 @@ This stage runs the interactive smoke test, which walks through acceptance scena
    ```
    Pipeline complete through review and smoke test.
    Run `/speckit-spex-finish` to merge or create a PR.
+   ```
+
+   **On decline** (user says no, skip, not now, later, etc.):
+
+   Record that the smoke test was skipped:
+   ```bash
+   "$SHIP_STATE" smoke-test-record --completed false --scenarios 0 --total "$HAS_SCENARIOS" --skipped "$HAS_SCENARIOS"
+   ```
+
+   Output:
+   ```
+   Smoke test skipped. Pipeline complete through review.
+   Run `/speckit-spex-smoke-test` later to walk through scenarios, then `/speckit-spex-finish` to merge or create a PR.
    ```
 
 4. **If no scenarios exist** (`HAS_SCENARIOS` = 0):

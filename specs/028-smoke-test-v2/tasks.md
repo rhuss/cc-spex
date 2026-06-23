@@ -20,9 +20,9 @@
 
 **Independent Test**: Invoke `/speckit-spex-smoke-test` on a project with acceptance scenarios and verify the Agent tool is called for execution.
 
-- [ ] T001 [US1] Read the current smoke test skill at `spex/extensions/spex/commands/speckit.spex.smoke-test.md`. Identify all sections to preserve (frontmatter, hard gates, ship pipeline guard, no-simulated-tests gate) and sections to rewrite (Steps 2-5).
-- [ ] T002 [US1] Rewrite Step 2 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 2: App Lifecycle (Main Session)". The main session detects project type and starts the app BEFORE spawning the subagent. Reuse existing project type detection logic (Go, Node, Python, Cargo, library detection). Track the process ID for cleanup. If startup fails, ask the user to start manually and confirm.
-- [ ] T003 [US1] Rewrite Step 3 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 3: Execute via Subagent (Phase 1)". Spawn a subagent via the Agent tool with a prompt that includes: (a) the spec file path to read scenarios from, (b) the project root path, (c) whether the app is running, (d) instructions to categorize each scenario as automated/manual/skip, (e) for automated: run the command and capture output, (f) for manual: prepare step-by-step instructions, (g) for skip: explain why and give manual instructions, (h) the no-simulated-tests rule, (i) instruction to return structured text evidence per scenario using the format from plan.md (Scenario N of TOTAL, Type, Given/When/Then, Why it matters, Evidence section). The subagent MUST NOT read plan.md or tasks.md.
+- [X] T001 [US1] Read the current smoke test skill at `spex/extensions/spex/commands/speckit.spex.smoke-test.md`. Identify all sections to preserve (frontmatter, hard gates, ship pipeline guard, no-simulated-tests gate) and sections to rewrite (Steps 2-5).
+- [X] T002 [US1] Rewrite Step 2 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 2: App Lifecycle (Main Session)". The main session detects project type and starts the app BEFORE spawning the subagent. Reuse existing project type detection logic (Go, Node, Python, Cargo, library detection). Track the process ID for cleanup. If startup fails, ask the user to start manually and confirm.
+- [X] T003 [US1] Rewrite Step 3 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 3: Execute via Subagent (Phase 1)". Spawn a subagent via the Agent tool with a prompt that includes: (a) the spec file path to read scenarios from, (b) the project root path, (c) whether the app is running, (d) instructions to categorize each scenario as automated/manual/skip, (e) for automated: run the command and capture output, (f) for manual: prepare step-by-step instructions, (g) for skip: explain why and give manual instructions, (h) the no-simulated-tests rule, (i) instruction to return structured text evidence per scenario using the format from plan.md (Scenario N of TOTAL, Type, Given/When/Then, Why it matters, Evidence section). The subagent MUST NOT read plan.md or tasks.md.
 
 ## Phase 3: User Story 2 - Interactive Human Review Phase (P2)
 
@@ -30,8 +30,8 @@
 
 **Independent Test**: After Phase 1 subagent returns, verify each scenario is presented with Given/When/Then, why it matters, evidence, and verdict prompt.
 
-- [ ] T004 [US2] Rewrite Step 4 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 4: Interactive Review (Phase 2)". Parse the subagent's return text. For each scenario: present scenario number, user story title, Given/When/Then, "Why it matters" explanation, and evidence. For automated scenarios: show command + output, ask human for pass/fail/skip. For manual scenarios: show step-by-step instructions, wait for human to perform and report. For skip scenarios: show skip reason + manual instructions, let human confirm skip or attempt manual verification.
-- [ ] T005 [US2] Add Step 4f (debugging loop) to `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: When a scenario is marked "fail", ask "What went wrong?", analyze the evidence to suggest possible causes, offer to inspect logs/code/config, offer to fix the issue, and offer to retry the scenario after the fix. Track both initial failure and retry result.
+- [X] T004 [US2] Rewrite Step 4 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 4: Interactive Review (Phase 2)". Parse the subagent's return text. For each scenario: present scenario number, user story title, Given/When/Then, "Why it matters" explanation, and evidence. For automated scenarios: show command + output, ask human for pass/fail/skip. For manual scenarios: show step-by-step instructions, wait for human to perform and report. For skip scenarios: show skip reason + manual instructions, let human confirm skip or attempt manual verification.
+- [X] T005 [US2] Add Step 4f (debugging loop) to `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: When a scenario is marked "fail", ask "What went wrong?", analyze the evidence to suggest possible causes, offer to inspect logs/code/config, offer to fix the issue, and offer to retry the scenario after the fix. Track both initial failure and retry result.
 
 ## Phase 4: User Story 3 - Persistent SMOKE-TEST.md Report (P3)
 
@@ -39,7 +39,7 @@
 
 **Independent Test**: Run a complete smoke test and verify SMOKE-TEST.md is created with the expected structure.
 
-- [ ] T006 [US3] Rewrite Step 5 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 5: Write SMOKE-TEST.md". After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory using the report format from plan.md. Each scenario entry includes: Given/When/Then, "Why it matters", Evidence section (command + output for automated, instructions for manual, reason for skip), Verdict (pass/fail/skip with notes). Include header with feature name, date, spec path, and summary line (N passed, M skipped, K failed). If a scenario was retried after a fix, show both initial failure and retry result.
+- [X] T006 [US3] Rewrite Step 5 in `spex/extensions/spex/commands/speckit.spex.smoke-test.md`: rename to "Step 5: Write SMOKE-TEST.md". After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory using the report format from plan.md. Each scenario entry includes: Given/When/Then, "Why it matters", Evidence section (command + output for automated, instructions for manual, reason for skip), Verdict (pass/fail/skip with notes). Include header with feature name, date, spec path, and summary line (N passed, M skipped, K failed). If a scenario was retried after a fix, show both initial failure and retry result.
 
 ## Phase 5: User Story 4 - Ship Pipeline Integration (P4)
 
@@ -47,14 +47,14 @@
 
 **Independent Test**: Run `/speckit-spex-ship` and verify Stage 8 presents scenario counts and waits for opt-in.
 
-- [ ] T007 [US4] Update Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md`. After review-code (Stage 7) completes and advances, Stage 8 should: (a) read the spec and count scenarios (grep for Given), (b) announce "Pipeline is technically done. N scenarios found.", (c) ask "Ready to walk through the verification?", (d) on opt-in: invoke `/speckit-spex-smoke-test`, (e) on decline: record smoke test skipped via state script, announce completion, tell user to run `/speckit-spex-finish` manually.
+- [X] T007 [US4] Update Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md`. After review-code (Stage 7) completes and advances, Stage 8 should: (a) read the spec and count scenarios (grep for Given), (b) announce "Pipeline is technically done. N scenarios found.", (c) ask "Ready to walk through the verification?", (d) on opt-in: invoke `/speckit-spex-smoke-test`, (e) on decline: record smoke test skipped via state script, announce completion, tell user to run `/speckit-spex-finish` manually.
 
 ## Phase 6: Polish & Documentation
 
 **Purpose**: Documentation updates per constitution requirement.
 
-- [ ] T008 [P] Update `README.md` to describe the two-phase smoke test architecture (subagent execution + human review) and mention SMOKE-TEST.md report.
-- [ ] T009 [P] Update `spex/docs/help.md` to describe the two-phase smoke test flow and SMOKE-TEST.md output.
+- [X] T008 [P] Update `README.md` to describe the two-phase smoke test architecture (subagent execution + human review) and mention SMOKE-TEST.md report.
+- [X] T009 [P] Update `spex/docs/help.md` to describe the two-phase smoke test flow and SMOKE-TEST.md output.
 
 ## Dependencies
 

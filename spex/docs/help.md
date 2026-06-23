@@ -143,9 +143,11 @@ spex COMMANDS (helpers and configuration)
                                 Flags: --ask always|smart|never, --create-pr,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
-  /speckit-spex-smoke-test    Interactive acceptance scenario walkthrough from spec
+  /speckit-spex-smoke-test    Two-phase acceptance scenario walkthrough
+                                Phase 1: Fresh-context subagent executes scenarios
+                                Phase 2: Human reviews evidence interactively
+                                Writes SMOKE-TEST.md report to spec directory
                                 Always interactive (even in ship pipeline)
-                                Records results for verify/stamp reminder
   /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
                                 Flags: --create-pr, --watch
                                 --watch: monitor CI after PR, auto-fix failures,
@@ -233,7 +235,8 @@ BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
   Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
   Mid-impl review checkpoints at 1/3 and 2/3 (requires spex-deep-review, 3+ tasks).
   Agent leaderboard with MVP shown after every deep review run.
-  Ship Stage 8 is now smoke-test (interactive acceptance scenarios).
+  Ship Stage 8 is smoke-test (two-phase: subagent execution + human review).
+  Pipeline announces readiness, asks for opt-in, writes SMOKE-TEST.md.
   The pipeline stops after smoke-test; run /speckit-spex-finish manually.
   Watch mode runs during finish (when --create-pr is set after manual finish).
   Watch monitors CI, auto-fixes failures (max 2 attempts), and triages
