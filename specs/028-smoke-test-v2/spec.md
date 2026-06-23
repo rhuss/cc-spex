@@ -81,14 +81,21 @@ When the smoke test runs as part of the ship pipeline (Stage 8), the pipeline an
 - What happens when the subagent fails or times out? The main session should report the failure and offer to retry or skip the entire smoke test.
 - What happens when no acceptance scenarios are found in the spec? The smoke test should report "no scenarios found" and exit cleanly (same as current behavior).
 - What happens when all scenarios are marked as "manual"? The review phase presents all instructions and the developer performs each one. No subagent execution needed (but the subagent still runs to categorize them).
-- What happens when the app requires startup before testing? The subagent should attempt project type detection and app startup (same as current behavior), falling back to asking the main session to instruct the user.
+- What happens when the app requires startup before testing? The main session handles app lifecycle: it starts the app before spawning the subagent, keeps it running through the review phase, and stops it after. If startup fails, the user can intervene. The subagent assumes the app is already running.
 - What happens when a scenario was already tested in a prior smoke test run? SMOKE-TEST.md is overwritten (not appended). Each run is a fresh validation.
+
+## Clarifications
+
+### Session 2026-06-23
+
+- Q: How does the execution subagent's evidence reach the review phase? → A: Subagent return text (Agent tool returns final text as string, main session parses it). No file coordination needed.
+- Q: Who handles app startup/shutdown for scenarios that need a running app? → A: Main session starts app before spawning subagent, keeps it running through review phase, stops after. User can intervene if startup fails.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The smoke test MUST spawn a subagent (via the Agent tool) for the execution phase. The subagent MUST NOT have access to the implementation conversation context.
+- **FR-001**: The smoke test MUST spawn a subagent (via the Agent tool) for the execution phase. The subagent MUST NOT have access to the implementation conversation context. The subagent returns its evidence as return text (not via a file).
 - **FR-002**: The subagent MUST read acceptance scenarios only from the feature spec (spec.md). It MUST NOT reference implementation artifacts (plan.md, tasks.md) to determine test expectations.
 - **FR-003**: For each automatable scenario, the subagent MUST execute the actual command and capture the full output as evidence.
 - **FR-004**: For each scenario requiring human action, the subagent MUST prepare step-by-step instructions including exact commands, URLs, expected observations, and what to look for.
@@ -100,6 +107,7 @@ When the smoke test runs as part of the ship pipeline (Stage 8), the pipeline an
 - **FR-010**: In ship pipeline mode, the pipeline MUST announce readiness after Stage 7, present scenario counts, and ask for user opt-in before running the smoke test.
 - **FR-011**: In standalone mode, the smoke test MUST follow the same two-phase pattern as in ship mode.
 - **FR-012**: The existing no-simulated-tests hard gate MUST remain in the smoke test skill.
+- **FR-013**: When scenarios require a running app, the main session MUST handle app startup before spawning the subagent and app shutdown after the review phase completes. The subagent MUST assume the app is already running.
 
 ## Success Criteria *(mandatory)*
 
