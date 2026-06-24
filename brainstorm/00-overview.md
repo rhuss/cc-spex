@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-23
+Last updated: 2026-06-24
 
 ## Sessions
 
@@ -28,7 +28,7 @@ Last updated: 2026-06-23
 | 20 | 2026-06-11 | mid-impl-review | active | - | - |
 | 21 | 2026-06-19 | before-finish-hooks | active | - | - |
 | 22 | 2026-06-22 | smoke-test-v2 | active | - | - |
-| 23 | 2026-06-23 | dual-repo-spec-workflow | active | - | - |
+| 23 | 2026-06-23 | dual-repo-spec-workflow | active (revisited 2026-06-24) | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -72,9 +72,11 @@ Last updated: 2026-06-23
 - Should the subagent also start/stop the application, or handle app lifecycle in main session? (from #22)
 - Should SMOKE-TEST.md include timing information per scenario? (from #22)
 - How to pass structured evidence from Phase 1 to Phase 2: file or subagent return text? (from #22)
-- Should `spex:init` gain `--target-dir` for code subdirectory path? (from #23)
-- Should flow state script walk up to find `.specify/` when in a subdirectory? (from #23)
-- Should `speckit-implement` distinguish "code root" vs "spec root"? (from #23)
+- What should `specify init` upstream mode option be called? (from #23)
+- Should archive step at finish be automatic or interactive? (from #23)
+- How to flow context from archived specs back into new features? (from #23)
+- Should upstream mode auto-add spec dirs to `.git/info/exclude`? (from #23)
+- How to handle worktree-to-worktree spec migration? (from #23)
 
 ## Parked Ideas
 (none)
