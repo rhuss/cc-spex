@@ -7,12 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.0] - 2026-06-25
+
+### Added
+- Guided smoke test skill (`speckit-spex-smoke-test`) for interactive spec-driven acceptance walkthrough
+- Before/after finish hook support for extensible feature completion pipeline
+- Mid-implementation review checkpoints in ship pipeline
+- Backpressure loops for autonomous pipeline control
+- No-simulated-tests hard gate in smoke test skill
+
 ### Changed
-- Synced with superpowers@6fd4507 (2026-05-29)
-  - `writing-plans`: evaluated, no new patterns to absorb into spex:plan
-  - `brainstorming`, `verification-before-completion`, `review-code`: no upstream changes
-  - Companion skills updated upstream: `finishing-a-development-branch` (worktree-aware cleanup), `requesting-code-review` (restructured reviewer template)
+- Synced with superpowers@896224c (Superpowers 6.0.3, 2026-06-18)
+  - `writing-plans`: 3 new patterns adapted into `review-plan` quality gate (task right-sizing, Global Constraints validation, per-task Interfaces)
+  - `brainstorming`: no-op (visual companion just-in-time change, skipped by spex)
+  - Companion skills updated upstream: trivial fixes in `test-driven-development`, `systematic-debugging`
   - All spex spec-compliance enhancements preserved
+
+### Fixed
+- Exclude brainstorm files from PR branches
+- Clean up state file in main repo after worktree merge
+- Prevent silent file loss on worktree removal in finish
+- Run smoke test in fresh-context subagent for ship mode
+- `specify extension enable` takes one arg at a time
+- Extract finish context detection into script
 
 ## [5.0.0] - 2026-04-25
 

@@ -1,8 +1,8 @@
 {
   "upstream_repo": "https://github.com/obra/superpowers",
-  "last_sync_commit": "6fd4507659784c351abbd2bc264c7162cfd386dc",
-  "last_sync_date": "2026-06-06",
-  "note": "Synced via /update-superpowers",
+  "last_sync_commit": "896224c4b1879920ab573417e68fd51d2ccc9072",
+  "last_sync_date": "2026-06-25",
+  "note": "Synced via /update-superpowers (Superpowers 6.0.3)",
   "modified_skills": {
     "writing-plans": {
       "upstream_file": "skills/writing-plans/SKILL.md",
