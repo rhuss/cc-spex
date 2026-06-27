@@ -92,6 +92,8 @@ Exit without error. If in pipeline mode, return immediately so the pipeline can 
 Found N acceptance scenarios across M user stories.
 ```
 
+The subagent will categorize these into auto-verified (deterministic, agent judges) and judgment-required (human reviews). The user only interacts with scenarios that genuinely need human eyes.
+
 ## Step 2: App Lifecycle (Main Session)
 
 The main session owns app startup and shutdown. The subagent (Phase 1) assumes the app is already running if needed.
@@ -179,36 +181,75 @@ INSTRUCTIONS:
 2. Extract all acceptance scenarios from the "User Scenarios & Testing"
    section. Stop at "Edge Cases". Each numbered item with Given/When/Then
    is one scenario. Track which User Story each belongs to.
-3. For each scenario, categorize it:
-   - **automated**: You can run a command to exercise it (curl, CLI tool,
-     make test, script invocation, etc.)
-   - **manual**: Requires human action (UI interaction, visual inspection,
-     browser check) but you can prepare step-by-step instructions
+3. For each scenario, FIRST decide whether a human can add value:
+
+   DETERMINISTIC scenarios (agent can fully verify):
+   - File existence, count, or content checks
+   - Command exit codes
+   - Output string/pattern matching
+   - Build/compile success
+   - API response status codes or JSON field checks
+   - Configuration validity checks
+
+   JUDGMENT scenarios (human eyes genuinely needed):
+   - Visual/UI correctness ("does this look right?")
+   - UX flow quality ("is this workflow intuitive?")
+   - Error message clarity ("is this message helpful?")
+   - Behavior that involves subjective quality
+   - Integration with systems the agent cannot access
+   - Multi-session or multi-user behavior
+
+4. Then categorize execution method:
+   - **auto-verified**: Deterministic AND you can run a command to fully
+     verify the outcome. Run it, check the result, and record PASS or
+     FAIL yourself. The human reviews these in the report but does not
+     need to judge them interactively.
+   - **judgment**: The outcome requires human judgment. You can prepare
+     evidence (run commands, capture output, take screenshots) but the
+     human must decide if it passes.
+   - **manual**: Requires human action the agent cannot perform (browser
+     interaction, visual inspection, physical device). Prepare step-by-step
+     instructions.
    - **skip**: Cannot be exercised in this session (requires prior separate
      run, external infrastructure, state from another session). Provide
      a clear reason and manual test instructions for later.
-4. For automated scenarios: run the actual command, capture the full output.
-5. For manual scenarios: prepare precise step-by-step instructions including
+
+5. For auto-verified: run the command AND verify the result yourself.
+   Compare actual output against the Then clause. Report PASS or FAIL
+   with your reasoning.
+6. For judgment: run whatever you can, capture evidence, but do NOT
+   decide pass/fail. Present evidence for human decision.
+7. For manual: prepare precise step-by-step instructions including
    exact commands, URLs, and what to look for.
-6. For skip scenarios: explain why and provide manual test instructions.
+8. For skip: explain why and provide manual test instructions.
 
 RETURN FORMAT (one block per scenario, separated by ---):
 
 ## Scenario N of TOTAL (User Story: <story title>)
-**Type**: automated | manual | skip
+**Type**: auto-verified | judgment | manual | skip
 **Given** <precondition text from spec>
 **When** <action text from spec>
 **Then** <expected outcome text from spec>
 **Why it matters**: <one sentence explaining what risk this scenario catches>
 
 ### Evidence
-<for automated>
+<for auto-verified>
 **Command**: <exact command run>
 **Output**:
 ```
 <full command output>
 ```
-**Observation**: <your factual observation about what the output shows>
+**Verification**: <how you checked the Then clause against the output>
+**Agent verdict**: PASS | FAIL
+**Reasoning**: <why you concluded pass or fail, citing specific output>
+
+<for judgment>
+**Command**: <exact command run, if any>
+**Output**:
+```
+<output or screenshot description>
+```
+**What the human should judge**: <specific question for the human>
 
 <for manual>
 **Instructions**:
@@ -242,21 +283,31 @@ If the subagent returns but its output cannot be parsed (no recognizable scenari
 
 ## Step 4: Interactive Review (Phase 2)
 
-Parse the subagent's return text and present each scenario to the user one at a time for human judgement. The user makes the final pass/fail/skip decision for every scenario.
+Parse the subagent's return text. Auto-verified scenarios are recorded directly. Only scenarios requiring human judgment are presented interactively.
 
 ### 4a. Parse Evidence
 
 Parse the subagent's return text into individual scenario blocks. Each block is delimited by `---` and starts with `## Scenario N of TOTAL`. Extract:
 - Scenario number and total
 - User story title
-- Type (automated/manual/skip)
+- Type (auto-verified/judgment/manual/skip)
 - Given/When/Then text
 - Why it matters
-- Evidence section (command+output, instructions, or skip reason)
+- Evidence section
+- For auto-verified: the agent's own verdict and reasoning
 
-### 4b. Present Each Scenario
+### 4b. Process Auto-Verified Scenarios (no human interaction)
 
-For each parsed scenario, display:
+For scenarios typed `auto-verified`:
+- Record the subagent's verdict (PASS or FAIL) directly
+- Do NOT present them interactively to the user
+- They appear in the final results report for review, but the human does not need to judge them one by one
+
+If an auto-verified scenario has verdict FAIL, promote it to the interactive review (treat it like a judgment scenario, since the human needs to decide what to do about the failure).
+
+### 4c. Present Judgment Scenarios
+
+For scenarios typed `judgment`, display:
 
 ```
 ## Scenario N of TOTAL (User Story: <story title>)
@@ -266,13 +317,8 @@ For each parsed scenario, display:
 **Then** <expected outcome>
 
 **Why it matters**: <explanation>
-```
 
-Then present the evidence based on type:
-
-**For automated scenarios:**
-```
-### Evidence (automated)
+### Evidence
 
 **Command**: `<command>`
 **Output**:
@@ -280,7 +326,7 @@ Then present the evidence based on type:
 <output>
 ```
 
-**Subagent observation**: <observation>
+**What the human should judge**: <specific question>
 ```
 
 Present the verdict as options to the user:
@@ -291,7 +337,10 @@ Present the verdict as options to the user:
   - "Fail": "Scenario does not match expected behavior"
   - "Skip": "Cannot verify right now, will test later"
 
-**For manual scenarios:**
+### 4d. Present Manual Scenarios
+
+For scenarios typed `manual`, display:
+
 ```
 ### Evidence (manual - requires your action)
 
@@ -311,7 +360,10 @@ Present the verdict as options to the user:
   - "Fail": "Verified manually, does not match expected behavior"
   - "Skip": "Cannot verify right now, will test later"
 
-**For skip scenarios:**
+### 4e. Present Skip Scenarios
+
+For scenarios typed `skip`, display:
+
 ```
 ### Evidence (skip)
 
@@ -330,7 +382,7 @@ Present options to the user:
   - "Confirm skip": "Accept skip, will test later using the manual instructions"
   - "Try now": "Attempt manual verification using the instructions above"
 
-If the user chooses "try" for a skip scenario, present the manual test instructions and wait for their pass/fail verdict.
+If the user chooses "Try now", present the manual test instructions and wait for their pass/fail verdict.
 
 ### 4c. Record Verdicts
 
@@ -375,6 +427,7 @@ After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory
 **Date**: <YYYY-MM-DD>
 **Spec**: <relative path to spec.md>
 **Result**: N passed, M skipped, K failed (out of TOTAL)
+**Reviewed by**: N auto-verified by agent, M judged by human
 
 ## Scenario 1 of TOTAL (User Story: <story title>)
 
@@ -406,7 +459,9 @@ After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory
 
 ### Evidence Variants
 
-**For automated scenarios**: Show Command + Output + Observation.
+**For auto-verified scenarios**: Show Command + Output + Verification + Agent verdict + Reasoning. Mark the verdict line with `(auto-verified)` so the reader knows no human judged this interactively.
+
+**For judgment scenarios**: Show Command + Output + What the human judged.
 
 **For manual scenarios**: Show Instructions + What to verify.
 
@@ -497,27 +552,33 @@ Feature: <feature name>
 Date: <YYYY-MM-DD>
 Status: <COMPLETE | INCOMPLETE (exited early)>
 
-┌──────────────────────────────────────────────────┐
-│ SCENARIO RESULTS                                  │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  1. <scenario description (25 chars)>      PASS   │
-│     Evidence: <command run or "manual check">     │
-│                                                   │
-│  2. <scenario description>                 PASS   │
-│     Evidence: <command run or "manual check">     │
-│                                                   │
-│  3. <scenario description>                 SKIP   │
-│     Reason: <why skipped>                         │
-│     Manual: <how to test later>                   │
-│                                                   │
-│  4. <scenario description>                 FAIL   │
-│     Expected: <what spec says>                    │
-│     Actual: <what happened>                       │
-│                                                   │
-└──────────────────────────────────────────────────┘
+Auto-verified (deterministic checks, agent judged):
+
+  1. ✅ <scenario description>
+     Ran: <command>
+     Verified: <what agent checked and why it passed>
+
+  2. ✅ <scenario description>
+     Ran: <command>
+     Verified: <what agent checked>
+
+  3. ❌ <scenario description>              ← FAILED
+     Ran: <command>
+     Expected: <what spec says>
+     Actual: <what happened>
+
+Human-judged (required your assessment):
+
+  4. ✅ <scenario description>
+     Evidence: <what was shown to human>
+
+  5. ⏭️  <scenario description>              SKIP
+     Reason: <why>
+     To test later: <one-line instruction>
 
 Summary: N passed, M skipped, K failed (out of TOTAL)
+  Auto-verified: N scenarios (agent decided)
+  Human-judged:  M scenarios (you decided)
 Full report: <path to SMOKE-TEST.md>
 
 ═══════════════════════════════════════════════════════
@@ -526,9 +587,14 @@ Full report: <path to SMOKE-TEST.md>
 **For each scenario in the report, include:**
 - The scenario description (derived from the When clause)
 - The verdict (PASS / FAIL / SKIP)
-- For PASS: one-line evidence summary (the command that was run, or "manual verification")
+- Whether it was auto-verified or human-judged
+- For auto-verified PASS: what command was run and what the agent verified
+- For auto-verified FAIL: expected vs. actual (promoted to interactive review)
+- For human-judged PASS: what evidence was shown
 - For SKIP: the skip reason and a one-line manual test instruction
 - For FAIL: expected vs. actual outcome (one line each)
+
+**Group scenarios by review type** (auto-verified first, then human-judged). This makes it immediately clear which scenarios had human oversight and which were deterministic checks.
 
 **In pipeline mode**: Still suppress "Shall I proceed?" and next-step suggestions. But NEVER suppress the results report. The report is the whole point.
 
