@@ -283,7 +283,13 @@ Then present the evidence based on type:
 **Subagent observation**: <observation>
 ```
 
-Ask: "Does this scenario pass? (pass / fail / skip)"
+Present the verdict as options to the user:
+- header: "Verdict"
+- multiSelect: false
+- Options:
+  - "Pass": "Scenario works as specified"
+  - "Fail": "Scenario does not match expected behavior"
+  - "Skip": "Cannot verify right now, will test later"
 
 **For manual scenarios:**
 ```
@@ -297,7 +303,13 @@ Ask: "Does this scenario pass? (pass / fail / skip)"
 **What to verify**: <criteria>
 ```
 
-Ask: "Please perform the steps above and report: pass / fail / skip"
+Present the verdict as options to the user:
+- header: "Verdict"
+- multiSelect: false
+- Options:
+  - "Pass": "Verified manually, works as specified"
+  - "Fail": "Verified manually, does not match expected behavior"
+  - "Skip": "Cannot verify right now, will test later"
 
 **For skip scenarios:**
 ```
@@ -311,7 +323,12 @@ Ask: "Please perform the steps above and report: pass / fail / skip"
 ...
 ```
 
-Ask: "Confirm skip, or would you like to attempt manual verification? (skip / try)"
+Present options to the user:
+- header: "Verdict"
+- multiSelect: false
+- Options:
+  - "Confirm skip": "Accept skip, will test later using the manual instructions"
+  - "Try now": "Attempt manual verification using the instructions above"
 
 If the user chooses "try" for a skip scenario, present the manual test instructions and wait for their pass/fail verdict.
 
@@ -463,22 +480,57 @@ If the smoke test started the app process (tracked in Step 2):
 
 If the smoke test did NOT start the app (user started it manually), do NOT attempt to stop it.
 
-### Report Summary
+### Results Report (MANDATORY)
 
-Display a brief summary:
+<HARD-GATE>
+You MUST output the full results report to the console on EVERY exit path, including pipeline mode. A smoke test that runs without showing its results to a human is worthless. The human must read what was tested and what passed.
+</HARD-GATE>
+
+After cleanup, ALWAYS display the full results report. This is not optional. This applies in both manual and pipeline mode.
 
 ```
-## Smoke Test Summary
+═══════════════════════════════════════════════════════
+SMOKE TEST RESULTS
+═══════════════════════════════════════════════════════
 
-Scenarios: N passed, M skipped, K failed (out of TOTAL)
+Feature: <feature name>
+Date: <YYYY-MM-DD>
 Status: <COMPLETE | INCOMPLETE (exited early)>
-Report: <path to SMOKE-TEST.md>
+
+┌──────────────────────────────────────────────────┐
+│ SCENARIO RESULTS                                  │
+├──────────────────────────────────────────────────┤
+│                                                   │
+│  1. <scenario description (25 chars)>      PASS   │
+│     Evidence: <command run or "manual check">     │
+│                                                   │
+│  2. <scenario description>                 PASS   │
+│     Evidence: <command run or "manual check">     │
+│                                                   │
+│  3. <scenario description>                 SKIP   │
+│     Reason: <why skipped>                         │
+│     Manual: <how to test later>                   │
+│                                                   │
+│  4. <scenario description>                 FAIL   │
+│     Expected: <what spec says>                    │
+│     Actual: <what happened>                       │
+│                                                   │
+└──────────────────────────────────────────────────┘
+
+Summary: N passed, M skipped, K failed (out of TOTAL)
+Full report: <path to SMOKE-TEST.md>
+
+═══════════════════════════════════════════════════════
 ```
 
-If in pipeline mode (`PIPELINE_MODE=true`):
-- Do NOT output a detailed completion summary
-- Do NOT ask "Shall I proceed?"
-- Return immediately so the pipeline can advance
+**For each scenario in the report, include:**
+- The scenario description (derived from the When clause)
+- The verdict (PASS / FAIL / SKIP)
+- For PASS: one-line evidence summary (the command that was run, or "manual verification")
+- For SKIP: the skip reason and a one-line manual test instruction
+- For FAIL: expected vs. actual outcome (one line each)
+
+**In pipeline mode**: Still suppress "Shall I proceed?" and next-step suggestions. But NEVER suppress the results report. The report is the whole point.
 
 ## Integration
 
