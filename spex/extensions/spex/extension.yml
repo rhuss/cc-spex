@@ -37,9 +37,12 @@ provides:
     - name: speckit.spex.extensions
       file: commands/speckit.spex.extensions.md
       description: "Manage spex extensions: enable, disable, or list active extensions"
+    - name: speckit.spex.submit
+      file: commands/speckit.spex.submit.md
+      description: "Push and create PR for team review, with optional watch mode for CI monitoring"
     - name: speckit.spex.finish
       file: commands/speckit.spex.finish.md
-      description: "Complete a feature: verify, then merge/PR/keep with worktree-aware cleanup"
+      description: "Smoke test + squash + merge/keep (land the code on main)"
     - name: speckit.spex.flow-state
       file: commands/speckit.spex.flow-state.md
       description: "Create flow state for step-by-step SDD workflow tracking"
@@ -95,11 +98,6 @@ hooks:
     args: "implemented"
     optional: false
     description: "Mark implementation complete in flow state"
-  before_finish:
-    command: speckit.spex.smoke-test
-    optional: true
-    prompt: "Run interactive smoke test before finishing?"
-    description: "Walk through spec acceptance scenarios interactively"
   after_finish:
     command: speckit.spex.flow-state
     args: "cleanup"

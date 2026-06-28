@@ -9,7 +9,7 @@
 #   spex-ship-state.sh fail                    # Set status to failed
 #   spex-ship-state.sh cleanup                 # Remove state file (pipeline done)
 #   spex-ship-state.sh checkpoint-record --checkpoint <1|2> --findings <N> --fixed <N>
-#   spex-ship-state.sh smoke-test-record [--completed BOOL] [--scenarios N] [--total N] [--skipped N]
+#   spex-ship-state.sh smoke-test-record [--completed BOOL] [--scenarios N] [--total N] [--skipped N] [--commit-hash HASH]
 #   spex-ship-state.sh watch-start [--pr-number N] [--pr-url URL] [--timeout M] [--interval S]
 #   spex-ship-state.sh watch-update <key> <value> [<key> <value> ...]
 #   spex-ship-state.sh watch-cleanup           # Remove state file, output WATCH_COMPLETE
@@ -350,7 +350,7 @@ EOF
 }
 
 do_smoke_test_record() {
-  local completed="false" scenarios=0 total=0 skipped=0
+  local completed="false" scenarios=0 total=0 skipped=0 commit_hash=""
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -358,6 +358,7 @@ do_smoke_test_record() {
       --scenarios) shift; scenarios="${1:-0}" ;;
       --total) shift; total="${1:-0}" ;;
       --skipped) shift; skipped="${1:-0}" ;;
+      --commit-hash) shift; commit_hash="${1:-}" ;;
       *) echo "ERROR: Unknown flag '$1'" >&2; exit 2 ;;
     esac
     shift
@@ -371,7 +372,8 @@ do_smoke_test_record() {
   "smoke_test_at": "$(now_iso)",
   "smoke_test_scenarios": $scenarios,
   "smoke_test_total": $total,
-  "smoke_test_skipped": $skipped
+  "smoke_test_skipped": $skipped,
+  "smoke_test_commit_hash": "$commit_hash"
 }
 EOF
     echo "SMOKE_TEST_RECORDED"
@@ -386,7 +388,8 @@ EOF
      --argjson scenarios "$scenarios" \
      --argjson total "$total" \
      --argjson skipped "$skipped" \
-     '.smoke_test_completed = $completed | .smoke_test_at = $at | .smoke_test_scenarios = $scenarios | .smoke_test_total = $total | .smoke_test_skipped = $skipped' \
+     --arg commit_hash "$commit_hash" \
+     '.smoke_test_completed = $completed | .smoke_test_at = $at | .smoke_test_scenarios = $scenarios | .smoke_test_total = $total | .smoke_test_skipped = $skipped | .smoke_test_commit_hash = $commit_hash' \
      "$STATE_FILE" > "$tmp"
   mv "$tmp" "$STATE_FILE"
   echo "SMOKE_TEST_RECORDED"

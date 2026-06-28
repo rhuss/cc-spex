@@ -24,6 +24,14 @@ WORKFLOW
            │     │                                 │  /speckit-implement
            │     │                                 ▼
            │     │                         ┌──────────┐
+           │     │                         │  SUBMIT  │
+           │     │                         └──────────┘
+           │     │                        /speckit-spex-submit
+           │     │                                 │
+           │     │                            (PR review)
+           │     │                                 │
+           │     │                                 ▼
+           │     │                         ┌──────────┐
            │     │                         │  FINISH  │
            │     │                         └──────────┘
            │     │                        /speckit-spex-finish
@@ -149,20 +157,25 @@ spex COMMANDS (helpers and configuration)
                                 --clear: reset status line state
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
-  /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to finish)
+  /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to completion)
                                 Requires: spex-gates + spex-deep-review extensions
-                                Flags: --ask always|smart|never, --create-pr,
+                                Flags: --ask always|smart|never,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
+                                Stage 8: choice prompt (submit PR / merge / stop)
   /speckit-spex-smoke-test    Focused interactive smoke test from spec's ## Smoke Test section
                                 Claude automates setup/execution, human provides judgment
                                 Auto-skips when no ## Smoke Test section exists
                                 Writes SMOKE-TEST.md report to spec directory
                                 Always interactive (even in ship pipeline)
-  /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
-                                Flags: --create-pr, --watch
+  /speckit-spex-submit        Push and create PR for team review
+                                Flags: --watch
                                 --watch: monitor CI after PR, auto-fix failures,
                                          triage comments (if spex-collab enabled)
+  /speckit-spex-finish        Smoke test + squash + merge/keep (land the code)
+                                Flags: --no-smoke-test
+                                Runs smoke test gate, squashes commits with
+                                conventional commit message, merges or keeps
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec
@@ -173,19 +186,25 @@ spex COMMANDS (helpers and configuration)
 
 CLOSING OUT A FEATURE (after review passes)
 
-  After /speckit-spex-review-code (or deep-review) passes:
+  Two paths to land your code:
 
-    1. /speckit-spex-smoke-test    Walk through curated smoke test scenarios
-    2. /clear                      Free context for final verification
-    3. /speckit-spex-finish         Verify + merge/PR (all-in-one)
+  PR path (collaborative review):
+    1. /speckit-spex-submit          Push and create PR for team review
+       /speckit-spex-submit --watch  Same, plus monitor CI and triage comments
+    2. (PR review and approval happen externally)
+    3. /speckit-spex-finish          Smoke test + squash + merge
 
-  /speckit-spex-finish checks for before_finish hooks first (e.g., the
-  smoke test prompt fires automatically via hook if not run manually).
-  Then it runs all verification gates (tests, spec compliance, drift
-  check), offers merge/PR/keep options with automatic worktree cleanup,
-  and fires after_finish hooks (e.g., flow state cleanup). If a PR
-  already exists for the branch, the "create PR" option becomes
-  "push to PR #N" instead. One command to close out a feature.
+  Direct merge path (solo or small fixes):
+    1. /speckit-spex-finish          Smoke test + squash + merge to main
+
+  /speckit-spex-submit verifies code, commits outstanding changes,
+  creates (or pushes to) a PR with spec-linked body and REVIEWERS.md.
+  Watch mode polls CI, auto-fixes failures, and triages review comments.
+
+  /speckit-spex-finish checks the smoke test gate (runs it if needed,
+  skips if already passed at current commit), squashes all commits into
+  one with a conventional commit message, and merges to main with
+  worktree cleanup. Use --no-smoke-test to skip the gate.
 
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension
@@ -246,11 +265,9 @@ BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
   Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
   Mid-impl review checkpoints at 1/3 and 2/3 (requires spex-deep-review, 3+ tasks).
   Agent leaderboard with MVP shown after every deep review run.
-  Ship Stage 8 is smoke-test (curated scenarios from ## Smoke Test section).
-  Claude automates setup/execution, human provides pass/fail judgment.
-  Auto-skips when no ## Smoke Test section exists. Writes SMOKE-TEST.md.
-  The pipeline stops after smoke-test; run /speckit-spex-finish manually.
-  Watch mode runs during finish (when --create-pr is set after manual finish).
+  Ship Stage 8 presents a choice: submit PR, merge directly, or stop.
+  The smoke test is now a gate inside /speckit-spex-finish (not a pipeline stage).
+  Watch mode runs during /speckit-spex-submit (with --watch flag).
   Watch monitors CI, auto-fixes failures (max 2 attempts), and triages
   review comments when spex-collab is enabled.
 

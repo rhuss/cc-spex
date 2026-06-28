@@ -17,7 +17,7 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
 1. `ask` is `always` AND a review stage has findings requiring user input.
 2. A blocker error occurs (test failure, syntax error, security issue).
-3. Stage 8 (smoke-test) is reached: if the spec has a `## Smoke Test` section, the smoke test is always interactive and the pipeline stops after it completes. If the section is absent, the stage skips automatically. The user runs `/speckit-spex-finish` manually.
+3. Stage 8 (completion) is reached: the pipeline presents a choice prompt and the user decides how to proceed (submit PR, merge directly, or stop).
 
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
@@ -98,7 +98,6 @@ Parse the invocation arguments. The skill accepts:
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--ask <level>` | `smart` | One of: `always`, `smart`, `never` |
-| `--create-pr` | off | Create a pull request after successful completion |
 | `--resume` | off | Resume an interrupted pipeline from state file |
 | `--start-from <stage>` | (none) | Start from a specific stage (skips prior stages) |
 | `--no-external` | (from config) | Disable all external review tools |
@@ -423,7 +422,7 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan and task quality |
 | 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
 | 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review |
-| 8 | `smoke-test` | `/speckit-spex-smoke-test` (Interactive) | Focused interactive smoke test from `## Smoke Test` section, then pipeline stops |
+| 8 | `smoke-test` | Choice prompt (Interactive) | End-of-pipeline: submit PR, merge directly, or stop here |
 
 ### Suppressing extension overlay gates
 
@@ -743,76 +742,57 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
 
-### Stage 8: Smoke Test (Always Interactive)
+### Stage 8: Pipeline Completion (Always Interactive)
 
-This stage runs the focused interactive smoke test, which walks through curated scenarios from the spec's `## Smoke Test` section. Claude automates all setup and evidence collection in the current session; the human only provides pass/fail judgment. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
+After all automated stages (specify through review-code) complete, the pipeline presents the user with a choice of how to proceed. This stage is **always interactive**, regardless of the `ask` level.
 
-1. Resolve the spec directory:
-   ```bash
-   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
-   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
-   SPEC_FILE="$FEATURE_DIR/spec.md"
-   ```
-
-2. Check if the spec has a `## Smoke Test` section:
-   ```bash
-   HAS_SMOKE_TEST=$(grep -c '^## Smoke Test$' "$SPEC_FILE" 2>/dev/null || echo 0)
-   ```
-
-3. **If a smoke test section exists** (`HAS_SMOKE_TEST` > 0):
-
-   Announce that the pipeline is technically complete and present the smoke test:
+1. Announce pipeline completion and present the choice:
 
    ```
-   ## Pipeline technically complete
+   ## Pipeline Complete (Stages 0-7)
 
-   All automated stages (specify through review-code) have passed.
-   Smoke test section found in the spec.
+   All automated stages have passed. How would you like to proceed?
 
-   Claude will automate setup and execution for each scenario.
-   You only provide pass/fail judgment on each one.
-
-   Ready to walk through the verification?
+   A) Submit PR — Create a pull request for team review
+   B) Merge directly — Run smoke test, squash, and merge to main
+   C) Stop here — Run /speckit-spex-submit or /speckit-spex-finish later
    ```
 
    Wait for user response.
 
-   **On opt-in** (user says yes, ready, proceed, go, etc.):
+2. **If "Submit PR" (A):**
 
-   Invoke `/speckit-spex-smoke-test` directly in the current session.
-   The `.specify/.spex-state` file exists with status `running` (pipeline mode),
-   so the smoke test will suppress completion summaries and next-step prompts.
+   Invoke `/speckit-spex-submit` directly in the current session. This runs verification, commits outstanding changes, and creates the PR.
 
-   After the smoke test completes, output:
+   After submit completes, output:
    ```
-   Pipeline complete through review and smoke test.
-   Run `/speckit-spex-finish` to merge or create a PR.
+   Pipeline complete. PR created.
+   Run `/speckit-spex-finish` after reviews are approved to squash, merge, and clean up.
    ```
 
-   **On decline** (user says no, skip, not now, later, etc.):
+3. **If "Merge directly" (B):**
 
-   Record that the smoke test was skipped:
-   ```bash
-   "$SHIP_STATE" smoke-test-record --completed false --scenarios 0 --total 0 --skipped 0
+   Invoke `/speckit-spex-finish` directly in the current session. This runs the smoke test gate, squashes commits, and merges to main.
+
+   After finish completes, output:
    ```
+   Pipeline complete. Code landed on main.
+   ```
+
+4. **If "Stop here" (C):**
 
    Output:
    ```
-   Smoke test skipped. Pipeline complete through review.
-   Run `/speckit-spex-smoke-test` later to walk through scenarios, then `/speckit-spex-finish` to merge or create a PR.
-   ```
+   Pipeline complete through review. Stopped before submit/merge.
 
-4. **If no smoke test section exists** (`HAS_SMOKE_TEST` = 0):
-
-   Skip the smoke test and output:
-   ```
-   Pipeline complete through review. No smoke test section — skipping.
-   Run `/speckit-spex-finish` to merge or create a PR.
+   When ready:
+     /speckit-spex-submit    Push and create PR for team review
+     /speckit-spex-finish    Smoke test + squash + merge to main
    ```
 
 5. Run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 8 outputs `PIPELINE_COMPLETE`.
 
-6. **STOP the pipeline.** Do NOT invoke `/speckit-spex-finish` automatically. The user decides when and how to complete the feature.
+6. **STOP the pipeline.**
 
 ## Oversight Decision Logic
 
@@ -924,7 +904,7 @@ After the user responds:
 
 ## Pipeline Completion
 
-After Stage 8 (finish) completes successfully, the finish command handles everything: verification, merge/PR, worktree cleanup, and state file removal.
+After the Stage 8 choice prompt completes (or the user chooses to stop), the pipeline is done.
 
 1. Calculate elapsed time from `started_at`.
 2. Report completion summary:
@@ -946,12 +926,10 @@ All stages passed successfully:
   5. review-plan - plan validated
   6. implement   - code implemented
   7. review-code - code reviewed
-  8. smoke-test  - acceptance scenarios verified
-
-Run `/speckit-spex-finish` to merge or create a PR.
+  8. completion  - user chose: <submit PR / merge directly / stop>
 ```
 
-3. The pipeline stops here. The user runs `/speckit-spex-finish` manually for final verification and merge/PR.
+3. The pipeline stops here. If the user chose "Stop here", they can run `/speckit-spex-submit` or `/speckit-spex-finish` manually.
 
 ## Integration
 
@@ -970,7 +948,8 @@ Run `/speckit-spex-finish` to merge or create a PR.
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
 
-**This skill invokes (forked subagent, interactive, always pauses):**
-- `/speckit-spex-smoke-test` (Stage 8, fresh context for unbiased testing, skips if no `## Smoke Test` section)
+**This skill invokes (Stage 8 choice prompt, interactive, always pauses):**
+- `/speckit-spex-submit` (if user chooses "Submit PR")
+- `/speckit-spex-finish` (if user chooses "Merge directly")
 
 **Required extensions:** `spex-gates`, `spex-deep-review`

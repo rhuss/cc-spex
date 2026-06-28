@@ -124,7 +124,7 @@ In the `/speckit-spex-ship` pipeline, all review stages and the implementation s
 
 ### One-Shot: `/speckit-spex-ship`
 
-For smaller features or solo work where intermediate review is not needed, `/speckit-spex-ship` chains the entire workflow from brainstorm through verification in a single session. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`) and can optionally create a PR at the end with `--create-pr`. See [Ship Command](#ship-command) below for details.
+For smaller features or solo work where intermediate review is not needed, `/speckit-spex-ship` chains the entire workflow from brainstorm through verification in a single session. It runs all nine stages autonomously with configurable oversight levels (`--ask always|smart|never`). At completion, it presents a choice: submit a PR, merge directly to main, or stop for manual handling. See [Ship Command](#ship-command) below for details.
 
 ```mermaid
 flowchart TD
@@ -200,7 +200,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 ### Bundled Extensions
 
-**`spex`** (core, always active): Brainstorming, ship pipeline, help, evolve, spec refactoring, flow state tracking, focused interactive smoke test (curated scenarios from spec's `## Smoke Test` section), and lifecycle hooks (smoke test prompt via `before_finish`, flow state cleanup via `after_finish`).
+**`spex`** (core, always active): Brainstorming, ship pipeline, help, evolve, spec refactoring, flow state tracking, focused interactive smoke test (curated scenarios from spec's `## Smoke Test` section), submit (PR creation + watch mode), finish (smoke test gate + squash + merge), and lifecycle hooks (flow state cleanup via `after_finish`).
 
 **`spex-gates`**: Quality gates that fire automatically via lifecycle hooks:
 - `after_specify`: runs spec review
@@ -267,7 +267,8 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
 | `/speckit-spex-smoke-test` | spex | Focused interactive smoke test from spec's `## Smoke Test` section. Claude automates setup/execution, human provides pass/fail judgment. Auto-skips when section absent. Writes SMOKE-TEST.md report. Always interactive, even in ship pipeline |
-| `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion). Runs `before_finish` hooks (e.g., smoke test prompt) before verification and `after_finish` hooks after completion. `--watch`: monitor CI after PR creation, auto-fix failures |
+| `/speckit-spex-submit` | spex | Push and create PR for team review. Runs verification, commits outstanding changes, creates PR with spec-linked body and REVIEWERS.md. `--watch`: monitor CI, auto-fix failures, triage review comments |
+| `/speckit-spex-finish` | spex | Smoke test + squash + merge/keep (land the code). Runs smoke test gate, squashes commits with conventional commit message, merges or keeps. `--no-smoke-test`: skip the smoke test gate |
 | `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, create, or clean up git worktrees |
@@ -284,7 +285,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 `/speckit-spex-ship` is the autonomous full-cycle workflow that chains all stages from specification through verification. It requires both the `spex-gates` and `spex-deep-review` extensions to be enabled.
 
 ```
-/speckit-spex-ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--create-pr] [--no-external] [--[no-]coderabbit] [--[no-]copilot]
+/speckit-spex-ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--no-external] [--[no-]coderabbit] [--[no-]copilot]
 ```
 
 The pipeline runs nine stages in strict order:
@@ -299,7 +300,7 @@ The pipeline runs nine stages in strict order:
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
 | 6 | implement | Execute implementation following task plan (with per-task test checkpoints) |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | smoke-test | Focused interactive smoke test from spec's `## Smoke Test` section. Claude automates setup/execution, human provides pass/fail judgment. Auto-skips when section absent. Writes SMOKE-TEST.md. Stops here; run `/speckit-spex-finish` manually |
+| 8 | completion | End-of-pipeline choice: submit PR (`/speckit-spex-submit`), merge directly (`/speckit-spex-finish`), or stop here for manual handling |
 
 **Oversight levels** control how findings are handled:
 
@@ -319,7 +320,7 @@ The ship pipeline includes two automated feedback mechanisms that catch problems
 
 **Mid-implementation review checkpoints** (Stage 6): When `spex-deep-review` is enabled and a feature has 3 or more tasks, fresh-context correctness review agents are spawned at the 1/3 and 2/3 task completion marks. Each checkpoint reviews all code so far against the spec, focusing only on correctness (not architecture, security, or test quality). Findings are fixed before implementation continues, preventing drift from compounding across the remaining tasks. Checkpoint results are recorded in the state file so the final deep review can show a layer comparison of what each review layer caught. Disable with `implement.review_checkpoints: false` in `.specify/extensions/spex/spex-config.yml`.
 
-**Post-PR watch mode** (Stage 8): When `--create-pr` is set, the finish stage automatically enters watch mode after PR creation. It polls CI status, reads failure logs, and attempts fixes within the PR's changed file set (max 2 attempts). If `spex-collab` is enabled, watch mode also triages new review comments via `/speckit-spex-collab-triage`. Watch mode exits on CI success, timeout (default 30 minutes), or when the PR is closed/merged externally. Configure timeouts and intervals in `.specify/extensions/spex/spex-config.yml` under `watch.timeout_minutes` and `watch.poll_interval_seconds`.
+**Post-PR watch mode** (`/speckit-spex-submit --watch`): After creating a PR, watch mode polls CI status, reads failure logs, and attempts fixes within the PR's changed file set (max 2 attempts). If `spex-collab` is enabled, watch mode also triages new review comments via `/speckit-spex-collab-triage`. Watch mode exits on CI success, timeout (default 30 minutes), or when the PR is closed/merged externally. Configure timeouts and intervals in `.specify/extensions/spex/spex-config.yml` under `watch.timeout_minutes` and `watch.poll_interval_seconds`.
 
 ### Worktree integration
 
@@ -327,8 +328,8 @@ When the `spex-worktrees` extension is enabled, the ship pipeline automatically 
 
 After the pipeline completes, you choose what to do:
 
-- **Merge to main**: delegates to `/speckit-spex-worktrees-manage finish` (merges, removes worktree, deletes branch)
-- **Create PR**: pushes the branch and creates a PR
+- **Submit PR**: run `/speckit-spex-submit` to push and create a PR for team review
+- **Merge directly**: run `/speckit-spex-finish` to smoke test, squash, and merge to main
 - **Test first**: leaves everything as-is for manual testing
 
 If worktrees are not enabled, the pipeline works in-place on the feature branch (existing behavior).
