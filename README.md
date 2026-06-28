@@ -214,6 +214,8 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 **`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, optionally creates a sibling worktree and copies `.claude/` and `.specify/` config to it.
 
 **`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
+
+**`spex-detach`** (opt-in): Detach spec artifacts at PR time for contributing to upstream projects that don't use spec-driven development. At finish time, creates a clean PR branch (`pr/<feature-branch>`) containing only code changes by computing a filtered diff against the upstream default branch's merge-base. Optionally archives spec artifacts to a configured project-specs repo. When enabled with an archive path, brainstorm documents are written to the project-specs repo instead of the code worktree.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR
 - `before_implement`: presents phase split proposal for implementation PRs
 - `phase-manager`: coordinates PR creation, code review updates, and phase boundaries. After spec PR creation, suggests triage with a `/loop` command and delay notice. After spec triage completes, runs a gate check comparing review comment count against `triage.split_threshold` (default 100) to recommend continuing on the same PR or splitting into separate implementation PR(s). After implementation push, suggests triage (with deep-review first if that extension is enabled).
@@ -275,6 +277,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-collab-revise` | spex-collab | Revise spec from PR review feedback, cascade to plan/tasks, update REVIEWERS.md |
 | `/speckit-spex-collab-reconcile` | spex-collab | Reconcile revised tasks against existing implementation, produce delta |
 | `/speckit-spex-collab-triage` | spex-collab | Triage PR review comments: handle bot suggestions autonomously, review human comments interactively |
+| `/speckit-spex-detach-detach` | spex-detach | Create clean PR branch, archive specs, or resolve brainstorm context |
 
 ## Ship Command
 

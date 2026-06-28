@@ -15,10 +15,10 @@
 
 **Purpose**: Create the spex-detach extension bundle structure
 
-- [ ] T001 Create extension directory structure at spex/extensions/spex-detach/
-- [ ] T002 [P] Create extension manifest at spex/extensions/spex-detach/extension.yml per contract in specs/029-upstream-contrib-mode/contracts/spex-detach-sh.md
-- [ ] T003 [P] Create config template at spex/extensions/spex-detach/config-template.yml with archive.path, archive.auto_commit, upstream.default_branch, detach.strip_paths fields per data-model.md
-- [ ] T004 Add spex-detach opt-in to spex/scripts/spex-init.sh: add spex-detach to install_order array after spex-worktrees, but gate installation behind an interactive prompt ("Enable spex-detach? (Detach spec artifacts for upstream contributions) [y/N]:"). If user declines (default), skip installation entirely. If user accepts, run `specify extension add "$ext_path" --dev`. This keeps `.specify/extensions.yml` clean when spex-detach is not wanted (FR-002).
+- [X] T001 Create extension directory structure at spex/extensions/spex-detach/
+- [X] T002 [P] Create extension manifest at spex/extensions/spex-detach/extension.yml per contract in specs/029-upstream-contrib-mode/contracts/spex-detach-sh.md
+- [X] T003 [P] Create config template at spex/extensions/spex-detach/config-template.yml with archive.path, archive.auto_commit, upstream.default_branch, detach.strip_paths fields per data-model.md
+- [X] T004 Add spex-detach opt-in to spex/scripts/spex-init.sh: add spex-detach to install_order array after spex-worktrees, but gate installation behind an interactive prompt ("Enable spex-detach? (Detach spec artifacts for upstream contributions) [y/N]:"). If user declines (default), skip installation entirely. If user accepts, run `specify extension add "$ext_path" --dev`. This keeps `.specify/extensions.yml` clean when spex-detach is not wanted (FR-002).
 
 ---
 
@@ -28,7 +28,7 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create spex-detach.sh at spex/scripts/bash/spex-detach.sh with subcommand routing (detach, archive, is-enabled, clean-branch-name), argument parsing, and helper functions: get_project_name() (upstream > origin > dirname fallback), detect_upstream_default() (auto-detect from remote HEAD), read_config() (parse spex-detach-config.yml via yq with defaults)
+- [X] T005 Create spex-detach.sh at spex/scripts/bash/spex-detach.sh with subcommand routing (detach, archive, is-enabled, clean-branch-name), argument parsing, and helper functions: get_project_name() (upstream > origin > dirname fallback), detect_upstream_default() (auto-detect from remote HEAD), read_config() (parse spex-detach-config.yml via yq with defaults)
 
 **Checkpoint**: Extension bundle installable via `specify extension add`, script skeleton callable
 
@@ -42,8 +42,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T006 [P] [US1] Implement `is-enabled` subcommand in spex/scripts/bash/spex-detach.sh: check for `.specify/extensions/spex-detach` directory, exit 0 if present, exit 1 otherwise
-- [ ] T007 [P] [US1] Implement `clean-branch-name` subcommand in spex/scripts/bash/spex-detach.sh: accept --branch flag (default: current branch), output `pr/<branch-name>` to stdout
+- [X] T006 [P] [US1] Implement `is-enabled` subcommand in spex/scripts/bash/spex-detach.sh: check for `.specify/extensions/spex-detach` directory, exit 0 if present, exit 1 otherwise
+- [X] T007 [P] [US1] Implement `clean-branch-name` subcommand in spex/scripts/bash/spex-detach.sh: accept --branch flag (default: current branch), output `pr/<branch-name>` to stdout
 
 **Checkpoint**: Extension installs via init, `is-enabled` and `clean-branch-name` work. All spec-kit commands function normally.
 
@@ -57,11 +57,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Implement `detach` subcommand in spex/scripts/bash/spex-detach.sh: compute merge-base, generate filtered diff with --binary and pathspec exclusions (:!.specify :!specs :!brainstorm), create pr/<branch> from merge-base, apply diff as single squashed commit, handle empty-diff edge case (exit 2), output JSON result per contract
-- [ ] T009 [US2] Add detach detection block after Phase 2 in spex/extensions/spex/commands/speckit.spex.finish.md: detect `.specify/extensions/spex-detach` directory, locate spex-detach.sh via find, call `spex-detach.sh detach` to create clean PR branch, report result
-- [ ] T010 [US2] Modify Phase 4 action selection in spex/extensions/spex/commands/speckit.spex.finish.md: when detach is active, replace "Push and create PR" with "Push clean PR branch to upstream" option targeting `pr/<branch>`, keep "Merge to default branch" and "Keep branch as-is" unchanged
-- [ ] T011 [US2] Implement "Push clean PR branch" action in Phase 5 of spex/extensions/spex/commands/speckit.spex.finish.md: push `pr/<branch>` to remote, create PR from clean branch via `gh pr create`, include note that spec artifacts are preserved on the feature branch
-- [ ] T012 [US2] Add clean branch verification (FR-008) in spex/extensions/spex/commands/speckit.spex.finish.md: after detach, check that no `.specify/`, `specs/`, or `brainstorm/` directories exist on `pr/<branch>`, abort with error if verification fails
+- [X] T008 [US2] Implement `detach` subcommand in spex/scripts/bash/spex-detach.sh: compute merge-base, generate filtered diff with --binary and pathspec exclusions (:!.specify :!specs :!brainstorm), create pr/<branch> from merge-base, apply diff as single squashed commit, handle empty-diff edge case (exit 2), output JSON result per contract
+- [X] T009 [US2] Add detach detection block after Phase 2 in spex/extensions/spex/commands/speckit.spex.finish.md: detect `.specify/extensions/spex-detach` directory, locate spex-detach.sh via find, call `spex-detach.sh detach` to create clean PR branch, report result
+- [X] T010 [US2] Modify Phase 4 action selection in spex/extensions/spex/commands/speckit.spex.finish.md: when detach is active, replace "Push and create PR" with "Push clean PR branch to upstream" option targeting `pr/<branch>`, keep "Merge to default branch" and "Keep branch as-is" unchanged
+- [X] T011 [US2] Implement "Push clean PR branch" action in Phase 5 of spex/extensions/spex/commands/speckit.spex.finish.md: push `pr/<branch>` to remote, create PR from clean branch via `gh pr create`, include note that spec artifacts are preserved on the feature branch
+- [X] T012 [US2] Add clean branch verification (FR-008) in spex/extensions/spex/commands/speckit.spex.finish.md: after detach, check that no `.specify/`, `specs/`, or `brainstorm/` directories exist on `pr/<branch>`, abort with error if verification fails
 
 **Checkpoint**: Full detach flow works end-to-end. Clean PR branch contains only code. Feature branch preserved.
 
@@ -75,8 +75,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T013 [US3] Implement `archive` subcommand in spex/scripts/bash/spex-detach.sh: accept --target, --project, --feature, --auto-commit flags, copy `.specify/` and `specs/<feature>/` to target path organized by project/feature, create directory structure if missing, optionally auto-commit to target repo, handle unreachable path gracefully (warn and continue), output JSON result per contract
-- [ ] T014 [US3] Create command skill at spex/extensions/spex-detach/commands/speckit.spex-detach.detach.md: accept "archive" or "detach" argument, locate and call spex-detach.sh with appropriate subcommand, read config from `.specify/extensions/spex-detach/spex-detach-config.yml`, support manual invocation outside finish flow
+- [X] T013 [US3] Implement `archive` subcommand in spex/scripts/bash/spex-detach.sh: accept --target, --project, --feature, --auto-commit flags, copy `.specify/` and `specs/<feature>/` to target path organized by project/feature, create directory structure if missing, optionally auto-commit to target repo, handle unreachable path gracefully (warn and continue), output JSON result per contract
+- [X] T014 [US3] Create command skill at spex/extensions/spex-detach/commands/speckit.spex-detach.detach.md: accept "archive" or "detach" argument, locate and call spex-detach.sh with appropriate subcommand, read config from `.specify/extensions/spex-detach/spex-detach-config.yml`, support manual invocation outside finish flow
 
 **Checkpoint**: Archive works as `before_finish` hook and via manual `/speckit-spex-detach-detach archive` invocation.
 
@@ -90,8 +90,8 @@
 
 ### Implementation for User Story 4
 
-- [ ] T015 [US4] Add spex-detach awareness to spex/extensions/spex/commands/speckit.spex.brainstorm.md: at the start of brainstorm execution, check if spex-detach is enabled (via `spex-detach.sh is-enabled`), if enabled read `archive.path` from spex-detach-config.yml, redirect brainstorm document output to `<archive.path>/brainstorm/` instead of local `brainstorm/` directory
-- [ ] T016 [US4] Add brainstorm context injection to spex/extensions/spex-detach/commands/speckit.spex-detach.detach.md: when invoked with `brainstorm-context` argument, read the brainstorm document from the project-specs repo (path from spex-detach-config.yml archive.path + brainstorm/ directory), output the content so it can be passed as context to `/speckit-specify` via the `--brainstorm` argument. This avoids modifying the upstream spec-kit specify skill — instead, the spex-detach command acts as a resolver that locates the brainstorm document and the user passes the resolved path to specify.
+- [X] T015 [US4] Add spex-detach awareness to spex/extensions/spex/commands/speckit.spex.brainstorm.md: at the start of brainstorm execution, check if spex-detach is enabled (via `spex-detach.sh is-enabled`), if enabled read `archive.path` from spex-detach-config.yml, redirect brainstorm document output to `<archive.path>/brainstorm/` instead of local `brainstorm/` directory
+- [X] T016 [US4] Add brainstorm context injection to spex/extensions/spex-detach/commands/speckit.spex-detach.detach.md: when invoked with `brainstorm-context` argument, read the brainstorm document from the project-specs repo (path from spex-detach-config.yml archive.path + brainstorm/ directory), output the content so it can be passed as context to `/speckit-specify` via the `--brainstorm` argument. This avoids modifying the upstream spec-kit specify skill — instead, the spex-detach command acts as a resolver that locates the brainstorm document and the user passes the resolved path to specify.
 
 **Checkpoint**: Brainstorm documents created in project-specs repo. Brainstorm content available as context for `/speckit-specify`.
 
@@ -101,11 +101,11 @@
 
 **Purpose**: Documentation, verification, edge cases
 
-- [ ] T017 [P] Update README.md with spex-detach extension: add to Bundled Extensions section, add detach commands to Commands Reference table, update workflow descriptions
-- [ ] T018 [P] Update spex/docs/help.md with spex-detach commands and workflow section
-- [ ] T019 [P] Add edge case handling across spex-detach.sh: no spec artifacts in worktree (skip detach), spec-only changes (warn empty PR branch), re-run idempotency (regenerate pr/ branch)
-- [ ] T020 Verify parallel worktree independence (US5): create two worktrees with spex-detach enabled, run spec-kit commands in both, confirm independent `.specify/.spex-state` tracking and no cross-worktree interference
-- [ ] T021 Run quickstart.md validation: walk through the full workflow from init to finish to verify documented steps match actual behavior
+- [X] T017 [P] Update README.md with spex-detach extension: add to Bundled Extensions section, add detach commands to Commands Reference table, update workflow descriptions
+- [X] T018 [P] Update spex/docs/help.md with spex-detach commands and workflow section
+- [X] T019 [P] Add edge case handling across spex-detach.sh: no spec artifacts in worktree (skip detach), spec-only changes (warn empty PR branch), re-run idempotency (regenerate pr/ branch)
+- [X] T020 Verify parallel worktree independence (US5): create two worktrees with spex-detach enabled, run spec-kit commands in both, confirm independent `.specify/.spex-state` tracking and no cross-worktree interference
+- [X] T021 Run quickstart.md validation: walk through the full workflow from init to finish to verify documented steps match actual behavior
 
 ---
 

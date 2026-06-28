@@ -119,6 +119,17 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                                     Flags: --pr <number>
                                     Loop:  /loop 5m /speckit-spex-collab-triage
 
+  spex-detach extension:
+    /speckit-spex-finish → creates clean PR branch (pr/<branch>) with spec
+                           artifacts stripped, offers "Push clean PR branch
+                           to upstream" option. Verifies no .specify/, specs/,
+                           or brainstorm/ dirs remain on the clean branch.
+    /speckit-spex-detach-detach  → manual detach, archive, or brainstorm-context
+                                   Subcommands: detach, archive, brainstorm-context
+    /speckit-spex-brainstorm     → when enabled + archive.path configured,
+                                   writes brainstorm docs to project-specs repo
+    Optional before_finish hook archives specs to project-specs repo
+
   Triage lifecycle (spex-collab):
     After spec PR  → flow state: triage-spec, suggest /loop with delay notice
     After triage   → gate check: comment count vs split_threshold (default 100)
