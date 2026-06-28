@@ -407,6 +407,8 @@ For each unresolved human thread:
 
 ## Step 13: Summary Output
 
+**Mandatory**: Steps 13-15 MUST execute after every triage pass, even when all threads were already handled or all were resolved. These steps surface patterns, capture learnings, and track deferred work. Skipping them silently discards the feedback loop.
+
 At the end of the triage pass, report a summary:
 
 ```
@@ -468,38 +470,45 @@ Recurring patterns from N review comments:
 
 4. **Apply selected principles**: For each selected principle, invoke `/speckit-constitution` with the principle text as argument. This adds the principles to `.specify/memory/constitution.md` following the existing format and triggers template sync.
 
-## Step 15: Brainstorm Deferred Findings
+## Step 15: Brainstorm Deferred and Rejected Findings
 
-After principle extraction, check if any bot comments were deferred during this triage pass.
+After principle extraction, check if any bot comments were deferred or rejected during this triage pass. Both categories can surface real improvement opportunities worth tracking:
 
-**Skip this step if**: no comments were deferred (deferred count is 0).
+- **Deferred**: Valid suggestions that are out of scope for this PR
+- **Rejected**: Suggestions we disagreed with, but that may reveal a pattern worth addressing differently (e.g., the bot keeps flagging error handling because our approach is unconventional -- worth documenting or reconsidering)
+
+**Skip this step if**: no comments were deferred AND fewer than 3 comments were rejected (not enough signal).
 
 **Procedure:**
 
-1. **Collect deferred items**: Gather all deferred findings from this pass into a summary list:
+1. **Collect candidate items**: Gather all deferred findings and all rejected findings from this pass into separate lists:
 
 ```
 Deferred review findings (out of scope for PR #<PR_NUM>):
 
 1. <Bot>: <file path> — <1-line summary of suggested improvement>
    Why deferred: <1 sentence>
-2. <Bot>: <file path> — <1-line summary>
-   Why deferred: <1 sentence>
+
+Rejected review findings worth considering:
+
+1. <Bot>: <file path> — <1-line summary of what the bot flagged>
+   Why rejected: <1 sentence>
 ...
 ```
 
-2. **Group by theme**: If multiple deferred items address the same concern (e.g., "error handling consistency", "missing validation"), group them under a common theme. Each theme becomes one brainstorm candidate.
+2. **Group by theme**: Group both deferred AND rejected items by the concern they address (e.g., "error handling consistency", "missing validation", "concurrency safety"). Items from both categories can land in the same theme. Each theme becomes one brainstorm candidate.
 
-3. **Offer brainstorm creation**: Present the deferred themes to the user:
+3. **Offer brainstorm creation**: Present the themes to the user:
 
    - header: "Brainstorm?"
    - multiSelect: true
-   - Each theme becomes an option with the theme name as label and "N deferred findings from Bot1, Bot2" as description
+   - Each theme becomes an option with the theme name as label and "N findings (M deferred, K rejected) from Bot1, Bot2" as description
    - Include a "Skip all" option
 
 4. **Create brainstorms**: For each selected theme, invoke `/speckit-spex-brainstorm` with a pre-filled problem framing that includes:
-   - The deferred findings that belong to this theme (bot author, file, suggestion)
+   - The findings that belong to this theme (bot author, file, suggestion, verdict)
    - The PR number and context where they were identified
+   - For rejected findings: why they were rejected and what alternative approach the project uses
    - A note that these originated from AI code review
 
    The brainstorm skill handles the document creation, numbering, issue creation (offering to create a GitHub issue), and overview update. Do not duplicate that logic here.
@@ -507,10 +516,10 @@ Deferred review findings (out of scope for PR #<PR_NUM>):
 5. **Link back to PR**: If a GitHub issue was created by the brainstorm skill, post a single summary comment on the PR linking to the issue(s):
 
 ```bash
-BODY="Deferred review findings tracked for follow-up:
+BODY="Review findings tracked for follow-up:
 $(for each issue: echo "- [Theme name]($ISSUE_URL)")
 
-<!-- spex-triage:deferred-summary -->"
+<!-- spex-triage:brainstorm-summary -->"
 
 gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" -f body="$BODY"
 ```
