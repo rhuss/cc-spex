@@ -306,18 +306,28 @@ bash spex/scripts/spex-triage-state.sh set "$PR_NUM" "$COMMENT_DB_ID" "<action>"
 
 Where `<action>` is `accepted`, `rejected`, `deferred`, or `skipped`.
 
-## Step 9: Auto-Resolve Threads
+## Step 9: Resolve Handled Threads
 
-**Hard rule**: NEVER resolve a thread that has not been replied to with a `<!-- spex-triage -->` or `<!-- spex-triage:deferred -->` signature. Resolving without a reply silently discards review feedback. A thread is eligible for resolution ONLY when:
-1. The thread was assessed in Step 6 (valid, invalid, or deferred verdict reached), AND
-2. A reply was posted in Step 8 (acceptance, rejection, deferral, or fix-failure reply), AND
-3. The bot profile's `autoResolve` setting is `true`
+**Hard rule**: NEVER resolve a thread that has not been replied to with a `<!-- spex-triage -->` or `<!-- spex-triage:deferred -->` signature. Resolving without a reply silently discards review feedback.
 
-If any of these conditions is not met, leave the thread unresolved.
+A thread is eligible for resolution when BOTH of these are true:
+1. The thread was assessed in Step 6 (valid, invalid, deferred verdict reached), AND
+2. A reply was posted in Step 8 (acceptance, rejection, deferral, or fix-failure reply)
 
-For each thread that meets ALL three conditions:
+Once a reply has been posted, determine whether to resolve based on the verdict and bot profile:
 
-- **If `autoResolve=true`** (e.g., Copilot, Devin): Resolve the thread via GraphQL:
+| Verdict | selfResolves=true | selfResolves=false |
+|---------|-------------------|--------------------|
+| **Rejected** | Resolve | Resolve |
+| **Deferred** | Resolve | Resolve |
+| **Accepted** | Leave open (bot will self-resolve after acknowledging the fix) | Resolve |
+
+In other words:
+- **Rejected or deferred**: Always resolve -- we've made our decision and replied, leaving it open implies it still needs attention.
+- **Accepted + selfResolves=true** (e.g., CodeRabbit): Leave open -- the bot will detect the fix was applied and resolve its own thread.
+- **Accepted + selfResolves=false** (e.g., Copilot, Devin, unknown bots): Resolve -- the bot won't self-resolve, so we do it.
+
+Resolve via GraphQL:
 
 ```bash
 gh api graphql -f query='
@@ -329,9 +339,17 @@ gh api graphql -f query='
 ' -f id="$THREAD_NODE_ID"
 ```
 
-- **If `autoResolve=false`** (e.g., CodeRabbit or unknown bots): Do NOT resolve the thread. Leave it open for the bot to self-resolve or for the reviewer to handle.
-
 **Never batch-resolve threads.** Each thread must be resolved individually, only after its own reply has been posted. Do not resolve threads that were skipped, not assessed, or that belong to a different processing batch.
+
+### Step 9b: Resolve Stale Handled Threads
+
+On each triage pass, after processing new threads, check for threads that were handled in a previous pass but are still unresolved. A thread is stale-handled when:
+
+1. It is in the state file as `accepted` or `rejected` (we already replied), AND
+2. It is still unresolved on GitHub, AND
+3. The last comment in the thread is either from us (the triage reply) or from the bot acknowledging our reply
+
+For each stale-handled thread, resolve it via the same GraphQL mutation above. These were left open due to the previous behavior and should be cleaned up.
 
 ## Step 10: Re-evaluation for Loop Mode
 
