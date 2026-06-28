@@ -244,10 +244,25 @@ You MUST write the brainstorm document at session end. This step is NOT optional
 
 **Procedure:**
 
-1. **Create directory** if it does not exist:
+1. **Determine output directory** (spex-detach aware):
    ```bash
-   mkdir -p brainstorm/
+   BRAINSTORM_DIR="brainstorm"
+
+   # Check if spex-detach is enabled and has an archive path
+   DETACH_SCRIPT="$(find ~/.claude -name 'spex-detach.sh' 2>/dev/null | head -1)"
+   if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
+     DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
+     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH" ]; then
+       BRAINSTORM_DIR="$ARCHIVE_PATH/brainstorm"
+       echo "spex-detach: writing brainstorm to project-specs repo at $BRAINSTORM_DIR"
+     fi
+   fi
+
+   mkdir -p "$BRAINSTORM_DIR"
    ```
+
+   Use `$BRAINSTORM_DIR` instead of `brainstorm/` for all subsequent file operations in this section.
 
 2. **Detect next number** by scanning existing files:
    ```bash

@@ -128,6 +128,56 @@ fi
 
 If the working tree is clean (no staged or untracked changes), skip this step.
 
+## Phase 2b: Detach Detection (spex-detach)
+
+If the `spex-detach` extension is installed, create the clean PR branch now (after all changes are committed):
+
+```bash
+DETACH_ENABLED=false
+DETACH_RESULT=""
+DETACH_PR_BRANCH=""
+if [ -d ".specify/extensions/spex-detach" ]; then
+  DETACH_SCRIPT=$(find ~/.claude -name 'spex-detach.sh' 2>/dev/null | head -1)
+  if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ]; then
+    DETACH_ENABLED=true
+    DETACH_RESULT=$("$DETACH_SCRIPT" detach 2>&1) || {
+      DETACH_EXIT=$?
+      if [ "$DETACH_EXIT" -eq 2 ]; then
+        echo "WARNING: All changes are spec-only. The clean PR branch would be empty."
+        echo "No clean PR branch was created."
+        DETACH_ENABLED=false
+      else
+        echo "ERROR: spex-detach failed: $DETACH_RESULT"
+        DETACH_ENABLED=false
+      fi
+    }
+    if [ "$DETACH_ENABLED" = true ]; then
+      DETACH_PR_BRANCH=$(echo "$DETACH_RESULT" | jq -r '.pr_branch')
+      DETACH_FILES=$(echo "$DETACH_RESULT" | jq -r '.files_changed')
+      echo "Created clean PR branch: $DETACH_PR_BRANCH ($DETACH_FILES files)"
+    fi
+  fi
+fi
+```
+
+If detach was successful, verify the clean branch contains no spec directories (FR-008):
+
+```bash
+if [ "$DETACH_ENABLED" = true ] && [ -n "$DETACH_PR_BRANCH" ]; then
+  SPEC_DIRS_FOUND=false
+  for check_dir in .specify specs brainstorm; do
+    if git ls-tree -d "$DETACH_PR_BRANCH" "$check_dir" >/dev/null 2>&1; then
+      SPEC_DIRS_FOUND=true
+      echo "ERROR: Clean branch still contains '$check_dir' directory"
+    fi
+  done
+  if [ "$SPEC_DIRS_FOUND" = true ]; then
+    echo "ERROR: Clean branch verification failed. Spec artifacts were not properly stripped."
+    DETACH_ENABLED=false
+  fi
+fi
+```
+
 ## Phase 3: Context Detection
 
 Detect the current environment by running the context detection script:
@@ -160,13 +210,67 @@ Present options to the user (single-select, header: "Finish"):
 
 **"Feature verified. How would you like to complete it?"**
 
-Options:
+**When `DETACH_ENABLED` is true**, present these options:
+1. **"Push clean PR branch to upstream" (Recommended)**: "Push `${DETACH_PR_BRANCH}` with only code changes for an upstream PR"
+2. **"Merge to default branch"**: "Fast-forward merge into the default branch, clean up branch and worktree"
+3. **"Keep branch as-is"**: "Leave branch for manual handling later"
+
+**When `DETACH_ENABLED` is false** (standard behavior), present these options:
 1. **If `EXISTING_PR_NUMBER` is set:** **"Push to PR #${EXISTING_PR_NUMBER}" (Recommended)**: "Push new commits to the existing pull request"
    **Otherwise:** **"Push and create PR" (Recommended)**: "Push branch and open a pull request for team review"
 2. **"Merge to default branch"**: "Fast-forward merge into the default branch, clean up branch and worktree"
 3. **"Keep branch as-is"**: "Leave branch for manual handling later"
 
 ## Phase 5: Execute Action
+
+### Option D: Push Clean PR Branch to Upstream (spex-detach)
+
+Only available when `DETACH_ENABLED` is true and the user selected "Push clean PR branch to upstream".
+
+```bash
+REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+git push -u "$REMOTE" "$DETACH_PR_BRANCH"
+
+FEATURE_BRANCH=$(git branch --show-current)
+SPEC_DIR="specs/${FEATURE_BRANCH}"
+FEATURE_NAME=$(head -1 "$SPEC_DIR/spec.md" 2>/dev/null | sed 's/^# Feature Specification: //' || echo "$FEATURE_BRANCH")
+
+# Determine target repo for PR
+REPO_FLAG=""
+if git remote | grep -qx upstream 2>/dev/null; then
+  UPSTREAM_REPO=$(git remote get-url upstream 2>/dev/null | sed 's|.*github\.com[:/]||; s|\.git$||')
+  [ -n "$UPSTREAM_REPO" ] && REPO_FLAG="--repo $UPSTREAM_REPO"
+fi
+
+gh pr create ${REPO_FLAG} \
+  --head "$DETACH_PR_BRANCH" \
+  --title "$FEATURE_NAME" \
+  --body "$(cat <<PREOF
+## Summary
+
+$FEATURE_NAME
+
+> Spec artifacts are preserved on the \`$FEATURE_BRANCH\` feature branch.
+
+Assisted-By: 🤖 Claude Code
+PREOF
+)"
+```
+
+After PR creation:
+```bash
+ACTION_TAKEN="pr"
+PR_URL=$(gh pr view "$DETACH_PR_BRANCH" --json url -q '.url' 2>/dev/null || true)
+PR_NUMBER=$(gh pr view "$DETACH_PR_BRANCH" --json number -q '.number' 2>/dev/null || true)
+```
+
+Report:
+```
+Created PR from clean branch $DETACH_PR_BRANCH: <PR_URL>
+Spec artifacts preserved on feature branch $FEATURE_BRANCH.
+```
+
+If in a worktree, also report: "Run `/speckit-spex-finish` again after the PR is merged to merge and clean up the worktree."
 
 ### Option A: Merge to Default Branch
 

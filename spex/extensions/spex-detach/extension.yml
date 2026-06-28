@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+extension:
+  id: spex-detach
+  name: "Spex Detach"
+  version: "1.0.0"
+  description: "Detach spec artifacts at PR time for contributing to projects that don't use spec-driven development"
+  author: cc-spex
+  license: MIT
+
+requires:
+  speckit_version: ">=0.5.2"
+  tools:
+    - name: git
+      required: true
+    - name: jq
+      required: true
+    - name: yq
+      required: false
+
+provides:
+  commands:
+    - name: speckit.spex-detach.detach
+      file: commands/speckit.spex-detach.detach.md
+      description: "Create clean PR branch with spec artifacts stripped"
+
+  config:
+    - name: "spex-detach-config.yml"
+      template: "config-template.yml"
+      description: "Detach extension configuration (archive path, upstream branch)"
+      required: false
+
+hooks:
+  before_finish:
+    command: speckit.spex-detach.detach
+    args: "archive"
+    optional: true
+    prompt: "Archive specs to project-specs repo before finishing?"
+    description: "Copy spec artifacts to configured archive path"
+
+tags:
+  - "spex"
+  - "upstream"
+  - "contribution"
+  - "detach"

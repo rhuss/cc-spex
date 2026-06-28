@@ -296,6 +296,8 @@ install_extensions() {
   # then extensions that depend on others (spex-deep-review, spex-teams,
   # and spex-collab require spex-gates).
   local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab)
+  # Optional extensions gated behind interactive prompts
+  local optional_extensions=(spex-detach)
 
   local installed=0 failed=0
   for ext_id in "${install_order[@]}"; do
@@ -311,6 +313,36 @@ install_extensions() {
       echo "WARNING: Failed to install extension '$ext_id'" >&2
       failed=$((failed + 1))
     fi
+  done
+
+  # Prompt for optional extensions
+  for ext_id in "${optional_extensions[@]}"; do
+    local ext_path="$extensions_dir/$ext_id"
+    [ -f "$ext_path/extension.yml" ] || continue
+
+    # Already installed — skip the prompt
+    if [ -d ".specify/extensions/$ext_id" ]; then
+      continue
+    fi
+
+    local ext_desc
+    ext_desc=$(yq -r '.extension.description // ""' "$ext_path/extension.yml" 2>/dev/null || echo "")
+
+    printf "  Enable %s? (%s) [y/N]: " "$ext_id" "$ext_desc"
+    read -r answer </dev/tty 2>/dev/null || { echo "  Skipped $ext_id (non-interactive)"; continue; }
+    case "$answer" in
+      [yY]|[yY][eE][sS])
+        if specify extension add "$ext_path" --dev; then
+          installed=$((installed + 1))
+        else
+          echo "WARNING: Failed to install extension '$ext_id'" >&2
+          failed=$((failed + 1))
+        fi
+        ;;
+      *)
+        echo "  Skipped $ext_id"
+        ;;
+    esac
   done
 
   echo "  Extensions: $installed installed, $failed failed"

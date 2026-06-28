@@ -1,0 +1,18 @@
+# spex-detach configuration
+archive:
+  # Path to project-specs repository for spec archiving
+  # Leave empty to skip archiving
+  path: ""
+  # Auto-commit archived specs to the project-specs repo
+  auto_commit: true
+
+upstream:
+  # Override upstream's default branch (auto-detected from origin if empty)
+  default_branch: ""
+
+detach:
+  # Paths to strip from the clean PR branch
+  strip_paths:
+    - ".specify"
+    - "specs"
+    - "brainstorm"
