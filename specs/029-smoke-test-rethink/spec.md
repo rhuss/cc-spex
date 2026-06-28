@@ -91,6 +91,13 @@ After the smoke test completes, a SMOKE-TEST.md report is written to the spec di
 - What happens when a scenario requires external infrastructure the developer does not have? Claude marks it as "skip" with manual instructions for later.
 - What happens when the `## Smoke Test` section has more than 5 scenarios? A warning is shown recommending the developer trim to 5 or fewer, but execution proceeds.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: What format should scenarios use in the `## Smoke Test` section? → A: Numbered list of short imperative instructions. Each item describes what Claude should set up and what the human should verify. No Given/When/Then structure.
+- Q: Should failed scenarios trigger a debug-and-retry loop? → A: Yes. On failure, Claude offers to investigate the cause, suggests a fix, and allows the developer to retry the scenario. Both the initial failure and retry result are recorded in the report.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -106,6 +113,8 @@ After the smoke test completes, a SMOKE-TEST.md report is written to the spec di
 - **FR-009**: The ship pipeline MUST check for the `## Smoke Test` section to decide whether to run or skip the smoke test stage.
 - **FR-010**: The spec template MUST include an optional `## Smoke Test` section with guidance on when to include it and how to write scenarios.
 - **FR-011**: The command MUST warn (but not block) when more than 5 scenarios are defined in the `## Smoke Test` section.
+- **FR-012**: Scenarios in the `## Smoke Test` section MUST be formatted as a numbered list of short imperative instructions (not Given/When/Then triples).
+- **FR-013**: When a scenario fails, the command MUST offer to investigate the cause, suggest a fix, and allow the developer to retry the scenario. Both the initial failure and retry result MUST be recorded in the report.
 
 ### Key Entities
 
