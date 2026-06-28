@@ -18,7 +18,7 @@
 - [ ] T001 Create extension directory structure at spex/extensions/spex-detach/
 - [ ] T002 [P] Create extension manifest at spex/extensions/spex-detach/extension.yml per contract in specs/029-upstream-contrib-mode/contracts/spex-detach-sh.md
 - [ ] T003 [P] Create config template at spex/extensions/spex-detach/config-template.yml with archive.path, archive.auto_commit, upstream.default_branch, detach.strip_paths fields per data-model.md
-- [ ] T004 Add spex-detach to install_order array in spex/scripts/spex-init.sh after spex-worktrees, before spex-deep-review
+- [ ] T004 Add spex-detach opt-in to spex/scripts/spex-init.sh: add spex-detach to install_order array after spex-worktrees, but gate installation behind an interactive prompt ("Enable spex-detach? (Detach spec artifacts for upstream contributions) [y/N]:"). If user declines (default), skip installation entirely. If user accepts, run `specify extension add "$ext_path" --dev`. This keeps `.specify/extensions.yml` clean when spex-detach is not wanted (FR-002).
 
 ---
 
@@ -91,7 +91,7 @@
 ### Implementation for User Story 4
 
 - [ ] T015 [US4] Add spex-detach awareness to spex/extensions/spex/commands/speckit.spex.brainstorm.md: at the start of brainstorm execution, check if spex-detach is enabled (via `spex-detach.sh is-enabled`), if enabled read `archive.path` from spex-detach-config.yml, redirect brainstorm document output to `<archive.path>/brainstorm/` instead of local `brainstorm/` directory
-- [ ] T016 [US4] Add brainstorm context passing to `/speckit-specify`: when spex-detach is enabled and a brainstorm document path in the project-specs repo is provided as argument, read the document as context input for specification generation
+- [ ] T016 [US4] Add brainstorm context injection to spex/extensions/spex-detach/commands/speckit.spex-detach.detach.md: when invoked with `brainstorm-context` argument, read the brainstorm document from the project-specs repo (path from spex-detach-config.yml archive.path + brainstorm/ directory), output the content so it can be passed as context to `/speckit-specify` via the `--brainstorm` argument. This avoids modifying the upstream spec-kit specify skill — instead, the spex-detach command acts as a resolver that locates the brainstorm document and the user passes the resolved path to specify.
 
 **Checkpoint**: Brainstorm documents created in project-specs repo. Brainstorm content available as context for `/speckit-specify`.
 

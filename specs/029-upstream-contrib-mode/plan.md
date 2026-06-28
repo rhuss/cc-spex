@@ -1,23 +1,23 @@
 # Implementation Plan: spex-detach Extension
 
-**Branch**: `029-upstream-contrib-mode` | **Date**: 2026-06-26 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/029-upstream-contrib-mode/spec.md`
+**Branch**: `029-upstream-contrib-mode` | **Date**: 2026-06-28 | **Spec**: specs/029-upstream-contrib-mode/spec.md
+**Input**: Feature specification from `/specs/029-upstream-contrib-mode/spec.md`
 
 ## Summary
 
-The `spex-detach` extension enables contributors to use spex's spec-driven workflow when contributing to upstream projects that don't use SDD. It creates a clean PR branch (via squash-onto-base) with all spec artifacts stripped, and optionally archives specs to a project-specs repository. The extension hooks into the existing `spex-finish` command, adding detach-aware behavior when enabled.
+Implement `spex-detach` as a new extension bundle that enables spec-driven development for upstream contributions. At finish time, the extension creates a clean PR branch (`pr/<feature-branch>`) by computing a filtered diff (excluding `.specify/`, `specs/`, `brainstorm/`) against the merge-base with the upstream default branch, applying it as a single squashed commit. The extension optionally archives spec artifacts to a configured project-specs repository. Clean branch creation is integrated directly into the finish command (after Phase 2 commit), while archiving hooks into `before_finish`. All git operations are delegated to `spex-detach.sh` per Constitution VII.
 
 ## Technical Context
 
 **Language/Version**: Bash (POSIX-compatible), Markdown
-**Primary Dependencies**: `git`, `jq`, `specify` CLI (spec-kit >=0.5.2)
-**Storage**: File-based (git branches, filesystem paths for archive)
-**Testing**: `make release` (integration test), manual verification
-**Target Platform**: macOS/Linux CLI (Claude Code environment)
-**Project Type**: CLI plugin extension (spex extension bundle)
-**Performance Goals**: N/A (CLI operations, no latency targets)
-**Constraints**: No compiled artifacts; bash + markdown only (constitution constraint)
-**Scale/Scope**: Single user, multiple parallel worktrees
+**Primary Dependencies**: `specify` CLI (>=0.5.2), `git`, `jq`, `gh` (for PR creation), `yq` (for config parsing)
+**Storage**: File-based (`.specify/extensions/spex-detach/`)
+**Testing**: `make release` (schema validation + integration test)
+**Target Platform**: macOS, Linux
+**Project Type**: Claude Code plugin (extension bundle)
+**Performance Goals**: N/A (not performance-critical)
+**Constraints**: Must compose with existing extensions without modification (Constitution III)
+**Scale/Scope**: Single extension bundle (~5 new files), modifications to finish command and init script
 
 ## Constitution Check
 
@@ -25,15 +25,15 @@ The `spex-detach` extension enables contributors to use spex's spec-driven workf
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Spec-Guided Development | PASS | Following full SDD workflow |
-| II. Extension Architecture | PASS | Self-contained extension bundle at `spex/extensions/spex-detach/` with manifest, commands, config |
-| III. Extension Composability | PASS | spex-detach hooks into `before_finish`; does not modify other extensions' files or hooks |
-| IV. Quality Gates | PASS | Will use existing verification gates |
-| V. Naming Discipline | PASS | `spex-detach` prefix, `speckit.spex-detach.*` command naming, feature branch `029-upstream-contrib-mode` |
-| VI. Skill Autonomy | PASS | Single purpose: detach spec artifacts at PR time |
-| VII. State as Scripts | PASS | Core logic in `spex-detach.sh` shell script, not inline bash in skill markdown |
+| I. Spec-Guided Development | PASS | Following full SDD workflow for this feature |
+| II. Extension Architecture | PASS | Self-contained bundle at `spex/extensions/spex-detach/` with manifest, commands, config template |
+| III. Extension Composability | PASS | Does not modify other extension files. Finish command modifications are additive (no behavior change when spex-detach absent). Archive uses `before_finish` hook. |
+| IV. Quality Gates | PASS | Standard gates apply throughout |
+| V. Naming Discipline | PASS | `speckit.spex-detach.*` command naming, `spex-detach` extension ID |
+| VI. Skill Autonomy | PASS | Detach command has single purpose; delegates git ops to script |
+| VII. State as Scripts | PASS | All git operations in `spex/scripts/bash/spex-detach.sh`, not inline bash |
 
-No violations. No complexity tracking entries needed.
+**Post-Design Re-Check**: Clean branch creation is integrated INTO the finish command rather than as a separate hook because timing requires it to run after Phase 2 (commit outstanding changes). This is additive modification, not extension cross-modification — the finish command already has similar conditional detection for collab and gates extensions.
 
 ## Project Structure
 
@@ -42,91 +42,118 @@ No violations. No complexity tracking entries needed.
 ```text
 specs/029-upstream-contrib-mode/
 ├── plan.md              # This file
-├── research.md          # Phase 0 output
-├── data-model.md        # Phase 1 output
-├── quickstart.md        # Phase 1 output
-├── contracts/           # Phase 1 output
-│   └── spex-detach-sh.md
-└── tasks.md             # Phase 2 output (via /speckit.tasks)
+├── spec.md              # Feature specification
+├── research.md          # Phase 0: decisions and alternatives
+├── data-model.md        # Phase 1: entity definitions
+├── quickstart.md        # Phase 1: user-facing guide
+├── contracts/
+│   └── spex-detach-sh.md  # Phase 1: script interface contract
+└── tasks.md             # Phase 2 output (via /speckit-tasks)
 ```
 
 ### Source Code (repository root)
 
 ```text
-spex/
-├── extensions/
-│   └── spex-detach/                          # NEW: Extension bundle
-│       ├── extension.yml                     # Extension manifest
-│       ├── config-template.yml               # Config template (archive path)
-│       └── commands/
-│           └── speckit.spex-detach.detach.md  # Manual detach command
-├── scripts/
-│   └── bash/
-│       └── spex-detach.sh                    # NEW: Shell script for git operations
-│   └── spex-init.sh                          # MODIFIED: Add spex-detach to install order
+spex/extensions/spex-detach/
+├── extension.yml                                    # Extension manifest
+├── config-template.yml                              # Default config (archive path, upstream branch)
+└── commands/
+    └── speckit.spex-detach.detach.md                 # Detach command (manual + before_finish hook)
 
-spex/extensions/spex/commands/
-└── speckit.spex.finish.md                    # MODIFIED: Add detach-aware behavior
+spex/scripts/bash/
+└── spex-detach.sh                                   # Shell script: detach, archive, is-enabled, clean-branch-name
+
+spex/scripts/spex-init.sh                            # Modified: add spex-detach opt-in prompt
+spex/extensions/spex/commands/speckit.spex.finish.md  # Modified: detach detection + clean branch option
 ```
 
-**Structure Decision**: Extension follows the established bundle pattern. The core git operations (clean branch creation, archiving) live in a shell script per constitution principle VII. The finish command is modified minimally to detect and delegate to the extension.
+**Structure Decision**: Standard extension bundle layout following `spex-collab` pattern. Script at `spex/scripts/bash/spex-detach.sh` per Constitution VII. Finish command modified inline (same pattern as existing collab/gates detection).
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `spex/scripts/spex-init.sh` | Add spex-detach to install order with opt-in prompt |
+| `spex/extensions/spex/commands/speckit.spex.finish.md` | Add detach detection after Phase 2, new "Push clean PR branch" option in Phase 4, clean branch verification |
+| `README.md` | Extension documentation, commands reference |
+| `spex/docs/help.md` | Quick reference for detach commands |
+
+## Complexity Tracking
+
+No constitution violations requiring justification.
 
 ## Design Decisions
 
-### D1: Integration with finish command
+### D1: Clean branch creation timing
 
-The `spex-detach` extension modifies the finish flow rather than creating a separate finish command. This keeps the UX simple (one `/speckit-spex-finish` command) while the extension's behavior is gated on whether `spex-detach` is installed and enabled.
+**Decision**: Inline in finish command after Phase 2 (commit), not as a `before_finish` hook.
 
-**Integration points in finish:**
-1. After Phase 2 (commit outstanding changes): call `spex-detach.sh detach` to create the clean PR branch
-2. After Phase 2: call `spex-detach.sh archive` if archive path is configured
-3. Phase 4 (action selection): when detach is active, modify PR options to push the clean `pr/<branch>` branch instead of the feature branch
-4. Phase 5 (execute action): push `pr/<branch>` for the upstream PR
+**Why**: `before_finish` hooks fire before Phase 1 (verification), which is before Phase 2 (commit outstanding changes). Creating the clean branch before all changes are committed would miss uncommitted work. The detach must happen after commit to capture all code changes.
 
-**Why modify finish instead of wrapping it:** The constitution allows extensions to hook into lifecycle events. Creating a wrapper would force users to remember a different command and would duplicate verification/cleanup logic.
+### D2: Archiving as optional `before_finish` hook
 
-### D2: Clean PR branch mechanism (squash-onto-base)
+**Decision**: The `speckit.spex-detach.detach` command registered as an optional `before_finish` hook handles archiving. The archive operation is safe to run before verification since it copies existing spec artifacts (already on disk) to the project-specs repo.
 
-```
-merge-base = git merge-base <upstream-default> <feature-branch>
-diff = git diff <merge-base>..<feature-branch> -- ':!.specify' ':!specs' ':!brainstorm'
-apply diff as single commit on new branch pr/<feature-branch>
-```
+### D3: Finish command modification scope
 
-The squash-onto-base approach:
-1. Find the merge-base between the feature branch and upstream's default branch
-2. Compute the diff, excluding `.specify/`, `specs/`, and `brainstorm/` paths
-3. Create branch `pr/<feature-branch-name>` from the merge-base
-4. Apply the filtered diff as a single commit
+**Decision**: Additive modification only. When `spex-detach` is not installed, zero behavior changes. Detection checks for `.specify/extensions/spex-detach` directory existence — same pattern as existing worktree/collab detection in the finish command.
 
-This produces a clean branch where the upstream PR diff shows only code changes, with no trace of spec artifacts in history.
+### D4: Extension is opt-in during init
 
-### D3: Extension configuration
+**Decision**: Not installed by default. `spex-init.sh` prompts the user to opt in. Avoids polluting `.specify/extensions.yml` with disabled hooks.
 
-The extension uses a config file (`spex-detach-config.yml`) installed to `.specify/extensions/spex-detach/` at init time. This follows the pattern established by `spex-collab` and `spex-deep-review`.
+### D5: Script over inline bash
 
-Config fields:
-- `archive.path`: Local filesystem path to the project-specs repo (optional)
-- `archive.auto_commit`: Whether to auto-commit archived specs (default: true)
-- `upstream.default_branch`: Override for upstream's default branch (default: auto-detect from `origin`)
-- `detach.strip_paths`: List of paths to strip (default: `.specify`, `specs`, `brainstorm`)
+**Decision**: All git operations (merge-base computation, filtered diff, branch creation, archive copy) in `spex-detach.sh` with JSON output. The finish command and detach skill consume this JSON. Per Constitution VII, this prevents the class of bugs where AI skips or varies inline bash.
 
-### D4: Archive structure
+## Research Summary
 
-Archived specs are organized by project and feature:
-```
-<archive-path>/<project-name>/<feature-name>/
-├── .specify/          # Spec-kit config and state
-└── specs/<feature>/   # Spec, plan, tasks
-```
+Full research in [research.md](research.md). Key decisions:
 
-Project name is derived from the git remote's `owner/repo` (e.g., `opendatahub-io/odh-dashboard`). Feature name is the branch name.
+| Topic | Decision | Rationale |
+|-------|----------|-----------|
+| Clean branch mechanism | `git diff --binary` + pathspec exclusions + `git apply --index` | Handles adds/mods/deletes/renames/binaries; native git syntax |
+| Upstream default detection | Config override > `symbolic-ref` > `remote show` > `main` fallback | Fast local check first, network fallback, config escape hatch |
+| Project name derivation | Parse `upstream`/`origin` remote URL to `owner-repo` | Preserves fork vs upstream distinction |
+| Idempotency | Delete + recreate `pr/<branch>` on re-run | Simplest reliable approach |
 
-### D5: Extension install order
+## Data Model Summary
 
-`spex-detach` has no dependencies on other extensions. It hooks into the core `spex` extension's finish command. Install order position: after `spex-worktrees`, before `spex-deep-review`.
+Full model in [data-model.md](data-model.md). Key entities:
 
-Updated install order:
-```bash
-local install_order=(spex spex-gates spex-worktrees spex-detach spex-deep-review spex-teams spex-collab)
-```
+- **Config** (`spex-detach-config.yml`): archive.path, archive.auto_commit, upstream.default_branch, detach.strip_paths
+- **Clean PR Branch** (`pr/<feature-branch>`): Single squashed commit from merge-base, code only
+- **Archive Directory** (`<archive>/<project>/<feature>/`): Copies of `.specify/` and `specs/<feature>/`
+
+## Contract Summary
+
+Full contract in [contracts/spex-detach-sh.md](contracts/spex-detach-sh.md). Script interface:
+
+| Subcommand | Purpose | Exit Codes |
+|------------|---------|------------|
+| `detach` | Create clean PR branch | 0=success, 1=error, 2=empty diff |
+| `archive` | Copy specs to project-specs repo | 0=success, 1=error |
+| `is-enabled` | Check extension status | 0=enabled, 1=not |
+| `clean-branch-name` | Output `pr/<branch>` name | 0=always |
+
+## Implementation Phasing
+
+### Phase 1-2: Setup + Foundational (T001-T005)
+Extension bundle structure, manifest, config template, script skeleton with helpers.
+
+### Phase 3: US1 — Enable Extension (T006-T007)
+`is-enabled` and `clean-branch-name` subcommands. Extension installable and detectable.
+
+### Phase 4: US2 — Clean PR Branch (T008-T012) **MVP**
+`detach` subcommand, finish command modifications (detection, option, push, verification). Core value delivered.
+
+### Phase 5: US3 — Archive Specs (T013-T014)
+`archive` subcommand, detach command skill for manual/hook invocation.
+
+### Phase 6: US4 — Brainstorm Redirection (T015-T016)
+Brainstorm aware of spex-detach config, writes to project-specs repo.
+
+### Phase 7: Polish (T017-T021)
+Documentation, edge cases, US5 verification, quickstart validation.
+
+Full task breakdown in [tasks.md](tasks.md).

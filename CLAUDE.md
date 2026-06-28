@@ -53,4 +53,12 @@ Do not treat documentation as a follow-up task. Stale docs mislead users and ero
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
 at `specs/029-upstream-contrib-mode/plan.md`
+
+Key design artifacts:
+- Spec: `specs/029-upstream-contrib-mode/spec.md`
+- Plan: `specs/029-upstream-contrib-mode/plan.md`
+- Research: `specs/029-upstream-contrib-mode/research.md`
+- Data Model: `specs/029-upstream-contrib-mode/data-model.md`
+- Contract: `specs/029-upstream-contrib-mode/contracts/spex-detach-sh.md`
+- Tasks: `specs/029-upstream-contrib-mode/tasks.md`
 <!-- SPECKIT END -->
