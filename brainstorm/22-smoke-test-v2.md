@@ -1,7 +1,7 @@
 # Brainstorm: Smoke Test V2 - Fresh Context + Human Judgement
 
 **Date:** 2026-06-22
-**Status:** active
+**Status:** abandoned (superseded by #24-smoke-test-rethink)
 
 ## Problem Framing
 
