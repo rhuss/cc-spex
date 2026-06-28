@@ -1,44 +1,47 @@
-# Feature Specification: Upstream Contribution Mode
+# Feature Specification: spex-detach Extension
 
 **Feature Branch**: `029-upstream-contrib-mode`
 **Created**: 2026-06-24
 **Status**: Draft
 **Input**: Brainstorm #23 (Dual-Repo Spec Workflow)
 
+**Extension**: `spex-detach` - Detach spec artifacts at PR time for
+contributing to projects that don't use spec-driven development.
+
 ## User Scenarios & Testing
 
-### User Story 1 - Initialize upstream contribution mode (Priority: P1)
+### User Story 1 - Enable the spex-detach extension (Priority: P1)
 
 A contributor forks an upstream project that does not use SDD. They want
 to use spex's spec-driven workflow to organize their contribution, but
 upstream PRs must contain only code changes with no spec artifacts.
 
-The contributor runs `specify init` with an option to enable upstream
-contribution mode. This configures the project so that spec artifacts
-are committed to the fork's feature branch during development but
-stripped when creating a PR.
+The contributor runs `specify init` and enables the `spex-detach`
+extension via interactive prompt. This configures the project so that
+spec artifacts are committed to the fork's feature branch during
+development but detached (stripped) when creating a PR.
 
 **Why this priority**: Without this initialization, none of the other
 stories function. This is the foundation of the feature.
 
-**Independent Test**: Run `specify init` with upstream mode enabled,
-verify `.specify/init-options.json` contains the upstream mode flag,
-and confirm spec-kit commands work normally in the initialized directory.
+**Independent Test**: Run `specify init`, enable `spex-detach` when
+prompted, verify `.specify/init-options.json` records the extension
+as enabled, and confirm spec-kit commands work normally in the
+initialized directory.
 
 **Acceptance Scenarios**:
 
 1. **Given** a code repository without `.specify/`, **When** the
-   contributor runs `specify init` with upstream mode enabled, **Then**
-   `.specify/init-options.json` contains an upstream mode flag set
-   to true.
+   contributor runs `specify init` and enables `spex-detach`, **Then**
+   `.specify/init-options.json` records the extension as enabled.
 
-2. **Given** upstream mode is enabled, **When** the contributor runs
+2. **Given** `spex-detach` is enabled, **When** the contributor runs
    spec-kit commands (`/speckit-specify`, `/speckit-plan`, etc.),
    **Then** all commands work identically to the default mode during
    the specify/plan/implement phases.
 
-3. **Given** a code repository already initialized without upstream
-   mode, **When** the contributor re-runs init with upstream mode,
+3. **Given** a code repository already initialized without
+   `spex-detach`, **When** the contributor re-runs init and enables it,
    **Then** the existing `.specify/` is updated without losing current
    configuration.
 
@@ -55,7 +58,7 @@ changes suitable for an upstream PR.
 clean PR branches, the contributor cannot submit PRs to upstream
 projects that don't use SDD.
 
-**Independent Test**: Initialize a project in upstream mode, commit
+**Independent Test**: Initialize a project with `spex-detach` enabled, commit
 spec and code changes to a feature branch, run `spex-finish`, verify
 a clean PR branch exists with no `.specify/`, `specs/`, or
 `brainstorm/` directories.
@@ -64,8 +67,8 @@ a clean PR branch exists with no `.specify/`, `specs/`, or
 
 1. **Given** a feature branch with both spec artifacts (`.specify/`,
    `specs/`) and code changes, **When** the contributor runs
-   `spex-finish`, **Then** a new PR branch is created (e.g.,
-   `pr/feature-name`) containing only code changes.
+   `spex-finish`, **Then** a new PR branch named
+   `pr/<feature-branch-name>` is created containing only code changes.
 
 2. **Given** the clean PR branch is created, **When** inspecting
    its contents, **Then** no `.specify/`, `specs/`, or `brainstorm/`
@@ -97,7 +100,7 @@ under the correct project/feature directory structure.
 
 **Acceptance Scenarios**:
 
-1. **Given** upstream mode is enabled and an archive path is configured,
+1. **Given** `spex-detach` is enabled and an archive path is configured,
    **When** the contributor runs `spex-finish`, **Then** spec artifacts
    are copied to the archive path organized by project and feature name.
 
@@ -183,22 +186,40 @@ flow state tracks its own feature independently.
   branch? (The finish command should verify the clean branch contains
   no spec directories before reporting success.)
 
+## Clarifications
+
+### Session 2026-06-25
+
+- Q: How should the clean PR branch be created (mechanism)? → A: Squash onto base: diff the feature branch against its merge-base with the upstream default branch, apply only non-spec changes as a single commit.
+- Q: How is upstream mode enabled during `specify init`? → A: Interactive prompt during init (like other extensions). The entire feature is packaged as an extension bundle (similar to `spex-collab`).
+- Q: What should the extension be named? → A: `spex-detach`. Description: "Detach spec artifacts at PR time for contributing to projects that don't use spec-driven development."
+- Q: What exactly gets archived to the project-specs repo? → A: Both `specs/<feature>/` and `.specify/` (full design context including spec, plan, tasks, flow state, and spec-kit configuration).
+- Q: What naming convention for the clean PR branch? → A: `pr/<feature-branch-name>` (direct mapping, e.g., feature branch `fix-auth-bug` becomes `pr/fix-auth-bug`).
+
 ## Requirements
 
 ### Functional Requirements
 
-- **FR-001**: `specify init` MUST support an option to enable upstream
-  contribution mode, stored in `.specify/init-options.json`.
-- **FR-002**: Upstream mode MUST be disabled by default, preserving
-  existing single-repo behavior for all users.
-- **FR-003**: When upstream mode is enabled, `spex-finish` MUST create
-  a clean PR branch from the current feature branch with `.specify/`,
-  `specs/`, and `brainstorm/` directories removed.
+- **FR-001**: The feature MUST be packaged as a spex extension bundle
+  (like `spex-collab`). `specify init` MUST offer an interactive
+  prompt to enable this extension, consistent with how other
+  extensions are activated.
+- **FR-002**: The `spex-detach` extension MUST be disabled by default,
+  preserving existing single-repo behavior for all users.
+- **FR-003**: When `spex-detach` is enabled, `spex-finish` MUST create
+  a clean PR branch by computing the diff between the feature branch
+  and its merge-base with the upstream default branch, filtering out
+  changes to `.specify/`, `specs/`, and `brainstorm/` directories,
+  and applying the remaining changes as a single squashed commit on
+  a new branch named `pr/<feature-branch-name>`. This ensures no spec
+  artifacts appear in the branch history.
 - **FR-004**: The original feature branch MUST remain unchanged after
   clean PR branch creation (specs intact for continued work).
-- **FR-005**: When upstream mode is enabled and an archive path is
-  configured, `spex-finish` MUST copy spec artifacts to the archive
-  path before creating the clean PR branch.
+- **FR-005**: When `spex-detach` is enabled and an archive path is
+  configured, `spex-finish` MUST copy both the `specs/<feature>/`
+  directory (spec.md, plan.md, tasks.md) and the `.specify/`
+  directory (configuration, flow state) to the archive path before
+  creating the clean PR branch.
 - **FR-006**: The archive MUST organize specs by project name and
   feature name (e.g., `archive/project-name/feature-name/`). The
   project name MUST be derived from the git remote name of the
@@ -206,13 +227,13 @@ flow state tracks its own feature independently.
   the project name). If no remote is configured, the current
   directory name is used as fallback.
 - **FR-007**: Each worktree MUST have independent `.specify/` state
-  when upstream mode is enabled (this is inherent in the worktree
+  when `spex-detach` is enabled (this is inherent in the worktree
   model since each worktree has its own files).
 - **FR-008**: The clean PR branch MUST be verifiable: `spex-finish`
   MUST check that no spec directories remain before reporting success.
 - **FR-009**: Brainstorm documents MUST be created in the project-specs
   repo, not in code worktrees, when the contributor is working in
-  upstream contribution mode. The project-specs repo path MUST be
+  `spex-detach` mode. The project-specs repo path MUST be
   stored in `.specify/init-options.json` (as `specs_repo_path`) at
   init time. The brainstorm command MUST read this path to determine
   where to write brainstorm documents.
@@ -243,7 +264,7 @@ flow state tracks its own feature independently.
 - **SC-002**: Multiple features can be developed in parallel across
   separate worktrees without state interference.
 - **SC-003**: All spec-kit commands work identically during the
-  specify/plan/implement phases regardless of whether upstream mode
+  specify/plan/implement phases regardless of whether `spex-detach`
   is enabled.
 - **SC-004**: Spec artifacts for completed features are retrievable
   from the project-specs repo archive after the code worktree is
