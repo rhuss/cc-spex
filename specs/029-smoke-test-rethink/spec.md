@@ -50,7 +50,7 @@ A developer is writing a spec for a new feature using `/speckit-specify`. The sp
 **Acceptance Scenarios**:
 
 1. **Given** a feature description that implies a runnable artifact (CLI, server, UI), **When** `/speckit-specify` generates the spec, **Then** the spec includes a `## Smoke Test` section with 3-5 scenario placeholders and guidance comments explaining what makes a good smoke test scenario.
-2. **Given** a feature description for a library or internal module with no runnable artifact, **When** `/speckit-specify` generates the spec, **Then** the spec omits the `## Smoke Test` section entirely (no empty placeholder).
+2. **Given** a feature description for a library or internal module with no runnable artifact (determined by the absence of keywords like "CLI", "server", "UI", "endpoint", "browser", or "app" in the description), **When** `/speckit-specify` generates the spec, **Then** the spec omits the `## Smoke Test` section entirely (no empty placeholder).
 
 ---
 
@@ -91,6 +91,13 @@ After the smoke test completes, a SMOKE-TEST.md report is written to the spec di
 - What happens when a scenario requires external infrastructure the developer does not have? Claude marks it as "skip" with manual instructions for later.
 - What happens when the `## Smoke Test` section has more than 5 scenarios? A warning is shown recommending the developer trim to 5 or fewer, but execution proceeds.
 
+## Out of Scope
+
+- **Subagent architecture**: The v1/v2 Phase 1/Phase 2 subagent model (spawning a fresh-context agent for execution) is retired. All scenario execution happens in the current session.
+- **Auto-verified deterministic scenarios**: The v2 distinction between "auto-verified" (agent judges) and "judgment" (human judges) scenarios is removed. Every scenario is presented to the human for judgment. Claude automates setup and evidence collection, but never auto-passes a scenario.
+- **Acceptance scenario parsing**: The command no longer parses Given/When/Then acceptance scenarios from user stories. Only the curated `## Smoke Test` section is used (see FR-001).
+- **Scenario count enforcement**: The system warns at more than 5 scenarios but does not block execution. There is no hard limit.
+
 ## Clarifications
 
 ### Session 2026-06-28
@@ -108,7 +115,7 @@ After the smoke test completes, a SMOKE-TEST.md report is written to the spec di
 - **FR-004**: The human MUST only be asked for pass/fail judgment — never for setup, execution, or evidence collection.
 - **FR-005**: The command MUST produce a persistent SMOKE-TEST.md report in the spec directory after every run.
 - **FR-006**: The command MUST NOT simulate, fake, or manually reproduce expected output. Every scenario must exercise the real system. If a scenario cannot be tested, it must be skipped honestly with manual instructions.
-- **FR-007**: The command MUST run in single-session mode (no subagent architecture). The current session executes scenarios directly.
+- **FR-007**: The command MUST run in single-session mode (no subagent architecture). The current session reads the spec, sets up the environment, executes each scenario, collects evidence, and presents it to the human for judgment -- all within the invoking session.
 - **FR-008**: The command MUST degrade gracefully when Playwright MCP is unavailable — browser scenarios fall back to step-by-step manual instructions.
 - **FR-009**: The ship pipeline MUST check for the `## Smoke Test` section to decide whether to run or skip the smoke test stage.
 - **FR-010**: The spec template MUST include an optional `## Smoke Test` section with guidance on when to include it and how to write scenarios.
@@ -130,7 +137,7 @@ After the smoke test completes, a SMOKE-TEST.md report is written to the spec di
 - **SC-002**: The human provides judgment on every scenario presented — no scenarios are auto-verified without human awareness.
 - **SC-003**: Features without runnable artifacts (libraries, skills) skip the smoke test in under 2 seconds with zero human interaction.
 - **SC-004**: Every smoke test run produces a SMOKE-TEST.md report regardless of outcome (all pass, some fail, some skip).
-- **SC-005**: The spec template change enables spec authors to add smoke test scenarios without reading separate documentation.
+- **SC-005**: The spec template includes a `## Smoke Test` section with inline guidance comments that explain the scenario format, when to include the section, and a placeholder example -- so spec authors can write scenarios without consulting external documentation.
 
 ## Smoke Test
 
