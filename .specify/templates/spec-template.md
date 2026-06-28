@@ -114,6 +114,30 @@
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
 
+## Smoke Test
+
+<!--
+  Optional section. Include when the feature has a runnable artifact
+  (CLI tool, server, UI component, browser-based workflow) that benefits
+  from interactive human validation. Omit entirely for libraries, internal
+  modules, or features without a user-facing runtime component.
+
+  Write 3-5 short imperative instructions as a numbered list. Each
+  describes what Claude should set up and what you (the human) should
+  verify. Claude handles all automation (starting servers, seeding data,
+  navigating browsers, running commands); you only provide pass/fail
+  judgment on each scenario.
+
+  Good scenarios require human eyes: visual correctness, UX quality,
+  error message clarity, end-to-end workflows. Avoid scenarios that
+  can be fully verified by checking command output or file contents —
+  those belong in acceptance scenarios above.
+-->
+
+1. Start the app and verify the main interface loads correctly with sample data
+2. Exercise the primary user workflow end-to-end and verify the result matches expectations
+3. Trigger an error condition and verify the error message is clear and actionable
+
 ## Assumptions
 
 <!--

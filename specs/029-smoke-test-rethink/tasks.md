@@ -15,8 +15,8 @@
 
 **Purpose**: No project initialization needed — this feature modifies existing files in an established plugin codebase.
 
-- [ ] T001 Read the existing smoke test command at `spex/extensions/spex/commands/speckit.spex.smoke-test.md` to understand current structure and section organization
-- [ ] T002 Read the existing ship pipeline Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md` (lines around "Stage 8: Smoke Test") to understand current integration
+- [x] T001 Read the existing smoke test command at `spex/extensions/spex/commands/speckit.spex.smoke-test.md` to understand current structure and section organization
+- [x] T002 Read the existing ship pipeline Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md` (lines around "Stage 8: Smoke Test") to understand current integration
 
 ---
 
@@ -26,7 +26,7 @@
 
 **⚠️ CRITICAL**: The smoke test command and ship pipeline both reference this section format.
 
-- [ ] T003 [US3] Add optional `## Smoke Test` section to the spec template at `.specify/templates/spec-template.md` — insert between Success Criteria and Assumptions sections, include guidance comments explaining when to include it (runnable artifacts only), the numbered-list format, and a placeholder example with 3 sample scenarios
+- [x] T003 [US3] Add optional `## Smoke Test` section to the spec template at `.specify/templates/spec-template.md` — insert between Success Criteria and Assumptions sections, include guidance comments explaining when to include it (runnable artifacts only), the numbered-list format, and a placeholder example with 3 sample scenarios
 
 ---
 
@@ -38,7 +38,7 @@
 
 ### Implementation for User Story 1 + 2
 
-- [ ] T004 [US1] Rewrite `spex/extensions/spex/commands/speckit.spex.smoke-test.md` — replace the entire command with the new focused smoke test implementation. The new command must:
+- [x] T004 [US1] Rewrite `spex/extensions/spex/commands/speckit.spex.smoke-test.md` — replace the entire command with the new focused smoke test implementation. The new command must:
   - Keep the HARD-GATE no-simulation section unchanged
   - Keep the Ship Pipeline Guard section unchanged
   - Remove the "Context Freshness" tip (no subagent, so context freshness is the user's choice)
@@ -66,7 +66,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T005 [US4] Update Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md` — change the scenario detection from `grep -c '\*\*Given\*\*' "$SPEC_FILE"` to `grep -c '## Smoke Test' "$SPEC_FILE"`. Update the `HAS_SCENARIOS` variable name to `HAS_SMOKE_TEST` for clarity. Update the announcement text from "N acceptance scenarios found" to "Smoke test section found". Remove the two-phase subagent description from the announcement. Simplify the subagent prompt to invoke the new smoke test command without mentioning Phase 1/Phase 2 architecture. Update the "no scenarios" message from "No acceptance scenarios for smoke test" to "No smoke test section — skipping"
+- [x] T005 [US4] Update Stage 8 in `spex/extensions/spex/commands/speckit.spex.ship.md` — change the scenario detection from `grep -c '\*\*Given\*\*' "$SPEC_FILE"` to `grep -c '## Smoke Test' "$SPEC_FILE"`. Update the `HAS_SCENARIOS` variable name to `HAS_SMOKE_TEST` for clarity. Update the announcement text from "N acceptance scenarios found" to "Smoke test section found". Remove the two-phase subagent description from the announcement. Simplify the subagent prompt to invoke the new smoke test command without mentioning Phase 1/Phase 2 architecture. Update the "no scenarios" message from "No acceptance scenarios for smoke test" to "No smoke test section — skipping"
 
 ---
 
@@ -76,7 +76,7 @@
 
 **Independent Test**: Run a smoke test to completion and verify SMOKE-TEST.md is created with correct structure.
 
-- [ ] T006 [US5] Verify SMOKE-TEST.md report generation is correctly implemented in T004 — no separate task needed since report writing is part of the core command rewrite. This task is a verification checkpoint: read the report format section in the rewritten command and confirm it matches the plan's report contract (header with feature/date/spec/summary, per-scenario blocks, retry documentation)
+- [x] T006 [US5] Verify SMOKE-TEST.md report generation is correctly implemented in T004 — no separate task needed since report writing is part of the core command rewrite. This task is a verification checkpoint: read the report format section in the rewritten command and confirm it matches the plan's report contract (header with feature/date/spec/summary, per-scenario blocks, retry documentation)
 
 ---
 
@@ -84,8 +84,8 @@
 
 **Purpose**: Documentation updates and cross-reference maintenance.
 
-- [ ] T007 [P] Update `spex/docs/help.md` — update any smoke test references to reflect the new focused approach (curated scenarios from `## Smoke Test` section, no auto-verify, no subagent)
-- [ ] T008 [P] Update `README.md` — update smoke test description in the Commands Reference table and any workflow descriptions that mention the smoke test
+- [x] T007 [P] Update `spex/docs/help.md` — update any smoke test references to reflect the new focused approach (curated scenarios from `## Smoke Test` section, no auto-verify, no subagent)
+- [x] T008 [P] Update `README.md` — update smoke test description in the Commands Reference table and any workflow descriptions that mention the smoke test
 
 ---
 

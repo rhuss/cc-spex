@@ -200,7 +200,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 ### Bundled Extensions
 
-**`spex`** (core, always active): Brainstorming, ship pipeline, help, evolve, spec refactoring, flow state tracking, and lifecycle hooks (smoke test prompt via `before_finish`, flow state cleanup via `after_finish`).
+**`spex`** (core, always active): Brainstorming, ship pipeline, help, evolve, spec refactoring, flow state tracking, focused interactive smoke test (curated scenarios from spec's `## Smoke Test` section), and lifecycle hooks (smoke test prompt via `before_finish`, flow state cleanup via `after_finish`).
 
 **`spex-gates`**: Quality gates that fire automatically via lifecycle hooks:
 - `after_specify`: runs spec review
@@ -264,7 +264,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
 | `/speckit-spex-gates-review-plan` | spex-gates | Review plan (fires automatically via hook) |
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
-| `/speckit-spex-smoke-test` | spex | Two-phase acceptance scenario walkthrough: subagent executes with fresh context, human reviews evidence interactively. Writes SMOKE-TEST.md report. Always interactive, even in ship pipeline |
+| `/speckit-spex-smoke-test` | spex | Focused interactive smoke test from spec's `## Smoke Test` section. Claude automates setup/execution, human provides pass/fail judgment. Auto-skips when section absent. Writes SMOKE-TEST.md report. Always interactive, even in ship pipeline |
 | `/speckit-spex-finish` | spex | Verify + merge/PR/keep (all-in-one feature completion). Runs `before_finish` hooks (e.g., smoke test prompt) before verification and `after_finish` hooks after completion. `--watch`: monitor CI after PR creation, auto-fix failures |
 | `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
@@ -296,7 +296,7 @@ The pipeline runs nine stages in strict order:
 | 5 | review-plan | Validate plan feasibility, create `REVIEWERS.md` |
 | 6 | implement | Execute implementation following task plan (with per-task test checkpoints) |
 | 7 | review-code | Spec compliance + deep-review agents + auto-fix loop |
-| 8 | smoke-test | Two-phase acceptance walkthrough: fresh-context subagent collects evidence, then human reviews interactively. Writes SMOKE-TEST.md. Pipeline announces readiness and asks for opt-in. Stops here; run `/speckit-spex-finish` manually |
+| 8 | smoke-test | Focused interactive smoke test from spec's `## Smoke Test` section. Claude automates setup/execution, human provides pass/fail judgment. Auto-skips when section absent. Writes SMOKE-TEST.md. Stops here; run `/speckit-spex-finish` manually |
 
 **Oversight levels** control how findings are handled:
 
