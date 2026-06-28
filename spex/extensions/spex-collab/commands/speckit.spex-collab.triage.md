@@ -44,50 +44,87 @@ bash spex/scripts/spex-triage-state.sh init "$PR_NUM"
 
 ## Step 3: Fetch Review Threads
 
-Fetch all review threads with their comments using GraphQL. Use cursor-based pagination to handle PRs with many threads.
+Fetch ALL review threads with their comments using GraphQL. PRs with many review comments (e.g., 3 bots x 20+ findings each) regularly exceed 100 threads, so pagination is mandatory.
 
-**Important**: GitHub API responses can contain raw control characters (U+0000–U+001F) in comment bodies, which break `jq` and Python's `json` module. Always pipe `gh api graphql` output through the sanitizer before any JSON processing:
+**Important**: GitHub API responses can contain raw control characters (U+0000–U+001F) in comment bodies, which break `jq` and Python's `json` module. Always pipe `gh api graphql` output through the sanitizer before any JSON processing.
+
+### 3a: Pagination Loop
+
+You MUST use a pagination loop. A single fetch is NOT sufficient -- a PR with 150 threads returns only the first 100, silently dropping the rest.
 
 ```bash
-# Fetch page of review threads (repeat with cursor for pagination)
-THREADS_JSON=$(gh api graphql -f query='
-  query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $number) {
-        reviewThreads(first: 100, after: $cursor) {
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-          nodes {
-            id
-            isResolved
-            path
-            line
-            comments(first: 50) {
-              nodes {
-                id
-                databaseId
-                author {
-                  login
-                  ... on Bot { id }
+ALL_THREADS="[]"
+CURSOR=""
+PAGE=1
+
+while true; do
+  CURSOR_ARG=""
+  [ -n "$CURSOR" ] && CURSOR_ARG="-f cursor=$CURSOR"
+
+  PAGE_JSON=$(gh api graphql -f query='
+    query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+      repository(owner: $owner, name: $repo) {
+        pullRequest(number: $number) {
+          reviewThreads(first: 100, after: $cursor) {
+            totalCount
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            nodes {
+              id
+              isResolved
+              path
+              line
+              comments(first: 50) {
+                nodes {
+                  id
+                  databaseId
+                  author {
+                    login
+                    ... on Bot { id }
+                  }
+                  body
+                  createdAt
                 }
-                body
-                createdAt
               }
             }
           }
         }
       }
     }
-  }
-' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" \
-  | python3 spex/scripts/sanitize-gh-json.py)
+  ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" $CURSOR_ARG \
+    | python3 spex/scripts/sanitize-gh-json.py)
+
+  # Extract threads from this page and append
+  PAGE_THREADS=$(echo "$PAGE_JSON" | jq '.data.repository.pullRequest.reviewThreads.nodes')
+  ALL_THREADS=$(echo "$ALL_THREADS" "$PAGE_THREADS" | jq -s '.[0] + .[1]')
+
+  # Check for next page
+  HAS_NEXT=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
+  if [ "$HAS_NEXT" != "true" ]; then
+    break
+  fi
+
+  CURSOR=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
+  PAGE=$((PAGE + 1))
+done
+
+TOTAL_COUNT=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.totalCount')
+FETCHED_COUNT=$(echo "$ALL_THREADS" | jq 'length')
 ```
 
-**Pagination**: If `reviewThreads.pageInfo.hasNextPage` is true, fetch the next page using `endCursor` as the `$cursor` variable. Accumulate all thread nodes across pages before proceeding. Most PRs will complete in a single page (100 threads).
+### 3b: Verify Complete Fetch
 
-If the API returns a 403 or 429 status, detect rate limiting: report remaining rate limit info, and exit cleanly. Progress is already saved in the state file.
+After the pagination loop, verify all threads were fetched:
+
+```
+Fetched $FETCHED_COUNT / $TOTAL_COUNT review threads (in $PAGE pages)
+```
+
+**Hard rule**: If `FETCHED_COUNT < TOTAL_COUNT`, something went wrong with pagination. Report the mismatch and stop -- do not proceed with partial data.
+
+If the API returns a 403 or 429 status on any page, detect rate limiting: report remaining rate limit info, and exit cleanly. Progress is already saved in the state file.
 
 ## Step 4: Partition Threads
 
@@ -113,6 +150,7 @@ For each bot thread, match the bot author against known profiles.
 |-----------|--------------|----------------------------|
 | `coderabbitai[bot]` | Yes | No |
 | `copilot[bot]` | No | Yes |
+| `devin-ai-integration[bot]` | No | Yes |
 
 **Config overrides**: Check if `.specify/extensions/spex-collab/collab-config.yml` exists. If so, read it with `yq`:
 
@@ -126,9 +164,23 @@ fi
 
 Apply overrides to hardcoded profiles. For unknown bots (no matching profile), use conservative defaults: `selfResolves=false`, `autoResolve=false`.
 
+## Step 5b: Bot Discovery Log
+
+Before processing, log all discovered bot authors and thread counts. This makes it visible if any bot's threads are later skipped.
+
+```
+Found bot threads:
+- copilot[bot]: 4 threads
+- devin-ai-integration[bot]: 12 threads
+- coderabbitai[bot]: 19 threads
+Total: 35 bot threads to process
+```
+
+**Hard rule**: Every bot thread listed here MUST be individually assessed in Step 6. Do NOT batch-resolve, skip, or ignore threads from any bot. If a bot is not in the hardcoded profiles, use conservative defaults -- but still assess each thread.
+
 ## Step 6: Assess and Apply Bot Fixes
 
-For each unresolved bot thread, process the bot's suggestion:
+For each unresolved bot thread -- across ALL bot authors, not just one -- process the bot's suggestion:
 
 ### 6a: Read the Context
 
@@ -244,9 +296,16 @@ Where `<action>` is `accepted`, `rejected`, or `skipped`.
 
 ## Step 9: Auto-Resolve Threads
 
-For each handled bot thread, check the bot profile's `autoResolve` setting:
+**Hard rule**: NEVER resolve a thread that has not been replied to with a `<!-- spex-triage -->` signature. Resolving without a reply silently discards review feedback. A thread is eligible for resolution ONLY when:
+1. The thread was assessed in Step 6 (valid or invalid verdict reached), AND
+2. A reply was posted in Step 8 (acceptance, rejection, or fix-failure reply), AND
+3. The bot profile's `autoResolve` setting is `true`
 
-- **If `autoResolve=true`** (e.g., Copilot): Resolve the thread via GraphQL:
+If any of these conditions is not met, leave the thread unresolved.
+
+For each thread that meets ALL three conditions:
+
+- **If `autoResolve=true`** (e.g., Copilot, Devin): Resolve the thread via GraphQL:
 
 ```bash
 gh api graphql -f query='
@@ -259,6 +318,8 @@ gh api graphql -f query='
 ```
 
 - **If `autoResolve=false`** (e.g., CodeRabbit or unknown bots): Do NOT resolve the thread. Leave it open for the bot to self-resolve or for the reviewer to handle.
+
+**Never batch-resolve threads.** Each thread must be resolved individually, only after its own reply has been posted. Do not resolve threads that were skipped, not assessed, or that belong to a different processing batch.
 
 ## Step 10: Re-evaluation for Loop Mode
 
@@ -321,7 +382,14 @@ At the end of the triage pass, report a summary:
 ```
 ## Triage Summary for PR #<PR_NUM>
 
-**Bot comments**:
+**Bot comments** (by author):
+| Bot | Accepted | Rejected | Skipped | Already Handled |
+|-----|----------|----------|---------|-----------------|
+| copilot[bot] | N | N | N | N |
+| devin-ai-integration[bot] | N | N | N | N |
+| coderabbitai[bot] | N | N | N | N |
+
+**Bot totals**:
 - Accepted: N (fixes applied)
 - Rejected: N
 - Skipped: N (deleted files, conflicts, summary comments)
@@ -339,7 +407,37 @@ At the end of the triage pass, report a summary:
 
 When `Open bot comments remaining` is 0, this signals that a `/loop` invocation can exit.
 
-## Step 14: High Volume Batching
+## Step 14: Extract Principles from Review Findings
+
+After the summary, analyze the processed bot comments for recurring patterns that could become constitutional principles.
+
+**Skip this step if**: fewer than 5 bot comments were assessed in this pass (not enough signal), or if no constitution exists (`.specify/memory/constitution.md` is missing -- the project hasn't opted into constitutional governance).
+
+**Procedure:**
+
+1. **Identify recurring patterns**: Group all assessed bot comments (both accepted and rejected) by the type of issue they flagged. Look for patterns where 2+ independent reviewers (different bot authors) flagged the same category of problem, or where a single reviewer flagged the same category 3+ times across different files.
+
+2. **Present recurring patterns** with attribution:
+
+```
+Recurring patterns from N review comments:
+
+1. <Pattern name> (<Bot1> + <Bot2>): <1-line description of what was flagged and why it matters>
+2. <Pattern name> (<Bot1> x3): <1-line description>
+...
+```
+
+3. **Offer principle extraction**: If patterns were found, present them as candidate constitutional principles using a multi-select question:
+
+   - header: "Principles"
+   - multiSelect: true
+   - Each pattern becomes an option with a short principle name as label and a 1-2 sentence principle statement as description
+   - Include a "Type something" free-text option for custom principles
+   - Include a "Skip" option
+
+4. **Apply selected principles**: For each selected principle, invoke `/speckit-constitution` with the principle text as argument. This adds the principles to `.specify/memory/constitution.md` following the existing format and triggers template sync.
+
+## Step 15: High Volume Batching
 
 For PRs with more than 100 review threads, process in batches of 50. After each batch:
 
