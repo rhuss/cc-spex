@@ -1,5 +1,5 @@
 ---
-name: speckit.spex-deep-review.review
+name: speckit.spex-deep-review.run
 description: Multi-perspective code review with autonomous fix loop - dispatches 5 specialized review agents, merges findings, auto-fixes Critical/Important issues
 ---
 

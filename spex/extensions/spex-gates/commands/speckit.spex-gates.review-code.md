@@ -43,7 +43,7 @@ FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" 
 jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null
 ```
 
-If deep review is enabled, this command MUST invoke `speckit.spex-deep-review.review` after spec compliance passes (>= 95%). Do NOT produce only a basic compliance review when deep-review is active. The deep review dispatches 5 specialized agents, runs a fix loop, and generates a Deep Review Report. See step 9a below for details.
+If deep review is enabled, this command MUST invoke `speckit.spex-deep-review.run` after spec compliance passes (>= 95%). Do NOT produce only a basic compliance review when deep-review is active. The deep review dispatches 5 specialized agents, runs a fix loop, and generates a Deep Review Report. See step 9a below for details.
 
 ## Overview
 
@@ -306,7 +306,7 @@ Resolution logic:
 **After spec compliance is calculated, check for deep review:**
 
 **If deep review is enabled AND spec compliance >= 95% (or no spec exists):**
-- Invoke `speckit.spex-deep-review.review` with:
+- Invoke `speckit.spex-deep-review.run` with:
   - Stage 1 compliance score (or null if no spec)
   - Invocation context: `quality-gate` if called from hook, `manual` if called directly
   - Hint text: remaining argument text after flag extraction
