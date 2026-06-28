@@ -138,8 +138,9 @@ running `/speckit-specify`.
 
 2. **Given** a brainstorm document exists in the project-specs repo,
    **When** the contributor runs `/speckit-specify` in a code worktree
-   with the brainstorm path as argument, **Then** the brainstorm
-   content is used as context for the specification.
+   with the brainstorm path as argument (e.g.,
+   `/speckit-specify --brainstorm /path/to/brainstorm.md`), **Then**
+   the brainstorm content is used as context for the specification.
 
 ---
 
@@ -211,8 +212,10 @@ flow state tracks its own feature independently.
   and its merge-base with the upstream default branch, filtering out
   changes to `.specify/`, `specs/`, and `brainstorm/` directories,
   and applying the remaining changes as a single squashed commit on
-  a new branch named `pr/<feature-branch-name>`. This ensures no spec
-  artifacts appear in the branch history.
+  a new branch named `pr/<feature-branch-name>`. The upstream default
+  branch is auto-detected from the remote HEAD or overridden via
+  `upstream.default_branch` in the extension config. This ensures no
+  spec artifacts appear in the branch history.
 - **FR-004**: The original feature branch MUST remain unchanged after
   clean PR branch creation (specs intact for continued work).
 - **FR-005**: When `spex-detach` is enabled and an archive path is
@@ -233,10 +236,10 @@ flow state tracks its own feature independently.
   MUST check that no spec directories remain before reporting success.
 - **FR-009**: Brainstorm documents MUST be created in the project-specs
   repo, not in code worktrees, when the contributor is working in
-  `spex-detach` mode. The project-specs repo path MUST be
-  stored in `.specify/init-options.json` (as `specs_repo_path`) at
-  init time. The brainstorm command MUST read this path to determine
-  where to write brainstorm documents.
+  `spex-detach` mode. The project-specs repo path is stored in the
+  extension's config file (`spex-detach-config.yml`) as `archive.path`.
+  The brainstorm command MUST read this config to determine where to
+  write brainstorm documents.
 - **FR-010**: Re-running `spex-finish` on a feature branch MUST
   regenerate the clean PR branch (idempotent operation).
 
