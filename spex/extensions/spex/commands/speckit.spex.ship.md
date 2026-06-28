@@ -17,7 +17,7 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
 1. `ask` is `always` AND a review stage has findings requiring user input.
 2. A blocker error occurs (test failure, syntax error, security issue).
-3. Stage 8 (smoke-test) is reached: the smoke test is always interactive and the pipeline stops after it completes. The user runs `/speckit-spex-finish` manually.
+3. Stage 8 (smoke-test) is reached: if the spec has a `## Smoke Test` section, the smoke test is always interactive and the pipeline stops after it completes. If the section is absent, the stage skips automatically. The user runs `/speckit-spex-finish` manually.
 
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
@@ -423,7 +423,7 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan and task quality |
 | 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
 | 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review |
-| 8 | `smoke-test` | `/speckit-spex-smoke-test` (Interactive) | Interactive smoke test, then pipeline stops |
+| 8 | `smoke-test` | `/speckit-spex-smoke-test` (Interactive) | Focused interactive smoke test from `## Smoke Test` section, then pipeline stops |
 
 ### Suppressing extension overlay gates
 
@@ -745,7 +745,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 ### Stage 8: Smoke Test (Always Interactive)
 
-This stage runs the interactive smoke test, which walks through acceptance scenarios from the spec using a two-phase architecture: a fresh-context subagent executes scenarios and collects evidence, then the main session presents evidence for human judgement. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
+This stage runs the focused interactive smoke test, which walks through curated scenarios from the spec's `## Smoke Test` section. Claude automates all setup and evidence collection in the current session; the human only provides pass/fail judgment. The smoke test is **always interactive**, regardless of the `ask` level. After the smoke test completes (or is skipped), the pipeline **stops**. The user must run `/speckit-spex-finish` manually to merge or create a PR.
 
 1. Resolve the spec directory:
    ```bash
@@ -754,12 +754,12 @@ This stage runs the interactive smoke test, which walks through acceptance scena
    SPEC_FILE="$FEATURE_DIR/spec.md"
    ```
 
-2. Check if the spec has acceptance scenarios:
+2. Check if the spec has a `## Smoke Test` section:
    ```bash
-   HAS_SCENARIOS=$(grep -c '\*\*Given\*\*' "$SPEC_FILE" 2>/dev/null || echo 0)
+   HAS_SMOKE_TEST=$(grep -c '^## Smoke Test$' "$SPEC_FILE" 2>/dev/null || echo 0)
    ```
 
-3. **If scenarios exist** (`HAS_SCENARIOS` > 0):
+3. **If a smoke test section exists** (`HAS_SMOKE_TEST` > 0):
 
    Announce that the pipeline is technically complete and present the smoke test:
 
@@ -767,11 +767,10 @@ This stage runs the interactive smoke test, which walks through acceptance scena
    ## Pipeline technically complete
 
    All automated stages (specify through review-code) have passed.
-   N acceptance scenarios found in the spec.
+   Smoke test section found in the spec.
 
-   The smoke test uses a two-phase approach:
-   1. A fresh-context subagent executes automatable scenarios and collects evidence
-   2. You review the evidence and make pass/fail judgements interactively
+   Claude will automate setup and execution for each scenario.
+   You only provide pass/fail judgment on each one.
 
    Ready to walk through the verification?
    ```
@@ -780,26 +779,11 @@ This stage runs the interactive smoke test, which walks through acceptance scena
 
    **On opt-in** (user says yes, ready, proceed, go, etc.):
 
-   Spawn the smoke test as a **fresh-context subagent** using the Agent tool. This ensures the smoke test has no implementation bias (it doesn't remember writing the code). The subagent invokes the smoke test skill, which handles both phases internally.
+   Invoke `/speckit-spex-smoke-test` directly in the current session.
+   The `.specify/.spex-state` file exists with status `running` (pipeline mode),
+   so the smoke test will suppress completion summaries and next-step prompts.
 
-   ```
-   You are executing the smoke test stage of a speckit-spex-ship pipeline.
-
-   Feature directory: <FEATURE_DIR>
-   Spec: <FEATURE_DIR>/spec.md
-
-   Invoke /speckit-spex-smoke-test to walk through acceptance scenarios interactively.
-   The .specify/.spex-state file exists with status "running" (pipeline mode).
-
-   You have NO context about how this code was implemented. Approach each
-   scenario with fresh eyes. The smoke test skill handles both phases:
-   Phase 1 spawns a nested subagent for execution, Phase 2 presents
-   evidence for human review.
-
-   Report the smoke test summary when done.
-   ```
-
-   After the subagent returns, output:
+   After the smoke test completes, output:
    ```
    Pipeline complete through review and smoke test.
    Run `/speckit-spex-finish` to merge or create a PR.
@@ -809,7 +793,7 @@ This stage runs the interactive smoke test, which walks through acceptance scena
 
    Record that the smoke test was skipped:
    ```bash
-   "$SHIP_STATE" smoke-test-record --completed false --scenarios 0 --total "$HAS_SCENARIOS" --skipped "$HAS_SCENARIOS"
+   "$SHIP_STATE" smoke-test-record --completed false --scenarios 0 --total 0 --skipped 0
    ```
 
    Output:
@@ -818,11 +802,11 @@ This stage runs the interactive smoke test, which walks through acceptance scena
    Run `/speckit-spex-smoke-test` later to walk through scenarios, then `/speckit-spex-finish` to merge or create a PR.
    ```
 
-4. **If no scenarios exist** (`HAS_SCENARIOS` = 0):
+4. **If no smoke test section exists** (`HAS_SMOKE_TEST` = 0):
 
    Skip the smoke test and output:
    ```
-   Pipeline complete through review. No acceptance scenarios for smoke test.
+   Pipeline complete through review. No smoke test section — skipping.
    Run `/speckit-spex-finish` to merge or create a PR.
    ```
 
@@ -987,6 +971,6 @@ Run `/speckit-spex-finish` to merge or create a PR.
 - `/speckit-spex-gates-review-code` (Stage 7)
 
 **This skill invokes (forked subagent, interactive, always pauses):**
-- `/speckit-spex-smoke-test` (Stage 8, fresh context for unbiased testing)
+- `/speckit-spex-smoke-test` (Stage 8, fresh context for unbiased testing, skips if no `## Smoke Test` section)
 
 **Required extensions:** `spex-gates`, `spex-deep-review`

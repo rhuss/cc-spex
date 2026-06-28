@@ -143,9 +143,9 @@ spex COMMANDS (helpers and configuration)
                                 Flags: --ask always|smart|never, --create-pr,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
-  /speckit-spex-smoke-test    Two-phase acceptance scenario walkthrough
-                                Phase 1: Fresh-context subagent executes scenarios
-                                Phase 2: Human reviews evidence interactively
+  /speckit-spex-smoke-test    Focused interactive smoke test from spec's ## Smoke Test section
+                                Claude automates setup/execution, human provides judgment
+                                Auto-skips when no ## Smoke Test section exists
                                 Writes SMOKE-TEST.md report to spec directory
                                 Always interactive (even in ship pipeline)
   /speckit-spex-finish        Verify + merge/PR/keep (all-in-one feature completion)
@@ -164,7 +164,7 @@ CLOSING OUT A FEATURE (after review passes)
 
   After /speckit-spex-review-code (or deep-review) passes:
 
-    1. /speckit-spex-smoke-test    Walk through acceptance scenarios
+    1. /speckit-spex-smoke-test    Walk through curated smoke test scenarios
     2. /clear                      Free context for final verification
     3. /speckit-spex-finish         Verify + merge/PR (all-in-one)
 
@@ -235,8 +235,9 @@ BACKPRESSURE CONFIGURATION (.specify/extensions/spex/spex-config.yml)
   Test command auto-detected: Makefile, package.json, go.mod, pytest, cargo.
   Mid-impl review checkpoints at 1/3 and 2/3 (requires spex-deep-review, 3+ tasks).
   Agent leaderboard with MVP shown after every deep review run.
-  Ship Stage 8 is smoke-test (two-phase: subagent execution + human review).
-  Pipeline announces readiness, asks for opt-in, writes SMOKE-TEST.md.
+  Ship Stage 8 is smoke-test (curated scenarios from ## Smoke Test section).
+  Claude automates setup/execution, human provides pass/fail judgment.
+  Auto-skips when no ## Smoke Test section exists. Writes SMOKE-TEST.md.
   The pipeline stops after smoke-test; run /speckit-spex-finish manually.
   Watch mode runs during finish (when --create-pr is set after manual finish).
   Watch monitors CI, auto-fixes failures (max 2 attempts), and triages
@@ -249,9 +250,9 @@ COMMON MISTAKES (do NOT use these)
   /spex:plan      ✗  Does not exist → use /speckit-plan
   /spex:tasks     ✗  Does not exist → use /speckit-tasks
   /spex:implement ✗  Does not exist → use /speckit-implement
-  /speckit-spex-brainstorm ✗  Old name → use /speckit-spex-brainstorm
-  /spex:ship      ✗  Old name → use /speckit-spex-ship
-  /speckit-spex-evolve    ✗  Old name → use /speckit-spex-evolve
+  /spex:brainstorm ✗  Old name → use /speckit-spex-brainstorm
+  /spex:ship       ✗  Old name → use /speckit-spex-ship
+  /spex:evolve     ✗  Old name → use /speckit-spex-evolve
   /spex:traits    ✗  Removed → use `specify extension enable/disable`
 
   Rule: spex commands use /speckit-spex-* prefix (brainstorm, review, evolve).

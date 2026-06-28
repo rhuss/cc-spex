@@ -1,12 +1,14 @@
 ---
-description: "Interactive spec-driven acceptance scenario walkthrough"
+description: "Focused interactive smoke test with curated scenarios from spec"
 ---
 
-# Interactive Smoke Test (speckit-spex-smoke-test)
+# Focused Interactive Smoke Test (speckit-spex-smoke-test)
 
 ## Overview
 
-Walk through the acceptance scenarios defined in the feature spec using a two-phase architecture. Phase 1 spawns a fresh-context subagent (no implementation memory) to execute scenarios and collect evidence. Phase 2 presents the evidence interactively in the main session for human judgement. Results are persisted as SMOKE-TEST.md in the spec directory.
+Walk through curated smoke test scenarios defined in the feature spec's `## Smoke Test` section. Claude automates all setup, execution, and evidence collection. The human only provides pass/fail judgment on each scenario. Results are persisted as SMOKE-TEST.md in the spec directory.
+
+If the spec has no `## Smoke Test` section, the command skips automatically — no human interaction needed.
 
 <HARD-GATE>
 ## No Simulated Tests
@@ -34,20 +36,6 @@ if [ -f ".specify/.spex-state" ]; then
 fi
 ```
 
-## Context Freshness
-
-**When NOT in pipeline mode**: If this command is invoked directly (not from the ship pipeline), display this recommendation before proceeding:
-
-```
-Tip: For best results, run /clear before the smoke test to remove
-implementation context. A fresh context catches issues that familiarity
-with the code masks.
-```
-
-This is informational only. Do not block or require confirmation.
-
-**When in pipeline mode**: Skip this message (the ship pipeline handles context isolation via subagent).
-
 ## Prerequisites
 
 ### Spec Resolution
@@ -62,359 +50,188 @@ SPEC_FILE="$FEATURE_DIR/spec.md"
 
 If the spec cannot be resolved, report the error and exit.
 
-## Step 1: Parse Acceptance Scenarios
+### Check for `## Smoke Test` Section
 
-Read the spec file and extract all acceptance scenarios from the "User Scenarios & Testing" section.
+After resolving the spec, check for the `## Smoke Test` section:
 
-**Parsing rules:**
-1. Scan only within the "User Scenarios & Testing" section (identified by `## User Scenarios` heading) and its subsections
-2. **STOP scanning** when you reach the "Edge Cases" subsection (identified by `### Edge Cases` heading). Do NOT include edge cases as scenarios.
-3. Within the scanned section, find numbered list items containing bold `**Given**`, `**When**`, `**Then**` keywords
-4. Each numbered item is one scenario
-5. Parse each scenario into a structured triple:
-   - **given**: The precondition text (from `**Given**` clause)
-   - **when**: The action text (from `**When**` clause)
-   - **then**: The expected outcome text (from `**Then**` clause)
-6. Track which user story each scenario belongs to (from the parent `### User Story N` heading)
+```bash
+HAS_SMOKE_TEST=$(grep -c '^## Smoke Test$' "$SPEC_FILE" 2>/dev/null || echo 0)
+```
 
-**If no acceptance scenarios are found** (no Given/When/Then blocks in the User Scenarios section):
+**If no `## Smoke Test` section exists** (`HAS_SMOKE_TEST` = 0):
 
 Report to the user:
 ```
-No acceptance scenarios found in spec.md.
-Add Given/When/Then scenarios to enable smoke testing.
+No smoke test scenarios defined in spec — skipping.
 ```
 
 Exit without error. If in pipeline mode, return immediately so the pipeline can proceed.
 
+**If the section exists**, proceed to Step 1.
+
+## Step 1: Parse Smoke Test Scenarios
+
+Read the spec file and extract scenarios from the `## Smoke Test` section.
+
+**Parsing rules:**
+1. Find the `## Smoke Test` heading in the spec
+2. Extract the content between `## Smoke Test` and the next `##` heading (or end of file)
+3. Within that content, find numbered list items (lines starting with `1.`, `2.`, `3.`, etc.)
+4. Each numbered item is one scenario — the full text of the list item is the scenario instruction
+5. Ignore HTML comments (`<!-- ... -->`) within the section
+6. If the section exists but contains no numbered list items (empty or malformed), warn and skip:
+
+```
+## Smoke Test section found but contains no parseable scenarios — skipping.
+```
+
+Exit without error. If in pipeline mode, return immediately.
+
+**If more than 5 scenarios are found**, display a warning but proceed:
+
+```
+Warning: Found N scenarios (recommended: 5 or fewer for a focused walkthrough).
+Proceeding with all N scenarios.
+```
+
 **If scenarios are found**, report the count:
 ```
-Found N acceptance scenarios across M user stories.
+Found N smoke test scenarios.
 ```
 
-The subagent will categorize these into auto-verified (deterministic, agent judges) and judgment-required (human reviews). The user only interacts with scenarios that genuinely need human eyes.
+## Step 2: Execute Scenarios Interactively
 
-## Step 2: App Lifecycle (Main Session)
+For each scenario, Claude performs all setup and execution, then presents evidence to the human for judgment. This runs in the current session — no subagent spawning.
 
-The main session owns app startup and shutdown. The subagent (Phase 1) assumes the app is already running if needed.
+### 2a. Scenario Execution Loop
 
-### Check for /run Skill
+For each scenario (in order):
 
-First, check if the `/run` skill is available in the current session. This is a runtime check, not a hard dependency:
+1. **Announce the scenario**:
+   ```
+   ## Scenario N of TOTAL
 
-```
-Check if the /run skill is listed in the available skills.
-```
+   > <scenario instruction text>
+   ```
 
-### Auto-Detect Project Type
+2. **Determine setup needs**: Read the scenario instruction and determine what setup is required:
+   - Does it need a running server? Start one (see App Startup below)
+   - Does it need browser interaction? Use Playwright MCP if available (see Browser Interaction below)
+   - Does it need a CLI command? Run it
+   - Does it need test data? Create/seed it
+   - Does it need file inspection? Read the files
 
-If `/run` is not available, auto-detect the project type and start command using this priority:
+3. **Execute the scenario**: Perform all the actions described in the scenario instruction. Collect evidence:
+   - Command output (stdout/stderr)
+   - Screenshots (if browser interaction)
+   - File contents (if file inspection)
+   - Any other relevant output
 
+4. **Present evidence to the human**:
+   ```
+   ### Evidence
+
+   **Setup**: <what Claude did to prepare>
+   **Execution**: <commands run, URLs navigated, actions taken>
+   **Output**:
+   ```
+   <captured output, screenshot description, or file contents>
+   ```
+
+   What to verify: <specific aspect the human should judge>
+   ```
+
+5. **Ask for verdict**: Present options to the human:
+   - **Pass**: Scenario works as expected
+   - **Fail**: Scenario does not match expected behavior
+   - **Skip**: Cannot verify right now, will test later
+
+6. **Record the verdict** with any notes the reviewer provides.
+
+### 2b. App Startup
+
+If a scenario requires a running app and no app is currently running:
+
+**Stale process check**: Before starting a new app, check if a previous instance is still running on common dev ports (3000, 5173, 8080, 8000). If found, kill the stale process before starting fresh.
+
+**Check for /run skill**: Check if the `/run` skill is available in the current session. If available, delegate to it.
+
+**Auto-detect project type** (if `/run` is not available):
 1. **Makefile** with `run` or `serve` target: `make run` or `make serve`
 2. **package.json** with `start` script: `npm start`
 3. **go.mod**: `go run .`
-4. **Python** with `manage.py` (Django), `app.py`, or `main.py`: `python manage.py runserver` / `python app.py` / `python main.py`
+4. **Python** with `manage.py`, `app.py`, or `main.py`: appropriate python command
 5. **Cargo.toml**: `cargo run`
 
-### Library Detection
+If the app starts successfully, keep it running for subsequent scenarios. Immediately capture the process ID (`APP_PID=$!`) for cleanup in Step 5.
 
-If the project appears to be a library (no server, no CLI entry point, no start command detected, and the spec does not describe a runnable application):
-
-Report:
-```
-This appears to be a library project (no runnable app detected).
-Scenarios will be verified through function calls, test invocations,
-or manual verification.
-```
-
-Set `APP_RUNNING=false` and proceed to Step 3. The subagent will categorize scenarios accordingly.
-
-### Start the App
-
-If a start command is detected (or `/run` skill is available):
-
-1. If `/run` skill is available, delegate to it: invoke the `/run` skill to start the project
-2. Otherwise, start the app as a background process using the detected command
-3. Wait for the app to become ready (check for port availability or stdout markers)
-4. Report the startup status
-
-If the app **cannot be started** (no detectable start command, requires cloud infrastructure, or the start command fails):
-
-Report:
+If the app **cannot be started**:
 ```
 Cannot auto-detect how to start this project.
 Please start the app manually and confirm when ready.
 ```
+Wait for user confirmation before continuing.
 
-Wait for user confirmation before proceeding to Step 3.
+### 2c. Browser Interaction (Playwright MCP)
 
-Track whether the smoke test started the app process (for cleanup in Step 7). Store the process ID if applicable. Set `APP_RUNNING=true` once the app is confirmed running, `APP_RUNNING=false` otherwise.
+When a scenario requires browser interaction:
 
-## Step 3: Execute via Subagent (Phase 1)
+**If Playwright MCP is available**: Use it to navigate URLs, interact with the page (clicks, form fills, navigation), and take screenshots. Present screenshots as evidence.
 
-Spawn a subagent via the Agent tool to execute scenarios with fresh context. The subagent has no memory of the implementation session, removing self-testing bias.
-
-### Subagent Prompt
-
-Use the Agent tool to spawn a subagent with the following prompt. Substitute the actual values for `SPEC_FILE`, `PROJECT_ROOT`, and `APP_RUNNING`:
+**If Playwright MCP is NOT available** (graceful degradation): Provide step-by-step manual instructions instead:
 
 ```
-You are a smoke test execution agent. Your job is to exercise acceptance
-scenarios from a feature spec and collect evidence. You have NO context
-about how this code was implemented. Approach each scenario with fresh eyes.
+### Browser Interaction Required (Playwright unavailable)
 
-IMPORTANT RULES:
-- You MUST NOT simulate, fake, or manually reproduce expected output.
-  Every scenario must exercise the actual system. If you cannot exercise
-  a scenario, mark it as "skip" with a reason and manual instructions.
-- You MUST NOT read plan.md, tasks.md, or any implementation artifacts.
-  Only read the spec file for scenario definitions.
-- Return your findings as structured text (format below).
+This scenario requires browser interaction. Please perform these steps manually:
 
-Spec file: <SPEC_FILE>
-Project root: <PROJECT_ROOT>
-App running: <APP_RUNNING> (true/false)
+1. Open <URL> in your browser
+2. <action to perform>
+3. <what to look for>
 
-INSTRUCTIONS:
-
-1. Read the spec file at <SPEC_FILE>.
-2. Extract all acceptance scenarios from the "User Scenarios & Testing"
-   section. Stop at "Edge Cases". Each numbered item with Given/When/Then
-   is one scenario. Track which User Story each belongs to.
-3. For each scenario, FIRST decide whether a human can add value:
-
-   DETERMINISTIC scenarios (agent can fully verify):
-   - File existence, count, or content checks
-   - Command exit codes
-   - Output string/pattern matching
-   - Build/compile success
-   - API response status codes or JSON field checks
-   - Configuration validity checks
-
-   JUDGMENT scenarios (human eyes genuinely needed):
-   - Visual/UI correctness ("does this look right?")
-   - UX flow quality ("is this workflow intuitive?")
-   - Error message clarity ("is this message helpful?")
-   - Behavior that involves subjective quality
-   - Integration with systems the agent cannot access
-   - Multi-session or multi-user behavior
-
-4. Then categorize execution method:
-   - **auto-verified**: Deterministic AND you can run a command to fully
-     verify the outcome. Run it, check the result, and record PASS or
-     FAIL yourself. The human reviews these in the report but does not
-     need to judge them interactively.
-   - **judgment**: The outcome requires human judgment. You can prepare
-     evidence (run commands, capture output, take screenshots) but the
-     human must decide if it passes.
-   - **manual**: Requires human action the agent cannot perform (browser
-     interaction, visual inspection, physical device). Prepare step-by-step
-     instructions.
-   - **skip**: Cannot be exercised in this session (requires prior separate
-     run, external infrastructure, state from another session). Provide
-     a clear reason and manual test instructions for later.
-
-5. For auto-verified: run the command AND verify the result yourself.
-   Compare actual output against the Then clause. Report PASS or FAIL
-   with your reasoning.
-6. For judgment: run whatever you can, capture evidence, but do NOT
-   decide pass/fail. Present evidence for human decision.
-7. For manual: prepare precise step-by-step instructions including
-   exact commands, URLs, and what to look for.
-8. For skip: explain why and provide manual test instructions.
-
-RETURN FORMAT (one block per scenario, separated by ---):
-
-## Scenario N of TOTAL (User Story: <story title>)
-**Type**: auto-verified | judgment | manual | skip
-**Given** <precondition text from spec>
-**When** <action text from spec>
-**Then** <expected outcome text from spec>
-**Why it matters**: <one sentence explaining what risk this scenario catches>
-
-### Evidence
-<for auto-verified>
-**Command**: <exact command run>
-**Output**:
-```
-<full command output>
-```
-**Verification**: <how you checked the Then clause against the output>
-**Agent verdict**: PASS | FAIL
-**Reasoning**: <why you concluded pass or fail, citing specific output>
-
-<for judgment>
-**Command**: <exact command run, if any>
-**Output**:
-```
-<output or screenshot description>
-```
-**What the human should judge**: <specific question for the human>
-
-<for manual>
-**Instructions**:
-1. <step 1>
-2. <step 2>
-...
-**What to verify**: <what the human should look for>
-
-<for skip>
-**Skip reason**: <why this cannot be exercised>
-**Manual test instructions**:
-1. <step 1>
-2. <step 2>
-...
-
----
+After performing these steps, provide your verdict below.
 ```
 
-### Handling Subagent Failure
+### 2d. Failure Handling and Retry
 
-If the subagent fails or times out:
+When a scenario verdict is **fail**:
 
-1. Report the failure to the user
-2. Offer to retry (spawn a new subagent)
-3. If the user declines retry, offer to skip the smoke test entirely
+1. **Offer to investigate**:
+   ```
+   Scenario failed. Would you like me to investigate the cause?
+   (yes / no / skip to next scenario)
+   ```
 
-If the subagent returns but its output cannot be parsed (no recognizable scenario blocks):
+2. **If yes**: Analyze the evidence, compare expected vs actual behavior, examine relevant source code, logs, or configuration. Suggest possible causes and fixes.
 
-1. Show the raw output to the user
-2. Ask whether to proceed with manual review of each scenario or abort
+3. **Offer to fix**: If the cause is identified, offer to make the fix:
+   ```
+   I identified the issue: <description>
+   
+   Suggested fix: <what to change>
+   
+   Would you like me to apply this fix? (yes / no)
+   ```
 
-## Step 4: Interactive Review (Phase 2)
-
-Parse the subagent's return text. Auto-verified scenarios are recorded directly. Only scenarios requiring human judgment are presented interactively.
-
-### 4a. Parse Evidence
-
-Parse the subagent's return text into individual scenario blocks. Each block is delimited by `---` and starts with `## Scenario N of TOTAL`. Extract:
-- Scenario number and total
-- User story title
-- Type (auto-verified/judgment/manual/skip)
-- Given/When/Then text
-- Why it matters
-- Evidence section
-- For auto-verified: the agent's own verdict and reasoning
-
-### 4b. Process Auto-Verified Scenarios (no human interaction)
-
-For scenarios typed `auto-verified`:
-- Record the subagent's verdict (PASS or FAIL) directly
-- Do NOT present them interactively to the user
-- They appear in the final results report for review, but the human does not need to judge them one by one
-
-If an auto-verified scenario has verdict FAIL, promote it to the interactive review (treat it like a judgment scenario, since the human needs to decide what to do about the failure).
-
-### 4c. Present Judgment Scenarios
-
-For scenarios typed `judgment`, display:
-
-```
-## Scenario N of TOTAL (User Story: <story title>)
-
-**Given** <precondition>
-**When** <action>
-**Then** <expected outcome>
-
-**Why it matters**: <explanation>
-
-### Evidence
-
-**Command**: `<command>`
-**Output**:
-```
-<output>
-```
-
-**What the human should judge**: <specific question>
-```
-
-Present the verdict as options to the user:
-- header: "Verdict"
-- multiSelect: false
-- Options:
-  - "Pass": "Scenario works as specified"
-  - "Fail": "Scenario does not match expected behavior"
-  - "Skip": "Cannot verify right now, will test later"
-
-### 4d. Present Manual Scenarios
-
-For scenarios typed `manual`, display:
-
-```
-### Evidence (manual - requires your action)
-
-**Instructions**:
-1. <step>
-2. <step>
-...
-
-**What to verify**: <criteria>
-```
-
-Present the verdict as options to the user:
-- header: "Verdict"
-- multiSelect: false
-- Options:
-  - "Pass": "Verified manually, works as specified"
-  - "Fail": "Verified manually, does not match expected behavior"
-  - "Skip": "Cannot verify right now, will test later"
-
-### 4e. Present Skip Scenarios
-
-For scenarios typed `skip`, display:
-
-```
-### Evidence (skip)
-
-**Reason**: <skip reason>
-
-**Manual test instructions** (for later):
-1. <step>
-2. <step>
-...
-```
-
-Present options to the user:
-- header: "Verdict"
-- multiSelect: false
-- Options:
-  - "Confirm skip": "Accept skip, will test later using the manual instructions"
-  - "Try now": "Attempt manual verification using the instructions above"
-
-If the user chooses "Try now", present the manual test instructions and wait for their pass/fail verdict.
-
-### 4c. Record Verdicts
-
-For each scenario, record:
-- Scenario number
-- Verdict: pass, fail, or skip
-- Any notes from the reviewer
-- Retry result (if the scenario was retried after a fix)
-
-### 4d. Debugging Loop (on failure)
-
-When a scenario is marked "fail":
-
-1. **Ask what went wrong**: "What went wrong? (describe the issue, or press enter for automatic analysis)"
-2. **Analyze the evidence**: Compare expected outcome (from Then clause) with actual output. Suggest possible causes based on the discrepancy.
-3. **Offer to inspect**: Suggest relevant files, logs, or configuration to investigate. Offer to read and analyze them.
-4. **Offer to fix**: If the cause is identified, offer to make the fix (edit code, adjust configuration, etc.)
-5. **Offer to retry**: After a fix is applied, ask: "Would you like to retry this scenario? (yes / no / skip)"
-   - If yes: re-run the command (for automated scenarios) or re-present instructions (for manual)
+4. **Offer to retry**: After a fix is applied:
+   ```
+   Fix applied. Would you like to retry this scenario? (yes / no)
+   ```
+   - If yes: re-execute the scenario from scratch, collect fresh evidence, and ask for verdict again
    - Record both the initial failure and the retry result
-6. **Move on**: If the user declines retry or retry also fails, proceed to the next scenario
 
-### 4e. App Crash Detection
+5. **Move on**: If the user declines investigation, fix, or retry, proceed to the next scenario.
 
-If the main session started the app (Step 2) and the app process crashes during the review phase:
+### 2e. App Crash Detection
+
+If the smoke test started an app process and it crashes during execution:
 
 1. Detect the crash (check if the background process is still running)
 2. Report: "The app appears to have crashed. This may affect remaining scenarios."
 3. Show any available crash output or error logs
 4. Offer to restart the app before continuing
 
-## Step 5: Write SMOKE-TEST.md
+## Step 3: Write SMOKE-TEST.md
 
 After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory.
 
@@ -427,45 +244,30 @@ After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory
 **Date**: <YYYY-MM-DD>
 **Spec**: <relative path to spec.md>
 **Result**: N passed, M skipped, K failed (out of TOTAL)
-**Reviewed by**: N auto-verified by agent, M judged by human
 
-## Scenario 1 of TOTAL (User Story: <story title>)
+---
 
-**Given** <precondition>
-**When** <action>
-**Then** <expected outcome>
-
-**Why it matters**: <explanation>
+## Scenario 1: <instruction text>
 
 ### Evidence
 
-**Command**: `<exact command>`
+**Setup**: <what Claude did to prepare>
+**Execution**: <commands run, URLs navigated, screenshots taken>
 **Output**:
 ```
-<full output>
+<captured output or screenshot description>
 ```
-**Observation**: <subagent's factual observation about the output>
 
-### Verdict: PASS
+### Verdict: PASS | FAIL | SKIP
 
 <reviewer notes if any>
 
 ---
 
-## Scenario 2 of TOTAL (User Story: <story title>)
+## Scenario 2: <instruction text>
 
 ...
 ```
-
-### Evidence Variants
-
-**For auto-verified scenarios**: Show Command + Output + Verification + Agent verdict + Reasoning. Mark the verdict line with `(auto-verified)` so the reader knows no human judged this interactively.
-
-**For judgment scenarios**: Show Command + Output + What the human judged.
-
-**For manual scenarios**: Show Instructions + What to verify.
-
-**For skip scenarios**: Show Skip reason + Manual test instructions for later.
 
 ### Retry Documentation
 
@@ -491,19 +293,24 @@ Announce:
 Smoke test report written to <relative path to SMOKE-TEST.md>.
 ```
 
-## Step 6: Record Results
+## Step 4: Record Results
 
 After all scenarios are processed (or the user exits early), record the results.
 
 ### Locate the State Script
 
 ```bash
-SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' -path '*/spex/scripts/*' 2>/dev/null | head -1)"
+if [ -z "$SHIP_STATE" ]; then
+  echo "Warning: spex-ship-state.sh not found — smoke test results not recorded in pipeline state."
+fi
 ```
+
+If `$SHIP_STATE` is empty, skip the recording step below. The SMOKE-TEST.md report is still written regardless.
 
 ### Record Smoke Test Results
 
-Invoke the state script to record results:
+If `$SHIP_STATE` was found, invoke the state script to record results:
 
 ```bash
 "$SHIP_STATE" smoke-test-record \
@@ -514,16 +321,16 @@ Invoke the state script to record results:
 ```
 
 Where:
-- `completed` is `true` if all scenarios were processed (passed or skipped), `false` if the user exited early
-- `scenarios` is the number of scenarios that were completed (passed + skipped)
+- `completed` is `true` if all scenarios were processed (regardless of verdict — passed, failed, or skipped all count), `false` if the user exited early before all scenarios were presented
+- `scenarios` is the number of scenarios that were completed (passed + failed + skipped)
 - `total` is the total number of scenarios found in the spec
 - `skipped` is the number of scenarios the user explicitly skipped
 
-## Step 7: Cleanup
+## Step 5: Cleanup
 
 ### Stop the App Process
 
-If the smoke test started the app process (tracked in Step 2):
+If the smoke test started the app process (tracked in Step 2b):
 
 1. Attempt graceful shutdown with SIGTERM
 2. Wait up to 5 seconds for the process to exit
@@ -552,49 +359,35 @@ Feature: <feature name>
 Date: <YYYY-MM-DD>
 Status: <COMPLETE | INCOMPLETE (exited early)>
 
-Auto-verified (deterministic checks, agent judged):
+Scenarios:
 
-  1. ✅ <scenario description>
-     Ran: <command>
-     Verified: <what agent checked and why it passed>
+  1. <verdict emoji> <scenario instruction>
+     <evidence summary — what was done and observed>
 
-  2. ✅ <scenario description>
-     Ran: <command>
-     Verified: <what agent checked>
+  2. <verdict emoji> <scenario instruction>
+     <evidence summary>
 
-  3. ❌ <scenario description>              ← FAILED
-     Ran: <command>
-     Expected: <what spec says>
-     Actual: <what happened>
-
-Human-judged (required your assessment):
-
-  4. ✅ <scenario description>
-     Evidence: <what was shown to human>
-
-  5. ⏭️  <scenario description>              SKIP
-     Reason: <why>
-     To test later: <one-line instruction>
+  3. <verdict emoji> <scenario instruction>
+     <evidence summary>
 
 Summary: N passed, M skipped, K failed (out of TOTAL)
-  Auto-verified: N scenarios (agent decided)
-  Human-judged:  M scenarios (you decided)
 Full report: <path to SMOKE-TEST.md>
 
 ═══════════════════════════════════════════════════════
 ```
 
-**For each scenario in the report, include:**
-- The scenario description (derived from the When clause)
-- The verdict (PASS / FAIL / SKIP)
-- Whether it was auto-verified or human-judged
-- For auto-verified PASS: what command was run and what the agent verified
-- For auto-verified FAIL: expected vs. actual (promoted to interactive review)
-- For human-judged PASS: what evidence was shown
-- For SKIP: the skip reason and a one-line manual test instruction
-- For FAIL: expected vs. actual outcome (one line each)
+**Verdict emojis:**
+- Pass: checkmark
+- Fail: cross mark
+- Skip: skip arrow
 
-**Group scenarios by review type** (auto-verified first, then human-judged). This makes it immediately clear which scenarios had human oversight and which were deterministic checks.
+**For each scenario in the report, include:**
+- The scenario instruction text
+- The verdict (PASS / FAIL / SKIP)
+- A one-line evidence summary (what was done and observed)
+- For FAIL: expected vs. actual outcome (one line each)
+- For SKIP: the skip reason and a one-line manual test instruction
+- For retried scenarios: note "(after retry)" next to the verdict
 
 **In pipeline mode**: Still suppress "Shall I proceed?" and next-step suggestions. But NEVER suppress the results report. The report is the whole point.
 
@@ -606,6 +399,6 @@ Full report: <path to SMOKE-TEST.md>
 
 **This command invokes:**
 - `.specify/scripts/bash/check-prerequisites.sh` (spec resolution)
-- Agent tool (subagent for Phase 1 execution)
 - `spex-ship-state.sh smoke-test-record` (state recording)
 - Optionally: `/run` skill (app startup delegation)
+- Optionally: Playwright MCP tools (browser interaction)
