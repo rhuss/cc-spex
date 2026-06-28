@@ -200,14 +200,16 @@ Assessment approach:
 
 Verdicts:
 
-- **Valid**: The suggestion identifies a real issue (bug, inconsistency, misleading documentation) or improves code quality.
+- **Valid**: The suggestion identifies a real issue (bug, inconsistency, misleading documentation) or improves code quality. The fix can be applied within the current PR scope.
 - **Invalid**: The code is demonstrably correct at the specific lines cited, and the suggestion would not improve it. The rejection MUST cite the specific line(s) or function(s) that prove the bot wrong.
+- **Deferred**: The suggestion has merit but is out of scope for this PR -- it requires a larger refactoring, an architectural change, a new feature, or touches code outside the PR's intent. The issue is real but cannot be addressed with a localized fix.
 
-### 6c: Apply or Skip
+### 6c: Apply, Skip, or Defer
 
 - **If valid**: Apply the fix using the Edit tool. Track the file path and a 1-line summary for the batch commit message.
 - **If fix application fails** (file changed, line mismatch, syntax error): Skip the fix, mark for a reply noting the fix could not be applied automatically, and continue.
 - **If invalid**: Skip the fix. Prepare a rejection reply with 1-5 sentence justification.
+- **If deferred**: Skip the fix. Track the item in a deferred list with: bot author, file path, 1-line summary of the suggested improvement, and why it's out of scope. Prepare a deferral reply.
 
 ### 6d: Conflict Detection
 
@@ -276,6 +278,16 @@ When a suggestion was rejected. Every rejection MUST cite specific evidence (lin
 <!-- spex-triage -->
 ```
 
+### Deferral Reply Format
+
+When a suggestion has merit but is out of scope:
+
+```
+Valid point -- this is out of scope for this PR (<1 sentence why: requires larger refactoring / architectural change / etc>). Tracked for a follow-up brainstorm.
+
+<!-- spex-triage:deferred -->
+```
+
 ### Fix Failure Reply Format
 
 When a fix could not be applied:
@@ -292,13 +304,13 @@ After each reply is posted, update the state file:
 bash spex/scripts/spex-triage-state.sh set "$PR_NUM" "$COMMENT_DB_ID" "<action>" "$REPLY_ID"
 ```
 
-Where `<action>` is `accepted`, `rejected`, or `skipped`.
+Where `<action>` is `accepted`, `rejected`, `deferred`, or `skipped`.
 
 ## Step 9: Auto-Resolve Threads
 
-**Hard rule**: NEVER resolve a thread that has not been replied to with a `<!-- spex-triage -->` signature. Resolving without a reply silently discards review feedback. A thread is eligible for resolution ONLY when:
-1. The thread was assessed in Step 6 (valid or invalid verdict reached), AND
-2. A reply was posted in Step 8 (acceptance, rejection, or fix-failure reply), AND
+**Hard rule**: NEVER resolve a thread that has not been replied to with a `<!-- spex-triage -->` or `<!-- spex-triage:deferred -->` signature. Resolving without a reply silently discards review feedback. A thread is eligible for resolution ONLY when:
+1. The thread was assessed in Step 6 (valid, invalid, or deferred verdict reached), AND
+2. A reply was posted in Step 8 (acceptance, rejection, deferral, or fix-failure reply), AND
 3. The bot profile's `autoResolve` setting is `true`
 
 If any of these conditions is not met, leave the thread unresolved.
@@ -383,15 +395,16 @@ At the end of the triage pass, report a summary:
 ## Triage Summary for PR #<PR_NUM>
 
 **Bot comments** (by author):
-| Bot | Accepted | Rejected | Skipped | Already Handled |
-|-----|----------|----------|---------|-----------------|
-| copilot[bot] | N | N | N | N |
-| devin-ai-integration[bot] | N | N | N | N |
-| coderabbitai[bot] | N | N | N | N |
+| Bot | Accepted | Rejected | Deferred | Skipped | Already Handled |
+|-----|----------|----------|----------|---------|-----------------|
+| copilot[bot] | N | N | N | N | N |
+| devin-ai-integration[bot] | N | N | N | N | N |
+| coderabbitai[bot] | N | N | N | N | N |
 
 **Bot totals**:
 - Accepted: N (fixes applied)
 - Rejected: N
+- Deferred: N (out of scope, tracked for brainstorm)
 - Skipped: N (deleted files, conflicts, summary comments)
 - Already handled: N
 
@@ -437,7 +450,54 @@ Recurring patterns from N review comments:
 
 4. **Apply selected principles**: For each selected principle, invoke `/speckit-constitution` with the principle text as argument. This adds the principles to `.specify/memory/constitution.md` following the existing format and triggers template sync.
 
-## Step 15: High Volume Batching
+## Step 15: Brainstorm Deferred Findings
+
+After principle extraction, check if any bot comments were deferred during this triage pass.
+
+**Skip this step if**: no comments were deferred (deferred count is 0).
+
+**Procedure:**
+
+1. **Collect deferred items**: Gather all deferred findings from this pass into a summary list:
+
+```
+Deferred review findings (out of scope for PR #<PR_NUM>):
+
+1. <Bot>: <file path> — <1-line summary of suggested improvement>
+   Why deferred: <1 sentence>
+2. <Bot>: <file path> — <1-line summary>
+   Why deferred: <1 sentence>
+...
+```
+
+2. **Group by theme**: If multiple deferred items address the same concern (e.g., "error handling consistency", "missing validation"), group them under a common theme. Each theme becomes one brainstorm candidate.
+
+3. **Offer brainstorm creation**: Present the deferred themes to the user:
+
+   - header: "Brainstorm?"
+   - multiSelect: true
+   - Each theme becomes an option with the theme name as label and "N deferred findings from Bot1, Bot2" as description
+   - Include a "Skip all" option
+
+4. **Create brainstorms**: For each selected theme, invoke `/speckit-spex-brainstorm` with a pre-filled problem framing that includes:
+   - The deferred findings that belong to this theme (bot author, file, suggestion)
+   - The PR number and context where they were identified
+   - A note that these originated from AI code review
+
+   The brainstorm skill handles the document creation, numbering, issue creation (offering to create a GitHub issue), and overview update. Do not duplicate that logic here.
+
+5. **Link back to PR**: If a GitHub issue was created by the brainstorm skill, post a single summary comment on the PR linking to the issue(s):
+
+```bash
+BODY="Deferred review findings tracked for follow-up:
+$(for each issue: echo "- [Theme name]($ISSUE_URL)")
+
+<!-- spex-triage:deferred-summary -->"
+
+gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" -f body="$BODY"
+```
+
+## Step 16: High Volume Batching
 
 For PRs with more than 100 review threads, process in batches of 50. After each batch:
 
