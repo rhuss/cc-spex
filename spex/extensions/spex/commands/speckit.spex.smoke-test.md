@@ -219,15 +219,24 @@ When a scenario verdict is **fail**:
    ```
    - If yes: re-execute the scenario from scratch, collect fresh evidence, and ask for verdict again
    - Record both the initial failure and the retry result
+   - Maximum 2 retries per scenario. After 2 unsuccessful retries, suggest moving on:
+     ```
+     This scenario has failed twice after fixes. Would you like to try once more, or move to the next scenario?
+     ```
 
 5. **Move on**: If the user declines investigation, fix, or retry, proceed to the next scenario.
 
 ### 2e. App Crash Detection
 
-If the smoke test started an app process and it crashes during execution:
+Before each scenario, verify the app process is still running (if one was started):
 
-1. Detect the crash (check if the background process is still running)
-2. Report: "The app appears to have crashed. This may affect remaining scenarios."
+```bash
+kill -0 $APP_PID 2>/dev/null || echo "APP_CRASHED"
+```
+
+If the process is no longer running:
+
+1. Report: "The app appears to have crashed. This may affect remaining scenarios."
 3. Show any available crash output or error logs
 4. Offer to restart the app before continuing
 
