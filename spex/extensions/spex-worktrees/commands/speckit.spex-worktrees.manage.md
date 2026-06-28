@@ -241,7 +241,7 @@ echo "{\"feature_directory\": \"$FEATURE_DIR\"}" | jq '.' > "$FEATURE_JSON"
 
 This writes the `FEATURE_DIR` value captured in Step 5b, which reflects the actual spec directory created by speckit-specify (not a branch-name derivation that may differ).
 
-The `.specify/.spex-state` file is gitignored, so the rsync in Step 8 won't copy it (the main repo is on the default branch at that point, where the file doesn't exist). Restore it from the content captured in Step 5b, with the branch and spec_dir updated to match the worktree:
+The `.specify/.spex-state` file is gitignored but persists on disk across branch switches. It may still be present in the main repo after `git checkout $DEFAULT_BRANCH`. Restore it to the worktree from the content captured in Step 5b, then remove it from the main repo to prevent the statusline from showing stale state:
 
 ```bash
 STATE_FILE="$WORKTREE_PATH/.specify/.spex-state"
@@ -249,9 +249,12 @@ if [ -n "$SPEX_STATE_CONTENT" ]; then
   echo "$SPEX_STATE_CONTENT" | jq --arg branch "$BRANCH_NAME" --arg dir "$FEATURE_DIR" \
     '.feature_branch = $branch | .spec_dir = $dir' > "$STATE_FILE"
 fi
+
+# Remove stale state from main repo — the pipeline continues in the worktree
+rm -f ".specify/.spex-state"
 ```
 
-This restores the flow state (including any quality gate results from the specify phase) and ensures both spec-kit commands and the status line operate on the correct feature context.
+This restores the flow state (including any quality gate results from the specify phase) in the worktree and ensures the main repo's statusline does not display stale pipeline progress.
 
 ### Step 9: Print Output
 
