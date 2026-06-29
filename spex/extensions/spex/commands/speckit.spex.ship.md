@@ -221,16 +221,15 @@ This advances `stage` and `stage_index` to the next stage with `status: running`
 
 ### CWD Recovery After Subagents (Worktree Pipelines)
 
-When the pipeline runs in a worktree, the shell CWD may be reset to the main repo directory after a subagent returns (Stages 2, 5, 6, 7 all use subagents). **After every subagent returns**, check whether CWD is still the worktree. If not, `cd` back before running any subsequent commands (especially `advance`):
+When the pipeline runs in a worktree, the shell CWD may be reset to the main repo directory after a subagent returns (Stages 2, 5, 6, 7 all use subagents). **After every subagent returns**, recover CWD using the worktree recovery script:
 
 ```bash
-# Only needed when running in a worktree
-if [ -n "$SHIP_STATE_FILE" ] && [ ! -f ".specify/.spex-state" ] && [ -f "$SHIP_STATE_FILE" ]; then
-  cd "$(dirname "$SHIP_STATE_FILE")/.."
-fi
+WORKTREE_CWD="<PLUGIN_ROOT>/scripts/spex-worktree-cwd.sh"
+RECOVERY_DIR=$("$WORKTREE_CWD")
+[ -n "$RECOVERY_DIR" ] && cd "$RECOVERY_DIR"
 ```
 
-This uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to navigate back to the worktree root. The check is safe to run unconditionally; it's a no-op when CWD is already correct.
+Replace `<PLUGIN_ROOT>` with the actual path from the `<spex-context>` system reminder. The script uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to find the worktree root. It is safe to call unconditionally; it outputs nothing when CWD is already correct or when not in a worktree.
 
 ## Ship Pipeline Guard
 
@@ -752,11 +751,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
 
-   **CWD recovery (worktree):** After the subagent returns, the shell CWD may have been reset to the main repo directory. If the pipeline is running in a worktree, verify CWD is still the worktree path. If not, `cd` back into the worktree before proceeding:
-   ```bash
-   WORKTREE_PATH=$(git worktree list --porcelain | grep -A1 "branch refs/heads/$(git branch --show-current 2>/dev/null || echo '')" | head -1 | sed 's/^worktree //')
-   [ -n "$WORKTREE_PATH" ] && [ "$WORKTREE_PATH" != "$(pwd)" ] && cd "$WORKTREE_PATH"
-   ```
+   **CWD recovery (worktree):** Run the CWD recovery script (see "CWD Recovery After Subagents" above).
 
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 7 outputs `PIPELINE_COMPLETE`.
