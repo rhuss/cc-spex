@@ -327,7 +327,8 @@ When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
 Then set the flow state to triage-spec:
 
 ```bash
-bash spex/scripts/spex-flow-state.sh running triage-spec
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
+"$FLOW_STATE" running triage-spec
 ```
 
 ### Implementation Triage Suggestion
@@ -361,7 +362,8 @@ When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
 Then set the flow state to triage-impl:
 
 ```bash
-bash spex/scripts/spex-flow-state.sh running triage-impl
+FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
+"$FLOW_STATE" running triage-impl
 ```
 
 ### Determining Which Suggestion to Show

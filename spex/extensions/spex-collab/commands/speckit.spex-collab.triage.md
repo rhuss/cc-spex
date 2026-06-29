@@ -39,7 +39,8 @@ REPO=$(echo "$REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\(.*\)\.git$|\1|p; s
 ## Step 2: Initialize State
 
 ```bash
-bash spex/scripts/spex-triage-state.sh init "$PR_NUM"
+TRIAGE_STATE="$(find ~/.claude -name 'spex-triage-state.sh' 2>/dev/null | head -1)"
+"$TRIAGE_STATE" init "$PR_NUM"
 ```
 
 ## Step 3: Fetch Review Threads
@@ -94,7 +95,7 @@ while true; do
       }
     }
   ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" $CURSOR_ARG \
-    | python3 spex/scripts/sanitize-gh-json.py)
+    | python3 "$(find ~/.claude -name 'sanitize-gh-json.py' 2>/dev/null | head -1)")
 
   # Extract threads from this page and append
   PAGE_THREADS=$(echo "$PAGE_JSON" | jq '.data.repository.pullRequest.reviewThreads.nodes')
@@ -133,7 +134,7 @@ Parse the GraphQL response and partition threads into bot and human categories.
 For each thread in `reviewThreads.nodes`:
 
 1. **Skip resolved threads**: If `isResolved` is true, skip entirely.
-2. **Check state**: For the first comment's `databaseId`, call `bash spex/scripts/spex-triage-state.sh get "$PR_NUM" "$COMMENT_ID"`. If already handled, check for re-evaluation (see Step 10 for loop mode). For non-loop first invocations, skip handled comments.
+2. **Check state**: For the first comment's `databaseId`, call `"$TRIAGE_STATE" get "$PR_NUM" "$COMMENT_ID"`. If already handled, check for re-evaluation (see Step 10 for loop mode). For non-loop first invocations, skip handled comments.
 3. **Determine author type**: Check the first comment's author. The primary indicator is the GraphQL `... on Bot { id }` fragment: if the author has a `Bot` type in the response, classify as bot. As a secondary fallback (for cases where the GraphQL type fragment is absent), check if the author login ends with `[bot]`. Classify as human only when neither indicator matches. The GraphQL type takes priority per FR-002.
 
 Create two lists:
@@ -301,7 +302,7 @@ Could not apply this fix automatically (<reason: file changed/line mismatch/etc>
 After each reply is posted, update the state file:
 
 ```bash
-bash spex/scripts/spex-triage-state.sh set "$PR_NUM" "$COMMENT_DB_ID" "<action>" "$REPLY_ID"
+"$TRIAGE_STATE" set "$PR_NUM" "$COMMENT_DB_ID" "<action>" "$REPLY_ID"
 ```
 
 Where `<action>` is `accepted`, `rejected`, `deferred`, or `skipped`.
@@ -401,7 +402,7 @@ For each unresolved human thread:
 
 5. **Update state**: After posting an approved or edited reply, update the state:
    ```bash
-   bash spex/scripts/spex-triage-state.sh set "$PR_NUM" "$COMMENT_DB_ID" "<action>" "$REPLY_ID"
+   "$TRIAGE_STATE" set "$PR_NUM" "$COMMENT_DB_ID" "<action>" "$REPLY_ID"
    ```
    For skipped comments, record action as `skipped`.
 
