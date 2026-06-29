@@ -114,6 +114,20 @@ As a new user of cc-spex, I can learn about the idea capture workflow from the R
 - **FR-012**: The conversational nudge MUST NOT take any automatic action — no writing to inbox, no blocking
 - **FR-013**: The README MUST include an "Idea Capture During Reviews" section explaining the workflow
 - **FR-014**: The inbox file MUST be created automatically when the first entry is written (no manual setup required)
+- **FR-015**: The inbox file format MUST use the following markdown structure per entry, enabling reliable parsing by both writers and readers:
+
+```markdown
+### <theme-slug>
+
+- **Source**: triage | deep-review | conversation
+- **Date**: YYYY-MM-DD
+- **Reference**: <PR number or feature branch name>
+- **Summary**: <1-2 sentence description of the idea>
+
+> <context snippet — relevant excerpt from the review finding>
+```
+
+- **FR-016**: The deferred-idea signal detection for the conversational nudge MUST match against the following canonical phrases (case-insensitive): "out of scope", "worth considering later", "design tension", "follow-up", "for a future PR", "not for this PR", "revisit later", "future work"
 
 ### Key Entities
 
@@ -125,7 +139,7 @@ As a new user of cc-spex, I can learn about the idea capture workflow from the R
 
 ### Measurable Outcomes
 
-- **SC-001**: Out-of-scope ideas from reviews are captured to a persistent file instead of being lost in conversation history
+- **SC-001**: 100% of user-selected themes from triage Step 15 and all Notable findings from deep review are written to `brainstorm/idea-inbox.md` with complete entry fields per FR-002/FR-015
 - **SC-002**: The brainstorm skill surfaces accumulated inbox items within the first interaction turn when items exist
 - **SC-003**: Triage Step 15 triggers on thematic clusters of 2+ findings instead of requiring 3+ rejected findings
 - **SC-004**: Deep review agents can classify design-level observations separately from bugs
@@ -147,6 +161,23 @@ As a new user of cc-spex, I can learn about the idea capture workflow from the R
 - When multiple review sources flag the same theme, entries are kept separate (append-only); deduplication is deferred to the brainstorm skill's presentation layer
 - The brainstorm skill groups inbox items by theme when presenting them to the user, not flat chronological order
 - Consumed inbox items leave no trace in the brainstorm overview (`00-overview.md`); the overview tracks brainstorm documents, not inbox seeds
+
+## Out of Scope
+
+- Automated deduplication of inbox entries (deferred to brainstorm skill's presentation layer per clarification)
+- Inbox item expiry, automated cleanup, or age-based pruning (manual pruning is acceptable per Assumptions)
+- Notifications or alerts when new items are added to the inbox
+- Cross-repository inbox sharing or synchronization
+- Rich metadata beyond the fields specified in FR-002 (e.g., priority, assignee, labels)
+- Integration with external issue trackers (GitHub Issues, Jira) for inbox items
+- UI or dashboard for inbox management (inbox is a markdown file operated on by skills)
+
+## Dependencies
+
+- **Triage Step 15** (`spex/extensions/spex-collab/commands/triage.md`): Existing mechanism for detecting recurring themes in deferred/rejected findings; must be modified to write to inbox instead of invoking brainstorm directly
+- **Deep Review Agent Classification** (`spex/extensions/spex-deep-review/`): Existing verdict system (Critical, Important, Minor) must be extended with "Notable" verdict
+- **Brainstorm Skill** (`spex/extensions/spex/commands/brainstorm.md`): Step 2 (explore context) must be extended to check inbox file and present items as seeds
+- **Review Findings Format** (`review-findings.md`): Must support a new "Notable Observations" section
 
 ## Clarifications
 
