@@ -52,5 +52,5 @@ Do not treat documentation as a follow-up task. Stale docs mislead users and ero
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/029-smoke-test-rethink/plan.md
+at specs/031-review-idea-inbox/plan.md
 <!-- SPECKIT END -->
