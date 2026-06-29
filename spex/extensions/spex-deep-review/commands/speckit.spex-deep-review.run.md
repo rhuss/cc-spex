@@ -523,7 +523,11 @@ After writing `review-findings.md`, if any Notable findings exist, append each t
 
 1. **Skip if no Notable findings** exist. This step is only for Notable severity.
 
-2. **Create the inbox file if it doesn't exist**:
+2. **Ensure the directory and file exist**:
+   ```bash
+   mkdir -p brainstorm
+   ```
+   **Create the inbox file if it doesn't exist**:
    ```markdown
    # Idea Inbox
 
@@ -534,14 +538,16 @@ After writing `review-findings.md`, if any Notable findings exist, append each t
    ```markdown
 
    ### <theme-slug>
-   - **Source:** deep-review
-   - **Date:** YYYY-MM-DD
-   - **PR/Feature:** <current feature branch name>
-   - **Summary:** <the finding's description, condensed to 1-2 sentences>
-   - **Context:** "<the finding's rationale>"
+
+   - **Source**: deep-review
+   - **Date**: YYYY-MM-DD
+   - **Reference**: <current feature branch name>
+   - **Summary**: <the finding's description, condensed to 1-2 sentences>
+
+   > <the finding's rationale>
    ```
 
-   Where `<theme-slug>` is derived from the finding's description in kebab-case (e.g., "interface evolution needed" becomes `interface-evolution-needed`).
+   Where `<theme-slug>` is derived from the finding's description in kebab-case, condensed to 2-4 words focusing on the core concept (e.g., "interface evolution needed" becomes `interface-evolution-needed`, not the full description). Keep slugs under 40 characters.
 
 4. **Report**: `Captured N Notable observations to brainstorm/idea-inbox.md`
 

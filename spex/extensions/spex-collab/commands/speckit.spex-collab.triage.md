@@ -505,7 +505,11 @@ Rejected review findings worth considering:
    - Each theme becomes an option with the theme name as label and "N findings (M deferred, K rejected) from Bot1, Bot2" as description
    - Include a "Skip all" option
 
-4. **Write to idea inbox**: For each selected theme, append an entry to `brainstorm/idea-inbox.md`. Create the file with the header if it doesn't exist:
+4. **Write to idea inbox**: For each selected theme, append an entry to `brainstorm/idea-inbox.md`. Create the directory and file if they don't exist:
+
+   ```bash
+   mkdir -p brainstorm
+   ```
 
    **If the file does not exist**, create it first:
    ```markdown
@@ -518,11 +522,13 @@ Rejected review findings worth considering:
    ```markdown
 
    ### <theme-slug>
-   - **Source:** triage
-   - **Date:** YYYY-MM-DD
-   - **PR/Feature:** <PR URL or PR number>
-   - **Summary:** <1-2 sentence description synthesizing the findings in this theme>
-   - **Context:** "<relevant excerpt from the review findings that belong to this theme>"
+
+   - **Source**: triage
+   - **Date**: YYYY-MM-DD
+   - **Reference**: <PR number or feature branch name>
+   - **Summary**: <1-2 sentence description synthesizing the findings in this theme>
+
+   > <relevant excerpt from the review findings that belong to this theme>
    ```
 
    Where `<theme-slug>` is the theme name in kebab-case (e.g., "error handling consistency" becomes `error-handling-consistency`).

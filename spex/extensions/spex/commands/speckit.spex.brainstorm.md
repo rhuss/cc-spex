@@ -8,7 +8,7 @@ Help turn rough ideas into clear, agreed-upon feature descriptions through natur
 
 **Key Principle:** Brainstorming explores WHAT to build and WHY. The formal spec (via `/speckit-specify`) and implementation planning come after.
 
-**Idea Inbox:** When invoked after a review discussion that contained deferred-idea signals ("out of scope", "worth considering later", "design tension", "follow-up", "for a future PR", "not for this PR", "revisit later", "future work"), mention that ideas can be captured to `brainstorm/idea-inbox.md` for future brainstorming. This is a gentle nudge — do not take automatic action.
+**Idea Inbox:** On startup, check `brainstorm/idea-inbox.md` for accumulated review ideas and offer them as brainstorm seeds (see step 3). After creating a brainstorm document from inbox items, remove consumed entries (see step 8). When invoked after a review discussion that contained deferred-idea signals ("out of scope", "worth considering later", "design tension", "follow-up", "for a future PR"), also mention that ideas can be added to the inbox manually.
 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, create spec files, or take any implementation action during brainstorming. Brainstorming ends with a decision and a brainstorm document, not a spec.
@@ -88,7 +88,7 @@ Spec-kit must be initialized before brainstorming. If `.specify/` directory does
 After exploring project context, check if `brainstorm/idea-inbox.md` exists and contains entries:
 
 1. If the file does not exist or is empty (only the `# Idea Inbox` header), skip — proceed with normal flow.
-2. If entries exist, parse them by `### ` headings. Each entry has metadata fields (Source, Date, PR/Feature, Summary, Context).
+2. If entries exist, parse them by `### ` headings. Each entry has metadata fields (Source, Date, Reference, Summary) and a blockquote context snippet.
 3. Group entries by theme slug (the `### ` heading text).
 4. Present the inbox items to the user grouped by theme:
 
@@ -371,9 +371,9 @@ You MUST write the brainstorm document at session end. This step is NOT optional
 
    On success, append `**Issue:** <ISSUE_URL>` to the brainstorm document header (after the Status line) using the Edit tool.
 
-7. **Remove consumed inbox entries** (only if the session was seeded from inbox items):
+7. **Remove consumed inbox entries** (only if the session was seeded from inbox items AND the brainstorm document status is `active`):
 
-   If the brainstorm session was seeded from one or more inbox items (selected in step 3 of the checklist), remove the consumed entries from `brainstorm/idea-inbox.md`:
+   If the brainstorm session was seeded from one or more inbox items (selected in step 3 of the checklist) AND the brainstorm document was written with status `active` (a decision was reached), remove the consumed entries from `brainstorm/idea-inbox.md`. If the session was `parked` or `abandoned`, leave inbox items untouched — the idea was not fully explored and should remain available for future brainstorming.
 
    - For each consumed theme slug, use the Edit tool to remove the `### <theme-slug>` heading and its entire content block (all lines from the heading through to the next `### ` heading or end of file).
    - If all entries are consumed, leave the file with just the `# Idea Inbox` header and description line.
