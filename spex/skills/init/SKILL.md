@@ -34,7 +34,7 @@ You MUST ask all 4 questions below in a SINGLE AskUserQuestion call. Do NOT spli
 
 4. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
-   - "YOLO": "Auto-approve everything + enable auto mode for unattended workflows (requires Max/Team/Enterprise)"
+   - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows"
    - "None": "Confirm every spex command before execution"
 
 Then apply the selections:
@@ -67,11 +67,9 @@ Combine all selected options into a single `yq` call when multiple are chosen.
   ```
 - **YOLO**:
   ```json
-  {"permissions": {"defaultMode": "auto", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch", "WebSearch", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  {"permissions": {"defaultMode": "bypassPermissions", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch", "WebSearch", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
   ```
-  Note: `defaultMode: "auto"` enables the classifier-based auto mode that replaces `bypassPermissions`. Auto mode auto-approves routine operations (file edits, skill invocations, local commands) while blocking genuinely dangerous actions. It requires Max, Team, Enterprise, or API plan. The broad `allow` rules serve as fallback for environments where auto mode is unavailable.
-  
-  **MCP tools**: Claude Code does not support wildcard MCP server names in allow rules (e.g., `mcp__*__*` is invalid). To allow MCP tools, add server-specific entries like `mcp__playwright__*` or `mcp__slack__*` for each MCP server the project uses. Since available MCP servers vary by project, do NOT add MCP allow rules by default. The user can add them manually if needed.
+  Note: `defaultMode: "bypassPermissions"` skips all permission prompts. The broad `allow` rules serve as additional fallback. Use this for unattended ship pipelines or when you trust the agent fully.
 - **None**: Do not modify permissions (leave defaults)
 
 Use the existing project `.claude/settings.json` (create if missing). Merge permission entries without overwriting existing settings.
