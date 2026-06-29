@@ -214,6 +214,42 @@ CLOSING OUT A FEATURE (after review passes)
     specify extension disable <name>   Disable an extension
 
 
+IDEA INBOX (brainstorm/idea-inbox.md)
+
+  Captures out-of-scope ideas from code reviews for future brainstorming.
+
+  How ideas enter:
+    Triage (auto, user-gated)     Step 15 groups deferred/rejected findings by
+                                  theme. Themes with 2+ findings are offered
+                                  for capture via multi-select prompt.
+    Deep review (auto)            Notable findings (design observations, not
+                                  bugs) are appended automatically after review.
+    Manual                        Edit brainstorm/idea-inbox.md directly. Use
+                                  the entry format below.
+
+  Entry format:
+    ### theme-slug
+    - **Source**: triage | deep-review | conversation
+    - **Date**: 2026-06-29
+    - **Reference**: #42 or branch-name
+    - **Summary**: Brief description
+    > Context excerpt from the review
+
+  How the inbox is drained:
+    /speckit-spex-brainstorm      Checks inbox on startup, presents items
+                                  grouped by theme. Select items to explore
+                                  or "Start fresh" to skip.
+    On brainstorm completion      Consumed entries are removed from the inbox
+                                  (only when session status is "active", not
+                                  parked or abandoned).
+    Manual removal                Delete the ### block from the file.
+
+  Quick actions:
+    cat brainstorm/idea-inbox.md  See what's queued
+    /speckit-spex-brainstorm      Explore and drain inbox items
+    Edit the file directly        Add or remove entries manually
+
+
 PR TITLE CONVENTIONS
 
   Feature Name [Spec]              Spec-only PR for review

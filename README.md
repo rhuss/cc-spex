@@ -360,32 +360,58 @@ When the `spex-teams` extension is also enabled, all five agents run in parallel
 - `review-findings.md` with detailed findings including severity, confidence, file/line, and resolution status
 - An appended section in `REVIEWERS.md` summarizing what was found, what was fixed automatically, and what still needs human attention
 
-## Idea Capture During Reviews
+## Idea Inbox
 
-Code reviews regularly surface design-level observations that are valid but out of scope for the current PR. These ideas — an interface that will need to evolve, a pattern that won't scale, a design tension worth resolving — typically get lost in resolved comment threads or forgotten after the PR merges.
+Code reviews regularly surface design-level observations that are valid but out of scope for the current PR. These ideas typically get lost in resolved comment threads or forgotten after the PR merges. The **idea inbox** (`brainstorm/idea-inbox.md`) captures them persistently so they can seed future brainstorm sessions.
 
-The **idea inbox** (`brainstorm/idea-inbox.md`) captures these observations persistently so they can seed future brainstorm sessions. Ideas flow into the inbox from three review sources:
+### How Ideas Enter the Inbox
 
-**Triage thematic clustering.** When `/speckit-spex-collab-triage` processes PR review comments, deferred and rejected findings are grouped by theme. Themes with 2 or more findings are offered for capture to the inbox. The user selects which themes to save; unselected themes are discarded.
+Ideas flow into the inbox from three sources, two automatic and one manual:
 
-**Deep review Notable verdict.** The deep review agents can classify design-level observations as "Notable" (alongside Critical, Important, and Minor). Notable findings are not bugs and do not trigger fixes or affect the gate check. They appear in a dedicated "Notable Observations" section of `review-findings.md` and are automatically appended to the idea inbox.
+**Triage thematic clustering (automatic, user-gated).** When `/speckit-spex-collab-triage` processes PR review comments, Step 15 groups deferred and rejected findings by theme. When any theme has 2 or more findings (regardless of whether they were deferred or rejected), those themes are offered for capture. The user selects which themes to save via a multi-select prompt; unselected themes are discarded. Each selected theme becomes one inbox entry with the findings synthesized into a summary.
 
-**Manual addition.** Users can add entries to `brainstorm/idea-inbox.md` directly using the inbox entry format.
+**Deep review Notable verdict (automatic).** The 5 deep review agents can classify design-level observations as "Notable" alongside the existing Critical, Important, and Minor severities. Notable findings are not bugs: they do not trigger the fix loop, do not affect the gate check, and do not block the review. They capture things like "this interface will need to evolve for the next phase" or "this pattern works now but won't scale under concurrent access." Notable findings appear in a dedicated "Notable Observations" section of `review-findings.md` and are automatically appended to the idea inbox without user confirmation.
 
-**Consuming inbox items.** When `/speckit-spex-brainstorm` is invoked, it checks the inbox and presents accumulated items grouped by theme as brainstorm seeds. The user can select items to explore or start fresh. When a brainstorm document is created from inbox items, the consumed entries are removed from the inbox.
+**Manual addition.** Add entries to `brainstorm/idea-inbox.md` directly. This is useful after conversational code reviews where ideas surfaced in discussion but no triage or deep review was running. Use the entry format shown below.
 
-Each inbox entry follows a consistent format:
+### Entry Format
+
+Each inbox entry follows this structure:
 
 ```markdown
 ### theme-slug
 
-- **Source**: triage | deep-review
+- **Source**: triage | deep-review | conversation
 - **Date**: 2026-06-29
 - **Reference**: #42
 - **Summary**: Brief description of the idea
 
-> Relevant excerpt from the review finding
+> Relevant excerpt from the review finding or discussion
 ```
+
+The theme slug is a kebab-case identifier (2-4 words, under 40 characters) that captures the core concept. The file starts with a `# Idea Inbox` header. Entries are appended at the end. The `brainstorm/` directory and inbox file are created automatically on first write.
+
+### How the Inbox Is Drained
+
+The inbox is consumed by `/speckit-spex-brainstorm`. When you start a brainstorm session, the skill checks the inbox before its normal flow:
+
+1. If inbox entries exist, they are presented grouped by theme as a multi-select prompt
+2. You select which ideas to explore, or choose "Start fresh" to skip all
+3. Selected items pre-fill the brainstorm session's problem framing with the entry's summary and context
+4. After the brainstorm session completes with an `active` decision, consumed entries are removed from the inbox
+5. If the session is parked or abandoned, inbox entries remain untouched for future sessions
+
+Items that are never selected simply stay in the inbox until you choose them or manually remove them. There is no automatic expiry or cleanup.
+
+### Quick Reference
+
+| Action | How |
+|--------|-----|
+| See what's in the inbox | `cat brainstorm/idea-inbox.md` |
+| Add an idea manually | Append an entry using the format above |
+| Explore inbox ideas | `/speckit-spex-brainstorm` (offers inbox items as seeds) |
+| Remove an idea without brainstorming | Edit the file and delete the `### theme-slug` block |
+| Drain all ideas | Run `/speckit-spex-brainstorm` repeatedly, selecting items each time |
 
 ## Multi-Agent Support
 
