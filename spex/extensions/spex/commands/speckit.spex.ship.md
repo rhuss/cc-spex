@@ -219,6 +219,19 @@ This advances `stage` and `stage_index` to the next stage with `status: running`
 
 **Do NOT manually write JSON to the state file. Always use the script.**
 
+### CWD Recovery After Subagents (Worktree Pipelines)
+
+When the pipeline runs in a worktree, the shell CWD may be reset to the main repo directory after a subagent returns (Stages 2, 5, 6, 7 all use subagents). **After every subagent returns**, check whether CWD is still the worktree. If not, `cd` back before running any subsequent commands (especially `advance`):
+
+```bash
+# Only needed when running in a worktree
+if [ -n "$SHIP_STATE_FILE" ] && [ ! -f ".specify/.spex-state" ] && [ -f "$SHIP_STATE_FILE" ]; then
+  cd "$(dirname "$SHIP_STATE_FILE")/.."
+fi
+```
+
+This uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to navigate back to the worktree root. The check is safe to run unconditionally; it's a no-op when CWD is already correct.
+
 ## Ship Pipeline Guard
 
 The `.specify/.spex-state` file serves as a signal to sub-commands running inside the pipeline. When this file exists with `status: running`, each `/speckit-*` command MUST:
@@ -738,12 +751,21 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    ```
 
 3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
+
+   **CWD recovery (worktree):** After the subagent returns, the shell CWD may have been reset to the main repo directory. If the pipeline is running in a worktree, verify CWD is still the worktree path. If not, `cd` back into the worktree before proceeding:
+   ```bash
+   WORKTREE_PATH=$(git worktree list --porcelain | grep -A1 "branch refs/heads/$(git branch --show-current 2>/dev/null || echo '')" | head -1 | sed 's/^worktree //')
+   [ -n "$WORKTREE_PATH" ] && [ "$WORKTREE_PATH" != "$(pwd)" ] && cd "$WORKTREE_PATH"
+   ```
+
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
 5. After findings are resolved, run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 7 outputs `PIPELINE_COMPLETE`.
 
 ### Post-Pipeline: Completion Prompt (Always Interactive)
 
 After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice of how to proceed. This prompt is **always interactive**, regardless of the `ask` level. It is NOT a pipeline stage (no stage index, no status line entry).
+
+**CRITICAL: Stay on the feature branch.** Do NOT switch to main, do NOT run `git checkout`, do NOT clean up worktrees, and do NOT remove the state file at this point. The user must choose how to proceed first. Branch switching only happens inside `/speckit-spex-finish` (Option B) if the user selects "Merge directly".
 
 1. Announce pipeline completion and present the choice:
 
