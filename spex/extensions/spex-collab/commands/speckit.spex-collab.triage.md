@@ -11,6 +11,17 @@ Triage all review comments on a PR: autonomously handle bot comments (assess, ap
 
 If `.specify/.spex-state` exists with `mode: "ship"`, return immediately. Triage is an interactive collab workflow.
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+TRIAGE_STATE="<PLUGIN_ROOT>/scripts/spex-triage-state.sh"
+SANITIZE_JSON="<PLUGIN_ROOT>/scripts/sanitize-gh-json.py"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Step 1: Resolve PR Context
 
 Determine the PR number. If `--pr <number>` is provided in arguments, use that. Otherwise, detect the open PR for the current branch:
@@ -39,7 +50,6 @@ REPO=$(echo "$REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\(.*\)\.git$|\1|p; s
 ## Step 2: Initialize State
 
 ```bash
-TRIAGE_STATE="$(find ~/.claude -name 'spex-triage-state.sh' 2>/dev/null | head -1)"
 "$TRIAGE_STATE" init "$PR_NUM"
 ```
 
@@ -95,7 +105,7 @@ while true; do
       }
     }
   ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" $CURSOR_ARG \
-    | python3 "$(find ~/.claude -name 'sanitize-gh-json.py' 2>/dev/null | head -1)")
+    | python3 "$SANITIZE_JSON")
 
   # Extract threads from this page and append
   PAGE_THREADS=$(echo "$PAGE_JSON" | jq '.data.repository.pullRequest.reviewThreads.nodes')

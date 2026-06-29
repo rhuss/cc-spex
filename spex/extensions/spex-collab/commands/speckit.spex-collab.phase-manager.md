@@ -6,6 +6,16 @@ description: "Manage phase boundaries, PR creation, and REVIEWERS.md updates bet
 
 Coordinates the boundary between implementation phases: runs code review, updates REVIEWERS.md with code-specific guidance, offers PR creation, and manages phase state for cross-session continuity.
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Ship Pipeline Guard
 
 ```bash
@@ -327,7 +337,6 @@ When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
 Then set the flow state to triage-spec:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
 "$FLOW_STATE" running triage-spec
 ```
 
@@ -362,7 +371,6 @@ When ready, run:  /loop ${LOOP_INTERVAL} /speckit-spex-collab-triage
 Then set the flow state to triage-impl:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)"
 "$FLOW_STATE" running triage-impl
 ```
 
