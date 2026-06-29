@@ -378,11 +378,13 @@ Each inbox entry follows a consistent format:
 
 ```markdown
 ### theme-slug
-- **Source:** triage | deep-review
-- **Date:** 2026-06-29
-- **PR/Feature:** #42
-- **Summary:** Brief description of the idea
-- **Context:** "Relevant excerpt from the review finding"
+
+- **Source**: triage | deep-review
+- **Date**: 2026-06-29
+- **Reference**: #42
+- **Summary**: Brief description of the idea
+
+> Relevant excerpt from the review finding
 ```
 
 ## Multi-Agent Support
