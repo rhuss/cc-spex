@@ -44,6 +44,7 @@ You MUST create a task for each of these items and complete them in order:
 digraph brainstorming {
     "Initialize spec-kit" [shape=box];
     "Explore project context" [shape=box];
+    "Check idea inbox" [shape=box];
     "Related brainstorm exists?" [shape=diamond];
     "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
@@ -54,7 +55,8 @@ digraph brainstorming {
     "Done" [shape=doublecircle];
 
     "Initialize spec-kit" -> "Explore project context";
-    "Explore project context" -> "Related brainstorm exists?";
+    "Explore project context" -> "Check idea inbox";
+    "Check idea inbox" -> "Related brainstorm exists?";
     "Related brainstorm exists?" -> "Ask clarifying questions" [label="no, or user chooses new"];
     "Related brainstorm exists?" -> "Ask clarifying questions" [label="yes, user chooses update"];
     "Ask clarifying questions" -> "Propose 2-3 approaches";
@@ -228,7 +230,7 @@ Last updated: YYYY-MM-DD
 
 ## Revisit Detection
 
-**When:** During step 3 of the checklist (after exploring project context).
+**When:** During step 4 of the checklist (after checking idea inbox).
 
 **How:**
 1. Check if `brainstorm/` directory exists. If not, skip (no prior brainstorms).
