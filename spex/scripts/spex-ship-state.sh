@@ -9,7 +9,7 @@
 #   spex-ship-state.sh fail                    # Set status to failed
 #   spex-ship-state.sh cleanup                 # Remove state file (pipeline done)
 #   spex-ship-state.sh checkpoint-record --checkpoint <1|2> --findings <N> --fixed <N>
-#   spex-ship-state.sh smoke-test-record [--completed BOOL] [--scenarios N] [--total N] [--skipped N] [--commit-hash HASH]
+#   (smoke-test-record removed — smoke test is no longer a pipeline stage)
 #   spex-ship-state.sh watch-start [--pr-number N] [--pr-url URL] [--timeout M] [--interval S]
 #   spex-ship-state.sh watch-update <key> <value> [<key> <value> ...]
 #   spex-ship-state.sh watch-cleanup           # Remove state file, output WATCH_COMPLETE
@@ -20,7 +20,7 @@ set -euo pipefail
 
 STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
 
-STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code" "smoke-test")
+STAGES=("specify" "clarify" "review-spec" "plan" "tasks" "review-plan" "implement" "review-code")
 
 stage_index() {
   local name="$1"
@@ -349,52 +349,6 @@ EOF
   echo "CHECKPOINT_RECORDED checkpoint=$checkpoint findings=$findings fixed=$fixed"
 }
 
-do_smoke_test_record() {
-  local completed="false" scenarios=0 total=0 skipped=0 commit_hash=""
-
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --completed) shift; completed="${1:-false}" ;;
-      --scenarios) shift; scenarios="${1:-0}" ;;
-      --total) shift; total="${1:-0}" ;;
-      --skipped) shift; skipped="${1:-0}" ;;
-      --commit-hash) shift; commit_hash="${1:-}" ;;
-      *) echo "ERROR: Unknown flag '$1'" >&2; exit 2 ;;
-    esac
-    shift
-  done
-
-  if [ ! -f "$STATE_FILE" ]; then
-    # No state file exists; create a minimal one with smoke test results
-    cat > "$STATE_FILE" <<EOF
-{
-  "smoke_test_completed": $completed,
-  "smoke_test_at": "$(now_iso)",
-  "smoke_test_scenarios": $scenarios,
-  "smoke_test_total": $total,
-  "smoke_test_skipped": $skipped,
-  "smoke_test_commit_hash": "$commit_hash"
-}
-EOF
-    echo "SMOKE_TEST_RECORDED"
-    return 0
-  fi
-
-  # Merge smoke test fields into existing state file
-  local tmp
-  tmp=$(mktemp)
-  jq --argjson completed "$completed" \
-     --arg at "$(now_iso)" \
-     --argjson scenarios "$scenarios" \
-     --argjson total "$total" \
-     --argjson skipped "$skipped" \
-     --arg commit_hash "$commit_hash" \
-     '.smoke_test_completed = $completed | .smoke_test_at = $at | .smoke_test_scenarios = $scenarios | .smoke_test_total = $total | .smoke_test_skipped = $skipped | .smoke_test_commit_hash = $commit_hash' \
-     "$STATE_FILE" > "$tmp"
-  mv "$tmp" "$STATE_FILE"
-  echo "SMOKE_TEST_RECORDED"
-}
-
 case "${1:-}" in
   create)
     shift
@@ -419,10 +373,6 @@ case "${1:-}" in
     shift
     do_checkpoint_record "$@"
     ;;
-  smoke-test-record)
-    shift
-    do_smoke_test_record "$@"
-    ;;
   watch-start)
     shift
     do_watch_start "$@"
@@ -435,7 +385,7 @@ case "${1:-}" in
     do_watch_cleanup
     ;;
   *)
-    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|checkpoint-record|smoke-test-record|watch-start|watch-update|watch-cleanup}" >&2
+    echo "Usage: spex-ship-state.sh {create|advance|status|pause|fail|cleanup|checkpoint-record|watch-start|watch-update|watch-cleanup}" >&2
     exit 2
     ;;
 esac

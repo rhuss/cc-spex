@@ -17,7 +17,7 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
 1. `ask` is `always` AND a review stage has findings requiring user input.
 2. A blocker error occurs (test failure, syntax error, security issue).
-3. Stage 8 (completion) is reached: the pipeline presents a choice prompt and the user decides how to proceed (submit PR, merge directly, or stop).
+3. Stage 7 (review-code) completes: the pipeline is done and presents a completion prompt for the user to decide how to proceed (submit PR, merge directly, or stop).
 
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
@@ -153,11 +153,11 @@ ERROR: Cannot specify a brainstorm file with --resume. The brainstorm file is re
 
 ### Valid Stage Names for --start-from
 
-The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`, `smoke-test`.
+The following stage names are accepted: `specify`, `clarify`, `review-spec`, `plan`, `tasks`, `review-plan`, `implement`, `review-code`.
 
 If an invalid stage name is provided, fail with:
 ```
-ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, smoke-test
+ERROR: Invalid stage "X". Valid stages are: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code
 ```
 
 ## Brainstorm File Resolution
@@ -202,7 +202,7 @@ export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
 | Command | What it does |
 |---------|-------------|
 | `spex-ship-state.sh create <brainstorm> [--ask <level>] [--start-from <stage>]` | Create state file at pipeline start |
-| `spex-ship-state.sh advance` | Advance to the next stage (auto-cleans up after stage 8) |
+| `spex-ship-state.sh advance` | Advance to the next stage (auto-cleans up after stage 7) |
 | `spex-ship-state.sh status` | Show current stage and status |
 | `spex-ship-state.sh pause` | Set status to paused |
 | `spex-ship-state.sh fail` | Set status to failed |
@@ -299,7 +299,7 @@ When `--resume` is set:
 6. Re-validate values from the state file before proceeding:
    - Validate `ask` is one of `always`, `smart`, `never`
    - Validate `brainstorm_file` exists (if resuming the specify stage)
-   - Validate `stage_index` is in range 0-8
+   - Validate `stage_index` is in range 0-7
 
 7. Update the state file with `status: running` before proceeding.
 
@@ -307,7 +307,7 @@ When `--resume` is set:
 
 When `--start-from <stage>` is set:
 
-1. Map the stage name to its index (0-8).
+1. Map the stage name to its index (0-7).
 
 2. Verify that expected artifacts exist for stages that depend on prior output:
    - Stages `clarify` and later need `spec.md` to exist
@@ -333,7 +333,7 @@ When `--start-from <stage>` is set:
 
 ### Rule 1: Every stage runs, in order, no exceptions
 
-When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 9 stages in sequence: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code, smoke-test.
+When starting a fresh pipeline (no `--start-from`, no `--resume`), you MUST execute ALL 8 stages in sequence: specify, clarify, review-spec, plan, tasks, review-plan, implement, review-code.
 
 You MUST NOT:
 - Skip a stage because its output artifact already exists
@@ -352,7 +352,7 @@ These are the ONLY two mechanisms for starting at a stage other than specify:
 - `--start-from <stage>`: User's explicit choice to skip prior stages. The user takes responsibility for ensuring prior artifacts exist and are valid.
 - `--resume`: Continues from where a previous run was interrupted, using the state file.
 
-If neither flag is set, the pipeline starts at stage 0 and runs through stage 8. No automatic detection of "oh, we can skip ahead because artifacts exist."
+If neither flag is set, the pipeline starts at stage 0 and runs through stage 7. No automatic detection of "oh, we can skip ahead because artifacts exist."
 
 ### Rule 4: Stage gate validation
 
@@ -410,7 +410,7 @@ Only after all three steps complete successfully, proceed to Pipeline Stages bel
 
 ## Pipeline Stages
 
-The pipeline executes 9 stages in fixed order:
+The pipeline executes 8 stages in fixed order:
 
 | Index | Stage | Invocation | Description |
 |-------|-------|------------|-------------|
@@ -422,7 +422,6 @@ The pipeline executes 9 stages in fixed order:
 | 5 | `review-plan` | `/speckit-spex-gates-review-plan` (Subagent) | Validate plan and task quality |
 | 6 | `implement` | `/speckit-implement` (Subagent) | Execute implementation |
 | 7 | `review-code` | `/speckit-spex-gates-review-code` (Subagent) | Spec compliance + code review + deep review |
-| 8 | `smoke-test` | Choice prompt (Interactive) | End-of-pipeline: submit PR, merge directly, or stop here |
 
 ### Suppressing extension overlay gates
 
@@ -740,22 +739,22 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
-5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 8 (do not stop).
+5. After findings are resolved, run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 7 outputs `PIPELINE_COMPLETE`.
 
-### Stage 8: Pipeline Completion (Always Interactive)
+### Post-Pipeline: Completion Prompt (Always Interactive)
 
-After all automated stages (specify through review-code) complete, the pipeline presents the user with a choice of how to proceed. This stage is **always interactive**, regardless of the `ask` level.
+After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice of how to proceed. This prompt is **always interactive**, regardless of the `ask` level. It is NOT a pipeline stage (no stage index, no status line entry).
 
 1. Announce pipeline completion and present the choice:
 
    ```
-   ## Pipeline Complete (Stages 0-7)
+   ## Pipeline Complete (8/8 stages passed)
 
    All automated stages have passed. How would you like to proceed?
 
-   A) Submit PR — Create a pull request for team review
-   B) Merge directly — Run smoke test, squash, and merge to main
-   C) Stop here — Run /speckit-spex-submit or /speckit-spex-finish later
+   A) Submit PR - Create a pull request for team review
+   B) Merge directly - Run smoke test, squash, and merge to main
+   C) Stop here - Run /speckit-spex-submit or /speckit-spex-finish later
    ```
 
    Wait for user response.
@@ -790,9 +789,7 @@ After all automated stages (specify through review-code) complete, the pipeline 
      /speckit-spex-finish    Smoke test + squash + merge to main
    ```
 
-5. Run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 8 outputs `PIPELINE_COMPLETE`.
-
-6. **STOP the pipeline.**
+5. **STOP.**
 
 ## Oversight Decision Logic
 
@@ -904,16 +901,13 @@ After the user responds:
 
 ## Pipeline Completion
 
-After the Stage 8 choice prompt completes (or the user chooses to stop), the pipeline is done.
-
-1. Calculate elapsed time from `started_at`.
-2. Report completion summary:
+After review-code completes and `PIPELINE_COMPLETE` fires, report the completion summary before the choice prompt:
 
 ```
 ## Pipeline Complete
 
 **Feature branch:** <branch-name>
-**Stages completed:** 9/9
+**Stages completed:** 8/8
 **Oversight mode:** <mode>
 **Elapsed time:** <duration>
 
@@ -926,10 +920,9 @@ All stages passed successfully:
   5. review-plan - plan validated
   6. implement   - code implemented
   7. review-code - code reviewed
-  8. completion  - user chose: <submit PR / merge directly / stop>
 ```
 
-3. The pipeline stops here. If the user chose "Stop here", they can run `/speckit-spex-submit` or `/speckit-spex-finish` manually.
+Then present the post-pipeline completion prompt (see "Post-Pipeline: Completion Prompt" above).
 
 ## Integration
 
@@ -948,7 +941,7 @@ All stages passed successfully:
 - `/speckit-implement` (Stage 6)
 - `/speckit-spex-gates-review-code` (Stage 7)
 
-**This skill invokes (Stage 8 choice prompt, interactive, always pauses):**
+**This skill invokes (post-pipeline completion prompt, interactive):**
 - `/speckit-spex-submit` (if user chooses "Submit PR")
 - `/speckit-spex-finish` (if user chooses "Merge directly")
 

@@ -165,7 +165,7 @@ spex COMMANDS (helpers and configuration)
                                 Flags: --ask always|smart|never,
                                        --resume, --start-from <stage>
                                 Worktree: auto-creates if spex-worktrees enabled
-                                Stage 8: choice prompt (submit PR / merge / stop)
+                                8 stages, then completion prompt (submit PR / merge / stop)
   /speckit-spex-smoke-test    Focused interactive smoke test from spec's ## Smoke Test section
                                 Claude automates setup/execution, human provides judgment
                                 Auto-skips when no ## Smoke Test section exists

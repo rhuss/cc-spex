@@ -220,7 +220,7 @@ render_ship() {
   # Extract all ship fields in one jq call
   local STAGE INDEX TOTAL ASK STATUS
   read -r STAGE INDEX TOTAL ASK STATUS < <(
-    echo "$STATE_JSON" | jq -r '[.stage // "", .stage_index // "", .total_stages // 9, .ask // "smart", .status // "running"] | @tsv' 2>/dev/null
+    echo "$STATE_JSON" | jq -r '[.stage // "", .stage_index // "", .total_stages // 8, .ask // "smart", .status // "running"] | @tsv' 2>/dev/null
   )
 
   if [ -z "$STAGE" ] || [ -z "$INDEX" ]; then
@@ -240,7 +240,6 @@ render_ship() {
     review-plan)  EMOJI="✅"; COLOR="$MAGENTA";;
     implement)    EMOJI="🔨"; COLOR="$YELLOW";;
     review-code)  EMOJI="🔎"; COLOR="$MAGENTA";;
-    smoke-test)   EMOJI="🧪"; COLOR="$YELLOW";;
     stamp|finish) EMOJI="🏁"; COLOR="$GREEN";;
     done)         EMOJI="✅"; COLOR="$GREEN";;
     *)            EMOJI="⚙"; COLOR="$WHITE";;
@@ -266,7 +265,7 @@ render_ship() {
   local PROGRESS="${DIM}${BAR}${RESET} ${DIM}${DISPLAY_INDEX}/${TOTAL}${RESET}"
 
   if [ "$STAGE" = "done" ]; then
-    printf "🧬 ${GREEN}${BOLD}ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓▓${RESET} ${DIM}9/9${RESET}"
+    printf "🧬 ${GREEN}${BOLD}ship${RESET} ✅ ${GREEN}${BOLD}done${RESET} ${DIM}▓▓▓▓▓▓▓▓${RESET} ${DIM}8/8${RESET}"
   elif [ "$STATUS" = "paused" ]; then
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}⏸ paused${RESET}"
   elif [ "$STATUS" = "failed" ]; then
