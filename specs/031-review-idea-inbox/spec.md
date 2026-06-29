@@ -144,3 +144,14 @@ As a new user of cc-spex, I can learn about the idea capture workflow from the R
 - Inbox entries are independent and append-only; no cross-referencing or deduplication is performed at write time
 - The conversational nudge relies on signal detection in conversation text, which may have false positives or negatives
 - Manual pruning of stale inbox entries is acceptable for the initial version (no automated cleanup)
+- When multiple review sources flag the same theme, entries are kept separate (append-only); deduplication is deferred to the brainstorm skill's presentation layer
+- The brainstorm skill groups inbox items by theme when presenting them to the user, not flat chronological order
+- Consumed inbox items leave no trace in the brainstorm overview (`00-overview.md`); the overview tracks brainstorm documents, not inbox seeds
+
+## Clarifications
+
+### Session 2026-06-29
+
+- Q: When multiple sources flag the same theme, merge inbox entries or keep separate? → A: Keep separate (simpler append-only write, brainstorm skill groups by theme at read time)
+- Q: Should inbox items be presented flat chronologically or grouped by theme? → A: Grouped by theme (more useful for selecting which idea to explore)
+- Q: Should consumed inbox items leave a trace in the brainstorm overview? → A: No (overview tracks brainstorm documents, not inbox seeds; consumed means removed)
