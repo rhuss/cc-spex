@@ -360,6 +360,31 @@ When the `spex-teams` extension is also enabled, all five agents run in parallel
 - `review-findings.md` with detailed findings including severity, confidence, file/line, and resolution status
 - An appended section in `REVIEWERS.md` summarizing what was found, what was fixed automatically, and what still needs human attention
 
+## Idea Capture During Reviews
+
+Code reviews regularly surface design-level observations that are valid but out of scope for the current PR. These ideas — an interface that will need to evolve, a pattern that won't scale, a design tension worth resolving — typically get lost in resolved comment threads or forgotten after the PR merges.
+
+The **idea inbox** (`brainstorm/idea-inbox.md`) captures these observations persistently so they can seed future brainstorm sessions. Ideas flow into the inbox from three review sources:
+
+**Triage thematic clustering.** When `/speckit-spex-collab-triage` processes PR review comments, deferred and rejected findings are grouped by theme. Themes with 2 or more findings are offered for capture to the inbox. The user selects which themes to save; unselected themes are discarded.
+
+**Deep review Notable verdict.** The deep review agents can classify design-level observations as "Notable" (alongside Critical, Important, and Minor). Notable findings are not bugs and do not trigger fixes or affect the gate check. They appear in a dedicated "Notable Observations" section of `review-findings.md` and are automatically appended to the idea inbox.
+
+**Manual addition.** Users can add entries to `brainstorm/idea-inbox.md` directly using the inbox entry format.
+
+**Consuming inbox items.** When `/speckit-spex-brainstorm` is invoked, it checks the inbox and presents accumulated items grouped by theme as brainstorm seeds. The user can select items to explore or start fresh. When a brainstorm document is created from inbox items, the consumed entries are removed from the inbox.
+
+Each inbox entry follows a consistent format:
+
+```markdown
+### theme-slug
+- **Source:** triage | deep-review
+- **Date:** 2026-06-29
+- **PR/Feature:** #42
+- **Summary:** Brief description of the idea
+- **Context:** "Relevant excerpt from the review finding"
+```
+
 ## Multi-Agent Support
 
 spex supports multiple AI coding agents beyond Claude Code. The enforcement model adapts to each agent's hook API and available tools.

@@ -19,10 +19,10 @@
 
 ### Implementation
 
-- [ ] T001 [US1] Modify Step 15 skip condition in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — change from "no deferred AND fewer than 3 rejected" to "no deferred AND no rejected" (line ~480)
-- [ ] T002 [US1] Replace Step 15 thematic clustering trigger in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — trigger when any theme cluster has 2+ findings regardless of verdict mix (deferred + rejected combined), not 3+ rejected only
-- [ ] T003 [US1] Replace Step 15 brainstorm invocation with inbox write in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — for each selected theme, append an entry to `brainstorm/idea-inbox.md` using the inbox entry format (theme slug heading, source=triage, date, PR reference, summary, context). Create the file with the `# Idea Inbox` header if it doesn't exist.
-- [ ] T004 [US1] Remove GitHub issue creation from Step 15 in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — the "Link back to PR" substep (lines ~516-525) is no longer needed since brainstorm handles issue creation when consuming inbox items later
+- [x] T001 [US1] Modify Step 15 skip condition in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — change from "no deferred AND fewer than 3 rejected" to "no deferred AND no rejected" (line ~480)
+- [x] T002 [US1] Replace Step 15 thematic clustering trigger in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — trigger when any theme cluster has 2+ findings regardless of verdict mix (deferred + rejected combined), not 3+ rejected only
+- [x] T003 [US1] Replace Step 15 brainstorm invocation with inbox write in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — for each selected theme, append an entry to `brainstorm/idea-inbox.md` using the inbox entry format (theme slug heading, source=triage, date, PR reference, summary, context). Create the file with the `# Idea Inbox` header if it doesn't exist.
+- [x] T004 [US1] Remove GitHub issue creation from Step 15 in `spex/extensions/spex-collab/commands/speckit.spex-collab.triage.md` — the "Link back to PR" substep (lines ~516-525) is no longer needed since brainstorm handles issue creation when consuming inbox items later
 
 **Checkpoint**: Triage Step 15 now writes to idea-inbox.md instead of invoking brainstorm directly, with a lower thematic threshold.
 
@@ -36,10 +36,10 @@
 
 ### Implementation
 
-- [ ] T005 [US2] Add inbox check to step 2 (explore context) in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — after the "Scan `brainstorm/` directory" bullet in the "Check context first" section, add: check if `brainstorm/idea-inbox.md` exists and has entries. Parse entries by `### ` headings with their metadata fields.
-- [ ] T006 [US2] Add inbox presentation logic before step 3 in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — if inbox entries exist, present them grouped by theme as a multi-select question with options for each theme plus a "Start fresh" option. If the user selects themes, use them as brainstorm seeds (pre-fill the problem framing with the inbox entry's summary and context). If "Start fresh" or inbox is empty, proceed with normal flow.
-- [ ] T007 [US2] Add inbox consumption to step 7 (write brainstorm document) in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — after writing the brainstorm document, if the session was seeded from inbox items, remove the consumed entries from `brainstorm/idea-inbox.md` using the Edit tool (match the `### <theme-slug>` heading and its content block through the next heading or end of file). If all entries are consumed, leave the file with just the `# Idea Inbox` header line.
-- [ ] T008 [US2] Update the brainstorm skill checklist in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — add "Check idea inbox" as step 2.5 between "Explore project context" and "Check for related brainstorms" in the checklist at the top of the file
+- [x] T005 [US2] Add inbox check to step 2 (explore context) in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — after the "Scan `brainstorm/` directory" bullet in the "Check context first" section, add: check if `brainstorm/idea-inbox.md` exists and has entries. Parse entries by `### ` headings with their metadata fields.
+- [x] T006 [US2] Add inbox presentation logic before step 3 in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — if inbox entries exist, present them grouped by theme as a multi-select question with options for each theme plus a "Start fresh" option. If the user selects themes, use them as brainstorm seeds (pre-fill the problem framing with the inbox entry's summary and context). If "Start fresh" or inbox is empty, proceed with normal flow.
+- [x] T007 [US2] Add inbox consumption to step 7 (write brainstorm document) in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — after writing the brainstorm document, if the session was seeded from inbox items, remove the consumed entries from `brainstorm/idea-inbox.md` using the Edit tool (match the `### <theme-slug>` heading and its content block through the next heading or end of file). If all entries are consumed, leave the file with just the `# Idea Inbox` header line.
+- [x] T008 [US2] Update the brainstorm skill checklist in `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — add "Check idea inbox" as step 2.5 between "Explore project context" and "Check for related brainstorms" in the checklist at the top of the file
 
 **Checkpoint**: Brainstorm skill presents inbox items as seeds and removes consumed entries.
 
@@ -53,12 +53,12 @@
 
 ### Implementation
 
-- [ ] T009 [US3] Add Notable to finding severity enum in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — extend the severity field in the finding schema (line ~259) from `Critical|Important|Minor` to `Critical|Important|Minor|Notable`
-- [ ] T010 [US3] Add Notable guidance to review agent prompt instructions in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in the agent prompt section, add guidance explaining Notable: "For design-level observations that are not bugs but are worth revisiting (e.g., an interface that will need to evolve, a pattern that works now but won't scale under future requirements), classify as Notable. Notable findings are informational and do not trigger fixes."
-- [ ] T011 [US3] Exclude Notable from gate check and fix loop in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in Step 6 (gate check, line ~291), ensure the gate logic remains `Critical + Important = 0` (Notable is excluded). In Step 7 (fix loop, line ~300), ensure only Critical and Important findings are collected for fixing.
-- [ ] T012 [US3] Add Notable row to summary table in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in Step 8 (write review-findings.md, line ~413), add a Notable row to the summary table between Minor and Total
-- [ ] T013 [US3] Add "Notable Observations" section to review-findings.md output in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — after the Findings section in Step 8, add a `## Notable Observations` section that lists Notable findings with a simplified format (no resolution tracking since they aren't fixed)
-- [ ] T014 [US3] Add inbox write for Notable findings in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — after writing review-findings.md in Step 8, append each Notable finding to `brainstorm/idea-inbox.md` with source=deep-review, using the finding's description as summary and rationale as context. Create the inbox file if it doesn't exist.
+- [x] T009 [US3] Add Notable to finding severity enum in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — extend the severity field in the finding schema (line ~259) from `Critical|Important|Minor` to `Critical|Important|Minor|Notable`
+- [x] T010 [US3] Add Notable guidance to review agent prompt instructions in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in the agent prompt section, add guidance explaining Notable: "For design-level observations that are not bugs but are worth revisiting (e.g., an interface that will need to evolve, a pattern that works now but won't scale under future requirements), classify as Notable. Notable findings are informational and do not trigger fixes."
+- [x] T011 [US3] Exclude Notable from gate check and fix loop in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in Step 6 (gate check, line ~291), ensure the gate logic remains `Critical + Important = 0` (Notable is excluded). In Step 7 (fix loop, line ~300), ensure only Critical and Important findings are collected for fixing.
+- [x] T012 [US3] Add Notable row to summary table in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — in Step 8 (write review-findings.md, line ~413), add a Notable row to the summary table between Minor and Total
+- [x] T013 [US3] Add "Notable Observations" section to review-findings.md output in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — after the Findings section in Step 8, add a `## Notable Observations` section that lists Notable findings with a simplified format (no resolution tracking since they aren't fixed)
+- [x] T014 [US3] Add inbox write for Notable findings in `spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md` — after writing review-findings.md in Step 8, append each Notable finding to `brainstorm/idea-inbox.md` with source=deep-review, using the finding's description as summary and rationale as context. Create the inbox file if it doesn't exist.
 
 **Checkpoint**: Deep review agents can classify Notable findings; these appear in review-findings.md and idea-inbox.md.
 
@@ -72,7 +72,7 @@
 
 ### Implementation
 
-- [ ] T015 [US4] Add conversational nudge guidance to `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — in the skill description frontmatter or an early section, add a note that when the brainstorm skill is invoked after a review discussion containing deferred-idea signals ("out of scope", "worth considering later", "design tension", "follow-up", "for a future PR"), the skill should mention that ideas can be added to the inbox. This is documentation-level guidance, not code behavior.
+- [x] T015 [US4] Add conversational nudge guidance to `spex/extensions/spex/commands/speckit.spex.brainstorm.md` — in the skill description frontmatter or an early section, add a note that when the brainstorm skill is invoked after a review discussion containing deferred-idea signals ("out of scope", "worth considering later", "design tension", "follow-up", "for a future PR"), the skill should mention that ideas can be added to the inbox. This is documentation-level guidance, not code behavior.
 
 **Checkpoint**: The brainstorm skill documentation mentions the inbox in review-adjacent contexts.
 
@@ -86,8 +86,8 @@
 
 ### Implementation
 
-- [ ] T016 [P] [US5] Add "Idea Capture During Reviews" section to `README.md` — insert after the "Deep Review" section (line ~362). Cover: the problem (review ideas getting lost), the inbox mechanism (`brainstorm/idea-inbox.md`), three sources (triage thematic clustering, deep review Notable verdict, manual addition), consumption via `/speckit-spex-brainstorm`, and a brief example of an inbox entry format.
-- [ ] T017 [P] [US5] Add inbox reference to `spex/docs/help.md` — add a brief mention of the idea inbox under the brainstorm and triage command descriptions
+- [x] T016 [P] [US5] Add "Idea Capture During Reviews" section to `README.md` — insert after the "Deep Review" section (line ~362). Cover: the problem (review ideas getting lost), the inbox mechanism (`brainstorm/idea-inbox.md`), three sources (triage thematic clustering, deep review Notable verdict, manual addition), consumption via `/speckit-spex-brainstorm`, and a brief example of an inbox entry format.
+- [x] T017 [P] [US5] Add inbox reference to `spex/docs/help.md` — add a brief mention of the idea inbox under the brainstorm and triage command descriptions
 
 **Checkpoint**: New users can discover and understand the idea capture workflow from the README.
 
@@ -95,8 +95,8 @@
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T018 Verify cross-references between modified files are consistent — ensure triage Step 15 references the inbox format from data-model.md, deep review references the same format, and brainstorm skill's parsing matches what the writers produce
-- [ ] T019 Commit all changes with descriptive messages per user story
+- [x] T018 Verify cross-references between modified files are consistent — ensure triage Step 15 references the inbox format from data-model.md, deep review references the same format, and brainstorm skill's parsing matches what the writers produce
+- [x] T019 Commit all changes with descriptive messages per user story
 
 ---
 

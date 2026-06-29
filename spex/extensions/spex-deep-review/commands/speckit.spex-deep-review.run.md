@@ -256,7 +256,7 @@ If a tool times out, crashes, or returns an error:
    ```
    {
      id: "FINDING-N",
-     severity: Critical|Important|Minor,
+     severity: Critical|Important|Minor|Notable,
      confidence: 0-100,
      file: "relative/path",
      line_start: N,
@@ -286,10 +286,12 @@ Count findings by severity:
 - **Critical count**: findings with severity = Critical
 - **Important count**: findings with severity = Important
 - **Minor count**: findings with severity = Minor
+- **Notable count**: findings with severity = Notable
 
 **Gate logic:**
 - If Critical + Important = 0: **GATE PASS**
 - If Critical + Important > 0: proceed to fix loop (or fail if max rounds reached)
+- Notable findings are **excluded** from the gate check. They are informational observations, not actionable issues.
 
 ### Step 7: Autonomous Fix Loop
 
@@ -415,6 +417,7 @@ Write `specs/<feature>/review-findings.md` (overwrite if exists):
 | Critical | N | N | N |
 | Important | N | N | N |
 | Minor | N | - | N |
+| Notable | N | - | N |
 | **Total** | **N** | **N** | **N** |
 
 **Agents completed:** 5/5 (+ N external tools)
@@ -457,6 +460,25 @@ If remaining: explain what needs to happen to resolve it.]
 
 ...
 
+## Notable Observations
+
+[If any findings have severity = Notable, list them here in a simplified format.
+Notable findings are design-level observations, not bugs. They do not have
+resolution tracking since they are not fixed — they are captured for future
+brainstorming.]
+
+### NOTABLE-1
+- **File:** path/to/file.go:42-58
+- **Category:** architecture
+- **Source:** architecture-agent
+- **Description:** [What design-level observation was made]
+- **Rationale:** [Why this is worth revisiting in the future]
+
+### NOTABLE-2
+...
+
+[If no Notable findings: omit this section entirely.]
+
 ## Post-Fix Spec Coverage
 
 [If Step 7b ran, include the coverage check results:]
@@ -494,6 +516,34 @@ Test-originated findings:
 format. Explain why they could not be auto-fixed and what human action
 is needed.]
 ```
+
+### Step 8b: Capture Notable Findings to Idea Inbox
+
+After writing `review-findings.md`, if any Notable findings exist, append each to `brainstorm/idea-inbox.md`:
+
+1. **Skip if no Notable findings** exist. This step is only for Notable severity.
+
+2. **Create the inbox file if it doesn't exist**:
+   ```markdown
+   # Idea Inbox
+
+   Ideas captured from code reviews for future brainstorming.
+   ```
+
+3. **For each Notable finding**, append an entry at the end of the file:
+   ```markdown
+
+   ### <theme-slug>
+   - **Source:** deep-review
+   - **Date:** YYYY-MM-DD
+   - **PR/Feature:** <current feature branch name>
+   - **Summary:** <the finding's description, condensed to 1-2 sentences>
+   - **Context:** "<the finding's rationale>"
+   ```
+
+   Where `<theme-slug>` is derived from the finding's description in kebab-case (e.g., "interface evolution needed" becomes `interface-evolution-needed`).
+
+4. **Report**: `Captured N Notable observations to brainstorm/idea-inbox.md`
 
 ### Step 9: Report Gate Outcome with Agent Summary
 
@@ -534,6 +584,9 @@ Remaining findings (N Important):
   ...
 
 Post-fix spec coverage: N/N requirements verified [✓ all covered | ✗ N dropped]
+
+Notable observations: N captured to brainstorm/idea-inbox.md
+  (or: omit this line if no Notable findings)
 
 Details: review-findings.md
 ```
@@ -613,7 +666,7 @@ Each review agent MUST return findings in this exact format:
 ## Findings
 
 ### FINDING-1
-- **Severity**: Critical|Important|Minor
+- **Severity**: Critical|Important|Minor|Notable
 - **Confidence**: 0-100
 - **File**: relative/path/to/file.ext
 - **Lines**: start-end
@@ -710,7 +763,16 @@ IMPORTANT INSTRUCTIONS - READ BEFORE REVIEWING:
    - Error codes or status codes that differ from the spec
    - Behavioral differences on edge cases (last iteration, empty input, etc.)
 
-10. PROJECT REVIEW HINTS: [CONDITIONAL - only include this item when
+10. NOTABLE OBSERVATIONS: For design-level observations that are not bugs
+    but are worth revisiting (e.g., an interface that will need to evolve,
+    a pattern that works now but won't scale under future requirements,
+    a design tension between competing concerns), classify as Notable.
+    Notable findings are informational — they do NOT trigger fixes, do NOT
+    count toward the gate check, and do NOT enter the fix loop. They are
+    captured separately for future brainstorming. Use Notable when the
+    observation is valuable but not actionable within the current PR scope.
+
+11. PROJECT REVIEW HINTS: [CONDITIONAL - only include this item when
     `.specify/review-hints.md` exists and is non-empty]
 
     The following framework-specific patterns have been identified by the

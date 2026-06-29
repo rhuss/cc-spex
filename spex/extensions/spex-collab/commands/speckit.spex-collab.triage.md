@@ -470,14 +470,14 @@ Recurring patterns from N review comments:
 
 4. **Apply selected principles**: For each selected principle, invoke `/speckit-constitution` with the principle text as argument. This adds the principles to `.specify/memory/constitution.md` following the existing format and triggers template sync.
 
-## Step 15: Brainstorm Deferred and Rejected Findings
+## Step 15: Capture Deferred and Rejected Findings to Idea Inbox
 
 After principle extraction, check if any bot comments were deferred or rejected during this triage pass. Both categories can surface real improvement opportunities worth tracking:
 
 - **Deferred**: Valid suggestions that are out of scope for this PR
 - **Rejected**: Suggestions we disagreed with, but that may reveal a pattern worth addressing differently (e.g., the bot keeps flagging error handling because our approach is unconventional -- worth documenting or reconsidering)
 
-**Skip this step if**: no comments were deferred AND fewer than 3 comments were rejected (not enough signal).
+**Skip this step if**: no comments were deferred AND no comments were rejected.
 
 **Procedure:**
 
@@ -496,33 +496,38 @@ Rejected review findings worth considering:
 ...
 ```
 
-2. **Group by theme**: Group both deferred AND rejected items by the concern they address (e.g., "error handling consistency", "missing validation", "concurrency safety"). Items from both categories can land in the same theme. Each theme becomes one brainstorm candidate.
+2. **Group by theme**: Group both deferred AND rejected items by the concern they address (e.g., "error handling consistency", "missing validation", "concurrency safety"). Items from both categories can land in the same theme. A theme triggers when it has **2 or more findings** regardless of verdict mix (deferred + rejected combined). Themes with only 1 finding are excluded. Each qualifying theme becomes one inbox candidate.
 
-3. **Offer brainstorm creation**: Present the themes to the user:
+3. **Offer inbox capture**: Present the qualifying themes to the user:
 
-   - header: "Brainstorm?"
+   - header: "Capture to idea inbox?"
    - multiSelect: true
    - Each theme becomes an option with the theme name as label and "N findings (M deferred, K rejected) from Bot1, Bot2" as description
    - Include a "Skip all" option
 
-4. **Create brainstorms**: For each selected theme, invoke `/speckit-spex-brainstorm` with a pre-filled problem framing that includes:
-   - The findings that belong to this theme (bot author, file, suggestion, verdict)
-   - The PR number and context where they were identified
-   - For rejected findings: why they were rejected and what alternative approach the project uses
-   - A note that these originated from AI code review
+4. **Write to idea inbox**: For each selected theme, append an entry to `brainstorm/idea-inbox.md`. Create the file with the header if it doesn't exist:
 
-   The brainstorm skill handles the document creation, numbering, issue creation (offering to create a GitHub issue), and overview update. Do not duplicate that logic here.
+   **If the file does not exist**, create it first:
+   ```markdown
+   # Idea Inbox
 
-5. **Link back to PR**: If a GitHub issue was created by the brainstorm skill, post a single summary comment on the PR linking to the issue(s):
+   Ideas captured from code reviews for future brainstorming.
+   ```
 
-```bash
-BODY="Review findings tracked for follow-up:
-$(for each issue: echo "- [Theme name]($ISSUE_URL)")
+   **For each selected theme**, append an entry at the end of the file:
+   ```markdown
 
-<!-- spex-triage:brainstorm-summary -->"
+   ### <theme-slug>
+   - **Source:** triage
+   - **Date:** YYYY-MM-DD
+   - **PR/Feature:** <PR URL or PR number>
+   - **Summary:** <1-2 sentence description synthesizing the findings in this theme>
+   - **Context:** "<relevant excerpt from the review findings that belong to this theme>"
+   ```
 
-gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" -f body="$BODY"
-```
+   Where `<theme-slug>` is the theme name in kebab-case (e.g., "error handling consistency" becomes `error-handling-consistency`).
+
+   Report: `Captured N themes to brainstorm/idea-inbox.md`
 
 ## Step 16: High Volume Batching
 

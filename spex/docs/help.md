@@ -101,6 +101,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         Correctness agent detects swallowed errors.
                         Test-quality agent cross-refs spec acceptance
                         scenarios against test verification methods.
+                        Notable findings captured to brainstorm/idea-inbox.md.
                         Agent leaderboard with MVP after every run.
                         Layer comparison (checkpoint vs final) in ship mode.
                         Project hints via .specify/review-hints.md.
@@ -124,6 +125,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     /speckit-spex-collab-revise   → revise spec from PR feedback, cascade plan/tasks
     /speckit-spex-collab-reconcile → scan code against revised tasks, produce delta
     /speckit-spex-collab-triage   → triage PR review comments (bot autonomous + human interactive)
+                                    Captures deferred/rejected themes to brainstorm/idea-inbox.md
                                     Flags: --pr <number>
                                     Loop:  /loop 5m /speckit-spex-collab-triage
 
@@ -157,6 +159,7 @@ spex COMMANDS (helpers and configuration)
                                 --clear: reset status line state
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
+                                Checks brainstorm/idea-inbox.md for review seeds
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to completion)
                                 Requires: spex-gates + spex-deep-review extensions
                                 Flags: --ask always|smart|never,
