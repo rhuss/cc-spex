@@ -57,11 +57,15 @@ REPO=$(echo "$REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\(.*\)\.git$|\1|p; s
 
 Fetch ALL review threads with their comments using GraphQL. PRs with many review comments (e.g., 3 bots x 20+ findings each) regularly exceed 100 threads, so pagination is mandatory.
 
-**Important**: GitHub API responses can contain raw control characters (U+0000–U+001F) in comment bodies, which break `jq` and Python's `json` module. Always pipe `gh api graphql` output through the sanitizer before any JSON processing.
+**Important**: GitHub API responses can contain raw control characters (U+0000-U+001F) in comment bodies, which break `jq`. The sanitizer script MUST be in the pipeline between `gh api graphql` and any `jq` call.
+
+**CRITICAL**: The entire fetch-sanitize-extract pipeline below MUST run in a SINGLE Bash tool call. Do NOT split it across multiple Bash calls, because shell variables (`PAGE_JSON`, `ALL_THREADS`, `CURSOR`) do not persist between calls, and the sanitized JSON data can be corrupted by re-serialization through `echo`.
 
 ### 3a: Pagination Loop
 
 You MUST use a pagination loop. A single fetch is NOT sufficient -- a PR with 150 threads returns only the first 100, silently dropping the rest.
+
+Run this entire block in one Bash call. Replace `$SANITIZE_JSON` with the literal path from Step 0:
 
 ```bash
 ALL_THREADS="[]"
@@ -72,6 +76,7 @@ while true; do
   CURSOR_ARG=""
   [ -n "$CURSOR" ] && CURSOR_ARG="-f cursor=$CURSOR"
 
+  # Fetch and sanitize in one pipeline - never run jq on unsanitized output
   PAGE_JSON=$(gh api graphql -f query='
     query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
       repository(owner: $owner, name: $repo) {
@@ -107,22 +112,22 @@ while true; do
   ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUM" $CURSOR_ARG \
     | python3 "$SANITIZE_JSON")
 
-  # Extract threads from this page and append
-  PAGE_THREADS=$(echo "$PAGE_JSON" | jq '.data.repository.pullRequest.reviewThreads.nodes')
-  ALL_THREADS=$(echo "$ALL_THREADS" "$PAGE_THREADS" | jq -s '.[0] + .[1]')
+  # Use printf '%s' instead of echo to preserve sanitized JSON intact
+  PAGE_THREADS=$(printf '%s' "$PAGE_JSON" | jq '.data.repository.pullRequest.reviewThreads.nodes')
+  ALL_THREADS=$(printf '%s\n%s' "$ALL_THREADS" "$PAGE_THREADS" | jq -s '.[0] + .[1]')
 
   # Check for next page
-  HAS_NEXT=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
+  HAS_NEXT=$(printf '%s' "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
   if [ "$HAS_NEXT" != "true" ]; then
     break
   fi
 
-  CURSOR=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
+  CURSOR=$(printf '%s' "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
   PAGE=$((PAGE + 1))
 done
 
-TOTAL_COUNT=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.totalCount')
-FETCHED_COUNT=$(echo "$ALL_THREADS" | jq 'length')
+TOTAL_COUNT=$(printf '%s' "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.totalCount')
+FETCHED_COUNT=$(printf '%s' "$ALL_THREADS" | jq 'length')
 ```
 
 ### 3b: Verify Complete Fetch
