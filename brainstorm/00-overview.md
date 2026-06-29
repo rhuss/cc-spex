@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 ## Sessions
 
@@ -31,6 +31,7 @@ Last updated: 2026-06-28
 | 23 | 2026-06-23 | dual-repo-spec-workflow | active (revisited 2026-06-24) | - | - |
 | 24 | 2026-06-28 | smoke-test-rethink | active | - | - |
 | 25 | 2026-06-28 | submit-finish-workflow | active | - | - |
+| 26 | 2026-06-29 | review-idea-inbox | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -78,6 +79,10 @@ Last updated: 2026-06-28
 - Should finish support --no-smoke-test flag? (from #25)
 - How should collab-triage integrate with submit --watch? (from #25)
 - Should squash be extractable as a standalone command? (from #25)
+- Inbox max size or age-based pruning suggestion? (from #26)
+- Merge vs separate entries when multiple sources flag the same theme? (from #26)
+- Auto-group inbox items by theme or show flat chronological? (from #26)
+- Should consumed inbox items leave a trace in the overview? (from #26)
 
 ## Parked Ideas
 (none)
