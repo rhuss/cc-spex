@@ -346,10 +346,27 @@ Merged `<branch>` into `<default-branch>`. Feature branch deleted.
 When `EXISTING_PR_NUMBER` is set and the user selected "Merge PR #...":
 
 ```bash
-gh pr merge "$EXISTING_PR_NUMBER" --squash --delete-branch 2>&1
+MERGE_OUTPUT=$(gh pr merge "$EXISTING_PR_NUMBER" --squash --delete-branch 2>&1)
+MERGE_EXIT=$?
 ```
 
-If `gh pr merge` fails (e.g., required reviews or CI checks not met):
+**IMPORTANT**: `gh pr merge --squash` can succeed server-side (PR merged on GitHub) but return a non-zero exit code because the local fast-forward failed (e.g., local main has diverged due to brainstorm commits). Always check the actual PR state before assuming failure:
+
+```bash
+if [ "$MERGE_EXIT" -ne 0 ]; then
+  # Check if the PR was actually merged despite the non-zero exit
+  PR_STATE=$(gh pr view "$EXISTING_PR_NUMBER" --json state -q '.state' 2>/dev/null || echo "UNKNOWN")
+  if [ "$PR_STATE" = "MERGED" ]; then
+    echo "PR #$EXISTING_PR_NUMBER merged successfully on GitHub."
+    echo "Local sync: pulling latest main..."
+    git checkout "$DEFAULT_BRANCH" 2>/dev/null
+    git pull --rebase origin "$DEFAULT_BRANCH" 2>/dev/null || git pull origin "$DEFAULT_BRANCH" 2>/dev/null
+    MERGE_EXIT=0
+  fi
+fi
+```
+
+If the PR is genuinely not merged (`PR_STATE` is not `MERGED`):
 ```
 PR merge failed. This may be due to:
 - Required reviews not yet approved
@@ -364,7 +381,7 @@ or you can wait for required checks and re-run /speckit-spex-finish.
 ACTION_TAKEN="pr-merge"
 ```
 
-If merge succeeds, handle worktree cleanup (same prompt-before-cleanup pattern as Option A).
+If merge succeeds (either directly or detected via state check), sync local main and handle worktree cleanup (same prompt-before-cleanup pattern as Option A).
 
 ### Option C: Keep Branch
 
