@@ -71,10 +71,11 @@ As a new user, the README and help docs accurately describe where worktrees are 
 
 ### Edge Cases
 
-- What if `.claude/` is not gitignored? (The init script ensures `.claude/` is in `.gitignore`; worktrees inside it are invisible to git)
+- What if `.claude/` is not gitignored? (The init script ensures `.claude/` is in `.gitignore`; worktrees inside it are invisible to git. `git worktree add` inside a gitignored directory works correctly because git tracks worktrees in `.git/worktrees/`, not in the worktree directory itself.)
 - What if the user has a custom `base_path` pointing to an external directory? (Custom config is respected; the new default only applies when no config override exists)
 - What if a worktree already exists at the target path from a previous failed run? (Existing behavior: error with "Target path already exists" message)
 - What if the project root is on a filesystem that doesn't support nested git worktrees? (Git worktrees work on all filesystems that support symlinks; `.claude/worktrees/` is just a regular directory)
+- What about the existing "inside the main repository" guard in the manage command? (The manage command's Step 4 currently rejects any worktree path inside the project root. This guard MUST be modified to allow paths inside `.claude/worktrees/` while still rejecting other inside-project paths like a `base_path` of `.`)
 
 ## Requirements
 
@@ -85,6 +86,7 @@ As a new user, the README and help docs accurately describe where worktrees are 
 - **FR-003**: Worktree paths inside `.claude/worktrees/` MUST use `<branch-name>` only (no repo name prefix)
 - **FR-004**: Worktree paths with custom `base_path` (outside project) MUST continue using `<repo-name>@<branch-name>` format
 - **FR-005**: The `.claude/worktrees/` directory MUST be created automatically when the first worktree is created
+- **FR-005b**: The manage command's "inside the main repository" guard (Step 4) MUST be modified to allow paths under `.claude/worktrees/` while still rejecting other inside-project paths (e.g., `base_path: "."`)
 - **FR-006**: The ship pipeline's worktree detection MUST look for worktrees inside `.claude/worktrees/` by default
 - **FR-007**: The `spex-worktree-cwd.sh` recovery script MUST handle both inside-project and outside-project worktrees
 - **FR-008**: The README MUST document `.claude/worktrees/` as the default worktree location
@@ -95,7 +97,7 @@ As a new user, the README and help docs accurately describe where worktrees are 
 ### Measurable Outcomes
 
 - **SC-001**: Ship pipeline with worktrees completes all 8 stages without any "Shell cwd was reset" messages
-- **SC-002**: Worktree CWD persists across all 4 subagent stages (review-spec, review-plan, implement, review-code) without recovery
+- **SC-002**: Worktree CWD persists across all 3 post-worktree subagent stages (review-plan, implement, review-code) without recovery
 - **SC-003**: Existing projects with custom `base_path: ".."` continue to work without changes
 
 ## Smoke Test
@@ -107,7 +109,7 @@ As a new user, the README and help docs accurately describe where worktrees are 
 ## Assumptions
 
 - `.claude/` is already gitignored by the spex init script (verified in `configure_gitignore`)
-- The worktree config template is at `spex/extensions/spex-worktrees/config-template.yml`
+- The worktree config default `base_path` is defined as a fallback in the manage command's `yq` call (`.specify/extensions/spex-worktrees/worktree-config.yml` is the runtime config path)
 - The worktree manage command is at `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
 - Git worktrees work correctly when nested inside the project directory
 - The `EnterWorktree` Claude Code tool is not used directly (spex uses `git worktree add` for portability across AI agents)
@@ -121,8 +123,7 @@ As a new user, the README and help docs accurately describe where worktrees are 
 
 ## Dependencies
 
-- `spex/extensions/spex-worktrees/config-template.yml` (config default)
-- `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md` (path computation)
+- `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md` (path computation and default `base_path` fallback value in Step 1)
 - `spex/extensions/spex/commands/speckit.spex.ship.md` (worktree detection in Stage 0)
 - `spex/scripts/spex-worktree-cwd.sh` (CWD recovery)
 - `README.md` (worktree documentation)
