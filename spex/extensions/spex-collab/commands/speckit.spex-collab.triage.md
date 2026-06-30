@@ -263,6 +263,60 @@ If the commit or push fails (branch protection, remote rejection), report the er
 
 Capture the commit SHA after pushing for use in acceptance replies.
 
+## Step 7b: Check CI Status After Push
+
+After pushing triage fixes, check if GitHub Actions CI is passing. Triage fixes can introduce regressions (e.g., a bot suggestion that breaks a test).
+
+**Skip this step if**: no fixes were applied (nothing was pushed), or `gh` CLI is not available.
+
+**Procedure:**
+
+1. **Wait briefly for CI to start** (CI may take a few seconds to queue after a push):
+   ```bash
+   sleep 10
+   ```
+
+2. **Poll CI status** (up to 3 polls, 30 seconds apart):
+   ```bash
+   CI_OUTPUT=$(gh pr checks "$PR_NUM" 2>&1 || true)
+   ```
+
+   Check the output:
+   - If all checks show `pass`/`success`: CI is green. Proceed to Step 8.
+   - If checks show `pending`/`queued`/`in_progress`: Wait 30 seconds and poll again (up to 3 polls total). If still pending after 3 polls, report the status and proceed (do not block indefinitely).
+   - If any check shows `fail`/`error`: Attempt a fix (see below).
+
+3. **On CI failure**: Read the failing run's log:
+   ```bash
+   FAILING_URL=$(gh pr checks "$PR_NUM" --json name,state,detailsUrl --jq '.[] | select(.state == "FAILURE") | .detailsUrl' 2>/dev/null | head -1)
+   ```
+
+   Extract the run ID from the URL and read the failure log:
+   ```bash
+   RUN_ID=$(echo "$FAILING_URL" | grep -oE '[0-9]+$')
+   gh run view "$RUN_ID" --log-failed 2>/dev/null | tail -50
+   ```
+
+   Scope the fix to files changed in this triage pass. Attempt to fix the issue (max 1 attempt). If the fix succeeds:
+   ```bash
+   git add -u
+   git commit -m "fix: repair CI after triage fixes (#$PR_NUM)
+
+   Assisted-By: 🤖 Claude Code"
+   git push
+   ```
+
+   If the fix fails or the failure is unrelated to triage changes, report it in the summary and continue:
+   ```
+   WARNING: CI is failing after triage fixes. The failure may need manual attention.
+   Failing check: <check-name>
+   ```
+
+4. **Report CI status** in Step 13 summary (add a line after the commit SHA):
+   ```
+   **CI status**: passing | failing (<check-name>) | pending (timed out waiting)
+   ```
+
 ## Step 8: Post Replies
 
 For each bot comment that was processed, post a reply via the REST API:
@@ -451,6 +505,7 @@ At the end of the triage pass, report a summary:
 - Pending: N (not yet reviewed)
 
 **Commit**: <SHA> (if fixes were applied)
+**CI status**: passing | failing (<check-name>) | pending | not checked
 **Open bot comments remaining**: N
 ```
 
