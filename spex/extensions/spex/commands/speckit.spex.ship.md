@@ -760,49 +760,51 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
 After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice of how to proceed. This prompt is **always interactive**, regardless of the `ask` level. It is NOT a pipeline stage (no stage index, no status line entry).
 
-**CRITICAL: Stay on the feature branch.** Do NOT switch to main, do NOT run `git checkout`, do NOT clean up worktrees, and do NOT remove the state file at this point. The user must choose how to proceed first. Branch switching only happens inside `/speckit-spex-finish` (Option B) if the user selects "Merge directly".
+**CRITICAL: Stay on the feature branch.** Do NOT switch to main, do NOT run `git checkout`, do NOT clean up worktrees, and do NOT remove the state file at this point. The user must choose how to proceed first. Branch switching only happens inside `/speckit-spex-finish` if the user selects "Merge directly".
 
-1. Announce pipeline completion and present the choice:
+**Do NOT check for smoke test scenarios, do NOT announce smoke test phases, do NOT spawn smoke test subagents.** The smoke test runs inside `/speckit-spex-finish` via the `before_finish` hook. The post-pipeline prompt is ONLY the choice below.
 
-   ```
-   ## Pipeline Complete (8/8 stages passed)
+1. Output a one-line summary, then IMMEDIATELY present the choice using `AskUserQuestion`:
 
-   All automated stages have passed. How would you like to proceed?
+   Output: `Pipeline complete (8/8 stages passed). Consider running /clear before proceeding to free context.`
 
-   A) Submit PR - Create a pull request for team review
-   B) Merge directly - Run smoke test, squash, and merge to main
-   C) Stop here - Run /speckit-spex-submit or /speckit-spex-finish later
-   ```
+   Then present options to the user:
+   - header: "Complete"
+   - multiSelect: false
+   - Options:
+     - "Submit PR (Recommended)": "Push branch and create a pull request for team review"
+     - "Merge directly": "Run /speckit-spex-finish to smoke test, squash, and merge to main"
+     - "Stop here": "Do nothing now. Run /speckit-spex-submit or /speckit-spex-finish later"
 
-   Wait for user response.
+   **This MUST be an AskUserQuestion tool call, not a markdown text prompt.** Do NOT output the options as text and wait for a free-form reply.
 
-2. **If "Submit PR" (A):**
+2. **If "Submit PR":**
 
-   Invoke `/speckit-spex-submit` directly in the current session. This runs verification, commits outstanding changes, and creates the PR.
+   Invoke `/speckit-spex-submit` directly in the current session.
 
    After submit completes, output:
    ```
    Pipeline complete. PR created.
-   Run `/speckit-spex-finish` after reviews are approved to squash, merge, and clean up.
+   Run `/speckit-spex-finish` after reviews are approved.
    ```
 
-3. **If "Merge directly" (B):**
+3. **If "Merge directly":**
 
-   Invoke `/speckit-spex-finish` directly in the current session. This runs the smoke test gate, squashes commits, and merges to main.
+   Invoke `/speckit-spex-finish` directly in the current session.
 
    After finish completes, output:
    ```
    Pipeline complete. Code landed on main.
    ```
 
-4. **If "Stop here" (C):**
+4. **If "Stop here":**
 
    Output:
    ```
-   Pipeline complete through review. Stopped before submit/merge.
+   Pipeline complete through review.
 
    When ready:
-     /speckit-spex-submit    Push and create PR for team review
+     /speckit-spex-submit    Push and create PR
      /speckit-spex-finish    Smoke test + squash + merge to main
    ```
 
