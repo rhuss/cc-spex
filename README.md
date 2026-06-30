@@ -211,7 +211,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 **`spex-teams`** (experimental, requires `spex-gates`): Parallel implementation via Claude Code Agent Teams. When combined with `spex-deep-review`, review agents run in parallel.
 
-**`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, optionally creates a sibling worktree and copies `.claude/` and `.specify/` config to it.
+**`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, creates a worktree at `.claude/worktrees/<branch>` (inside the project directory) and copies `.claude/` and `.specify/` config to it. This default location keeps CWD stable across Claude Code subagent returns. Projects can override `base_path` in `worktree-config.yml` for external worktrees.
 
 **`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
 
@@ -324,7 +324,7 @@ The ship pipeline includes two automated feedback mechanisms that catch problems
 
 ### Worktree integration
 
-When the `spex-worktrees` extension is enabled, the ship pipeline automatically creates a sibling worktree during Stage 0 (specify) and continues the pipeline there. Your main workspace stays on `main`, free for other work while ship runs in the worktree.
+When the `spex-worktrees` extension is enabled, the ship pipeline automatically creates a worktree at `.claude/worktrees/<branch>` during Stage 0 (specify) and continues the pipeline there. Your main workspace stays on `main`, free for other work while ship runs in the worktree. The inside-project location ensures CWD persists across Claude Code subagent returns.
 
 After the pipeline completes, you choose what to do:
 

@@ -5,6 +5,12 @@
 # the main repo directory instead of the worktree. This script detects
 # the mismatch and outputs the correct path to cd into.
 #
+# With the default worktree location (.claude/worktrees/ inside the
+# project), CWD resets should not occur because the worktree is within
+# Claude Code's project boundary. This script serves as a safety net
+# for edge cases and for projects using external worktrees (base_path
+# set to ".." or another directory outside the project).
+#
 # Usage:
 #   WORKTREE_DIR=$(spex-worktree-cwd.sh)
 #   [ -n "$WORKTREE_DIR" ] && cd "$WORKTREE_DIR"

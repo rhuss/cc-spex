@@ -38,14 +38,14 @@ This action runs after `speckit-specify` has created a feature branch and spec f
 
 ### Step 1: Read Configuration
 
-Read `base_path` from the worktrees extension config (or default to `..`):
+Read `base_path` from the worktrees extension config (or default to `.claude/worktrees`):
 
 ```bash
 WORKTREE_CONFIG=".specify/extensions/spex-worktrees/worktree-config.yml"
-BASE_PATH=$(yq -r '.worktrees.base_path // ".."' "$WORKTREE_CONFIG" 2>/dev/null || echo "..")
+BASE_PATH=$(yq -r '.worktrees.base_path // ".claude/worktrees"' "$WORKTREE_CONFIG" 2>/dev/null || echo ".claude/worktrees")
 ```
 
-Default: `..` (sibling directory to the repo root).
+Default: `.claude/worktrees` (inside the project directory, keeps CWD stable in Claude Code).
 
 ### Step 2: Get Current Branch
 
@@ -75,10 +75,29 @@ If inside a worktree, skip the entire create action. Do not proceed to any subse
 
 ### Step 4: Compute Target Path and Validate
 
-Derive the repo name from the repository root and build the worktree path:
+Determine if the worktree should be inside or outside the project, then build the path:
 
 ```bash
-REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Detect inside-project worktrees (.claude/worktrees is the default)
+INSIDE_PROJECT=false
+case "$BASE_PATH" in
+  .claude/worktrees*) INSIDE_PROJECT=true ;;
+esac
+```
+
+**If inside project** (`INSIDE_PROJECT` is `true`):
+
+```bash
+mkdir -p "$REPO_ROOT/$BASE_PATH"
+WORKTREE_PATH="$REPO_ROOT/$BASE_PATH/$BRANCH_NAME"
+```
+
+**If outside project** (`INSIDE_PROJECT` is `false`):
+
+```bash
+REPO_NAME=$(basename "$REPO_ROOT")
 
 # Handle both absolute and relative base paths
 if [[ "$BASE_PATH" = /* ]]; then
@@ -104,13 +123,15 @@ Build the worktree path using `@` as separator between repo name and branch:
 WORKTREE_PATH="${RESOLVED_BASE}/${REPO_NAME}@${BRANCH_NAME}"
 ```
 
-Verify the worktree path is not inside the main repository (a `base_path` of `.` would cause this):
+**For both paths**, verify the worktree is not inside the main repository in a disallowed location:
 
 ```bash
 case "$WORKTREE_PATH" in
+  "$REPO_ROOT"/.claude/worktrees/*)
+    ;; # Allowed: inside .claude/worktrees/
   "$REPO_ROOT"/*)
     echo "ERROR: Worktree path is inside the main repository: $WORKTREE_PATH"
-    echo "Set base_path to a directory outside the repo (default: '..')"
+    echo "Set base_path to '.claude/worktrees' or a directory outside the repo"
     # Stop here. Do not proceed to subsequent steps.
     ;;
 esac
@@ -223,8 +244,9 @@ if [ -d ".specify" ]; then
 fi
 
 # Copy .claude/ (skills, settings, commands)
+# Exclude worktrees/ to avoid copying the worktree into itself when base_path is .claude/worktrees
 if [ -d ".claude" ]; then
-  rsync -a ".claude/" "$WORKTREE_PATH/.claude/"
+  rsync -a --exclude='worktrees/' ".claude/" "$WORKTREE_PATH/.claude/"
 fi
 ```
 
@@ -264,11 +286,11 @@ Print a machine-readable line followed by human-readable instructions:
 echo "WORKTREE_CREATED path=$WORKTREE_PATH"
 ```
 
-Then print instructions for the user:
+Then print instructions for the user. For inside-project worktrees, show the relative path (e.g., `.claude/worktrees/032-feature`). For external worktrees, show the absolute path.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Worktree created at <worktree-path>                         │
+│ Worktree created at <display-path>                          │
 │                                                             │
 │ To continue with planning/implementation:                   │
 │   cd <worktree-path> && claude                              │
@@ -279,6 +301,8 @@ Then print instructions for the user:
 │ The spec file contains all context from this session.       │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+Where `<display-path>` is `.claude/worktrees/<branch>` for inside-project worktrees, or the full absolute path for external worktrees.
 
 Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output.
 

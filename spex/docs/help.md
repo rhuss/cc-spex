@@ -111,9 +111,11 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                                --external, --coderabbit, --copilot
 
   spex-worktrees extension:
-    /speckit-specify  → creates git worktree for feature branch,
+    /speckit-specify  → creates worktree at .claude/worktrees/<branch>,
                         restores main (also auto-created by ship)
     /speckit-spex-worktrees-manage → list, create, finish, or cleanup worktrees
+                        Default location: .claude/worktrees/ (inside project)
+                        Override: worktrees.base_path in worktree-config.yml
 
   spex-collab extension:
     /speckit-tasks    → auto-generates REVIEWERS.md, offers [Spec] PR
