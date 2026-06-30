@@ -258,7 +258,7 @@ The copied `.specify/feature.json` may point to whatever feature was active on t
 
 ```bash
 FEATURE_JSON="$WORKTREE_PATH/.specify/feature.json"
-echo "{\"feature_directory\": \"$FEATURE_DIR\"}" | jq '.' > "$FEATURE_JSON"
+jq -n --arg dir "$FEATURE_DIR" '{"feature_directory": $dir}' > "$FEATURE_JSON"
 ```
 
 This writes the `FEATURE_DIR` value captured in Step 5b, which reflects the actual spec directory created by speckit-specify (not a branch-name derivation that may differ).
@@ -338,11 +338,11 @@ Active Feature Worktrees:
 
   Path                              Branch              Feature
   ─────────────────────────────────────────────────────────────
-  cc-spex@004-user-auth             004-user-auth       user-auth
-  cc-spex@007-worktrees-trait       007-worktrees-trait  worktrees-trait
+  .claude/worktrees/004-user-auth   004-user-auth       user-auth
+  .claude/worktrees/007-worktrees   007-worktrees-trait  worktrees-trait
 ```
 
-Derive the display path by extracting the last path component from the worktree's absolute path.
+For inside-project worktrees, show the relative path (`.claude/worktrees/<branch>`). For external worktrees, show the last path component (`repo@branch`).
 
 If no feature worktrees exist:
 

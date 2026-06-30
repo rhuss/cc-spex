@@ -53,7 +53,7 @@ if [ "$GIT_DIR" = "$REPO_ROOT/.git" ] || [ "$GIT_DIR" = ".git" ]; then
   fi
 
   # Feature branch but not in a worktree — check if a worktree exists for this branch
-  WORKTREE_PATH=$(git worktree list --porcelain 2>/dev/null | grep -B1 "branch refs/heads/$BRANCH" | head -1 | sed 's/^worktree //')
+  WORKTREE_PATH=$(git worktree list --porcelain 2>/dev/null | grep -B1 "branch refs/heads/$BRANCH" | head -1 | sed 's/^worktree //' || true)
   if [ -n "$WORKTREE_PATH" ] && [ "$WORKTREE_PATH" != "$REPO_ROOT" ]; then
     echo "$WORKTREE_PATH"
   fi
