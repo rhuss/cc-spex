@@ -514,6 +514,42 @@ For each unresolved human thread:
    ```
    For skipped comments, record action as `skipped`.
 
+## Step 12b: Status Bot Detection
+
+After processing review threads (bot + human), scan PR issue comments for status bots that post reports rather than inline code reviews. These bots cannot be triaged like review bots, but their status should be surfaced in the summary.
+
+**Fetch PR issue comments** (these are distinct from review threads):
+
+```bash
+BOT_COMMENTS=$(gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" \
+  --jq '[.[] | select(.user.type == "Bot" or (.user.login | test("\\[bot\\]$|codecov|coveralls|dependabot|renovate|netlify|vercel|sonarcloud|snyk"; "i")))] | group_by(.user.login) | map({bot: .[0].user.login, count: length, latest: (sort_by(.created_at) | last)})' \
+  2>/dev/null || echo "[]")
+```
+
+**Known status bot profiles:**
+
+| Bot | Type | What to extract |
+|-----|------|-----------------|
+| `codecov-commenter` or `codecov[bot]` | Coverage | Coverage delta (look for "Coverage" and percentage change) |
+| `coveralls` | Coverage | Coverage percentage |
+| `dependabot[bot]` | Dependency | Update type (security/version) |
+| `renovate[bot]` | Dependency | Update type |
+| `netlify[bot]` | Deploy preview | Preview URL |
+| `vercel[bot]` | Deploy preview | Preview URL |
+| `sonarcloud[bot]` | Quality | Quality gate status (Passed/Failed) |
+| `snyk-bot` | Security | Vulnerability count |
+
+**For each detected status bot**, extract a one-line summary from the latest comment:
+
+- **Codecov**: Parse coverage delta. If coverage dropped, flag it: `Codecov: -2.3% coverage (flag: regression)`. If coverage increased or held: `Codecov: +0.5% coverage (ok)`.
+- **Dependabot/Renovate**: Note the update: `dependabot: security update for lodash`.
+- **Deploy previews**: Extract the URL: `netlify: preview at https://...`.
+- **Other bots**: Just note presence: `sonarcloud: Quality Gate Passed`.
+
+**Do NOT attempt to "fix" status bot findings.** These are informational. Coverage regressions may need attention but the fix is the developer's decision, not an automated triage action.
+
+Store the extracted summaries for inclusion in the Step 13 summary output.
+
 ## Step 13: Summary Output
 
 **Mandatory**: Steps 13-15 MUST execute after every triage pass, even when all threads were already handled or all were resolved. These steps surface patterns, capture learnings, and track deferred work. Skipping them silently discards the feedback loop.
@@ -542,6 +578,12 @@ At the end of the triage pass, report a summary:
 - Edited: N (replies posted with edits)
 - Skipped: N (left open)
 - Pending: N (not yet reviewed)
+
+**Status bots** (from Step 12b, if any detected):
+| Bot | Status |
+|-----|--------|
+| codecov-commenter | +0.5% coverage (ok) |
+| dependabot[bot] | security update for lodash |
 
 **Commit**: <SHA> (if fixes were applied)
 **CodeRabbit**: reviewed | rate-limited (local fallback ran) | rate-limited (CLI not available) | not detected
