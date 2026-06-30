@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Sessions
 
@@ -32,6 +32,7 @@ Last updated: 2026-06-29
 | 24 | 2026-06-28 | smoke-test-rethink | active | - | - |
 | 25 | 2026-06-28 | submit-finish-workflow | active | - | - |
 | 26 | 2026-06-29 | review-idea-inbox | active | - | - |
+| 27 | 2026-06-30 | worktree-cwd-persistence | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -83,6 +84,9 @@ Last updated: 2026-06-29
 - Merge vs separate entries when multiple sources flag the same theme? (from #26)
 - Auto-group inbox items by theme or show flat chronological? (from #26)
 - Should consumed inbox items leave a trace in the overview? (from #26)
+- Auto-migrate existing sibling worktrees to .claude/worktrees/? (from #27)
+- Use EnterWorktree tool instead of raw git worktree add? (from #27)
+- Worktree finish/cleanup changes when inside .claude/? (from #27)
 
 ## Parked Ideas
 (none)
