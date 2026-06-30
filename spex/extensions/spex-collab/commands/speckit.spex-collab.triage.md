@@ -142,6 +142,45 @@ Fetched $FETCHED_COUNT / $TOTAL_COUNT review threads (in $PAGE pages)
 
 If the API returns a 403 or 429 status on any page, detect rate limiting: report remaining rate limit info, and exit cleanly. Progress is already saved in the state file.
 
+### 3c: CodeRabbit Rate Limit Detection and Local Fallback
+
+After fetching review threads, check if CodeRabbit was rate-limited. CodeRabbit posts a summary comment (not an inline review thread) containing "Review limit reached" when the PR review limit is hit.
+
+**Detection**: Fetch PR issue comments (not review threads) and check for a CodeRabbit rate-limit message:
+
+```bash
+CR_RATE_LIMITED=$(gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" \
+  --jq '[.[] | select(.user.login == "coderabbitai[bot]" and (.body | test("Review limit reached")))] | length' \
+  2>/dev/null || echo "0")
+```
+
+**If `CR_RATE_LIMITED` > 0**: CodeRabbit could not review this PR due to rate limits. Check if the `coderabbit` CLI is available for a local review:
+
+```bash
+if command -v coderabbit >/dev/null 2>&1; then
+  echo "CodeRabbit PR review was rate-limited. Running local CodeRabbit review as fallback..."
+  coderabbit review 2>&1 || echo "WARNING: Local CodeRabbit review failed"
+fi
+```
+
+If the local review succeeds, `coderabbit review` posts review comments directly to the PR (same as the bot would). The triage command then processes these comments in the normal flow (they appear as `coderabbitai[bot]` threads when fetched again, or as local output to parse).
+
+**After running local review**, re-fetch review threads (go back to Step 3a) to pick up any new comments the local CLI posted. To avoid an infinite loop, only re-fetch once:
+
+```bash
+if [ "$CR_RATE_LIMITED" -gt 0 ] && command -v coderabbit >/dev/null 2>&1; then
+  # Re-fetch after local review (one retry only)
+  # ... repeat 3a pagination loop ...
+fi
+```
+
+**If `coderabbit` CLI is not available**: Skip silently. The triage proceeds with whatever review threads exist from other bots. Report in the summary:
+```
+**CodeRabbit**: rate-limited (CLI not available for local fallback)
+```
+
+**If `CR_RATE_LIMITED` is 0**: No rate limit detected. Proceed normally to Step 4.
+
 ## Step 4: Partition Threads
 
 Parse the GraphQL response and partition threads into bot and human categories.
@@ -505,6 +544,7 @@ At the end of the triage pass, report a summary:
 - Pending: N (not yet reviewed)
 
 **Commit**: <SHA> (if fixes were applied)
+**CodeRabbit**: reviewed | rate-limited (local fallback ran) | rate-limited (CLI not available) | not detected
 **CI status**: passing | failing (<check-name>) | pending | not checked
 **Open bot comments remaining**: N
 ```
