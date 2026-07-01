@@ -10,14 +10,30 @@ if read -t 0 2>/dev/null; then
   STDIN_JSON=$(cat 2>/dev/null)
 fi
 
-# Resolve state file: explicit env var > CWD > CLAUDE_PROJECT_DIR
+# Resolve state file: explicit env var > worktree > CWD > CLAUDE_PROJECT_DIR
+#
+# When working in a git worktree (e.g., .claude/worktrees/<branch>), the
+# worktree's .specify/.spex-state takes priority over the main repo's.
+# This ensures each worktree shows its own pipeline status.
 STATE_FILE=""
 if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
   STATE_FILE="$SHIP_STATE_FILE"
 elif [ -f ".specify/.spex-state" ]; then
   STATE_FILE=".specify/.spex-state"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.spex-state" ]; then
-  STATE_FILE="${CLAUDE_PROJECT_DIR}/.specify/.spex-state"
+else
+  # Check if we're in a worktree and should read its state
+  WORKTREE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  MAIN_GIT_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
+  if [ -n "$WORKTREE_ROOT" ] && [ -n "$MAIN_GIT_DIR" ]; then
+    MAIN_ROOT=$(cd "$MAIN_GIT_DIR/.." 2>/dev/null && pwd -P || true)
+    if [ "$WORKTREE_ROOT" != "$MAIN_ROOT" ] && [ -f "$WORKTREE_ROOT/.specify/.spex-state" ]; then
+      STATE_FILE="$WORKTREE_ROOT/.specify/.spex-state"
+    fi
+  fi
+  # Fallback to project dir
+  if [ -z "$STATE_FILE" ] && [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.spex-state" ]; then
+    STATE_FILE="${CLAUDE_PROJECT_DIR}/.specify/.spex-state"
+  fi
 fi
 
 if [ -z "$STATE_FILE" ]; then
