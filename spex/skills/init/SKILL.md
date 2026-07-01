@@ -11,12 +11,12 @@ Run the command from `<spex-init-command>` in the `<spex-context>` system remind
 
 - If output contains `NEED_INSTALL`: show output, STOP.
 - If output contains `ERROR`: show error, STOP.
-- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed but the existing configuration (enabled extensions, auto-commit, permissions) is preserved. Go directly to Step 4 and report that the refresh completed. Tell the user to restart Claude Code.
+- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed but the existing configuration (enabled extensions, permissions) is preserved. Go directly to Step 4 and report that the refresh completed. Tell the user to restart Claude Code.
 - If output contains `READY` or `RESTART_REQUIRED`: **do not summarize yet**, go to Step 2.
 
-## Step 2: Ask about extensions, auto-commit, and permissions
+## Step 2: Ask about extensions and permissions
 
-You MUST ask all 4 questions below in a SINGLE AskUserQuestion call. Do NOT split, merge, reword, or reorder them. Pass them exactly as specified:
+You MUST ask all 3 questions below in a SINGLE AskUserQuestion call. Do NOT split, merge, reword, or reorder them. Pass them exactly as specified:
 
 1. (`multiSelect: true`, header: "Quality"): "Which quality & review extensions do you want to enable?"
    - "spex-gates": "Quality gates on speckit commands (review-spec, review-code, verification)"
@@ -24,15 +24,10 @@ You MUST ask all 4 questions below in a SINGLE AskUserQuestion call. Do NOT spli
    - "spex-teams": "Parallel implementation with spec guardian review via Agent Teams (experimental, requires: spex-gates)"
 
 2. (`multiSelect: true`, header: "Workflow"): "Which workflow extensions do you want to enable?"
-   - "spex-worktrees": "Git worktree isolation after speckit-specify (creates sibling worktree)"
+   - "spex-worktrees": "Git worktree isolation after speckit-specify (creates worktree in .claude/worktrees/)"
    - "spex-collab": "Phase-split collaboration with REVIEWERS.md for team PRs"
 
-3. (`multiSelect: true`, header: "Auto-commit"): "When should spec-kit auto-commit? Select all that apply."
-   - "After spec": "Auto-commit after specify completes"
-   - "After plan+tasks": "Auto-commit after plan and tasks complete"
-   - "After implement": "Auto-commit after implement completes"
-
-4. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
+3. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
    - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows"
    - "None": "Confirm every spex command before execution"
@@ -50,14 +45,6 @@ specify extension disable <extension-name> 2>/dev/null || true
 ```
 
 If the user selected all extensions, no action needed (all are enabled by default after init).
-
-**Auto-commit**: Update `.specify/extensions/git/git-config.yml` based on the user's selections. Only modify if the file exists (git extension is installed by spec-kit core). Enable each selected option with `yq`. If the user selected nothing, no changes needed (default is already false).
-
-- **After spec**: `yq -i '.auto_commit.after_specify.enabled = true' .specify/extensions/git/git-config.yml`
-- **After plan+tasks**: `yq -i '.auto_commit.after_plan.enabled = true | .auto_commit.after_tasks.enabled = true' .specify/extensions/git/git-config.yml`
-- **After implement**: `yq -i '.auto_commit.after_implement.enabled = true' .specify/extensions/git/git-config.yml`
-
-Combine all selected options into a single `yq` call when multiple are chosen.
 
 **Permissions**: The `specify` CLI does not manage permissions. Instead, write permission allowlists directly to `.claude/settings.json` based on the user's choice. Use the EXACT allow arrays below (copy verbatim, do not modify or rephrase the permission strings):
 
@@ -87,7 +74,7 @@ Check for any of these upstream superpowers skills: `test-driven-development`, `
 
 ## Step 4: Report
 
-Summarize: extensions enabled, auto-commit level, permission level, and companion plugins detected. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
+Summarize: extensions enabled, permission level, and companion plugins detected. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
 
 If superpowers companion plugin was NOT detected (Step 3b), append this to the report:
 
