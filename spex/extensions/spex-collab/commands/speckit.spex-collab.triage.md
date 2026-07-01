@@ -539,16 +539,66 @@ BOT_COMMENTS=$(gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" \
 | `sonarcloud[bot]` | Quality | Quality gate status (Passed/Failed) |
 | `snyk-bot` | Security | Vulnerability count |
 
-**For each detected status bot**, extract a one-line summary from the latest comment:
+**For each detected status bot**, extract a summary from the latest comment:
 
-- **Codecov**: Parse coverage delta. If coverage dropped, flag it: `Codecov: -2.3% coverage (flag: regression)`. If coverage increased or held: `Codecov: +0.5% coverage (ok)`.
 - **Dependabot/Renovate**: Note the update: `dependabot: security update for lodash`.
 - **Deploy previews**: Extract the URL: `netlify: preview at https://...`.
 - **Other bots**: Just note presence: `sonarcloud: Quality Gate Passed`.
 
 **Do NOT attempt to "fix" status bot findings.** These are informational. Coverage regressions may need attention but the fix is the developer's decision, not an automated triage action.
 
-Store the extracted summaries for inclusion in the Step 13 summary output.
+### Codecov Deep Parse
+
+For Codecov (`codecov-commenter` or `codecov[bot]`), extract detailed per-file coverage from the comment body instead of just the one-line delta. Codecov comments contain a markdown table with per-file patch coverage and missing line counts.
+
+**1. Extract the overall project coverage:**
+
+Parse the comment body for the project coverage line. Look for patterns like:
+- `| **Totals** |` or `| Totals |` row with percentage
+- `Coverage:` or `codecov` header lines with percentage and delta
+
+Extract: current percentage, previous percentage, delta.
+
+**2. Extract per-file patch coverage table:**
+
+Codecov comments include a `Files with Reduced Coverage` or `Impacted Files` table. Parse it to extract:
+
+| Column | What to extract |
+|--------|-----------------|
+| File path | Relative file path (may be truncated with `...`) |
+| Patch % | Patch coverage percentage for lines changed in this PR |
+| Missing lines | Count of uncovered lines in the patch |
+
+Build a list of files with their patch coverage and missing line counts.
+
+**3. Cross-reference with bot review findings:**
+
+For each file in the Codecov table, check if any bot review threads from this triage pass (Steps 6-11) reference the same file. This tells the developer whether coverage gaps overlap with issues bots already flagged.
+
+```
+For each codecov_file in codecov_files:
+  overlaps = []
+  For each bot_thread in processed_bot_threads:
+    if bot_thread.path == codecov_file.path:
+      overlaps.append(f"{bot_thread.summary} ({bot_thread.bot_author})")
+  codecov_file.overlaps = overlaps
+```
+
+**4. Format the coverage section for the Step 13 summary:**
+
+```
+**Coverage** (from Codecov):
+| File | Patch % | Missing | Overlaps with bot findings |
+|------|---------|---------|---------------------------|
+| path/to/file.go | 79.8% | 22 lines | wg race guard (copilot), retry loop (coderabbit) |
+| path/to/other.go | 80.0% | 2 lines | - |
+
+Project: 89.74% (was 90.12%, delta -0.38%)
+```
+
+If no Codecov comment is found, omit the coverage section entirely. If the Codecov comment doesn't contain a per-file table (e.g., it's a simple "patch coverage: 100%"), fall back to a one-line summary: `Codecov: 100% patch coverage (ok)`.
+
+Store the parsed coverage data for inclusion in the Step 13 summary output.
 
 ## Step 13: Summary Output
 
@@ -579,10 +629,17 @@ At the end of the triage pass, report a summary:
 - Skipped: N (left open)
 - Pending: N (not yet reviewed)
 
-**Status bots** (from Step 12b, if any detected):
+**Coverage** (from Codecov, if detected):
+| File | Patch % | Missing | Overlaps with bot findings |
+|------|---------|---------|---------------------------|
+| path/to/file.go | 79.8% | 22 lines | race guard (copilot), retry loop (coderabbit) |
+| path/to/other.go | 100% | 0 lines | - |
+
+Project: 89.74% (was 90.12%, delta -0.38%)
+
+**Other status bots** (from Step 12b, if any detected):
 | Bot | Status |
 |-----|--------|
-| codecov-commenter | +0.5% coverage (ok) |
 | dependabot[bot] | security update for lodash |
 
 **Commit**: <SHA> (if fixes were applied)
