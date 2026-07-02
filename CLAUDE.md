@@ -35,6 +35,10 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 - `spex-deep-review`: Multi-agent code review with 5 specialized review agents and autonomous fix loop
 - `spex-collab`: Collaborative PR workflows (REVIEWERS.md, phase-split, phase-manager, revise, reconcile)
 
+## GitHub Issues
+
+NEVER create a GitHub issue (via `gh issue create` or any other mechanism) without first showing the full issue content (title, labels, body) to the user for review and getting explicit approval. This applies to all repos, not just this one.
+
 ## Documentation Maintenance
 
 When adding, removing, or changing features, commands, extensions, or workflows, ALWAYS update the documentation in the same change:
@@ -52,5 +56,4 @@ Do not treat documentation as a follow-up task. Stale docs mislead users and ero
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/032-worktree-cwd-persistence/plan.md
 <!-- SPECKIT END -->
