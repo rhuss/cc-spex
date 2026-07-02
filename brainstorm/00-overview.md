@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-06-30
+Last updated: 2026-07-02
 
 ## Sessions
 
@@ -33,6 +33,7 @@ Last updated: 2026-06-30
 | 25 | 2026-06-28 | submit-finish-workflow | active | - | - |
 | 26 | 2026-06-29 | review-idea-inbox | active | - | - |
 | 27 | 2026-06-30 | worktree-cwd-persistence | active | - | - |
+| 28 | 2026-07-02 | harness-agnostic-spex | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -87,6 +88,12 @@ Last updated: 2026-06-30
 - Auto-migrate existing sibling worktrees to .claude/worktrees/? (from #27)
 - Use EnterWorktree tool instead of raw git worktree add? (from #27)
 - Worktree finish/cleanup changes when inside .claude/? (from #27)
+- Exact capability vocabulary for integration declarations (from #28)
+- Flat boolean vs structured capability dict with tool names and sub-properties (from #28)
+- Extension manifest capability requirements: warn or error on unsupported agent? (from #28)
+- Should spec-kit manage hook adapters or leave that to extensions? (from #28)
+- How much of existing multi-platform dispatch sections can capability system replace? (from #28)
+- Relationship to brainstorm #15 (OpenCode adaptation): subsumes or complements? (from #28)
 
 ## Parked Ideas
 (none)
