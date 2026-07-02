@@ -12,12 +12,22 @@ Manage spec artifact separation for upstream contributions.
 - **detach** (default): Create a clean PR branch with spec artifacts stripped
 - **archive**: Copy spec artifacts to the configured project-specs repo
 
-## Execution
+## Step 0: Resolve Plugin Root
 
-Locate and run the `spex-detach.sh` script:
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
 
 ```bash
-DETACH_SCRIPT="$(find ~/.claude -name 'spex-detach.sh' 2>/dev/null | head -1)"
+DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
+## Execution
+
+Run the `spex-detach.sh` script:
+
+```bash
+DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
 [ -x "$DETACH_SCRIPT" ] || { echo "ERROR: spex-detach.sh not found"; exit 1; }
 ```
 

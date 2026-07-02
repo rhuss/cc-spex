@@ -23,6 +23,16 @@ speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`, `/spe
 Commands like `/spex:specify`, `/spex:plan`, `/spex:implement`, `/spex:tasks` DO NOT EXIST.
 </HARD-GATE>
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Checklist
 
 You MUST create a task for each of these items and complete them in order:
@@ -278,7 +288,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    BRAINSTORM_DIR="brainstorm"
 
    # Check if spex-detach is enabled and has an archive path
-   DETACH_SCRIPT="$(find ~/.claude -name 'spex-detach.sh' 2>/dev/null | head -1)"
+   DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
    if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
      DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
      ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)

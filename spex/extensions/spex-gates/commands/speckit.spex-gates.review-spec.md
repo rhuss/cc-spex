@@ -26,6 +26,16 @@ fi
 
 In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proceed?", do NOT suggest next steps. Complete the review and return.
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Overview
 
 Validate specification quality before implementation begins.
@@ -363,7 +373,7 @@ If the user selects to fix: apply the fixes directly to `spec.md`, then re-displ
 **MANDATORY: Update flow state.** This MUST run on every exit path, including early returns (e.g., "already passed"). Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-spec
+FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-spec
 ```
 
 This updates the status line to show `S ✓`.

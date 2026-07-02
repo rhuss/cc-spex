@@ -190,7 +190,7 @@ The pipeline tracks its progress in `.specify/.spex-state` as JSON. **All state 
 
 Locate the script and set the absolute state file path:
 ```bash
-SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
 # Use absolute path so state file location survives CWD changes (e.g., worktree switches)
 export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
 ```
@@ -391,7 +391,7 @@ The `--ask` flag controls oversight within review stages (how findings are handl
 ### Step 1: Locate the state script
 
 ```bash
-SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
 [ -x "$SHIP_STATE" ] && echo "SCRIPT_OK: $SHIP_STATE" || echo "SCRIPT_MISSING"
 ```
 

@@ -76,6 +76,17 @@ done
   - If a mandatory hook fails or is declined by the user, STOP. Output an error message indicating which hook failed and do NOT proceed to Phase 1.
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+SHIP_STATE_SCRIPT="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Phase 1: Smoke Test Gate
 
 This phase checks whether a smoke test has been run and is current, then decides whether to run one before proceeding.
@@ -92,7 +103,7 @@ fi
 ### Step 2: Read smoke test state
 
 ```bash
-SHIP_STATE_SCRIPT="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE_SCRIPT="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
 SMOKE_COMPLETED=false
 SMOKE_COMMIT_HASH=""
 
@@ -147,7 +158,7 @@ If the smoke test fails (any scenario does not pass), STOP. The user must fix is
 Detect the current environment by running the context detection script:
 
 ```bash
-FINISH_CONTEXT=$(find ~/.claude -name 'spex-finish-context.sh' 2>/dev/null | head -1)
+FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
 CTX=$("$FINISH_CONTEXT")
 ```
 

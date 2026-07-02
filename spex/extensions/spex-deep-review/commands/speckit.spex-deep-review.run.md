@@ -11,6 +11,16 @@ This command orchestrates a multi-perspective code review using five specialized
 
 **This command is invoked by `speckit-spex-gates-review-code` when the deep-review extension is enabled, or via the `after_implement` hook.**
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Prerequisites
 
 The caller (review-code or ship) may provide these values. When not provided, the deep-review command resolves them itself:
@@ -644,7 +654,7 @@ If no checkpoint data exists in the state file (regular flow, checkpoints disabl
 **MANDATORY: Update flow state.** This MUST run after deep review completes (regardless of gate outcome). Deep review completing means the code review phase is done, even if findings remain. Use the flow state script:
 
 ```bash
-FLOW_STATE="$(find ~/.claude -name 'spex-flow-state.sh' 2>/dev/null | head -1)" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
+FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
 ```
 
 This ensures the status line shows `R ✓` after deep review finishes, since review-code delegates to deep review and its own final state update may not execute.

@@ -5,6 +5,18 @@ argument-hint: "[--watch]"
 
 # Submit - Push and Create PR for Team Review
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of an autonomous pipeline. Check the `ask` field:
@@ -150,7 +162,7 @@ DETACH_ENABLED=false
 DETACH_RESULT=""
 DETACH_PR_BRANCH=""
 if [ -d ".specify/extensions/spex-detach" ]; then
-  DETACH_SCRIPT=$(find ~/.claude -name 'spex-detach.sh' 2>/dev/null | head -1)
+  DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
   if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ]; then
     DETACH_ENABLED=true
     DETACH_RESULT=$("$DETACH_SCRIPT" detach 2>&1) || {
@@ -196,7 +208,7 @@ fi
 Detect the current environment by running the context detection script:
 
 ```bash
-FINISH_CONTEXT=$(find ~/.claude -name 'spex-finish-context.sh' 2>/dev/null | head -1)
+FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
 CTX=$("$FINISH_CONTEXT")
 ```
 
@@ -424,7 +436,7 @@ fi
 Locate the state script and create the watch state:
 
 ```bash
-SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' 2>/dev/null | head -1)"
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
 
 # PR_NUMBER and PR_URL come from Option B1 (existing PR) or B2 (newly created PR)
 "$SHIP_STATE" watch-start \

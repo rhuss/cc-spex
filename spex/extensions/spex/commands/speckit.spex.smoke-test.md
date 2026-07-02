@@ -22,6 +22,16 @@ You MUST NOT simulate, fake, or manually reproduce what the system under test wo
 A simulated test that manually edits files to mimic system output is worse than no test. It creates false confidence.
 </HARD-GATE>
 
+## Step 0: Resolve Plugin Root
+
+Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+
+```bash
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+```
+
+Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of a ship pipeline. The smoke test is **always interactive** regardless of the `ask` level. It never runs autonomously. However, it should not output a completion summary or ask "Shall I proceed?" after finishing. Complete the walkthrough and return.
@@ -309,7 +319,7 @@ After all scenarios are processed (or the user exits early), record the results.
 ### Locate the State Script
 
 ```bash
-SHIP_STATE="$(find ~/.claude -name 'spex-ship-state.sh' -path '*/spex/scripts/*' 2>/dev/null | head -1)"
+SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
 if [ -z "$SHIP_STATE" ]; then
   echo "Warning: spex-ship-state.sh not found — smoke test results not recorded in pipeline state."
 fi
