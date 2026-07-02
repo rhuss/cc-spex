@@ -34,6 +34,7 @@ Last updated: 2026-07-02
 | 26 | 2026-06-29 | review-idea-inbox | active | - | - |
 | 27 | 2026-06-30 | worktree-cwd-persistence | active | - | - |
 | 28 | 2026-07-02 | harness-agnostic-spex | active | - | - |
+| 29 | 2026-07-02 | replace-find-with-plugin-root | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
