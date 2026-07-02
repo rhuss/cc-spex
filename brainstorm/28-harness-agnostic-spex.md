@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-02
 **Status:** active
+**Upstream:** [spec-kit#3303](https://github.com/github/spec-kit/issues/3303) + [spec-kit brainstorm/01](https://github.com/rhuss/spec-kit/blob/main/brainstorm/01-extension-capability-system.md)
 
 ## Problem Framing
 
