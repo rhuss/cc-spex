@@ -24,13 +24,13 @@ A simulated test that manually edits files to mimic system output is worse than 
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Ship Pipeline Guard
 
@@ -319,7 +319,7 @@ After all scenarios are processed (or the user exits early), record the results.
 ### Locate the State Script
 
 ```bash
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 if [ -z "$SHIP_STATE" ]; then
   echo "Warning: spex-ship-state.sh not found — smoke test results not recorded in pipeline state."
 fi

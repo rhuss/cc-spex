@@ -8,13 +8,13 @@ Coordinates the boundary between implementation phases: runs code review, update
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Ship Pipeline Guard
 

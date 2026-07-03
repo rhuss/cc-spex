@@ -9,20 +9,20 @@ This command manages the `.specify/.spex-state` file with `"mode": "flow"` to en
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Execution
 
 Run the `spex-flow-state.sh` script, passing through all arguments:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
 [ -x "$FLOW_STATE" ] || { echo "ERROR: spex-flow-state.sh not found"; exit 1; }
 "$FLOW_STATE" "$@"
 ```

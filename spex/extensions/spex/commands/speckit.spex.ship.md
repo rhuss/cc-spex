@@ -27,6 +27,24 @@ This skill chains the entire spex workflow autonomously: specify, clarify, revie
 
 **This skill requires both `spex-gates` and `spex-deep-review` extensions to be enabled.**
 
+## Step 0: Resolve Plugin Root
+
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set `PLUGIN_ROOT` as a bash variable. Every script reference in this command uses this variable.
+
+```bash
+PLUGIN_ROOT="<paste the path from the <plugin-root> tag here>"
+```
+
+For example, if the system reminder contains `<plugin-root>/Users/rhuss/.claude/plugins/cache/spex-plugin-development/spex/5.8.0</plugin-root>`, then:
+
+```bash
+PLUGIN_ROOT="/Users/rhuss/.claude/plugins/cache/spex-plugin-development/spex/5.8.0"
+```
+
+All subsequent script references use `$PLUGIN_ROOT`:
+- `$PLUGIN_ROOT/scripts/spex-ship-state.sh`
+- `$PLUGIN_ROOT/scripts/spex-worktree-cwd.sh`
+
 ## Prerequisites
 
 ### Extension Validation
@@ -190,7 +208,7 @@ The pipeline tracks its progress in `.specify/.spex-state` as JSON. **All state 
 
 Locate the script and set the absolute state file path:
 ```bash
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 # Use absolute path so state file location survives CWD changes (e.g., worktree switches)
 export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
 ```
@@ -224,12 +242,12 @@ This advances `stage` and `stage_index` to the next stage with `status: running`
 When the pipeline runs in a worktree, the shell CWD may be reset to the main repo directory after a subagent returns (Stages 2, 5, 6, 7 all use subagents). **After every subagent returns**, recover CWD using the worktree recovery script:
 
 ```bash
-WORKTREE_CWD="<PLUGIN_ROOT>/scripts/spex-worktree-cwd.sh"
+WORKTREE_CWD="$PLUGIN_ROOT/scripts/spex-worktree-cwd.sh"
 RECOVERY_DIR=$("$WORKTREE_CWD")
 [ -n "$RECOVERY_DIR" ] && cd "$RECOVERY_DIR"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the `<spex-context>` system reminder. The script uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to find the worktree root. It is safe to call unconditionally; it outputs nothing when CWD is already correct or when not in a worktree.
+The `$PLUGIN_ROOT` variable is set in Step 0. The script uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to find the worktree root. It is safe to call unconditionally; it outputs nothing when CWD is already correct or when not in a worktree.
 
 ## Ship Pipeline Guard
 
@@ -390,12 +408,14 @@ The `--ask` flag controls oversight within review stages (how findings are handl
 
 ### Step 1: Locate the state script
 
+Use `$PLUGIN_ROOT` from Step 0:
+
 ```bash
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 [ -x "$SHIP_STATE" ] && echo "SCRIPT_OK: $SHIP_STATE" || echo "SCRIPT_MISSING"
 ```
 
-If `SCRIPT_MISSING`: **STOP**. The spex plugin may not be installed correctly.
+If `SCRIPT_MISSING`: **STOP**. The spex plugin may not be installed correctly. Verify that Step 0 extracted the correct path from the `<plugin-root>` tag in the `<spex-context>` system reminder.
 
 ### Step 2: Create the state file
 

@@ -87,29 +87,27 @@ configure_statusline() {
 
   mkdir -p .claude
 
+  local chain_file=".claude/.spex-previous-statusline"
+
   if [ -f "$settings_file" ]; then
-    # Check if statusLine is already configured
     if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
-      # Update if the configured script no longer exists (stale plugin cache path)
       local current_cmd
       current_cmd="$(jq -r '.statusLine.command // empty' "$settings_file")"
       if [ -n "$current_cmd" ] && [ -f "$current_cmd" ]; then
-        return 0
+        # Already pointing to our script, nothing to do
+        case "$current_cmd" in
+          *spex-ship-statusline.sh) return 0 ;;
+        esac
+        # Different statusline exists, save it for chaining
+        echo "$current_cmd" > "$chain_file"
       fi
-      # Stale path or missing file, update it
-      local tmp
-      tmp=$(mktemp)
-      jq --arg cmd "$abs_script" '.statusLine.command = $cmd' "$settings_file" > "$tmp"
-      mv "$tmp" "$settings_file"
-      return 0
     fi
-    # Merge statusLine into existing local settings
+    # Merge or update statusLine
     local tmp
     tmp=$(mktemp)
-    jq --arg cmd "$abs_script" '. + {"statusLine": {"type": "command", "command": $cmd}}' "$settings_file" > "$tmp"
+    jq --arg cmd "$abs_script" '.statusLine = {"type": "command", "command": $cmd}' "$settings_file" > "$tmp"
     mv "$tmp" "$settings_file"
   else
-    # Create new local settings file with statusLine
     cat > "$settings_file" << EOF
 {
   "statusLine": {
@@ -295,9 +293,10 @@ install_extensions() {
   # Install in dependency order: extensions without dependencies first,
   # then extensions that depend on others (spex-deep-review, spex-teams,
   # and spex-collab require spex-gates).
-  local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab)
-  # Optional extensions gated behind interactive prompts
-  local optional_extensions=(spex-detach)
+  local install_order=(spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach)
+  # Optional extensions are installed but disabled by default.
+  # The init skill handles enable/disable via AskUserQuestion.
+  local optional_extensions=()
 
   local installed=0 failed=0
   for ext_id in "${install_order[@]}"; do
@@ -316,7 +315,7 @@ install_extensions() {
   done
 
   # Prompt for optional extensions
-  for ext_id in "${optional_extensions[@]}"; do
+  for ext_id in ${optional_extensions[@]+"${optional_extensions[@]}"}; do
     local ext_path="$extensions_dir/$ext_id"
     [ -f "$ext_path/extension.yml" ] || continue
 
@@ -409,7 +408,7 @@ do_init() {
   ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1 && had_skills=true
 
   echo "Initializing spec-kit..."
-  if ! specify init --here --ai claude --force; then
+  if ! specify init --here --integration claude --script sh --force; then
     echo "ERROR: specify init failed"
     exit 1
   fi
@@ -461,7 +460,7 @@ do_refresh() {
   fi
 
   echo "Refreshing project templates..."
-  if ! specify init --here --ai claude --force; then
+  if ! specify init --here --integration claude --script sh --force; then
     echo "ERROR: specify init failed"
     exit 1
   fi
@@ -490,7 +489,7 @@ do_update() {
 
   echo ""
   echo "Refreshing project setup..."
-  specify init --here --ai claude --force
+  specify init --here --integration claude --script sh --force
   install_extensions
   install_agent_adapter "$(detect_agent)"
 

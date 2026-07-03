@@ -28,20 +28,20 @@ In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proc
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh"
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Flow Status Update (before review starts)
 
 If review-code is running, implementation is by definition done. Mark it immediately so the status line shows `impl ✓` during the review:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" implemented && "$FLOW_STATE" running review-code
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" implemented && "$FLOW_STATE" running review-code
 ```
 
 ## IMPORTANT: Deep Review Extension Check
@@ -413,7 +413,7 @@ This is not just code quality review; it's **spec validation**.
 **MANDATORY: Update flow state.** This MUST run on every exit path. Use the flow state script:
 
 ```bash
-FLOW_STATE="<PLUGIN_ROOT>/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
+FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh" && [ -x "$FLOW_STATE" ] && "$FLOW_STATE" gate review-code && "$FLOW_STATE" implemented
 ```
 
 This updates the status line to show both `impl ✓` and `R ✓`. If code review passed, implementation is by definition complete.

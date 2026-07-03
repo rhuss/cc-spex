@@ -10,33 +10,64 @@ if read -t 0 2>/dev/null; then
   STDIN_JSON=$(cat 2>/dev/null)
 fi
 
-# Resolve state file: explicit env var > worktree > CWD > CLAUDE_PROJECT_DIR
+# Resolve state file using the session's actual working directory.
 #
-# When working in a git worktree (e.g., .claude/worktrees/<branch>), the
-# worktree's .specify/.spex-state takes priority over the main repo's.
-# This ensures each worktree shows its own pipeline status.
+# Claude Code passes workspace.current_dir in the stdin JSON, which reflects
+# the session's CWD (including worktrees). This is the primary source for
+# finding the correct state file in parallel worktree sessions.
 STATE_FILE=""
-if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
-  STATE_FILE="$SHIP_STATE_FILE"
-elif [ -f ".specify/.spex-state" ]; then
-  STATE_FILE=".specify/.spex-state"
-else
-  # Check if we're in a worktree and should read its state
-  WORKTREE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
-  MAIN_GIT_DIR=$(git rev-parse --git-common-dir 2>/dev/null || true)
-  if [ -n "$WORKTREE_ROOT" ] && [ -n "$MAIN_GIT_DIR" ]; then
-    MAIN_ROOT=$(cd "$MAIN_GIT_DIR/.." 2>/dev/null && pwd -P || true)
-    if [ "$WORKTREE_ROOT" != "$MAIN_ROOT" ] && [ -f "$WORKTREE_ROOT/.specify/.spex-state" ]; then
-      STATE_FILE="$WORKTREE_ROOT/.specify/.spex-state"
-    fi
-  fi
-  # Fallback to project dir
-  if [ -z "$STATE_FILE" ] && [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.spex-state" ]; then
-    STATE_FILE="${CLAUDE_PROJECT_DIR}/.specify/.spex-state"
-  fi
+
+# Extract current_dir and project_dir from stdin JSON (if available)
+SESSION_CWD=""
+SESSION_PROJECT_DIR=""
+if [ -n "$STDIN_JSON" ]; then
+  SESSION_CWD=$(echo "$STDIN_JSON" | jq -r '.workspace.current_dir // empty' 2>/dev/null)
+  SESSION_PROJECT_DIR=$(echo "$STDIN_JSON" | jq -r '.workspace.project_dir // empty' 2>/dev/null)
 fi
 
+# Priority 1: Explicit env var (set by ship pipeline during initialization)
+if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
+  STATE_FILE="$SHIP_STATE_FILE"
+# Priority 2: Session's current working directory (from stdin JSON)
+elif [ -n "$SESSION_CWD" ] && [ -f "$SESSION_CWD/.specify/.spex-state" ]; then
+  STATE_FILE="$SESSION_CWD/.specify/.spex-state"
+# Priority 3: CWD (may differ from session CWD)
+elif [ -f ".specify/.spex-state" ]; then
+  STATE_FILE=".specify/.spex-state"
+# Priority 4: Session's project dir (from stdin JSON)
+elif [ -n "$SESSION_PROJECT_DIR" ] && [ -f "$SESSION_PROJECT_DIR/.specify/.spex-state" ]; then
+  STATE_FILE="$SESSION_PROJECT_DIR/.specify/.spex-state"
+# Priority 5: CLAUDE_PROJECT_DIR env var (legacy fallback)
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "${CLAUDE_PROJECT_DIR}/.specify/.spex-state" ]; then
+  STATE_FILE="${CLAUDE_PROJECT_DIR}/.specify/.spex-state"
+fi
+
+# Chain to previous statusline if configured
+CHAIN_FILE=""
+for candidate in ".claude/.spex-previous-statusline" "${CLAUDE_PROJECT_DIR:-.}/.claude/.spex-previous-statusline"; do
+  if [ -f "$candidate" ]; then
+    CHAIN_FILE="$candidate"
+    break
+  fi
+done
+
+get_chain_output() {
+  if [ -n "$CHAIN_FILE" ]; then
+    local prev_cmd
+    prev_cmd=$(cat "$CHAIN_FILE" 2>/dev/null)
+    if [ -n "$prev_cmd" ] && [ -f "$prev_cmd" ]; then
+      if [ -n "$STDIN_JSON" ]; then
+        echo "$STDIN_JSON" | "$prev_cmd" 2>/dev/null || true
+      else
+        "$prev_cmd" 2>/dev/null || true
+      fi
+    fi
+  fi
+}
+
 if [ -z "$STATE_FILE" ]; then
+  # No spex state, just show the chained statusline
+  get_chain_output
   exit 0
 fi
 
@@ -348,6 +379,12 @@ render_watch() {
 }
 
 # --- Mode dispatch ---
+# Run chained statusline first (previous statusline output appears before spex)
+CHAIN_OUTPUT=$(get_chain_output)
+if [ -n "$CHAIN_OUTPUT" ]; then
+  printf "%s " "$CHAIN_OUTPUT"
+fi
+
 case "$MODE" in
   flow) render_flow ;;
   ship) render_ship ;;

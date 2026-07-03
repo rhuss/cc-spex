@@ -240,7 +240,7 @@ cmd_detach() {
 
   # Generate filtered diff
   local diff_output
-  diff_output=$(git diff --binary "$merge_base".."$branch" -- . "${pathspec_excludes[@]}" 2>/dev/null) || {
+  diff_output=$(git diff --binary "$merge_base".."$branch" -- . ${pathspec_excludes[@]+"${pathspec_excludes[@]}"} 2>/dev/null) || {
     jq -n '{"error": "Failed to generate diff"}' >&2
     exit 1
   }
@@ -275,7 +275,7 @@ cmd_detach() {
 
   # Generate commit message from feature branch (most recent code-touching commit)
   local commit_subject
-  commit_subject=$(git log --format='%s' "$merge_base".."$original_branch" -- . "${pathspec_excludes[@]}" 2>/dev/null | head -1)
+  commit_subject=$(git log --format='%s' "$merge_base".."$original_branch" -- . ${pathspec_excludes[@]+"${pathspec_excludes[@]}"} 2>/dev/null | head -1)
   if [ -z "$commit_subject" ]; then
     commit_subject="feat: $(echo "$original_branch" | sed 's/[-_]/ /g')"
   fi

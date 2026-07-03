@@ -78,14 +78,14 @@ done
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-SHIP_STATE_SCRIPT="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
-FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
+SHIP_STATE_SCRIPT="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
+FINISH_CONTEXT="$PLUGIN_ROOT/scripts/spex-finish-context.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Phase 1: Smoke Test Gate
 
@@ -103,7 +103,7 @@ fi
 ### Step 2: Read smoke test state
 
 ```bash
-SHIP_STATE_SCRIPT="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE_SCRIPT="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 SMOKE_COMPLETED=false
 SMOKE_COMMIT_HASH=""
 
@@ -158,7 +158,7 @@ If the smoke test fails (any scenario does not pass), STOP. The user must fix is
 Detect the current environment by running the context detection script:
 
 ```bash
-FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
+FINISH_CONTEXT="$PLUGIN_ROOT/scripts/spex-finish-context.sh"
 CTX=$("$FINISH_CONTEXT")
 ```
 
@@ -369,9 +369,6 @@ if [ "$MERGE_EXIT" -ne 0 ]; then
   PR_STATE=$(gh pr view "$EXISTING_PR_NUMBER" --json state -q '.state' 2>/dev/null || echo "UNKNOWN")
   if [ "$PR_STATE" = "MERGED" ]; then
     echo "PR #$EXISTING_PR_NUMBER merged successfully on GitHub."
-    echo "Local sync: pulling latest main..."
-    git checkout "$DEFAULT_BRANCH" 2>/dev/null
-    git pull --rebase origin "$DEFAULT_BRANCH" 2>/dev/null || git pull origin "$DEFAULT_BRANCH" 2>/dev/null
     MERGE_EXIT=0
   fi
 fi
@@ -392,7 +389,19 @@ or you can wait for required checks and re-run /speckit-spex-finish.
 ACTION_TAKEN="pr-merge"
 ```
 
-If merge succeeds (either directly or detected via state check), sync local main and handle worktree cleanup (same prompt-before-cleanup pattern as Option A).
+If merge succeeds, sync local main. **When in a worktree (`IN_WORKTREE` is true):** do NOT run `git checkout` (main is already checked out in the main worktree). Instead, switch to the main worktree first, then pull:
+
+```bash
+if [ "$IN_WORKTREE" = true ]; then
+  cd "$MAIN_WORKTREE"
+  git pull --rebase origin "$DEFAULT_BRANCH" 2>/dev/null || git pull origin "$DEFAULT_BRANCH" 2>/dev/null
+else
+  git checkout "$DEFAULT_BRANCH" 2>/dev/null
+  git pull --rebase origin "$DEFAULT_BRANCH" 2>/dev/null || git pull origin "$DEFAULT_BRANCH" 2>/dev/null
+fi
+```
+
+Then handle worktree cleanup (same prompt-before-cleanup pattern as Option A).
 
 ### Option C: Keep Branch
 

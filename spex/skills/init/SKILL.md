@@ -26,6 +26,7 @@ You MUST ask all 3 questions below in a SINGLE AskUserQuestion call. Do NOT spli
 2. (`multiSelect: true`, header: "Workflow"): "Which workflow extensions do you want to enable?"
    - "spex-worktrees": "Git worktree isolation after speckit-specify (creates worktree in .claude/worktrees/)"
    - "spex-collab": "Phase-split collaboration with REVIEWERS.md for team PRs"
+   - "spex-detach": "Strip spec artifacts at PR time for contributing to repos that don't use SDD"
 
 3. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
    - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"

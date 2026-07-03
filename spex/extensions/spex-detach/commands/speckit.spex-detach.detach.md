@@ -14,20 +14,20 @@ Manage spec artifact separation for upstream contributions.
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Execution
 
 Run the `spex-detach.sh` script:
 
 ```bash
-DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
 [ -x "$DETACH_SCRIPT" ] || { echo "ERROR: spex-detach.sh not found"; exit 1; }
 ```
 

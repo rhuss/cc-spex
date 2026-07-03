@@ -16,7 +16,7 @@ set -euo pipefail
 STATE_FILE="${TRIAGE_STATE_FILE:-.specify/.pr-triage-state.json}"
 
 _TMPFILES=()
-_cleanup_tmp() { rm -f "${_TMPFILES[@]}"; }
+_cleanup_tmp() { rm -f ${_TMPFILES[@]+"${_TMPFILES[@]}"}; }
 trap _cleanup_tmp EXIT
 
 now_iso() {

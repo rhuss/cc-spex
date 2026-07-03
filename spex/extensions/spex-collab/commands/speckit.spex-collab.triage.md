@@ -13,14 +13,14 @@ If `.specify/.spex-state` exists with `mode: "ship"`, return immediately. Triage
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-TRIAGE_STATE="<PLUGIN_ROOT>/scripts/spex-triage-state.sh"
-SANITIZE_JSON="<PLUGIN_ROOT>/scripts/sanitize-gh-json.py"
+TRIAGE_STATE="$PLUGIN_ROOT/scripts/spex-triage-state.sh"
+SANITIZE_JSON="$PLUGIN_ROOT/scripts/sanitize-gh-json.py"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Step 1: Resolve PR Context
 
@@ -516,6 +516,8 @@ For each unresolved human thread:
 
 ## Step 12b: Status Bot Detection
 
+**Mandatory**: Steps 12b and 12c MUST execute after every triage pass, even when there are zero review threads. Codecov and other status bots post as issue comments (not review threads), so they are invisible to the review thread scan. Skipping these steps when "0 threads found" is the most common cause of missed coverage regressions.
+
 After processing review threads (bot + human), scan PR issue comments for status bots that post reports rather than inline code reviews. These bots cannot be triaged like review bots, but their status should be surfaced in the summary.
 
 **Fetch PR issue comments** (these are distinct from review threads):
@@ -545,7 +547,7 @@ BOT_COMMENTS=$(gh api "repos/$OWNER/$REPO/issues/$PR_NUM/comments" \
 - **Deploy previews**: Extract the URL: `netlify: preview at https://...`.
 - **Other bots**: Just note presence: `sonarcloud: Quality Gate Passed`.
 
-**Do NOT attempt to "fix" status bot findings.** These are informational. Coverage regressions may need attention but the fix is the developer's decision, not an automated triage action.
+**Do NOT attempt to "fix" status bot findings** except for Codecov coverage regressions (see Step 12c). Other status bots (deploy previews, dependency updates, quality gates) are informational only.
 
 ### Codecov Deep Parse
 
@@ -599,6 +601,97 @@ Project: 89.74% (was 90.12%, delta -0.38%)
 If no Codecov comment is found, omit the coverage section entirely. If the Codecov comment doesn't contain a per-file table (e.g., it's a simple "patch coverage: 100%"), fall back to a one-line summary: `Codecov: 100% patch coverage (ok)`.
 
 Store the parsed coverage data for inclusion in the Step 13 summary output.
+
+## Step 12c: Coverage Remediation
+
+After parsing Codecov data (Step 12b), check whether a Codecov CI check is failing. Coverage regressions that cause CI failures are actionable, not merely informational.
+
+**Skip this step if**: no Codecov data was parsed in Step 12b, or the CI check for Codecov is passing (check via `gh pr checks`), or `--no-coverage-fix` was passed as an argument.
+
+### 1. Detect Coverage CI Failure
+
+```bash
+CODECOV_FAILING=$(gh pr checks "$PR_NUM" 2>&1 | grep -iE 'codecov|coverage' | grep -iE 'fail|error' || true)
+```
+
+If `CODECOV_FAILING` is empty, coverage CI is not failing. Skip to Step 13.
+
+### 2. Identify Files Needing Coverage
+
+From the Codecov data parsed in Step 12b, select files that need coverage improvement. Prioritize by:
+
+1. Files with the lowest patch coverage percentage
+2. Files with the most missing lines
+3. Files changed in this PR (from the git diff, not the entire project)
+
+Build a work list of up to 5 files, starting from the worst coverage.
+
+### 3. Write Tests for Uncovered Code
+
+For each file in the work list:
+
+1. Read the file and identify the uncovered lines/functions (from the Codecov missing lines data and the actual code).
+2. Identify the project's test framework and test directory conventions by examining existing test files.
+3. Write tests that exercise the uncovered code paths. Focus on:
+   - Untested branches (if/else paths, error returns)
+   - Untested functions that are called but not directly tested
+   - Edge cases in newly added code
+4. Place test files following the project's existing test conventions (e.g., `*_test.go` next to the source file for Go, `test_*.py` in `tests/` for Python).
+
+**Constraints:**
+- Only add tests for code changed in this PR (do not fix pre-existing coverage gaps)
+- Tests must compile and pass locally before committing
+- Do not modify source code to make it more testable (that changes behavior and is out of triage scope)
+- Maximum 2 fix attempts per file. If tests cannot be made to pass, skip that file
+
+### 4. Validate Tests Pass
+
+Run the project's test command to verify the new tests pass:
+
+```bash
+# Auto-detect test command (same heuristic as ship pipeline)
+if [ -f "Makefile" ] && grep -q '^test:' Makefile; then
+  make test
+elif [ -f "package.json" ]; then
+  npm test
+elif [ -f "go.mod" ]; then
+  go test ./...
+elif command -v pytest >/dev/null 2>&1; then
+  pytest
+elif [ -f "Cargo.toml" ]; then
+  cargo test
+fi
+```
+
+If tests fail, fix or remove the failing test (max 2 attempts). Do not push tests that break CI.
+
+### 5. Commit and Push
+
+If any test files were added:
+
+```bash
+git add -A
+git commit -m "test: improve coverage for PR #$PR_NUM
+
+Added tests to address Codecov coverage regression:
+$(for f in $TEST_FILES; do echo "- $f"; done)
+
+Assisted-By: 🤖 Claude Code"
+git push
+```
+
+### 6. Report
+
+Add a coverage remediation section to the Step 13 summary:
+
+```
+**Coverage remediation**:
+- Files targeted: N
+- Tests added: N files
+- Tests skipped: N files (reason)
+```
+
+If all targeted files were successfully covered, note: "Coverage fixes pushed. Codecov will re-check on the next CI run."
 
 ## Step 13: Summary Output
 

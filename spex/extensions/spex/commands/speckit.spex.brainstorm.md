@@ -25,13 +25,13 @@ Commands like `/spex:specify`, `/spex:plan`, `/spex:implement`, `/spex:tasks` DO
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Checklist
 
@@ -288,7 +288,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    BRAINSTORM_DIR="brainstorm"
 
    # Check if spex-detach is enabled and has an archive path
-   DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+   DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
    if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
      DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
      ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
@@ -363,10 +363,16 @@ You MUST write the brainstorm document at session end. This step is NOT optional
 
    Create the issue (the body is the brainstorm document content):
 
+   **Title format**: Use conventional commit format. Derive the type from the brainstorm content:
+   - New functionality: `feat: <short description>`
+   - Bug fix: `fix: <short description>`
+   - Refactoring: `refactor: <short description>`
+   - Documentation: `docs: <short description>`
+
    For GitHub:
    ```bash
    ISSUE_URL=$(gh issue create $REPO_FLAG \
-     --title "Brainstorm: [topic]" \
+     --title "<type>: <short description>" \
      --label "$BRAINSTORM_LABEL" \
      --body "$ISSUE_BODY" 2>&1)
    ```
@@ -374,7 +380,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    For GitLab:
    ```bash
    ISSUE_URL=$(glab issue create \
-     --title "Brainstorm: [topic]" \
+     --title "<type>: <short description>" \
      --label "$BRAINSTORM_LABEL" \
      --description "$ISSUE_BODY" 2>&1)
    ```

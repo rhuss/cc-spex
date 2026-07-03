@@ -7,15 +7,15 @@ argument-hint: "[--watch]"
 
 ## Step 0: Resolve Plugin Root
 
-Extract the plugin root path from the `<plugin-root>` tag in the `<spex-context>` system reminder. All script references below use this path:
+Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
 
 ```bash
-DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
-FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
+FINISH_CONTEXT="$PLUGIN_ROOT/scripts/spex-finish-context.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 ```
 
-Replace `<PLUGIN_ROOT>` with the actual path from the system reminder.
+Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Ship Pipeline Guard
 
@@ -162,7 +162,7 @@ DETACH_ENABLED=false
 DETACH_RESULT=""
 DETACH_PR_BRANCH=""
 if [ -d ".specify/extensions/spex-detach" ]; then
-  DETACH_SCRIPT="<PLUGIN_ROOT>/scripts/bash/spex-detach.sh"
+  DETACH_SCRIPT="$PLUGIN_ROOT/scripts/bash/spex-detach.sh"
   if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ]; then
     DETACH_ENABLED=true
     DETACH_RESULT=$("$DETACH_SCRIPT" detach 2>&1) || {
@@ -208,7 +208,7 @@ fi
 Detect the current environment by running the context detection script:
 
 ```bash
-FINISH_CONTEXT="<PLUGIN_ROOT>/scripts/spex-finish-context.sh"
+FINISH_CONTEXT="$PLUGIN_ROOT/scripts/spex-finish-context.sh"
 CTX=$("$FINISH_CONTEXT")
 ```
 
@@ -436,7 +436,7 @@ fi
 Locate the state script and create the watch state:
 
 ```bash
-SHIP_STATE="<PLUGIN_ROOT>/scripts/spex-ship-state.sh"
+SHIP_STATE="$PLUGIN_ROOT/scripts/spex-ship-state.sh"
 
 # PR_NUMBER and PR_URL come from Option B1 (existing PR) or B2 (newly created PR)
 "$SHIP_STATE" watch-start \
