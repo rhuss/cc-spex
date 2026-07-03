@@ -35,11 +35,13 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 Verify implementation is complete by running tests AND validating spec compliance.
 
 **Key Steps:**
+- **Step 0: Closeout gate** (blocks on unresolved Critical/Important findings)
+- Step 0a: Smoke test reminder
 - Step 1: Run tests (existing behavior)
 - **Step 2: Code hygiene review** (mechanical defect detection)
 - **Step 3: Validate spec compliance** (spec-driven)
 - **Step 4: Check for spec drift** (spec-driven)
-- Blocks completion if tests, code hygiene, OR spec compliance fails
+- Blocks completion if closeout gate, tests, code hygiene, OR spec compliance fails
 
 ## The Iron Law
 
@@ -105,7 +107,37 @@ Use `speckit-spex-brainstorm` or `/speckit-specify` to create one first.
 
 ## The Process
 
-### 0. Smoke Test Reminder
+### 0. Closeout Gate
+
+Before any other verification, check whether unresolved Critical or Important findings remain from a deep review.
+
+Resolve the spec directory (reuse the same `check-prerequisites.sh` logic from the Spec Selection section above):
+
+```bash
+PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null) || true
+if [ -n "$PREREQS" ]; then
+  FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR' 2>/dev/null)
+fi
+```
+
+Run the closeout gate script:
+
+```bash
+CLOSEOUT_GATE="$PLUGIN_ROOT/scripts/spex-closeout-gate.sh"
+if [ -x "$CLOSEOUT_GATE" ] && [ -n "${FEATURE_DIR:-}" ]; then
+  GATE_OUTPUT=$("$CLOSEOUT_GATE" "$FEATURE_DIR" 2>&1) || {
+    echo "Closeout gate failed: $GATE_OUTPUT"
+    # STOP: Do not proceed. Unresolved findings must be fixed and review re-run.
+    exit 1
+  }
+fi
+```
+
+**If the gate fails** (exit code non-zero): STOP. Report the blocking findings from the gate output and do not proceed to any further verification steps. The developer must fix the findings and re-run the deep review.
+
+**If the gate passes** (exit code 0, or script not found, or no spec dir): proceed to the next step.
+
+### 0a. Smoke Test Reminder
 
 Before running verification, check if the spec has acceptance scenarios and whether a smoke test has been recorded:
 
