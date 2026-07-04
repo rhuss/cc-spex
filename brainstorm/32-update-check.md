@@ -44,6 +44,7 @@ Approach A: inline check in spex-init.sh. Keeps it simple with no extra files or
 6. **Warning output**: version-only message like `spex update available: 5.8.0 -> 5.9.0` with no harness-specific update instructions (users know their harness)
 7. **Silent cases**: equal version, ahead of latest release, running a `-dev` build, network unreachable
 8. **No `--update` recommendation**: the warning must NOT suggest `spex:init --update` since that updates the `specify` CLI, not the spex plugin itself. Plugin updates go through the harness plugin mechanism.
+9. **Breaking change notices**: when the latest release body contains lines starting with `BREAKING:`, extract and display them alongside the version warning. This uses the same releases API response (no extra call). For major version bumps (e.g., 5.x to 6.0), the release notes should include `BREAKING:` lines describing migration requirements. The VERSION file stays single-line; breaking info lives in GitHub release notes.
 
 ## Open Questions
 
