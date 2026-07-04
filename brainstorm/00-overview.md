@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-02
+Last updated: 2026-07-04
 
 ## Sessions
 
@@ -35,6 +35,9 @@ Last updated: 2026-07-02
 | 27 | 2026-06-30 | worktree-cwd-persistence | active | - | - |
 | 28 | 2026-07-02 | harness-agnostic-spex | active | - | - |
 | 29 | 2026-07-02 | replace-find-with-plugin-root | active | - | - |
+| 30 | 2026-07-03 | closeout-gate | active | - | [#9](https://github.com/rhuss/cc-spex/issues/9) |
+| 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
+| 32 | 2026-07-04 | update-check | active | - | [#12](https://github.com/rhuss/cc-spex/issues/12) |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -95,6 +98,12 @@ Last updated: 2026-07-02
 - Should spec-kit manage hook adapters or leave that to extensions? (from #28)
 - How much of existing multi-platform dispatch sections can capability system replace? (from #28)
 - Relationship to brainstorm #15 (OpenCode adaptation): subsumes or complements? (from #28)
+- Is the `source: "./subdir"` field in a cloned repo's marketplace.json supposed to be followed by Claude Code's installer? (from #31)
+- Does Claude Code have documentation on how nested plugin sources are resolved? (from #31)
+- Would symlinks in option A survive GitHub clone on all platforms (macOS, Linux, Windows)? (from #31)
+- Should the update check also run during `--refresh` and `--update` modes, or only on normal init? (from #32)
+- Should the repo URL for the API call be hardcoded or derived from git remote? (from #32)
 
 ## Parked Ideas
-(none)
+- Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
+  Reason: Needs upstream Claude Code documentation or bug confirmation before proceeding.
