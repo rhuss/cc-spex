@@ -167,10 +167,10 @@ The plugin's own development follows these workflow rules.
   integration test that installs the plugin from the local marketplace,
   checks all extensions, commands, hooks, and skills are present, then
   cleans up. Run `make install` after testing to restore the plugin.
-- **Release process**: Bump the version in `.claude-plugin/marketplace.json`,
-  run `make release` to validate, then `gh release create v<version>
-  --generate-notes`. After the GitHub release, update the version in the
-  `cc-rhuss-marketplace` repository to match.
+- **Release process**: Set the version in `VERSION` (remove the `-dev`
+  suffix), then run `make release`. This validates, updates
+  `marketplace.json`, commits, tags, pushes, creates the GitHub release,
+  and bumps `VERSION` to the next dev version automatically.
 - **Cross-reference maintenance**: When commands or skills are renamed,
   added, or removed, all cross-references in retained skills SHOULD
   be updated in the same change. `rg` verification helps catch stale

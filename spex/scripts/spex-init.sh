@@ -49,6 +49,73 @@ check_version() {
   return 1
 }
 
+# --- Check for spex plugin updates ---
+check_update() {
+  command -v curl &>/dev/null || return 0
+  command -v jq &>/dev/null || return 0
+
+  local script_dir
+  script_dir="$(dirname "$0")"
+  local version_file="$script_dir/../../VERSION"
+  [ -f "$version_file" ] || return 0
+
+  local local_version
+  local_version=$(cat "$version_file" 2>/dev/null | tr -d '[:space:]')
+  [ -n "$local_version" ] || return 0
+
+  # Skip check for dev versions
+  case "$local_version" in
+    *-dev*) return 0 ;;
+  esac
+
+  # Validate semver format
+  echo "$local_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || return 0
+
+  local api_response
+  api_response=$(curl -sf --connect-timeout 2 --max-time 3 \
+    "https://api.github.com/repos/rhuss/cc-spex/releases/latest" 2>/dev/null) || return 0
+
+  local latest_tag
+  latest_tag=$(echo "$api_response" | jq -r '.tag_name // empty' 2>/dev/null)
+  [ -n "$latest_tag" ] || return 0
+
+  # Strip v prefix
+  local latest_version="${latest_tag#v}"
+
+  # Validate remote version format
+  echo "$latest_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+' || return 0
+
+  # Compare versions: local < latest means update available
+  local l_major l_minor l_patch r_major r_minor r_patch
+  l_major=$(echo "$local_version" | cut -d. -f1)
+  l_minor=$(echo "$local_version" | cut -d. -f2)
+  l_patch=$(echo "$local_version" | cut -d. -f3)
+  r_major=$(echo "$latest_version" | cut -d. -f1)
+  r_minor=$(echo "$latest_version" | cut -d. -f2)
+  r_patch=$(echo "$latest_version" | cut -d. -f3)
+
+  local behind=false
+  if [ "$l_major" -lt "$r_major" ] 2>/dev/null; then
+    behind=true
+  elif [ "$l_major" -eq "$r_major" ] && [ "$l_minor" -lt "$r_minor" ] 2>/dev/null; then
+    behind=true
+  elif [ "$l_major" -eq "$r_major" ] && [ "$l_minor" -eq "$r_minor" ] && [ "$l_patch" -lt "$r_patch" ] 2>/dev/null; then
+    behind=true
+  fi
+
+  if [ "$behind" = true ]; then
+    echo "  spex update available: $local_version -> $latest_version"
+    # Extract breaking change lines from release body
+    local breaking
+    breaking=$(echo "$api_response" | jq -r '.body // empty' 2>/dev/null | grep -i '^BREAKING:' || true)
+    if [ -n "$breaking" ]; then
+      echo "$breaking" | while IFS= read -r line; do
+        echo "  $line"
+      done
+    fi
+  fi
+}
+
 # --- Fast path: single check for everything ---
 check_ready() {
   command -v specify &>/dev/null || return 1
@@ -444,6 +511,7 @@ do_init() {
     install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
+    check_update 2>/dev/null || true
     echo ""
     echo "READY"
   else
@@ -468,6 +536,7 @@ do_refresh() {
   fix_constitution
   install_extensions
   install_agent_adapter "$(detect_agent)"
+  check_update 2>/dev/null || true
 
   echo ""
   echo "RESTART_REQUIRED"
@@ -535,6 +604,7 @@ case "${1:-}" in
       install_extensions >/dev/null 2>&1 || true
       configure_statusline 2>/dev/null || true
       configure_gitignore 2>/dev/null || true
+      check_update 2>/dev/null || true
       echo "READY"
       exit 0
     fi

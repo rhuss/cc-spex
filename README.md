@@ -1,6 +1,6 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-5.3.0-blue)
+![Version](https://img.shields.io/badge/version-5.9.0-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -512,15 +512,28 @@ All `/speckit-*` commands remain unchanged.
 make validate          # Validate plugin and marketplace schemas
 make test-install      # Integration test: install from local marketplace
 make test-install-remote  # Integration test: install from GitHub marketplace
-make release           # Pre-release checks (validate + test-install), then prints the release command
+make release           # Full release: validate, update marketplace.json, tag, push, bump to dev
 ```
 
-The release process:
+The release process is fully automated via `make release`:
 
-1. Update the version in `.claude-plugin/marketplace.json`
-2. Run `make release` to validate and run the full integration test
-3. If all checks pass, run the printed `gh release create` command
-4. Update the version in `cc-rhuss-marketplace` to match
+1. Reads the version from `VERSION` (must not be a `-dev` version)
+2. Updates `.claude-plugin/marketplace.json` with the version
+3. Commits, creates a git tag `vX.Y.Z`, and pushes
+4. Creates a GitHub release with auto-generated notes
+5. Bumps `VERSION` to the next dev version (`X.Y.{Z+1}-dev`), commits, and pushes
+
+The `VERSION` file at the repository root is the single source of truth for the project version. Between releases, it contains a `-dev` suffix (e.g., `5.9.1-dev`).
+
+### Update Notifications
+
+When `/spex:init` runs, it checks the GitHub releases API for the latest version and warns if you're behind:
+
+```
+spex update available: 5.8.0 -> 5.9.0
+```
+
+The check is silent when versions match, when running a development build, or when the network is unavailable.
 
 ## Acknowledgements
 

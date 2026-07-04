@@ -57,13 +57,40 @@ test-install-remote:
 	@./tests/test_marketplace_install.sh
 
 release: validate test-install
-	@VERSION=$$(jq -r '.plugins[] | select(.name == "spex") | .version' .claude-plugin/marketplace.json); \
+	@VERSION=$$(cat VERSION 2>/dev/null | tr -d '[:space:]'); \
+	if [ -z "$$VERSION" ]; then \
+		echo "Error: VERSION file not found or empty"; exit 1; \
+	fi; \
+	case "$$VERSION" in \
+		*-dev*) echo "Error: Cannot release a dev version ($$VERSION). Remove -dev suffix from VERSION first."; exit 1;; \
+	esac; \
 	if git tag -l "v$$VERSION" | grep -q .; then \
 		echo "Error: Tag v$$VERSION already exists"; exit 1; \
 	fi; \
+	echo "Releasing v$$VERSION..."; \
 	echo ""; \
-	echo "All checks passed. Ready to release v$$VERSION."; \
-	echo "Run:  gh release create v$$VERSION --generate-notes"
+	echo "Updating marketplace.json version to $$VERSION..."; \
+	tmp=$$(mktemp); \
+	jq --arg v "$$VERSION" '(.plugins[] | select(.name == "spex")).version = $$v' .claude-plugin/marketplace.json > "$$tmp" && mv "$$tmp" .claude-plugin/marketplace.json; \
+	git add VERSION .claude-plugin/marketplace.json; \
+	git commit -m "chore: bump version to $$VERSION"; \
+	echo "Creating tag v$$VERSION..."; \
+	git tag "v$$VERSION"; \
+	echo "Pushing release commit and tag..."; \
+	git push && git push origin "v$$VERSION"; \
+	echo "Creating GitHub release..."; \
+	gh release create "v$$VERSION" --generate-notes; \
+	echo ""; \
+	PATCH=$$(echo "$$VERSION" | cut -d. -f3); \
+	NEXT_PATCH=$$((PATCH + 1)); \
+	NEXT_VERSION=$$(echo "$$VERSION" | cut -d. -f1,2).$$NEXT_PATCH-dev; \
+	echo "Bumping VERSION to $$NEXT_VERSION..."; \
+	echo "$$NEXT_VERSION" > VERSION; \
+	git add VERSION; \
+	git commit -m "chore: bump version to $$NEXT_VERSION"; \
+	git push; \
+	echo ""; \
+	echo "Release v$$VERSION complete. VERSION bumped to $$NEXT_VERSION."
 
 check-upstream:
 	cd spex && ./scripts/check-upstream-changes.sh
@@ -78,5 +105,5 @@ help:
 	@echo "  test-hook      - Test the context hook"
 	@echo "  test-install   - Integration test: install from local marketplace"
 	@echo "  test-install-remote - Integration test: install from GitHub marketplace"
-	@echo "  release        - Pre-release checks (validate + test-install)"
+	@echo "  release        - Full release: validate, update marketplace.json, tag, push, bump to dev"
 	@echo "  check-upstream - Check for upstream superpowers changes"

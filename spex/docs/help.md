@@ -156,6 +156,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 spex COMMANDS (helpers and configuration)
 
   /spex:init                  Initialize spec-kit + configure extensions and permissions
+                                Checks for plugin updates on each run (silent on failure)
                                 --refresh: update templates without reconfiguring
                                 --update: upgrade specify CLI and refresh
                                 --clear: reset status line state
