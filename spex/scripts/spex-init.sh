@@ -56,19 +56,14 @@ check_update() {
 
   local script_dir
   script_dir="$(dirname "$0")"
-  local version_file="$script_dir/../VERSION"
-  [ -f "$version_file" ] || return 0
+  local plugin_json="$script_dir/../.claude-plugin/plugin.json"
+  [ -f "$plugin_json" ] || return 0
 
   local local_version
-  local_version=$(cat "$version_file" 2>/dev/null | tr -d '[:space:]')
+  local_version=$(jq -r '.version // empty' "$plugin_json" 2>/dev/null)
   [ -n "$local_version" ] || return 0
 
-  # Skip check for dev versions
-  case "$local_version" in
-    *-dev*) return 0 ;;
-  esac
-
-  # Validate semver format
+  # Validate semver format (no -dev check needed: plugin.json always has release versions)
   echo "$local_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || return 0
 
   local api_response
