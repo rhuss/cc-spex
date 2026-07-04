@@ -69,10 +69,11 @@ release: validate test-install
 	fi; \
 	echo "Releasing v$$VERSION..."; \
 	echo ""; \
-	echo "Updating marketplace.json version to $$VERSION..."; \
+	echo "Updating marketplace.json and plugin VERSION to $$VERSION..."; \
 	tmp=$$(mktemp); \
 	jq --arg v "$$VERSION" '(.plugins[] | select(.name == "spex")).version = $$v' .claude-plugin/marketplace.json > "$$tmp" && mv "$$tmp" .claude-plugin/marketplace.json; \
-	git add VERSION .claude-plugin/marketplace.json; \
+	echo "$$VERSION" > spex/VERSION; \
+	git add VERSION spex/VERSION .claude-plugin/marketplace.json; \
 	git commit -m "chore: bump version to $$VERSION"; \
 	echo "Creating tag v$$VERSION..."; \
 	git tag "v$$VERSION"; \
@@ -86,7 +87,8 @@ release: validate test-install
 	NEXT_VERSION=$$(echo "$$VERSION" | cut -d. -f1,2).$$NEXT_PATCH-dev; \
 	echo "Bumping VERSION to $$NEXT_VERSION..."; \
 	echo "$$NEXT_VERSION" > VERSION; \
-	git add VERSION; \
+	echo "$$NEXT_VERSION" > spex/VERSION; \
+	git add VERSION spex/VERSION; \
 	git commit -m "chore: bump version to $$NEXT_VERSION"; \
 	git push; \
 	echo ""; \

@@ -56,7 +56,7 @@ check_update() {
 
   local script_dir
   script_dir="$(dirname "$0")"
-  local version_file="$script_dir/../../VERSION"
+  local version_file="$script_dir/../VERSION"
   [ -f "$version_file" ] || return 0
 
   local local_version
