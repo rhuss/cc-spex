@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-04
+Last updated: 2026-07-06
 
 ## Sessions
 
@@ -38,6 +38,7 @@ Last updated: 2026-07-04
 | 30 | 2026-07-03 | closeout-gate | active | - | [#9](https://github.com/rhuss/cc-spex/issues/9) |
 | 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
 | 32 | 2026-07-04 | update-check | active | - | [#12](https://github.com/rhuss/cc-spex/issues/12) |
+| 33 | 2026-07-06 | extension-local-scripts | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -103,6 +104,8 @@ Last updated: 2026-07-04
 - Would symlinks in option A survive GitHub clone on all platforms (macOS, Linux, Windows)? (from #31)
 - Should the update check also run during `--refresh` and `--update` modes, or only on normal init? (from #32)
 - Should the repo URL for the API call be hardcoded or derived from git remote? (from #32)
+- Should spex-init.sh (hooks, adapters) also be refactored into the extension model? (from #33)
+- Build-time sync: Makefile target only, or also git pre-commit hook? (from #33)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
