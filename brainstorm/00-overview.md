@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 ## Sessions
 
@@ -38,7 +38,8 @@ Last updated: 2026-07-06
 | 30 | 2026-07-03 | closeout-gate | active | - | [#9](https://github.com/rhuss/cc-spex/issues/9) |
 | 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
 | 32 | 2026-07-04 | update-check | active | - | [#12](https://github.com/rhuss/cc-spex/issues/12) |
-| 33 | 2026-07-06 | extension-local-scripts | active | - | - |
+| 33 | 2026-07-06 | extension-local-scripts | spec-created | 036 | [#13](https://github.com/rhuss/cc-spex/pull/13) |
+| 34 | 2026-07-07 | workflow-based-setup | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -106,6 +107,11 @@ Last updated: 2026-07-06
 - Should the repo URL for the API call be hardcoded or derived from git remote? (from #32)
 - Should spex-init.sh (hooks, adapters) also be refactored into the extension model? (from #33)
 - Build-time sync: Makefile target only, or also git pre-commit hook? (from #33)
+- Can workflow `prompt` step output be used in subsequent `if`/`switch` conditions? (from #34)
+- Does `specify bundle install` handle extension dependency ordering? (from #34)
+- Minimum spec-kit version required for workflow + bundle support? (from #34)
+- Should the setup workflow be idempotent (safe to re-run)? (from #34)
+- Neutral vocabulary for subagent dispatch (ship/teams/deep-review CC coupling) (from #34)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
