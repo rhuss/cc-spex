@@ -57,7 +57,7 @@ Current scripts in `spex/scripts/` and which extensions need them:
 | spex-closeout-gate.sh | | x | | | |
 | spex-triage-state.sh | | | x | | |
 | sanitize-gh-json.py | | | x | | |
-| bash/spex-detach.sh | x | | | | x |
+| spex-detach.sh | x | | | | x |
 
 ## Implementation Plan
 

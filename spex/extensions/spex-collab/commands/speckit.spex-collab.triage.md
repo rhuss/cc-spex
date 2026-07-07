@@ -11,16 +11,12 @@ Triage all review comments on a PR: autonomously handle bot comments (assess, ap
 
 If `.specify/.spex-state` exists with `mode: "ship"`, return immediately. Triage is an interactive collab workflow.
 
-## Step 0: Resolve Plugin Root
-
-Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
+## Script References
 
 ```bash
-TRIAGE_STATE="$PLUGIN_ROOT/scripts/spex-triage-state.sh"
-SANITIZE_JSON="$PLUGIN_ROOT/scripts/sanitize-gh-json.py"
+TRIAGE_STATE=".specify/extensions/spex-collab/scripts/spex-triage-state.sh"
+SANITIZE_JSON=".specify/extensions/spex-collab/scripts/sanitize-gh-json.py"
 ```
-
-Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Step 1: Resolve PR Context
 
@@ -65,7 +61,7 @@ Fetch ALL review threads with their comments using GraphQL. PRs with many review
 
 You MUST use a pagination loop. A single fetch is NOT sufficient -- a PR with 150 threads returns only the first 100, silently dropping the rest.
 
-Run this entire block in one Bash call. Replace `$SANITIZE_JSON` with the literal path from Step 0:
+Run this entire block in one Bash call. Replace `$SANITIZE_JSON` with the literal path from the Script References section:
 
 ```bash
 ALL_THREADS="[]"

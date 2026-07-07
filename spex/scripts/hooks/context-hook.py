@@ -147,7 +147,6 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 </skill-enforcement>"""
 
     ctx = f"""<spex-context>
-<plugin-root>{plugin_root}</plugin-root>
 <project-dir>{cwd}</project-dir>
 <session-id>{session_id}</session-id>
 <spex-configured>{str(spex_configured).lower()}</spex-configured>

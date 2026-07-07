@@ -133,21 +133,27 @@ inline bash snippets in skill markdown files.
 
 These constraints govern the structure of the spex plugin codebase.
 
-- **Plugin root detection**: Commands extract `$PLUGIN_ROOT` from the
-  `<spex-context>` system reminder injected by the `UserPromptSubmit`
-  hook. Commands MUST include a "Step 0: Resolve Plugin Root" section.
+- **Extension-local scripts**: Commands reference helper scripts via
+  `.specify/extensions/<own-ext-id>/scripts/<script>` relative to the
+  project root. Scripts are installed alongside commands by
+  `specify extension add`. No `$PLUGIN_ROOT` extraction or "Step 0"
+  preamble is needed.
 - **Hook filtering**: The context hook (`context-hook.py`) MUST only
   fire for `/spex:` prefixed commands. Non-spex commands MUST NOT
   receive spex context injection.
 - **File organization**: Extension bundles live in
-  `spex/extensions/<ext-id>/` with manifests and commands. Scripts
-  live in `spex/scripts/`. Hooks live in `spex/scripts/hooks/`.
+  `spex/extensions/<ext-id>/` with manifests, commands, and scripts.
+  Canonical scripts live in `spex/scripts/` and are synced to
+  extension directories via `make sync-scripts`. Hooks live in
+  `spex/scripts/hooks/`.
 - **Extension installation**: The `spex-init.sh` script installs
   all bundled extensions from `spex/extensions/` using
   `specify extension add <path> --dev`.
 - **No compiled artifacts**: This plugin consists entirely of Markdown
-  and Bash. There are no build steps, no compiled binaries, no
-  package dependencies beyond `jq` and the `specify` CLI.
+  and Bash. There are no compiled binaries or package dependencies
+  beyond `jq` and the `specify` CLI. The only build step is
+  `make sync-scripts`, which copies canonical scripts to extension
+  directories.
 
 ## Development Workflow
 

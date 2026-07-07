@@ -123,7 +123,7 @@ fi
 Run the closeout gate script:
 
 ```bash
-CLOSEOUT_GATE="$PLUGIN_ROOT/scripts/spex-closeout-gate.sh"
+CLOSEOUT_GATE=".specify/extensions/spex-gates/scripts/spex-closeout-gate.sh"
 if [ -x "$CLOSEOUT_GATE" ] && [ -n "${FEATURE_DIR:-}" ]; then
   GATE_OUTPUT=$("$CLOSEOUT_GATE" "$FEATURE_DIR" 2>&1) || {
     echo "Closeout gate failed: $GATE_OUTPUT"
