@@ -6,15 +6,11 @@ description: "Manage phase boundaries, PR creation, and REVIEWERS.md updates bet
 
 Coordinates the boundary between implementation phases: runs code review, updates REVIEWERS.md with code-specific guidance, offers PR creation, and manages phase state for cross-session continuity.
 
-## Step 0: Resolve Plugin Root
-
-Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
+## Script References
 
 ```bash
-FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
+FLOW_STATE=".specify/extensions/spex-collab/scripts/spex-flow-state.sh"
 ```
-
-Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
 
 ## Ship Pipeline Guard
 

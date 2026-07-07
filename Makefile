@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -56,7 +56,7 @@ test-install:
 test-install-remote:
 	@./tests/test_marketplace_install.sh
 
-release: validate test-install
+release: validate sync-scripts-check test-install
 	@VERSION=$$(cat VERSION 2>/dev/null | tr -d '[:space:]'); \
 	if [ -z "$$VERSION" ]; then \
 		echo "Error: VERSION file not found or empty"; exit 1; \
@@ -96,18 +96,115 @@ release: validate test-install
 	echo ""; \
 	echo "Release v$$VERSION complete. VERSION bumped to $$NEXT_VERSION."
 
+# Script inventory: which canonical scripts (in spex/scripts/) belong to which extensions
+SCRIPTS_spex := spex-flow-state.sh spex-ship-state.sh spex-ship-statusline.sh spex-finish-context.sh spex-worktree-cwd.sh spex-detach.sh
+SCRIPTS_spex_gates := spex-flow-state.sh spex-closeout-gate.sh
+SCRIPTS_spex_collab := spex-flow-state.sh spex-triage-state.sh sanitize-gh-json.py
+SCRIPTS_spex_deep_review := spex-flow-state.sh
+SCRIPTS_spex_detach := spex-detach.sh
+
+EXTENSIONS := spex spex-gates spex-collab spex-deep-review spex-detach
+
+sync-scripts:
+	@echo "Syncing canonical scripts to extension directories..."
+	@for ext in $(EXTENSIONS); do \
+		scripts=$$($(MAKE) -s _print-scripts-$$ext) || \
+			{ echo "Error: no script list target for extension '$$ext'"; exit 1; }; \
+		if [ -z "$$scripts" ]; then \
+			echo "Error: empty script list for extension '$$ext'"; exit 1; \
+		fi; \
+		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null); do \
+			relpath=$${actual#spex/extensions/$$ext/scripts/}; \
+			found=false; \
+			for script in $$scripts; do \
+				if [ "$$script" = "$$relpath" ]; then found=true; break; fi; \
+			done; \
+			if [ "$$found" = false ]; then \
+				echo "Pruning obsolete: $$actual"; \
+				rm "$$actual"; \
+			fi; \
+		done; \
+		for script in $$scripts; do \
+			dir=$$(dirname "spex/extensions/$$ext/scripts/$$script"); \
+			mkdir -p "$$dir"; \
+			cp "spex/scripts/$$script" "spex/extensions/$$ext/scripts/$$script" || \
+				{ echo "Error: failed to copy $$script to extension '$$ext'"; exit 1; }; \
+			case "$$script" in *.sh) chmod +x "spex/extensions/$$ext/scripts/$$script";; esac; \
+		done; \
+	done
+	@echo "Script sync complete."
+
+# Helper targets to print script lists per extension (used by sync-scripts)
+_print-scripts-spex:
+	@echo $(SCRIPTS_spex)
+_print-scripts-spex-gates:
+	@echo $(SCRIPTS_spex_gates)
+_print-scripts-spex-collab:
+	@echo $(SCRIPTS_spex_collab)
+_print-scripts-spex-deep-review:
+	@echo $(SCRIPTS_spex_deep_review)
+_print-scripts-spex-detach:
+	@echo $(SCRIPTS_spex_detach)
+
+sync-scripts-check:
+	@echo "Checking extension scripts against canonical sources..."
+	@fail=0; \
+	for ext in $(EXTENSIONS); do \
+		scripts=$$($(MAKE) -s _print-scripts-$$ext) || \
+			{ echo "Error: no script list target for extension '$$ext'"; exit 1; }; \
+		if [ -z "$$scripts" ]; then \
+			echo "Error: empty script list for extension '$$ext'"; exit 1; \
+		fi; \
+		for script in $$scripts; do \
+			canonical="spex/scripts/$$script"; \
+			copy="spex/extensions/$$ext/scripts/$$script"; \
+			if [ ! -f "$$canonical" ]; then \
+				echo "BROKEN: canonical source missing: $$canonical (referenced in inventory)"; \
+				fail=1; \
+				continue; \
+			fi; \
+			if [ ! -f "$$copy" ]; then \
+				echo "MISSING: $$copy (source: $$canonical)"; \
+				fail=1; \
+			elif ! diff -q "$$canonical" "$$copy" > /dev/null 2>&1; then \
+				echo "STALE: $$copy differs from $$canonical"; \
+				fail=1; \
+			fi; \
+		done; \
+		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null); do \
+			relpath=$${actual#spex/extensions/$$ext/scripts/}; \
+			found=false; \
+			for script in $$scripts; do \
+				if [ "$$script" = "$$relpath" ]; then found=true; break; fi; \
+			done; \
+			if [ "$$found" = false ]; then \
+				echo "UNEXPECTED: $$actual (not in inventory for extension '$$ext')"; \
+				fail=1; \
+			fi; \
+		done; \
+	done; \
+	if [ $$fail -eq 1 ]; then \
+		echo ""; \
+		echo "Extension scripts are out of sync with canonical sources."; \
+		echo "Run 'make sync-scripts' to fix."; \
+		exit 1; \
+	fi; \
+	echo "All extension scripts are in sync."
+
 check-upstream:
 	cd spex && ./scripts/check-upstream-changes.sh
 
 help:
 	@echo "Available targets:"
-	@echo "  validate       - Validate plugin manifests"
-	@echo "  install        - Install plugin (adds marketplace, installs/updates plugin)"
-	@echo "  uninstall      - Remove plugin and marketplace"
-	@echo "  reinstall      - Full uninstall and reinstall"
-	@echo "  migrate        - Remove old sdd plugin/marketplace (run automatically by install)"
-	@echo "  test-hook      - Test the context hook"
-	@echo "  test-install   - Integration test: install from local marketplace"
+	@echo "  validate            - Validate plugin manifests"
+	@echo "  install             - Install plugin (adds marketplace, installs/updates plugin)"
+	@echo "  uninstall           - Remove plugin and marketplace"
+	@echo "  reinstall           - Full uninstall and reinstall"
+	@echo "  migrate             - Remove old sdd plugin/marketplace (run automatically by install)"
+	@echo "  test-hook           - Test the context hook"
+	@echo "  test-install        - Integration test: install from local marketplace"
 	@echo "  test-install-remote - Integration test: install from GitHub marketplace"
-	@echo "  release        - Full release: validate, update marketplace.json, tag, push, bump to dev"
-	@echo "  check-upstream - Check for upstream superpowers changes"
+	@echo "  sync-scripts        - Copy canonical scripts from spex/scripts/ to extension directories"
+	@echo "  sync-scripts-check  - Verify extension scripts match canonical sources (used by release)"
+	@echo "  release             - Full release: validate, sync-check, test, tag, push, bump to dev"
+	@echo "  check-upstream      - Check for upstream superpowers changes"

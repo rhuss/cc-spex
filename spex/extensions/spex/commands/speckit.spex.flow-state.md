@@ -7,22 +7,12 @@ argument-hint: "[running <phase>|clarified|implemented|gate <name>]"
 
 This command manages the `.specify/.spex-state` file with `"mode": "flow"` to enable the status line during step-by-step SDD workflow (as opposed to the autonomous ship pipeline).
 
-## Step 0: Resolve Plugin Root
-
-Read the `<plugin-root>` tag from the `<spex-context>` system reminder and set it as a bash variable. All script references below use `$PLUGIN_ROOT`:
-
-```bash
-FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
-```
-
-Set `PLUGIN_ROOT` from the `<plugin-root>` tag in the system reminder before running these commands.
-
 ## Execution
 
 Run the `spex-flow-state.sh` script, passing through all arguments:
 
 ```bash
-FLOW_STATE="$PLUGIN_ROOT/scripts/spex-flow-state.sh"
+FLOW_STATE=".specify/extensions/spex/scripts/spex-flow-state.sh"
 [ -x "$FLOW_STATE" ] || { echo "ERROR: spex-flow-state.sh not found"; exit 1; }
 "$FLOW_STATE" "$@"
 ```
