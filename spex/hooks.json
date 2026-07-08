@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/context-hook.py"
+            "command": "sh ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/python-resolve.sh ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/context-hook.py"
           }
         ]
       }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool-gate.py"
+            "command": "sh ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/python-resolve.sh ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pretool-gate.py"
           }
         ]
       }
