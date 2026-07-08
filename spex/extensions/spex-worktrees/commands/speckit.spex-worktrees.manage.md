@@ -11,6 +11,7 @@ argument-hint: "[list|cleanup|finish]"
 This command manages git worktrees to isolate feature development. It supports four actions:
 
 - **create**: Called by the `after_specify` hook after `speckit-specify` completes. Creates a worktree, restores `main`, and prints switch instructions.
+- **ensure**: Called by the `before_implement` hook. Verifies worktree isolation exists. If already in a worktree, proceeds silently. If not, creates one (same as `create`).
 - **list**: Shows all active feature worktrees with path, branch, and feature name.
 - **finish**: Merges the current worktree's branch into the default branch and removes the worktree. Use when implementation is complete.
 - **cleanup**: Detects worktrees whose branches are merged and offers removal.
@@ -20,6 +21,7 @@ This command manages git worktrees to isolate feature development. It supports f
 Determine the action from the argument:
 
 - If invoked with argument `create` (from the `after_specify` hook): the action is **create**. Execute immediately, no confirmation needed.
+- If invoked with argument `ensure` (from the `before_implement` hook): the action is **ensure**. See Action: Ensure below.
 - If invoked with argument `finish`: the action is **finish**.
 - If invoked with argument `cleanup`: the action is **cleanup**.
 - Otherwise (no args, `list`, or invoked directly): the action is **list**.
@@ -307,6 +309,60 @@ Where `<display-path>` is `.claude/worktrees/<branch>` for inside-project worktr
 Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output.
 
 **Ship pipeline note:** When running inside a `speckit-spex-ship` pipeline, ship will automatically `cd` into the worktree and continue the pipeline there. No manual session restart needed.
+
+## Action: Ensure
+
+Called by the `before_implement` hook to verify worktree isolation before implementation starts. This closes the gap in multi-session workflows where `specify` and `implement` run in different conversations.
+
+### Step 1: Check if Already in a Worktree
+
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel)
+GIT_DIR=$(git rev-parse --git-dir)
+
+if [ "$GIT_DIR" != "$REPO_ROOT/.git" ] && [ "$GIT_DIR" != ".git" ]; then
+  # Already in a worktree — isolation exists, nothing to do
+  exit 0
+fi
+```
+
+If already in a worktree, stop here (success). Implementation can proceed.
+
+### Step 2: Check if on a Feature Branch
+
+```bash
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+```
+
+If the branch does NOT match the `NNN-feature-name` pattern, skip silently. This is not a feature branch, so worktree isolation does not apply.
+
+### Step 3: Check if a Worktree Already Exists for This Branch
+
+```bash
+WORKTREE_CONFIG=".specify/extensions/spex-worktrees/worktree-config.yml"
+BASE_PATH=$(yq -r '.worktrees.base_path // ".claude/worktrees"' "$WORKTREE_CONFIG" 2>/dev/null || echo ".claude/worktrees")
+WORKTREE_PATH="$REPO_ROOT/$BASE_PATH/$BRANCH_NAME"
+
+if git worktree list --porcelain | grep -q "worktree.*$BRANCH_NAME"; then
+  echo "WARNING: A worktree for branch $BRANCH_NAME already exists but you are not in it."
+  echo "Switch to the worktree before implementing:"
+  echo "  cd $WORKTREE_PATH && claude"
+  # Stop here. Do not create a duplicate worktree.
+fi
+```
+
+### Step 4: Offer to Create a Worktree
+
+Present a single-select question to the user:
+- header: "Worktree"
+- question: "Implementation is about to start without worktree isolation. Create a worktree now?"
+- options:
+  - "Create worktree (Recommended)": "Isolate implementation in a git worktree"
+  - "Continue without worktree": "Implement directly on the current branch (no isolation)"
+
+If the user selects "Create worktree", execute the full **Action: Create** flow (Steps 1-9 above).
+
+If the user selects "Continue without worktree", proceed without isolation.
 
 ## Action: List
 

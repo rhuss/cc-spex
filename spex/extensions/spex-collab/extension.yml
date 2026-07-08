@@ -48,9 +48,8 @@ hooks:
     description: "Generate REVIEWERS.md after task generation"
   before_implement:
     command: speckit.spex-collab.phase-split
-    optional: true
-    prompt: "Review PR split for implementation phases?"
-    description: "Present phase split proposal before implementation"
+    optional: false
+    description: "Present phase split proposal and per-phase implementation instructions"
 
 tags:
   - "spex"

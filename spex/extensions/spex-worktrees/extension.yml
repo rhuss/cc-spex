@@ -26,6 +26,11 @@ hooks:
     args: "create"
     optional: false
     description: "Create git worktree after specification"
+  before_implement:
+    command: speckit.spex-worktrees.manage
+    args: "ensure"
+    optional: false
+    description: "Verify worktree isolation before implementation"
 
 tags:
   - "spex"

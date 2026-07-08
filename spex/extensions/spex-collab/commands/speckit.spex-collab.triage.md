@@ -184,7 +184,12 @@ Parse the GraphQL response and partition threads into bot and human categories.
 For each thread in `reviewThreads.nodes`:
 
 1. **Skip resolved threads**: If `isResolved` is true, skip entirely.
-2. **Check state**: For the first comment's `databaseId`, call `"$TRIAGE_STATE" get "$PR_NUM" "$COMMENT_ID"`. If already handled, check for re-evaluation (see Step 10 for loop mode). For non-loop first invocations, skip handled comments.
+2. **Check state by exact comment ID**: For the first comment's `databaseId`, run:
+   ```bash
+   STATE_RESULT=$("$TRIAGE_STATE" get "$PR_NUM" "$COMMENT_DB_ID" 2>/dev/null || echo "")
+   ```
+   **Hard rule**: The ONLY way to determine if a comment was already handled is by checking the state file for the specific `databaseId`. Do NOT skip comments based on bot author name, file path, or similarity to previously handled comments. Bots re-post comments with new IDs after PR updates, so the old IDs are no longer valid. If `STATE_RESULT` is empty or "not_found", the comment is NEW and must be processed.
+   For non-empty state results: if already handled, check for re-evaluation (see Step 10 for loop mode). For non-loop first invocations, skip handled comments.
 3. **Determine author type**: Check the first comment's author. The primary indicator is the GraphQL `... on Bot { id }` fragment: if the author has a `Bot` type in the response, classify as bot. As a secondary fallback (for cases where the GraphQL type fragment is absent), check if the author login ends with `[bot]`. Classify as human only when neither indicator matches. The GraphQL type takes priority per FR-002.
 
 Create two lists:
@@ -352,9 +357,37 @@ After pushing triage fixes, check if GitHub Actions CI is passing. Triage fixes 
    **CI status**: passing | failing (<check-name>) | pending (timed out waiting)
    ```
 
+## Step 7c: Re-fetch Comment IDs After Push
+
+Some bots (notably `devin-ai-integration[bot]`) delete and re-post their review comments when a PR is updated (new commits or force-push). This means the `databaseId` values collected in Step 3 may now be stale (return 404 when replying).
+
+**Skip this step if**: no fixes were applied (nothing was pushed in Step 7).
+
+**Procedure**:
+
+1. Identify which bots in the processed set have `selfResolves=false` (from the bot profile in Step 5). These are the bots likely to re-post.
+
+2. If any such bots exist, re-fetch review threads using the same GraphQL query from Step 3a (full pagination).
+
+3. For each processed comment, match the old thread to the new thread by `path` and `line` (file path and line number). If a match is found and the `databaseId` has changed, update the comment ID mapping:
+
+```bash
+# For each processed comment, update ID if the thread was re-posted
+# OLD_ID -> NEW_ID mapping built by matching (path, line, author)
+```
+
+4. Use the updated IDs for all reply posting in Step 8. Log any ID changes:
+
+```
+Re-fetched comment IDs after push (bot re-post detected):
+- Comment <old_id> -> <new_id> (devin-ai-integration[bot], path/to/file.sh:42)
+```
+
+If a thread cannot be matched (path+line+author combination not found in the re-fetched data), skip replying to that thread and report it in the Step 13 summary as "reply skipped (thread not found after push)".
+
 ## Step 8: Post Replies
 
-For each bot comment that was processed, post a reply via the REST API:
+For each bot comment that was processed, post a reply via the REST API (using the updated IDs from Step 7c if applicable):
 
 ```bash
 gh api "repos/$OWNER/$REPO/pulls/$PR_NUM/comments/$COMMENT_DB_ID/replies" \
@@ -708,7 +741,7 @@ At the end of the triage pass, report a summary:
 **Bot totals**:
 - Accepted: N (fixes applied)
 - Rejected: N
-- Deferred: N (out of scope, tracked for brainstorm)
+- Deferred: N (out of scope, pending brainstorm capture in Step 15)
 - Skipped: N (deleted files, conflicts, summary comments)
 - Already handled: N
 
@@ -771,10 +804,12 @@ Recurring patterns from N review comments:
 
 ## Step 15: Capture Deferred and Rejected Findings to Idea Inbox
 
+**This step is MANDATORY when deferred or rejected count > 0.** The Step 13 summary references this step ("pending brainstorm capture in Step 15"). Skipping it makes the summary a lie. You MUST NOT end the triage pass without executing this step when there are items to capture.
+
 After principle extraction, check if any bot comments were deferred or rejected during this triage pass. Both categories can surface real improvement opportunities worth tracking:
 
 - **Deferred**: Valid suggestions that are out of scope for this PR
-- **Rejected**: Suggestions we disagreed with, but that may reveal a pattern worth addressing differently (e.g., the bot keeps flagging error handling because our approach is unconventional -- worth documenting or reconsidering)
+- **Rejected**: Suggestions we disagreed with, but that may reveal a pattern worth addressing differently (e.g., the bot keeps flagging error handling because our approach is unconventional, worth documenting or reconsidering)
 
 **Skip this step if**: no comments were deferred AND no comments were rejected.
 

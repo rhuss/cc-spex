@@ -129,17 +129,6 @@ In autonomous mode: skip the stale smoke test (proceed without re-running).
 
 **If smoke test never run:** Invoke `/speckit-spex-smoke-test` interactively.
 
-After the smoke test completes, record the result with the current commit hash:
-```bash
-CURRENT_HEAD=$(git rev-parse HEAD)
-"$SHIP_STATE_SCRIPT" smoke-test-record \
-  --completed true \
-  --scenarios "$SCENARIO_COUNT" \
-  --total "$TOTAL_COUNT" \
-  --skipped "$SKIPPED_COUNT" \
-  --commit-hash "$CURRENT_HEAD"
-```
-
 If the smoke test fails (any scenario does not pass), STOP. The user must fix issues and re-run `/speckit-spex-finish`.
 
 ## Phase 2: Context Detection

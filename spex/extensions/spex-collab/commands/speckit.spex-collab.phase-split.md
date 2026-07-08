@@ -144,6 +144,32 @@ Output confirmation:
 ```
 Phase plan saved to .specify/.spex-state
 [N] phases configured, targeting [base_branch] for PRs
-Implementation will pause after each phase for PR creation.
-Invoke `/speckit.spex-collab.phase-manager` after each phase to manage PRs.
 ```
+
+## Phase-by-Phase Implementation Instructions
+
+After displaying the report, output explicit per-phase execution instructions. These instructions drive the implementation loop, replacing a single `/speckit-implement` invocation with one invocation per phase:
+
+```
+## Implementation Plan
+
+Do NOT run `/speckit-implement` without a phase filter. Instead, implement one phase at a time:
+```
+
+For each phase in the confirmed plan, output:
+
+```
+### Phase [N]: [Phase Name]
+Tasks: [task IDs]
+Run: /speckit-implement "Implement ONLY tasks [task IDs] (Phase [N]: [Phase Name]). Stop after these tasks are complete."
+Then: /speckit-spex-collab-phase-manager
+```
+
+After listing all phases, output:
+
+```
+Start with Phase 1. After each `/speckit-implement` + `/speckit-spex-collab-phase-manager` cycle,
+proceed to the next phase. The phase-manager will handle code review, REVIEWERS.md updates, and PR creation.
+```
+
+**IMPORTANT**: After outputting these instructions, do NOT invoke `/speckit-implement` automatically. The instructions are for the user (or the calling workflow) to follow manually, one phase at a time. This ensures the implementation pauses at each phase boundary for review and PR management.

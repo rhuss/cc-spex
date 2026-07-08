@@ -25,8 +25,15 @@ is_ship() {
   [ -f "$STATE_FILE" ] && jq -e '.mode == "ship"' "$STATE_FILE" >/dev/null 2>&1
 }
 
+ensure_flow() {
+  if [ ! -f "$STATE_FILE" ]; then
+    do_create
+  fi
+}
+
 update_state() {
   local expr="$1"
+  ensure_flow
   if is_flow; then
     local tmp
     tmp=$(mktemp)
@@ -126,13 +133,12 @@ do_gate() {
     triage-impl) field="triage_impl_passed" ;;
     *) exit 0 ;;
   esac
+  ensure_flow
   if is_flow; then
     update_state "$(printf '."%s" = true | .running = ""' "$field")"
     echo "$gate gate: updated"
   elif [ -f "$STATE_FILE" ]; then
     echo "$gate gate: skipped (mode=$(jq -r '.mode // "unknown"' "$STATE_FILE" 2>/dev/null))" >&2
-  else
-    echo "$gate gate: skipped (no state file at $STATE_FILE, cwd=$(pwd))" >&2
   fi
 }
 

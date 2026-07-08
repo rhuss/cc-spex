@@ -163,7 +163,7 @@ If a scenario requires a running app and no app is currently running:
 4. **Python** with `manage.py`, `app.py`, or `main.py`: appropriate python command
 5. **Cargo.toml**: `cargo run`
 
-If the app starts successfully, keep it running for subsequent scenarios. Immediately capture the process ID (`APP_PID=$!`) for cleanup in Step 5.
+If the app starts successfully, keep it running for subsequent scenarios. Immediately capture the process ID (`APP_PID=$!`) for cleanup in Step 4.
 
 If the app **cannot be started**:
 ```
@@ -302,40 +302,7 @@ Announce:
 Smoke test report written to <relative path to SMOKE-TEST.md>.
 ```
 
-## Step 4: Record Results
-
-After all scenarios are processed (or the user exits early), record the results.
-
-### Locate the State Script
-
-```bash
-SHIP_STATE=".specify/extensions/spex/scripts/spex-ship-state.sh"
-if [ -z "$SHIP_STATE" ]; then
-  echo "Warning: spex-ship-state.sh not found — smoke test results not recorded in pipeline state."
-fi
-```
-
-If `$SHIP_STATE` is empty, skip the recording step below. The SMOKE-TEST.md report is still written regardless.
-
-### Record Smoke Test Results
-
-If `$SHIP_STATE` was found, invoke the state script to record results:
-
-```bash
-"$SHIP_STATE" smoke-test-record \
-  --completed <true|false> \
-  --scenarios <count_completed> \
-  --total <total_count> \
-  --skipped <skipped_count>
-```
-
-Where:
-- `completed` is `true` if all scenarios were processed (regardless of verdict — passed, failed, or skipped all count), `false` if the user exited early before all scenarios were presented
-- `scenarios` is the number of scenarios that were completed (passed + failed + skipped)
-- `total` is the total number of scenarios found in the spec
-- `skipped` is the number of scenarios the user explicitly skipped
-
-## Step 5: Cleanup
+## Step 4: Cleanup
 
 ### Stop the App Process
 
@@ -408,6 +375,5 @@ Full report: <path to SMOKE-TEST.md>
 
 **This command invokes:**
 - `.specify/scripts/bash/check-prerequisites.sh` (spec resolution)
-- `spex-ship-state.sh smoke-test-record` (state recording)
 - Optionally: `/run` skill (app startup delegation)
 - Optionally: Playwright MCP tools (browser interaction)
