@@ -1,6 +1,6 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-5.9.2-blue)
+![Version](https://img.shields.io/badge/version-6.0.0--dev-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -8,8 +8,8 @@
 
 > Extend Spec-Kit with composable extensions and workflow commands for Claude Code.
 
-> [!IMPORTANT]
-> Starting with v5.0.0, cc-spex uses spec-kit's native extension system. The old traits/overlay system has been removed. See [Migrating from v4.x](#migrating-from-v4x) below.
+> [!CAUTION]
+> The `main` branch is tracking **v6.0.0 development**, which introduces agent-harness-agnostic spex. Version 6 works with Claude Code, Codex, OpenCode, and any platform that spec-kit supports. This is a work in progress and not yet stable. For the latest stable release, use the [`5.9.x`](https://github.com/rhuss/cc-spex/tree/5.9.x) branch. See [Migrating from v5.x to v6.x](#migrating-from-v5x-to-v6x) for upgrade guidance.
 
 ## Why cc-spex?
 
@@ -194,9 +194,9 @@ make install
 
 This runs Spec-Kit's `specify init`, installs seven bundled extensions (six enabled by default, spex-detach opt-in), and configures permissions. After initialization, extension hooks fire automatically at spec-kit lifecycle boundaries.
 
-### Coming in 6.x: Workflow-Based Setup
+### Workflow-Based Setup (6.x)
 
-Starting with spex 6.0, a spec-kit setup workflow replaces the plugin-based init as the primary install path. The workflow is harness-agnostic (Claude Code, Codex, OpenCode) and executable from a single command:
+In spex 6.0, a spec-kit setup workflow replaces the plugin-based init as the primary install path. The workflow is harness-agnostic (Claude Code, Codex, OpenCode) and executable from a single command:
 
 ```bash
 # Install from GitHub release URL (no clone needed)
@@ -458,6 +458,42 @@ Extensions degrade gracefully on agents with fewer capabilities:
 | spex-teams | Parallel via Agent Teams | Sequential fallback |
 | spex-worktrees | EnterWorktree tool | Manual git worktree commands |
 | spex-deep-review | Parallel 5-agent review | Sequential single-session review |
+
+## Migrating from v5.x to v6.x
+
+Version 6 replaces the Claude Code plugin-based initialization with spec-kit's workflow system, making spex agent-harness-agnostic. The same setup works across Claude Code, Codex, OpenCode, and any future platform that spec-kit supports.
+
+**1. Update the plugin:**
+
+```bash
+cd cc-spex
+git checkout main
+git pull
+make install
+```
+
+**2. Re-initialize your projects:**
+
+The `/spex:init` command still works but now delegates to a spec-kit setup workflow. You can also run the workflow directly, which is the recommended path for non-Claude-Code agents:
+
+```bash
+# Via spec-kit workflow (works on any agent)
+specify workflow run https://github.com/rhuss/cc-spex/releases/latest/download/setup.yml
+
+# Via Claude Code plugin (delegates to workflow internally)
+/spex:init
+```
+
+**3. Key changes:**
+
+| Area | v5.x | v6.x |
+|------|------|------|
+| Initialization | `/spex:init` (Claude Code plugin) | `specify workflow run setup.yml` (any agent) or `/spex:init` (delegates to workflow) |
+| Agent support | Claude Code only | Claude Code, Codex, OpenCode, any spec-kit-supported agent |
+| Extension scripts | Plugin-bundled | Extension-local (`spex/extensions/*/scripts/`) |
+| Hook adapters | Claude Code hooks only | Shared POSIX functions with per-agent adapters |
+
+Extensions, commands, and the spec-driven workflow itself are unchanged. If you have existing `.specify/` project configuration, it carries over without modification.
 
 ## Migrating from v4.x
 
