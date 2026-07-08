@@ -1,0 +1,40 @@
+bundle:
+  id: spex
+  name: Spex
+  version: "6.0.0"
+  description: >-
+    Specification-Driven Development toolkit for AI coding agents.
+    Installs extensions for quality gates, worktrees, deep review,
+    agent teams, collaboration, and spec detachment.
+  author: Roland Huß
+  repository: https://github.com/rhuss/cc-spex
+
+provides:
+  extensions:
+    - id: spex
+      version: "1.0.0"
+      description: Core SDD workflow
+    - id: spex-gates
+      version: "1.0.0"
+      description: Quality gates (spec, plan, code review)
+    - id: spex-worktrees
+      version: "1.0.0"
+      description: Git worktree isolation
+    - id: spex-deep-review
+      version: "1.0.0"
+      description: Multi-perspective code review
+    - id: spex-teams
+      version: "1.0.0"
+      description: Parallel agent implementation
+    - id: spex-collab
+      version: "1.0.0"
+      description: Collaborative PR workflows
+    - id: spex-detach
+      version: "1.0.0"
+      description: Strip spec artifacts for upstream PRs
+
+  workflows:
+    - id: spex-setup
+      version: "6.0.0"
+      description: Single-command setup for any agent harness
+      path: setup.yml

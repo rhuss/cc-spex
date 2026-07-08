@@ -192,7 +192,23 @@ make install
 /spex:init
 ```
 
-This runs Spec-Kit's `specify init`, installs all six bundled extensions, and asks about permissions. After initialization, extension hooks fire automatically at spec-kit lifecycle boundaries.
+This runs Spec-Kit's `specify init`, installs seven bundled extensions (six enabled by default, spex-detach opt-in), and configures permissions. After initialization, extension hooks fire automatically at spec-kit lifecycle boundaries.
+
+### Coming in 6.x: Workflow-Based Setup
+
+Starting with spex 6.0, a spec-kit setup workflow replaces the plugin-based init as the primary install path. The workflow is harness-agnostic (Claude Code, Codex, OpenCode) and executable from a single command:
+
+```bash
+# Install from GitHub release URL (no clone needed)
+specify workflow run https://github.com/rhuss/cc-spex/releases/latest/download/setup.yml
+
+# Customize with inputs
+specify workflow run spex/setup.yml -i "extensions=spex-gates,spex-worktrees"
+specify workflow run spex/setup.yml -i "permissions=yolo"
+specify workflow run spex/setup.yml -i "integration=codex"
+```
+
+The workflow auto-detects the agent harness, installs extensions, and applies per-agent configuration. Prerequisites: `specify` CLI (>= 0.7.4), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
 
 ## The Extensions System
 
@@ -257,7 +273,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 
 | Command | Extension | Purpose |
 |---------|-----------|---------|
-| `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions |
+| `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
 | `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
 | `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |

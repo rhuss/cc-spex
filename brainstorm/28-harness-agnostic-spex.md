@@ -158,3 +158,87 @@ This is low-risk, branch-free, and testable per-integration. The maintainer expl
 - How should the Claude preset interact with existing spex commands that are already installed? Does `specify init` with a preset re-render commands, or is it additive?
 - Should the hook adapter layer (detect-agent.sh + per-agent adapters) also move to the preset pattern, or does it stay as extension-level scripts?
 - How do we handle the ship pipeline's deep coupling to the Agent tool? The ship command's subagent dispatch (stages 2, 5, 6, 7) is structurally different from "run sequentially" and a simple preset replace won't capture the architectural difference.
+
+---
+
+## Revisit: 2026-07-08
+
+### Upstream Feedback: No New Hooks Needed
+
+The spec-kit maintainer responded to [#3359](https://github.com/github/spec-kit/issues/3359) with a clear position: **everything needed for per-harness setup and adaptation is already achievable with existing workflow primitives.** No `on_install` hook, no `post_process_command_content()` upstream PR required.
+
+Key points from the maintainer:
+- Workflow `shell` + `switch` steps can express all per-harness adaptation logic
+- `specify workflow run <https-url>` is the supported one-command install pattern
+- Bundles declare `provides.workflows` so the setup workflow ships with extensions
+- Adding `on_install` would make `specify extension add` a code-execution step, which is a larger trust surface than user-invoked workflows
+
+### Impact on Phase Plan
+
+This changes the dependency graph significantly. The original plan assumed Phases 2-3 needed an upstream `post_process_command_content()` hook. With the workflow approach, **all phases can proceed without upstream changes.**
+
+| Phase | Original dependency | Updated dependency |
+|-------|--------------------|--------------------|
+| Phase 0: Setup workflow | None | **DONE** (feature 037) |
+| Phase 1: Script discovery | None | **DONE** (feature 033) |
+| Phase 2: Neutral vocabulary | Upstream hook | **None** (workflow `adapt-commands` step) |
+| Phase 3: Claude preset | Upstream hook + Phase 2 | **Phase 2 only** (workflow applies transforms) |
+| Phase 4: Community presets | Phase 3 | Phase 3 |
+
+### Revised Approach: Workflow-Driven Command Adaptation
+
+Instead of an upstream hook that transforms commands at `specify extension add` time, the **setup workflow transforms commands after installation** using shell steps:
+
+```yaml
+- id: adapt-commands
+  type: switch
+  expression: "{{ steps.detect-agent.output.stdout }}"
+  cases:
+    codex:
+      - type: shell
+        run: |
+          # Transform skill files for Codex vocabulary
+          adapt_script="{{ steps.locate-source.output.stdout }}/scripts/adapt-commands.sh"
+          [ -f "$adapt_script" ] && sh "$adapt_script" codex .claude/skills/
+    opencode:
+      - type: shell
+        run: |
+          adapt_script="{{ steps.locate-source.output.stdout }}/scripts/adapt-commands.sh"
+          [ -f "$adapt_script" ] && sh "$adapt_script" opencode .claude/skills/
+```
+
+The `adapt-commands.sh` script would:
+1. Read each SKILL.md file
+2. Apply per-harness substitution rules (maintained as a mapping file, not inline sed)
+3. Handle complex multi-paragraph sections (tool-specific blocks delimited by markers)
+4. Write the transformed files back
+
+This is more capable than sed substitutions because the script can handle:
+- Conditional block replacement (replace entire `### Agent Dispatch` sections)
+- Tool name mapping with context awareness (AskUserQuestion with options vs without)
+- Section removal (strip `EnterWorktree` instructions for harnesses without it)
+
+### Updated Phase Plan
+
+**Phase 2: Neutral command vocabulary (next)**
+- Audit all 41 Claude Code-specific references in command files
+- Add delimiter markers around tool-specific sections: `<!-- cc:agent-dispatch -->...<!-- /cc:agent-dispatch -->`
+- Rewrite unmarked references to use natural language
+- Write `adapt-commands.sh` with a mapping table per harness
+- Add `adapt-commands` step to setup.yml after extension installation
+
+**Phase 3: Claude Code optimization (after Phase 2)**
+- The Claude case in setup.yml is a no-op (commands are already written for Claude)
+- Or: write commands in neutral vocabulary, then the Claude `adapt-commands` case re-injects tool-specific references for optimal behavior
+- Decision: no-op is simpler, but neutral-then-specialize is more principled
+
+**Phase 4: Codex + OpenCode presets**
+- Create `adapt-commands.sh` codex/opencode mapping tables
+- Test on real projects with each harness
+- Document how to add new harness mappings
+
+### Open Questions (Updated)
+
+- Should commands be written neutral-first and then specialized for ALL harnesses (including Claude), or written for Claude and then de-specialized for others? The neutral-first approach is cleaner but means Claude users see slightly different wording than today until the Claude adaptation step runs.
+- The delimiter marker approach (`<!-- cc:agent-dispatch -->`) adds noise to the command files. Is there a cleaner way to identify tool-specific sections for replacement?
+- How do we test that neutral commands produce acceptable behavior on each harness? The brainstorm with Codex showed that without skill content, the agent produces a brain dump instead of a structured dialogue. Neutral vocabulary alone may not be enough; the behavioral structure (checklist steps, one question at a time) needs to survive the transformation.
