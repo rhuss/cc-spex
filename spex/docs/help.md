@@ -131,7 +131,7 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                                     Flags: --pr <number>
                                     Loop:  /loop 5m /speckit-spex-collab-triage
 
-  spex-detach extension:
+  spex-detach extension (opt-in, disabled by default):
     /speckit-spex-finish → creates clean PR branch (pr/<branch>) with spec
                            artifacts stripped, offers "Push clean PR branch
                            to upstream" option. Verifies no .specify/, specs/,
@@ -156,10 +156,12 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 spex COMMANDS (helpers and configuration)
 
   /spex:init                  Initialize spec-kit + configure extensions and permissions
-                                Checks for plugin updates on each run (silent on failure)
                                 --refresh: update templates without reconfiguring
                                 --update: upgrade specify CLI and refresh
                                 --clear: reset status line state
+                                6.x: delegates to setup.yml workflow when specify >= 0.7.4
+                                     Any harness: specify workflow run spex/setup.yml
+                                     Inputs: -i "integration=auto" -i "extensions=all"
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
                                 Checks brainstorm/idea-inbox.md for review seeds
@@ -269,6 +271,7 @@ PR TITLE CONVENTIONS
 MULTI-AGENT SUPPORT
 
   spex works across Claude Code, Codex CLI, and OpenCode.
+  Unified setup: specify workflow run spex/setup.yml
   Enforcement adapts to each agent's hook API.
 
   Agent detection priority:
@@ -276,10 +279,10 @@ MULTI-AGENT SUPPORT
     2. Directory presence (.claude/, .codex/, .opencode/)
     3. --ai value from .specify/init-options.json
 
-  Per-agent adapters:
-    Claude Code  Python hooks in .claude/settings.json (existing)
-    Codex CLI    Python hooks in .codex/hooks.json
-    OpenCode     TypeScript plugin in .opencode/plugins/
+  Per-agent adapters (configured by setup workflow):
+    Claude Code  Statusline, permissions in .claude/settings.json
+    Codex CLI    Python hooks in .codex/hooks.json + AGENTS.md
+    OpenCode     TypeScript plugin in .opencode/plugins/ + AGENTS.md
 
   Shared enforcement logic lives in spex/scripts/hooks/shared/.
   All adapters call the same POSIX shell functions for gate decisions.

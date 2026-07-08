@@ -589,13 +589,30 @@ case "${1:-}" in
     do_clear
     ;;
   *)
-    # Migrate legacy config files first
+    # Delegate to setup workflow if specify CLI and setup.yml are available
+    if command -v specify &>/dev/null; then
+      _script_dir="$(dirname "$0")"
+      _setup_workflow="$_script_dir/../setup.yml"
+      if [ -f "$_setup_workflow" ]; then
+        # Ensure project is initialized (workflow engine requires .specify/)
+        if [ ! -d .specify ]; then
+          if ! specify init --here --integration claude --script sh --force >/dev/null 2>&1; then
+            echo "Failed to bootstrap .specify/ for setup workflow" >&2
+            exit 1
+          fi
+        fi
+        _spex_root="$(cd "$_script_dir/.." && pwd)"
+        SPEX_SOURCE="$_spex_root" specify workflow run "$_setup_workflow"
+        exit $?
+      fi
+    fi
 
+    # Legacy path: no workflow available
     migrate_phase_marker
     # Fast path: already ready?
     if check_ready; then
       fix_constitution
-  
+
       install_extensions >/dev/null 2>&1 || true
       configure_statusline 2>/dev/null || true
       configure_gitignore 2>/dev/null || true

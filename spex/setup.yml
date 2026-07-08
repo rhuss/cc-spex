@@ -1,0 +1,552 @@
+schema_version: "1.0"
+workflow:
+  id: spex-setup
+  name: Spex Setup
+  version: "6.0.0"
+  description: >-
+    Install spex extensions and configure agent harness.
+    Single-command entry point for Claude Code, Codex, OpenCode, or any spec-kit harness.
+
+inputs:
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Agent harness (auto, claude, codex, opencode)"
+  extensions:
+    type: string
+    default: "all"
+    prompt: "Extensions to enable (all, interactive, or comma-separated list)"
+  permissions:
+    type: string
+    default: "standard"
+    prompt: "Permission level (standard, yolo, none)"
+
+steps:
+  - id: check-version
+    type: shell
+    run: |
+      version_output=$(specify version 2>/dev/null) || {
+        echo "ERROR: specify CLI not found. Install with:" >&2
+        echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git" >&2
+        exit 1
+      }
+      version=$(echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+      [ -n "$version" ] || { echo "ERROR: Cannot parse specify version" >&2; exit 1; }
+      major=$(echo "$version" | cut -d. -f1)
+      minor=$(echo "$version" | cut -d. -f2)
+      patch=$(echo "$version" | cut -d. -f3)
+      if [ "$major" -gt 0 ] 2>/dev/null; then
+        printf "%s" "$version"
+        exit 0
+      fi
+      if [ "$major" -eq 0 ] && [ "$minor" -gt 7 ] 2>/dev/null; then
+        printf "%s" "$version"
+        exit 0
+      fi
+      if [ "$major" -eq 0 ] && [ "$minor" -eq 7 ] && [ "$patch" -ge 4 ] 2>/dev/null; then
+        printf "%s" "$version"
+        exit 0
+      fi
+      echo "ERROR: spec-kit $version too old (requires >= 0.7.4). Upgrade:" >&2
+      echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git" >&2
+      exit 1
+
+  - id: locate-source
+    type: shell
+    run: |
+      if [ -n "${SPEX_SOURCE:-}" ] && [ -d "${SPEX_SOURCE}/extensions/spex" ]; then
+        printf "%s" "$SPEX_SOURCE"
+        exit 0
+      fi
+      if [ -d "spex/extensions/spex" ]; then
+        printf "%s" "$(cd spex && pwd)"
+        exit 0
+      fi
+      if ! command -v git >/dev/null 2>&1; then
+        echo "ERROR: git is required to clone spex extensions. Install git or set SPEX_SOURCE." >&2
+        exit 1
+      fi
+      CLONE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spex-setup-XXXXXX")
+      echo "Cloning spex from GitHub..." >&2
+      if git clone --depth 1 https://github.com/rhuss/cc-spex.git "$CLONE_DIR" >/dev/null 2>&1; then
+        printf "%s" "$CLONE_DIR/spex"
+        exit 0
+      fi
+      rm -rf "$CLONE_DIR" 2>/dev/null || true
+      echo "ERROR: Cannot locate spex extensions." >&2
+      echo "Either set SPEX_SOURCE, run from within the cc-spex repo," >&2
+      echo "or ensure network access to github.com is available." >&2
+      exit 1
+
+  - id: detect-agent
+    type: shell
+    run: |
+      INPUT="{{ inputs.integration }}"
+      case "$INPUT" in
+        auto) ;;
+        claude|codex|opencode) printf "%s" "$INPUT"; exit 0 ;;
+        *) echo "ERROR: Unknown integration '$INPUT'. Use: auto, claude, codex, opencode" >&2; exit 1 ;;
+      esac
+      DETECT_SCRIPT="{{ steps.locate-source.output.stdout }}/scripts/hooks/shared/detect-agent.sh"
+      if [ -f "$DETECT_SCRIPT" ]; then
+        AGENT=$(sh "$DETECT_SCRIPT" "$(pwd)")
+        printf "%s" "${AGENT:-claude}"
+      else
+        printf "%s" "claude"
+      fi
+
+  - id: migrate-commands
+    type: shell
+    run: |
+      found=false
+      for f in .claude/commands/speckit.*.md; do
+        [ -f "$f" ] || continue
+        found=true
+        break
+      done
+      if [ "$found" = true ]; then
+        for f in .claude/commands/speckit.*.md; do
+          [ -f "$f" ] || continue
+          rm "$f"
+        done
+        echo "Migrated old commands to skills format" >&2
+      fi
+      printf "ok"
+
+  - id: init-project
+    type: shell
+    run: |
+      AGENT="{{ steps.detect-agent.output.stdout }}"
+      specify init --here --integration "$AGENT" --script sh --force
+
+  - id: install-ext-spex
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-gates
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-gates"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-worktrees
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-worktrees"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-deep-review
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-deep-review"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-teams
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-teams"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-collab
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-collab"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+
+  - id: install-ext-spex-detach
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      EXT="spex-detach"
+      EXT_PATH="$SOURCE/extensions/$EXT"
+      [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
+      if [ -d ".specify/extensions/$EXT" ]; then
+        echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
+      fi
+      DEV_FLAG=""
+      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      specify extension add "$EXT_PATH" $DEV_FLAG
+      specify extension disable "$EXT" 2>/dev/null || true
+
+  - id: select-extensions
+    type: switch
+    expression: "{{ inputs.extensions }}"
+    cases:
+      all:
+        - id: ext-all-noop
+          type: shell
+          run: printf "all"
+      interactive:
+        - id: ext-interactive-prompt
+          type: prompt
+          prompt: >-
+            The following optional spex extensions are available. Reply with a
+            comma-separated list of the extensions you want to KEEP enabled.
+            Extensions not listed will be disabled.
+
+            - spex-gates: Quality gates (spec, plan, code review)
+            - spex-worktrees: Git worktree isolation for feature branches
+            - spex-deep-review: Multi-perspective code review with 5 agents
+            - spex-teams: Parallel implementation via agent teams
+            - spex-collab: Collaborative PR workflows (reviewers, phases, triage)
+            - spex-detach: Strip spec artifacts for upstream PRs
+
+            Reply with extension names separated by commas (e.g. "spex-gates,spex-worktrees"),
+            or "all" to keep everything enabled.
+          integration: "{{ steps.detect-agent.output.stdout }}"
+        - id: ext-interactive-fallback
+          type: shell
+          run: |
+            RESPONSE="{{ steps.ext-interactive-prompt.output.stdout | default('') }}"
+            if [ -z "$RESPONSE" ] || [ "$RESPONSE" = "all" ]; then
+              echo "All extensions enabled." >&2
+              printf "ok"
+              exit 0
+            fi
+            OPTIONAL_EXTS="spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach"
+            GATES_DEPENDENTS="spex-teams spex-deep-review spex-collab"
+            ENABLED_LIST=$(echo "$RESPONSE" | tr ',' ' ' | tr -d '"')
+            # Enforce gates dependency
+            gates_needed=false
+            for dep in $GATES_DEPENDENTS; do
+              for sel in $ENABLED_LIST; do
+                [ "$dep" = "$sel" ] && gates_needed=true
+              done
+            done
+            if [ "$gates_needed" = true ]; then
+              gates_in_list=false
+              for sel in $ENABLED_LIST; do
+                [ "$sel" = "spex-gates" ] && gates_in_list=true
+              done
+              if [ "$gates_in_list" = false ]; then
+                echo "Auto-enabling spex-gates (required by selected extensions)" >&2
+                ENABLED_LIST="spex-gates $ENABLED_LIST"
+              fi
+            fi
+            for ext in $OPTIONAL_EXTS; do
+              found=false
+              for sel in $ENABLED_LIST; do
+                if [ "$ext" = "$sel" ]; then found=true; break; fi
+              done
+              if [ "$found" = false ]; then
+                specify extension disable "$ext" 2>/dev/null || true
+              fi
+            done
+            echo "Extension selection applied." >&2
+            printf "ok"
+    default:
+      - id: ext-filter
+        type: shell
+        run: |
+          SELECTION="{{ inputs.extensions }}"
+          OPTIONAL_EXTS="spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach"
+          GATES_DEPENDENTS="spex-teams spex-deep-review spex-collab"
+          ENABLED_LIST=$(echo "$SELECTION" | tr ',' ' ')
+
+          # Enforce dependencies: if any gates-dependent is selected, auto-enable spex-gates
+          gates_needed=false
+          for dep in $GATES_DEPENDENTS; do
+            for sel in $ENABLED_LIST; do
+              if [ "$dep" = "$sel" ]; then
+                gates_needed=true
+                break
+              fi
+            done
+          done
+          if [ "$gates_needed" = true ]; then
+            gates_in_list=false
+            for sel in $ENABLED_LIST; do
+              [ "$sel" = "spex-gates" ] && gates_in_list=true
+            done
+            if [ "$gates_in_list" = false ]; then
+              echo "Auto-enabling spex-gates (required by selected extensions)" >&2
+              ENABLED_LIST="spex-gates $ENABLED_LIST"
+            fi
+          fi
+
+          # Disable extensions not in the selection
+          for ext in $OPTIONAL_EXTS; do
+            found=false
+            for sel in $ENABLED_LIST; do
+              if [ "$ext" = "$sel" ]; then
+                found=true
+                break
+              fi
+            done
+            if [ "$found" = false ]; then
+              specify extension disable "$ext" 2>/dev/null || true
+              echo "Disabled: $ext" >&2
+            fi
+          done
+          printf "ok"
+
+  - id: adapt-harness
+    type: switch
+    expression: "{{ steps.detect-agent.output.stdout }}"
+    cases:
+      claude:
+        - id: claude-statusline
+          type: shell
+          run: |
+            SOURCE="{{ steps.locate-source.output.stdout }}"
+            STATUSLINE_SCRIPT="$SOURCE/scripts/spex-ship-statusline.sh"
+            [ -f "$STATUSLINE_SCRIPT" ] || exit 0
+            chmod +x "$STATUSLINE_SCRIPT" 2>/dev/null || true
+            ABS_SCRIPT="$(cd "$(dirname "$STATUSLINE_SCRIPT")" && pwd)/$(basename "$STATUSLINE_SCRIPT")"
+            SETTINGS=".claude/settings.local.json"
+            CHAIN_FILE=".claude/.spex-previous-statusline"
+            mkdir -p .claude
+            if [ -f "$SETTINGS" ]; then
+              if command -v jq >/dev/null 2>&1 && jq -e '.statusLine' "$SETTINGS" >/dev/null 2>&1; then
+                CURRENT_CMD="$(jq -r '.statusLine.command // empty' "$SETTINGS")"
+                if [ -n "$CURRENT_CMD" ] && [ -f "$CURRENT_CMD" ]; then
+                  case "$CURRENT_CMD" in
+                    *spex-ship-statusline.sh) exit 0 ;;
+                  esac
+                  echo "$CURRENT_CMD" > "$CHAIN_FILE"
+                fi
+              fi
+              TMP=$(mktemp)
+              jq --arg cmd "$ABS_SCRIPT" '.statusLine = {"type": "command", "command": $cmd}' "$SETTINGS" > "$TMP"
+              mv "$TMP" "$SETTINGS"
+            else
+              jq -n --arg cmd "$ABS_SCRIPT" '{statusLine: {type: "command", command: $cmd}}' > "$SETTINGS"
+            fi
+            echo "Status line configured" >&2
+      codex:
+        - id: codex-hooks
+          type: shell
+          run: |
+            SOURCE="{{ steps.locate-source.output.stdout }}"
+            mkdir -p .codex
+            CODEX_PRETOOL="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/pretool-gate.py"
+            CODEX_CONTEXT="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/context-hook.py"
+            if [ ! -f "$CODEX_PRETOOL" ] || [ ! -f "$CODEX_CONTEXT" ]; then
+              echo "WARNING: Codex adapter scripts not found" >&2
+              exit 0
+            fi
+            SPEX_HOOKS=$(jq -n --arg ctx "python3 $CODEX_CONTEXT" --arg pre "python3 $CODEX_PRETOOL" \
+              '[{type:"command",event:"UserPromptSubmit",command:$ctx},{type:"command",event:"PreToolUse",command:$pre}]')
+            if [ -f .codex/hooks.json ]; then
+              TMP=$(mktemp)
+              jq --argjson spex "$SPEX_HOOKS" '
+                .hooks = ([.hooks // [] | .[] | select(
+                  (.command | test("context-hook\\.py|pretool-gate\\.py") | not)
+                )] + $spex)
+              ' .codex/hooks.json > "$TMP"
+              mv "$TMP" .codex/hooks.json
+            else
+              jq -n --argjson hooks "$SPEX_HOOKS" '{hooks: $hooks}' > .codex/hooks.json
+            fi
+            echo "Codex adapter hooks installed" >&2
+        - id: codex-agents-md
+          type: shell
+          run: |
+            SOURCE="{{ steps.locate-source.output.stdout }}"
+            TEMPLATE="$SOURCE/templates/agents-md/codex.md"
+            if [ -f "$TEMPLATE" ]; then
+              cp "$TEMPLATE" AGENTS.md
+              echo "AGENTS.md generated for Codex" >&2
+            fi
+      opencode:
+        - id: opencode-plugin
+          type: shell
+          run: |
+            SOURCE="{{ steps.locate-source.output.stdout }}"
+            mkdir -p .opencode/plugins
+            PLUGIN="$SOURCE/scripts/adapters/opencode/spex-plugin.ts"
+            if [ -f "$PLUGIN" ]; then
+              cp "$PLUGIN" .opencode/plugins/spex-plugin.ts
+              echo "OpenCode plugin installed" >&2
+            fi
+        - id: opencode-agents-md
+          type: shell
+          run: |
+            SOURCE="{{ steps.locate-source.output.stdout }}"
+            TEMPLATE="$SOURCE/templates/agents-md/opencode.md"
+            if [ -f "$TEMPLATE" ]; then
+              cp "$TEMPLATE" AGENTS.md
+              echo "AGENTS.md generated for OpenCode" >&2
+            fi
+    default:
+      - id: default-harness
+        type: shell
+        run: |
+          echo "No agent-specific configuration applied." >&2
+          echo "Extensions installed with neutral defaults." >&2
+          echo "Use 'specify extension list' to see available extensions." >&2
+
+  - id: configure-permissions
+    type: if
+    condition: "{{ inputs.permissions }} != 'none'"
+    then:
+      - id: permissions-dispatch
+        type: switch
+        expression: "{{ steps.detect-agent.output.stdout }}"
+        cases:
+          claude:
+            - id: claude-permissions
+              type: shell
+              run: |
+                LEVEL="{{ inputs.permissions }}"
+                SETTINGS=".claude/settings.json"
+                mkdir -p .claude
+
+                if [ "$LEVEL" = "yolo" ]; then
+                  ALLOW='["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "Agent(*)", "WebFetch", "WebSearch", "EnterPlanMode", "ExitPlanMode", "EnterWorktree", "ExitWorktree"]'
+                  MODE='"bypassPermissions"'
+                else
+                  ALLOW='["Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]'
+                  MODE='null'
+                fi
+
+                if [ -f "$SETTINGS" ]; then
+                  TMP=$(mktemp)
+                  if [ "$MODE" = "null" ]; then
+                    jq --argjson allow "$ALLOW" '
+                      .permissions.allow = ((.permissions.allow // []) + $allow | unique)
+                    ' "$SETTINGS" > "$TMP"
+                  else
+                    jq --argjson allow "$ALLOW" --argjson mode "$MODE" '
+                      .permissions.allow = ((.permissions.allow // []) + $allow | unique) |
+                      .permissions.defaultMode = $mode
+                    ' "$SETTINGS" > "$TMP"
+                  fi
+                  mv "$TMP" "$SETTINGS"
+                else
+                  if [ "$MODE" = "null" ]; then
+                    jq -n --argjson allow "$ALLOW" '{permissions: {allow: $allow}}' > "$SETTINGS"
+                  else
+                    jq -n --argjson allow "$ALLOW" --argjson mode "$MODE" '{permissions: {defaultMode: $mode, allow: $allow}}' > "$SETTINGS"
+                  fi
+                fi
+                echo "Claude Code permissions configured ($LEVEL)" >&2
+          codex:
+            - id: codex-permissions
+              type: shell
+              run: |
+                echo "Codex permissions are managed via .codex/hooks.json (configured in adapt-harness step)" >&2
+          opencode:
+            - id: opencode-permissions
+              type: shell
+              run: |
+                echo "OpenCode permissions are managed via the spex-plugin.ts (configured in adapt-harness step)" >&2
+
+  - id: configure-gitignore
+    type: shell
+    run: |
+      GITIGNORE=".gitignore"
+      SENTINEL="# spex: generated/local files"
+      if [ -f "$GITIGNORE" ]; then
+        if grep -qF ".claude/commands/speckit." "$GITIGNORE" 2>/dev/null; then
+          sed -i.bak 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
+        elif grep -qF ".claude/skills/speckit-*" "$GITIGNORE" 2>/dev/null; then
+          sed -i.bak 's|\.claude/skills/speckit-\*|.claude/skills/|' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
+        fi
+        if grep -qF ".specify/.spex-phase" "$GITIGNORE" 2>/dev/null; then
+          sed -i.bak '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
+        fi
+      fi
+      [ -f "$GITIGNORE" ] && grep -qF "$SENTINEL" "$GITIGNORE" 2>/dev/null && exit 0
+      cat >> "$GITIGNORE" << 'GIEOF'
+
+      # spex: generated/local files (only constitution is committed)
+      **/.claude/
+      **/.specify/**
+      !**/.specify/memory/
+      !**/.specify/memory/constitution.md
+      GIEOF
+      echo "Updated .gitignore with spex patterns" >&2
+
+  - id: fix-constitution
+    type: shell
+    run: |
+      if [ -L ".specify/memory/constitution.md" ]; then
+        if [ -f ".specify/memory/constitution.md" ]; then
+          cat ".specify/memory/constitution.md" > ".specify/memory/constitution.md.tmp"
+          rm ".specify/memory/constitution.md"
+          mv ".specify/memory/constitution.md.tmp" ".specify/memory/constitution.md"
+        fi
+        [ -f "specs/constitution.md" ] && [ ! -L "specs/constitution.md" ] && rm "specs/constitution.md" || true
+      elif [ -f "specs/constitution.md" ] && [ ! -e ".specify/memory/constitution.md" ]; then
+        mkdir -p .specify/memory
+        mv specs/constitution.md .specify/memory/constitution.md
+      elif [ -f "specs/constitution.md" ] && [ -f ".specify/memory/constitution.md" ] && [ ! -L ".specify/memory/constitution.md" ]; then
+        rm "specs/constitution.md"
+      fi
+      printf "ok"
+
+  - id: check-update
+    type: shell
+    run: |
+      command -v curl >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+      RESPONSE=$(curl -sf --connect-timeout 2 --max-time 3 \
+        "https://api.github.com/repos/rhuss/cc-spex/releases/latest" 2>/dev/null) || exit 0
+      LATEST_TAG=$(echo "$RESPONSE" | jq -r '.tag_name // empty' 2>/dev/null)
+      [ -n "$LATEST_TAG" ] || exit 0
+      LATEST="${LATEST_TAG#v}"
+      echo "Latest spex release: $LATEST" >&2
+      printf "%s" "$LATEST"
+
+  - id: cleanup-source
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      case "$SOURCE" in
+        "${TMPDIR:-/tmp}"/spex-setup-*/spex|/tmp/spex-setup-*/spex)
+          CLONE_DIR="${SOURCE%/spex}"
+          rm -rf "$CLONE_DIR" 2>/dev/null || true
+          ;;
+      esac
+      printf "ok"

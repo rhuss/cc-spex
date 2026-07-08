@@ -69,20 +69,22 @@ release: validate sync-scripts-check test-install
 	fi; \
 	echo "Releasing v$$VERSION..."; \
 	echo ""; \
-	echo "Updating version to $$VERSION in marketplace.json, plugin.json, and spex/VERSION..."; \
+	echo "Updating version to $$VERSION in marketplace.json, plugin.json, setup.yml, bundle.yml, and spex/VERSION..."; \
 	tmp=$$(mktemp); \
 	jq --arg v "$$VERSION" '(.plugins[] | select(.name == "spex")).version = $$v' .claude-plugin/marketplace.json > "$$tmp" && mv "$$tmp" .claude-plugin/marketplace.json; \
 	tmp=$$(mktemp); \
 	jq --arg v "$$VERSION" '.version = $$v' spex/.claude-plugin/plugin.json > "$$tmp" && mv "$$tmp" spex/.claude-plugin/plugin.json; \
+	sed -i.bak "s/^  version: \".*\"/  version: \"$$VERSION\"/" spex/setup.yml && rm -f spex/setup.yml.bak; \
+	sed -i.bak "s/^  version: \".*\"/  version: \"$$VERSION\"/" spex/bundle.yml && rm -f spex/bundle.yml.bak; \
 	echo "$$VERSION" > spex/VERSION; \
-	git add VERSION spex/VERSION .claude-plugin/marketplace.json spex/.claude-plugin/plugin.json; \
+	git add VERSION spex/VERSION .claude-plugin/marketplace.json spex/.claude-plugin/plugin.json spex/setup.yml spex/bundle.yml; \
 	git commit -m "chore: bump version to $$VERSION"; \
 	echo "Creating tag v$$VERSION..."; \
 	git tag "v$$VERSION"; \
 	echo "Pushing release commit and tag..."; \
 	git push && git push origin "v$$VERSION"; \
 	echo "Creating GitHub release..."; \
-	gh release create "v$$VERSION" --generate-notes; \
+	gh release create "v$$VERSION" spex/setup.yml --generate-notes; \
 	echo ""; \
 	PATCH=$$(echo "$$VERSION" | cut -d. -f3); \
 	NEXT_PATCH=$$((PATCH + 1)); \

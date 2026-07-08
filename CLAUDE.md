@@ -4,7 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-22
 
 ## Active Technologies
 
-- Bash (POSIX-compatible), Markdown, Python 3 (hooks), `jq`, `specify` CLI (spec-kit)
+- Bash (POSIX-compatible), Markdown, Python 3 (hooks), `jq`, `yq`, `specify` CLI (spec-kit)
 
 ## Project Structure
 
@@ -16,6 +16,8 @@ spex/
     spex-worktrees/    # Git worktree isolation
     spex-teams/        # Parallel agent orchestration
     spex-deep-review/  # Multi-agent code review
+    spex-collab/       # Collaborative PR workflows
+    spex-detach/       # Strip spec artifacts for upstream PRs
   skills/              # Standalone skills (init/)
   scripts/             # Shell/Python scripts and hooks
   docs/                # Tutorials and help
@@ -34,6 +36,7 @@ Bash (POSIX-compatible, uses `jq` for JSON), Markdown for commands/skills: Follo
 - `spex-teams`: Parallel implementation via Claude Code Agent Teams (experimental)
 - `spex-deep-review`: Multi-agent code review with 5 specialized review agents and autonomous fix loop
 - `spex-collab`: Collaborative PR workflows (REVIEWERS.md, phase-split, phase-manager, revise, reconcile)
+- `spex-detach`: Strip spec artifacts at PR time for contributing to repos that don't use SDD
 
 ## GitHub Issues
 
@@ -56,5 +59,5 @@ Do not treat documentation as a follow-up task. Stale docs mislead users and ero
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/036-extension-local-scripts/plan.md
+at specs/037-workflow-setup/plan.md
 <!-- SPECKIT END -->
