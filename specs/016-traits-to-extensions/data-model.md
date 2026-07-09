@@ -44,6 +44,7 @@ A before/after trigger that invokes an extension command at a spec-kit lifecycle
 | `event` | enum | Lifecycle event (see below) |
 | `optional` | boolean | `true` = user can skip; `false` = always runs |
 | `enabled` | boolean | Matches extension enabled state |
+| `context_boundary` | boolean? | `true` = stop hook execution, suggest `/clear` before running |
 | `prompt` | string? | User-facing prompt text (optional hooks only) |
 | `description` | string | Purpose description |
 | `condition` | string? | Condition expression (evaluated by spec-kit) |

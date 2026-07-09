@@ -41,6 +41,7 @@ hooks:
   after_implement:
     command: speckit.spex-gates.review-code
     optional: false
+    context_boundary: true
     description: "Review code compliance after implementation"
 
 tags:
