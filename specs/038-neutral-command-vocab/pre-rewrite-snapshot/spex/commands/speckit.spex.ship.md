@@ -506,7 +506,7 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Spawn a worker agent with the following prompt:
+2. Spawn a subagent using the Agent tool with the following prompt:
 
    ```
    You are executing the spec review stage of a speckit-spex-ship pipeline.
@@ -547,7 +547,7 @@ This stage runs in an isolated subagent for clean context separation between pla
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Spawn a worker agent with the following prompt:
+2. Spawn a subagent using the Agent tool with the following prompt:
 
    ```
    You are executing the plan review stage of a speckit-spex-ship pipeline.
@@ -642,7 +642,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Total tasks: $TOTAL_TASKS. Checkpoint 1 after task $CP1, checkpoint 2 after task $CP2.
 
    After completing task $CP1 (checkpoint 1/3), pause implementation and spawn a
-   fresh-context worker agent with this prompt:
+   fresh-context Agent (subagent_type: general-purpose) with this prompt:
 
      'You are a correctness review agent for a mid-implementation checkpoint.
      Review the implementation so far against the spec at <SPEC_PATH>.
@@ -674,7 +674,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    If `TEAMS_ENABLED` is `true` AND `INDEPENDENT_TASKS` >= 2, route to teams implement by spawning a subagent with:
 
    ```
-   You are executing the implementation stage of a speckit-spex-ship pipeline using parallel agent teams.
+   You are executing the implementation stage of a speckit-spex-ship pipeline using Agent Teams.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
@@ -728,7 +728,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. Spawn a worker agent with the following prompt. Pass external tool settings resolved during argument parsing:
+2. Spawn a subagent using the Agent tool with the following prompt. Pass external tool settings resolved during argument parsing:
 
    ```
    You are executing the code review stage of a speckit-spex-ship pipeline.
@@ -764,7 +764,7 @@ After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice 
 
 **Do NOT check for smoke test scenarios, do NOT announce smoke test phases, do NOT spawn smoke test subagents.** The smoke test runs inside `/speckit-spex-finish` via the `before_finish` hook. The post-pipeline prompt is ONLY the choice below.
 
-1. Output a one-line summary, then IMMEDIATELY present the choice using a structured interactive prompt:
+1. Output a one-line summary, then IMMEDIATELY present the choice using `AskUserQuestion`:
 
    Output: `Pipeline complete (8/8 stages passed). Consider running /clear before proceeding to free context.`
 
@@ -776,7 +776,7 @@ After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice 
      - "Merge directly": "Run /speckit-spex-finish to smoke test, squash, and merge to main"
      - "Stop here": "Do nothing now. Run /speckit-spex-submit or /speckit-spex-finish later"
 
-   **This MUST be a structured interactive prompt, not a markdown text prompt.** Do NOT output the options as text and wait for a free-form reply.
+   **This MUST be an AskUserQuestion tool call, not a markdown text prompt.** Do NOT output the options as text and wait for a free-form reply.
 
 2. **If "Submit PR":**
 

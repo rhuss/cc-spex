@@ -208,7 +208,15 @@ specify workflow run spex/setup.yml -i "permissions=yolo"
 specify workflow run spex/setup.yml -i "integration=codex"
 ```
 
-The workflow auto-detects the agent harness, installs extensions, and applies per-agent configuration. Prerequisites: `specify` CLI (>= 0.7.4), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
+The workflow auto-detects the agent harness, installs extensions, and applies per-agent configuration (including command adaptation, see below). Prerequisites: `specify` CLI (>= 0.7.4), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
+
+### Neutral Command Vocabulary
+
+Extension command files are written in harness-neutral vocabulary. They describe desired behaviors (e.g., "present the user with a structured choice") without referencing specific tools (e.g., `AskUserQuestion`). During setup, the `adapt-commands` step runs `spex-adapt-commands.sh` to transform neutral commands into harness-optimized versions using per-harness mapping tables in `spex/scripts/adapters/<harness>/command-map.json`.
+
+Capability markers (`<!-- harness:X -->...<!-- /harness:X -->`) delimit sections that need harness-specific replacement. Inline substitutions handle single-phrase replacements within flowing text.
+
+To add support for a new harness, create a `command-map.json` in `spex/scripts/adapters/<harness>/` with inline substitutions and section replacements. No changes to the adaptation script or source command files are needed.
 
 ## The Extensions System
 

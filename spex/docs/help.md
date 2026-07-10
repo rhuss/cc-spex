@@ -284,6 +284,21 @@ MULTI-AGENT SUPPORT
     Codex CLI    Python hooks in .codex/hooks.json + AGENTS.md
     OpenCode     TypeScript plugin in .opencode/plugins/ + AGENTS.md
 
+  Command adaptation (spex-adapt-commands.sh):
+    Extension commands use harness-neutral vocabulary by default.
+    During setup, the adapt-commands step transforms them using
+    per-harness mapping tables in spex/scripts/adapters/<harness>/.
+    Capability markers (<!-- harness:X -->) delimit sections needing
+    harness-specific replacement. Inline substitutions handle phrases.
+
+    Mapping tables:
+      spex/scripts/adapters/claude/command-map.json   (full)
+      spex/scripts/adapters/codex/command-map.json    (proof-of-concept)
+      spex/scripts/adapters/opencode/command-map.json  (stub)
+
+    Preview changes:
+      ./spex/scripts/spex-adapt-commands.sh --dry-run claude .specify/extensions spex/scripts/adapters
+
   Shared enforcement logic lives in spex/scripts/hooks/shared/.
   All adapters call the same POSIX shell functions for gate decisions.
 

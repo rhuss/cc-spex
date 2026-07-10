@@ -1,23 +1,34 @@
 ---
-description: "Parallel codebase research for planning via parallel agent teams"
+description: "Parallel codebase research for planning via Claude Code Agent Teams"
 ---
 
 # Teams Research: Parallel Codebase Exploration for Planning
 
 ## Overview
 
-This command orchestrates parallel codebase research using parallel agent teams during the plan phase. The lead session analyzes the spec to identify research topics, spawns research agents to explore different parts of the codebase simultaneously, collects their findings, and then generates the plan with comprehensive codebase knowledge.
+This command orchestrates parallel codebase research using Claude Code Agent Teams during the plan phase. The lead session analyzes the spec to identify research topics, spawns research agents to explore different parts of the codebase simultaneously, collects their findings, and then generates the plan with comprehensive codebase knowledge.
 
 ## Prerequisites
 
-### Parallel Agent Teams Prerequisite
+### CC Teams Feature Flag
 
-<!-- harness:agent-teams -->
-Verify that the parallel agent teams feature is available on the current harness.
-If not available, fall back to single-session research for this session.
-<!-- /harness:agent-teams -->
+Check if Agent Teams is enabled:
 
-**If teams are available:** Proceed with team research.
+```bash
+# Check settings.local.json for the feature flag
+FLAG=$(jq -r '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS // ""' .claude/settings.local.json 2>/dev/null)
+```
+
+**If the flag is not set (`""` or missing):**
+
+1. Set it in `.claude/settings.local.json`:
+   ```bash
+   jq '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"' .claude/settings.local.json > /tmp/settings.json && mv /tmp/settings.json .claude/settings.local.json
+   ```
+2. Inform the user: "Agent Teams feature flag has been enabled. Please restart Claude Code for teams to activate."
+3. **Fall back to single-session research** for this session (teams will work on next run).
+
+**If the flag is set:** Proceed with team research.
 
 ## Phase 1: Research Topic Identification
 
@@ -133,12 +144,15 @@ Research the codebase directly in the current session, then generate the plan. T
 
 ## Multi-Agent Dispatch
 
-The parallel dispatch mechanism varies by harness:
+The parallel dispatch mechanism varies by agent:
 
-<!-- harness:agent-teams-research-dispatch -->
-Use the agent's team mechanism to spawn research agents.
-If the current harness does not support parallel dispatch, research all topics sequentially.
-<!-- /harness:agent-teams-research-dispatch -->
+**Claude Code**: Use the **Agent** tool with `team_name` to spawn research agents. Each agent explores in its own context.
+
+**OpenCode**: Use the **Task** tool to dispatch independent research topics in parallel.
+
+**Codex**: Use **subagents** for parallel research when available.
+
+**Fallback (no parallel mechanism)**: Research all topics sequentially in the current session.
 
 ## Key Principles
 

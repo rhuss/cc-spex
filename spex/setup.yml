@@ -330,6 +330,26 @@ steps:
           done
           printf "ok"
 
+  - id: adapt-commands
+    type: shell
+    run: |
+      SOURCE="{{ steps.locate-source.output.stdout }}"
+      AGENT="{{ steps.detect-agent.output.stdout }}"
+      ADAPT_SCRIPT="$SOURCE/scripts/spex-adapt-commands.sh"
+      ADAPTERS_DIR="$SOURCE/scripts/adapters"
+      COMMANDS_DIR=".specify/extensions"
+      if [ ! -x "$ADAPT_SCRIPT" ]; then
+        echo "Adaptation script not found, skipping command adaptation" >&2
+        printf "skipped"
+        exit 0
+      fi
+      if [ ! -d "$ADAPTERS_DIR/$AGENT" ]; then
+        echo "No mapping table for $AGENT, commands remain neutral" >&2
+        printf "neutral"
+        exit 0
+      fi
+      "$ADAPT_SCRIPT" "$AGENT" "$COMMANDS_DIR" "$ADAPTERS_DIR" && printf "adapted"
+
   - id: adapt-harness
     type: switch
     expression: "{{ steps.detect-agent.output.stdout }}"

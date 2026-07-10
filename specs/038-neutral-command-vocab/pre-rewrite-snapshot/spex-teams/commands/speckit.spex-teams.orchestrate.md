@@ -1,23 +1,36 @@
 ---
-description: "Unified team orchestration: parallel task implementation with spec guardian review pattern via parallel agent teams"
+description: "Unified team orchestration: parallel task implementation with spec guardian review pattern via Claude Code Agent Teams"
 ---
 
 # Teams Orchestration: Parallel Task Implementation
 
 ## Overview
 
-This command orchestrates parallel task implementation using parallel agent teams. The lead session analyzes the task dependency graph, spawns teammates in isolated worktrees for independent task groups, reviews all changes against spec.md via the spec guardian pattern, and coordinates merges. The spec guardian review loop is always-on: every teammate's work is reviewed for spec compliance before merging.
+This command orchestrates parallel task implementation using Claude Code Agent Teams. The lead session analyzes the task dependency graph, spawns teammates in isolated worktrees for independent task groups, reviews all changes against spec.md via the spec guardian pattern, and coordinates merges. The spec guardian review loop is always-on: every teammate's work is reviewed for spec compliance before merging.
 
 ## Prerequisites
 
-### Parallel Agent Teams Prerequisite
+### CC Teams Feature Flag
 
-<!-- harness:agent-teams -->
-Verify that the parallel agent teams feature is available on the current harness.
-If not available, fall back to sequential implementation for this session.
-<!-- /harness:agent-teams -->
+Check if Agent Teams is enabled:
 
-**If teams are available:** Proceed with team orchestration.
+```bash
+# Check settings.local.json for the feature flag
+FLAG=$(jq -r '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS // ""' .claude/settings.local.json 2>/dev/null)
+```
+
+**If the flag is not set (`""` or missing):**
+
+1. Set it in `.claude/settings.local.json`:
+   ```bash
+   jq '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"' .claude/settings.local.json > /tmp/settings.json && mv /tmp/settings.json .claude/settings.local.json
+   ```
+2. Inform the user: "Agent Teams feature flag has been enabled. Please restart Claude Code for teams to activate."
+3. **Fall back to sequential implementation** for this session (teams will work on next run).
+
+**If the flag is set:** Proceed with team orchestration.
+
+**If the flag becomes unset mid-session** (e.g., user restarts without it): The pre-flight check runs at skill invocation time, not continuously. If the env var disappears mid-session, already-spawned teammates continue working. On next invocation, the check will catch the missing flag and fall back to sequential.
 
 ## Task Graph Analysis
 
@@ -40,10 +53,10 @@ Evaluate whether teams add value:
 ### Spawn Rules
 
 - Spawn **one teammate per independent task group** (not one per task)
-- **Maximum 5 teammates** (best practice for coordination overhead)
+- **Maximum 5 teammates** (CC Teams best practice for coordination overhead)
 - If more than 5 independent groups, batch them: assign multiple groups to the same teammate sequentially
 - **Never spawn more teammates than independent groups**
-- Each teammate gets its own git worktree for clean file isolation
+- **isolation: "worktree"** - each teammate gets its own git worktree for clean file isolation
 
 ### Spawn Prompt Template
 
@@ -121,12 +134,15 @@ Execute tasks sequentially in the current session following the standard impleme
 
 ## Multi-Agent Dispatch
 
-The parallel dispatch mechanism varies by harness:
+The parallel dispatch mechanism varies by agent:
 
-<!-- harness:agent-teams-dispatch -->
-Use the agent's team mechanism to spawn teammates in isolated worktrees.
-If the current harness does not support parallel dispatch, execute tasks sequentially.
-<!-- /harness:agent-teams-dispatch -->
+**Claude Code**: Use the **Agent** tool with `team_name` to spawn teammates in isolated worktrees.
+
+**OpenCode**: Use the **Task** tool to dispatch independent task groups in parallel. Each task runs in its own context.
+
+**Codex**: Use **subagents** when explicitly requested. Each subagent handles an independent task group.
+
+**Fallback (no parallel mechanism)**: Execute tasks sequentially in the current session. Report to the user: "Parallel dispatch is not available on this agent. Executing tasks sequentially."
 
 ## Key Principles
 
