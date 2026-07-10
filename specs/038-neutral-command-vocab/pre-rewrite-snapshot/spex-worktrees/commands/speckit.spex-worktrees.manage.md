@@ -47,7 +47,7 @@ WORKTREE_CONFIG=".specify/extensions/spex-worktrees/worktree-config.yml"
 BASE_PATH=$(yq -r '.worktrees.base_path // ".claude/worktrees"' "$WORKTREE_CONFIG" 2>/dev/null || echo ".claude/worktrees")
 ```
 
-Default: `.claude/worktrees` (inside the project directory, keeps CWD stable for the coding agent).
+Default: `.claude/worktrees` (inside the project directory, keeps CWD stable in Claude Code).
 
 ### Step 2: Get Current Branch
 
@@ -412,11 +412,7 @@ Create one by running /speckit-specify with the worktrees extension enabled.
 
 Merges the current worktree's feature branch into the default branch and removes the worktree. This is the recommended way to complete work in a spex worktree.
 
-<!-- harness:worktree-isolation -->
-Spex worktrees are managed via `git worktree add` and `git worktree remove` commands directly.
-Do NOT use harness-specific worktree tools, as spex worktrees are created independently.
-Always use git commands for worktree operations.
-<!-- /harness:worktree-isolation -->
+**IMPORTANT:** Do NOT use the `ExitWorktree` tool (Claude Code only). Spex worktrees are created via `git worktree add`, not `EnterWorktree`, so `ExitWorktree` will refuse to operate on them. Always use git commands directly. On agents without `EnterWorktree` (Codex, OpenCode), worktrees are always managed via git commands.
 
 ### Step 1: Verify We're in a Worktree
 

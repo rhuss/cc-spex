@@ -172,10 +172,10 @@ Read `.specify/extensions/.registry` and check if `spex-teams` extension is enab
 - **Single-agent fallback**: If the current agent has no subagent mechanism at all, execute all 5 review perspectives sequentially in the current session. Run each perspective's prompt as a separate analysis pass, collecting findings between passes.
 
 **Parallel mode** (teams IS enabled and agent supports parallel dispatch):
-<!-- harness:parallel-dispatch -->
-Dispatch all review agents using multiple subagent calls in a single message.
-Each agent runs in isolated context.
-<!-- /harness:parallel-dispatch -->
+- **Claude Code**: Dispatch all 5 agents using multiple Agent tool calls in a single message
+- **OpenCode**: Dispatch using Task tool for parallel execution
+- **Codex**: Dispatch using subagents
+- Each agent runs in isolated context
 - Report progress as each agent completes:
   ```
   Agent completed: Security... 2 findings
@@ -184,7 +184,7 @@ Each agent runs in isolated context.
   ```
 
 **For each agent dispatch**, use the agent's subagent mechanism with:
-- a general-purpose worker agent
+- On Claude Code: `subagent_type: "general-purpose"` via the Agent tool
 - The full agent prompt (from the Agent Prompts section below)
 - Include the list of changed files and their contents
 - **Include the spec text** (spec.md content, if available). Agents need the spec to check code behavior against requirements. Without it, they can only find code-level issues, not spec compliance gaps.

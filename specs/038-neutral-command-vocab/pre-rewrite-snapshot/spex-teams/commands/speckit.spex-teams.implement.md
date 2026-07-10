@@ -1,5 +1,5 @@
 ---
-description: "Parallel implementation via agent teams for independent tasks"
+description: "Parallel implementation via Agent Teams for independent tasks"
 ---
 
 # Teams Implement
@@ -9,7 +9,7 @@ Standalone parallel implementation command. The ship pipeline routes to this com
 
 ## Prerequisites
 
-- The parallel agent teams feature must be enabled
+- CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS must be set
 - tasks.md must exist with task breakdown
 - spex-gates extension must be enabled
 
