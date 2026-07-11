@@ -443,9 +443,11 @@ When running inside the ship pipeline, **no `/speckit-*` command may pause for u
 - **`speckit-clarify`**: Do not present questions interactively in `smart` or `never` mode. Auto-select recommended answers.
 - **`speckit-plan`**: Do not ask for confirmation before or after planning. Proceed to the next stage.
 - **`speckit-tasks`**: Do not ask for confirmation. Proceed to the next stage.
-- **`speckit-implement`**: Do not pause at extension overlay gates. Proceed to the next stage.
+- **`speckit-implement`**: **SKIP all `after_implement` extension hooks entirely.** Do not execute review-code, deep-review, or any other after_implement hook. The ship pipeline runs review-code as its own Stage 7 with a separate subagent, so running it inside the implement subagent would be a double execution. When the implement subagent reaches step 10 (extension hooks), it must detect pipeline mode and skip.
 
 Extension overlays (e.g., `spex-gates` adding review after specify) may run their reviews, but their results are informational. Do NOT pause or ask the user before proceeding. The ship pipeline's own stage gate logic handles all oversight decisions.
+
+**Exception: `speckit-implement`** does not run its after_implement hooks at all in pipeline mode (see above). The pipeline handles review-code as a separate stage.
 
 **This is a hard override. If a speckit command prompt says "present to user" or "wait for answer", and `ask` is `smart` or `never`, you answer it yourself and continue.**
 
@@ -685,6 +687,10 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    The .specify/.spex-state file exists with status "running", so the
    implement command will run in pipeline mode (no completion summary, no user questions).
 
+   IMPORTANT: SKIP ALL after_implement extension hooks (step 10 of the implement skill).
+   Do NOT execute review-code, deep-review, or any other after_implement hook.
+   The ship pipeline runs review-code as a separate Stage 7.
+
    <TEST_CHECKPOINT_INSTRUCTIONS>
 
    <CHECKPOINT_INSTRUCTIONS>
@@ -706,6 +712,10 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Read these files, then invoke /speckit-implement to execute the implementation.
    The .specify/.spex-state file exists with status "running", so the
    implement command will run in pipeline mode (no completion summary, no user questions).
+
+   IMPORTANT: SKIP ALL after_implement extension hooks (step 10 of the implement skill).
+   Do NOT execute review-code, deep-review, or any other after_implement hook.
+   The ship pipeline runs review-code as a separate Stage 7.
 
    <TEST_CHECKPOINT_INSTRUCTIONS>
 
