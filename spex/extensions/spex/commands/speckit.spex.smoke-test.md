@@ -127,7 +127,10 @@ For each scenario (in order):
    - File contents (if file inspection)
    - Any other relevant output
 
-4. **Present evidence to the human**:
+4. **Present evidence and recommendation to the human**:
+
+   After executing the scenario, compare the actual output against the expected behavior from the spec. Then present a structured verdict with your reasoning:
+
    ```
    ### Evidence
 
@@ -138,10 +141,26 @@ For each scenario (in order):
    <captured output, screenshot description, or file contents>
    ```
 
-   What to verify: <specific aspect the human should judge>
+   **Expected** (from spec): <quote the specific expected behavior>
+   **Actual**: <what actually happened, with concrete details>
+
+   ### Recommendation: PASS | FAIL | SKIP
+
+   **Why**: <1-2 sentences explaining the match/mismatch between expected and actual>
+
+   **How to verify yourself** (if you want to double-check):
+   1. <concrete command to run or file to inspect>
+   2. <what to look for in the output>
    ```
 
-5. **Ask for verdict**: Present options to the human:
+   The recommendation MUST be specific and evidence-based:
+   - PASS: state exactly which expected conditions were met and how (e.g., "File exists at X, contains field Y with value Z")
+   - FAIL: state exactly what differs (e.g., "Expected field 'status' to be 'active', got 'pending'")
+   - SKIP: state exactly why it cannot be tested (e.g., "Requires a running SMTP server not available in this session")
+
+   **Never present a bare "pass/fail/skip?" without your recommendation and reasoning.** The human should be confirming or overriding your judgment, not making the judgment from scratch.
+
+5. **Ask for verdict**: Present options using AskUserQuestion with your recommendation as the first option:
    - **Pass**: Scenario works as expected
    - **Fail**: Scenario does not match expected behavior
    - **Skip**: Cannot verify right now, will test later
