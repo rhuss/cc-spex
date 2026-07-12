@@ -1,7 +1,6 @@
 {
   "harness": "opencode",
-  "version": "1.0.0",
-  "inline": [],
-  "sections": {},
+  "version": "2.0.0",
+  "tokens": {},
   "fallback_note": "> **Note:** This capability is not directly supported on OpenCode. {fallback_text}"
 }

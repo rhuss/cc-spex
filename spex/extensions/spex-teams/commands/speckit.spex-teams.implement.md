@@ -9,7 +9,7 @@ Standalone parallel implementation command. The ship pipeline routes to this com
 
 ## Prerequisites
 
-- The parallel agent teams feature must be enabled
+- {harness:teams-enabled}
 - tasks.md must exist with task breakdown
 - spex-gates extension must be enabled
 

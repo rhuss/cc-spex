@@ -161,7 +161,7 @@ If `REVIEW_HINTS` is non-empty, the content will be injected into every review a
 Read `.specify/extensions/.registry` and check if `spex-teams` extension is enabled (query: `.extensions["spex-teams"].enabled`).
 
 **Sequential mode** (teams NOT enabled, or agent lacks subagent support):
-- Dispatch each review agent one at a time using the agent's subagent mechanism
+- Dispatch each review agent one at a time using {harness:subagent-mechanism}
 - Each agent gets a fresh, isolated context (no session history)
 - Report progress after each agent completes:
   ```
@@ -172,19 +172,19 @@ Read `.specify/extensions/.registry` and check if `spex-teams` extension is enab
 - **Single-agent fallback**: If the current agent has no subagent mechanism at all, execute all 5 review perspectives sequentially in the current session. Run each perspective's prompt as a separate analysis pass, collecting findings between passes.
 
 **Parallel mode** (teams IS enabled and agent supports parallel dispatch):
-<!-- harness:parallel-dispatch -->
+{harness:parallel-dispatch}
 Dispatch all review agents using multiple subagent calls in a single message.
 Each agent runs in isolated context.
-<!-- /harness:parallel-dispatch -->
+{/harness:parallel-dispatch}
 - Report progress as each agent completes:
-  ```
+  ```text
   Agent completed: Security... 2 findings
   Agent completed: Test Quality... 0 findings
   ...
   ```
 
-**For each agent dispatch**, use the agent's subagent mechanism with:
-- a general-purpose worker agent
+**For each agent dispatch**, {harness:use-subagent}:
+- {harness:general-worker}
 - The full agent prompt (from the Agent Prompts section below)
 - Include the list of changed files and their contents
 - **Include the spec text** (spec.md content, if available). Agents need the spec to check code behavior against requirements. Without it, they can only find code-level issues, not spec compliance gaps.

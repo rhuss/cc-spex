@@ -1,49 +1,21 @@
 {
   "harness": "codex",
-  "version": "1.0.0",
-  "inline": [
-    {
-      "neutral": "do NOT present interactive prompts",
-      "adapted": "do NOT prompt the user interactively"
-    },
-    {
-      "neutral": "suppress all interactive prompts, complete the stamp",
-      "adapted": "suppress all prompts, complete the stamp"
-    },
-    {
-      "neutral": "suppress all interactive prompts, complete the verification",
-      "adapted": "suppress all prompts, complete the verification"
-    },
-    {
-      "neutral": "present the choice using a structured interactive prompt",
-      "adapted": "present the choice as a clear text prompt"
-    },
-    {
-      "neutral": "**This MUST be a structured interactive prompt, not a markdown text prompt.**",
-      "adapted": "Present the options clearly and wait for the user's text reply."
-    },
-    {
-      "neutral": "Spawn a worker agent with the following prompt",
-      "adapted": "Execute the following as a subagent"
-    },
-    {
-      "neutral": "spawn a fresh-context worker agent",
-      "adapted": "spawn a fresh subagent"
-    },
-    {
-      "neutral": "a general-purpose worker agent",
-      "adapted": "a subagent"
-    },
-    {
-      "neutral": "the agent's subagent mechanism",
-      "adapted": "subagents"
-    },
-    {
-      "neutral": "The parallel agent teams feature must be enabled",
-      "adapted": "Subagents must be available for parallel execution"
-    }
-  ],
-  "sections": {
+  "version": "2.0.0",
+  "tokens": {
+    "suppress-prompts-stamp": "suppress all prompts, complete the stamp",
+    "suppress-prompts-verify": "suppress all prompts, complete the verification",
+    "interactive-choice": "present the choice as a clear text prompt",
+    "interactive-choice-skip": "(skip in autonomous mode)",
+    "interactive-choice-must": "Present the options clearly and wait for the user's text reply.",
+    "spawn-worker": "Execute the following as a subagent",
+    "spawn-fresh-worker": "spawn a fresh subagent",
+    "general-worker": "a subagent",
+    "dispatch-review-agents": "Dispatch review agents as subagents, each in its own context",
+    "subagent-mechanism": "subagents",
+    "use-subagent": "Use a subagent with",
+    "teams-enabled": "Subagents must be available for parallel execution",
+    "teams-spawn": "Use subagents to spawn teammates in isolated worktrees",
+    "teams-research-spawn": "Use subagents for parallel research. Each agent explores in its own context",
     "parallel-dispatch": "Dispatch review agents as subagents when explicitly requested.\nEach agent runs in its own context.\nIf subagents are not available, execute all review perspectives sequentially.",
     "agent-teams": "Verify that subagent support is available for parallel execution.\nIf not available, fall back to sequential execution.",
     "agent-teams-dispatch": "**Codex**: Use subagents when explicitly requested. Each subagent handles an independent task group.\n\n**Fallback (no parallel mechanism)**: Execute tasks sequentially in the current session.",
