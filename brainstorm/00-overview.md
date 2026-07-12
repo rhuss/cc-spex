@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-07
+Last updated: 2026-07-12
 
 ## Sessions
 
@@ -40,6 +40,7 @@ Last updated: 2026-07-07
 | 32 | 2026-07-04 | update-check | active | - | [#12](https://github.com/rhuss/cc-spex/issues/12) |
 | 33 | 2026-07-06 | extension-local-scripts | spec-created | 036 | [#13](https://github.com/rhuss/cc-spex/pull/13) |
 | 34 | 2026-07-07 | workflow-based-setup | active | - | - |
+| 35 | 2026-07-12 | robust-harness-markers | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -112,6 +113,8 @@ Last updated: 2026-07-07
 - Minimum spec-kit version required for workflow + bundle support? (from #34)
 - Should the setup workflow be idempotent (safe to re-run)? (from #34)
 - Neutral vocabulary for subagent dispatch (ship/teams/deep-review CC coupling) (from #34)
+- Multi-line token values: JSON `\n` strings vs external file references? (from #35)
+- `--debug` output: stderr to avoid polluting stdout in dry-run mode? (from #35)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
