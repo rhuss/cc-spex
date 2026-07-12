@@ -288,16 +288,21 @@ MULTI-AGENT SUPPORT
     Extension commands use harness-neutral vocabulary by default.
     During setup, the adapt-commands step transforms them using
     per-harness mapping tables in spex/scripts/adapters/<harness>/.
-    Capability markers (<!-- harness:X -->) delimit sections needing
-    harness-specific replacement. Inline substitutions handle phrases.
+    Unified {harness:key} token syntax:
+      Inline:  {harness:key}           single-phrase replacement
+      Block:   {harness:key}...{/harness:key}  multi-line section replacement
+    Blocks are processed first, then inline tokens. Leftover markers
+    trigger post-adaptation warnings.
 
-    Mapping tables:
+    Mapping tables (v2.0.0 schema, "tokens" object):
       spex/scripts/adapters/claude/command-map.json   (full)
       spex/scripts/adapters/codex/command-map.json    (proof-of-concept)
       spex/scripts/adapters/opencode/command-map.json  (stub)
 
     Preview changes:
       ./spex/scripts/spex-adapt-commands.sh --dry-run claude .specify/extensions spex/scripts/adapters
+    Debug per-marker trace:
+      ./spex/scripts/spex-adapt-commands.sh --debug --dry-run claude .specify/extensions spex/scripts/adapters
 
   Shared enforcement logic lives in spex/scripts/hooks/shared/.
   All adapters call the same POSIX shell functions for gate decisions.

@@ -12,10 +12,10 @@ This command orchestrates parallel codebase research using parallel agent teams 
 
 ### Parallel Agent Teams Prerequisite
 
-<!-- harness:agent-teams -->
+{harness:agent-teams}
 Verify that the parallel agent teams feature is available on the current harness.
 If not available, fall back to single-session research for this session.
-<!-- /harness:agent-teams -->
+{/harness:agent-teams}
 
 **If teams are available:** Proceed with team research.
 
@@ -135,10 +135,10 @@ Research the codebase directly in the current session, then generate the plan. T
 
 The parallel dispatch mechanism varies by harness:
 
-<!-- harness:agent-teams-research-dispatch -->
+{harness:agent-teams-research-dispatch}
 Use the agent's team mechanism to spawn research agents.
 If the current harness does not support parallel dispatch, research all topics sequentially.
-<!-- /harness:agent-teams-research-dispatch -->
+{/harness:agent-teams-research-dispatch}
 
 ## Key Principles
 

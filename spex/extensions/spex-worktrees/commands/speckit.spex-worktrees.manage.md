@@ -412,11 +412,11 @@ Create one by running /speckit-specify with the worktrees extension enabled.
 
 Merges the current worktree's feature branch into the default branch and removes the worktree. This is the recommended way to complete work in a spex worktree.
 
-<!-- harness:worktree-isolation -->
+{harness:worktree-isolation}
 Spex worktrees are managed via `git worktree add` and `git worktree remove` commands directly.
 Do NOT use harness-specific worktree tools, as spex worktrees are created independently.
 Always use git commands for worktree operations.
-<!-- /harness:worktree-isolation -->
+{/harness:worktree-isolation}
 
 ### Step 1: Verify We're in a Worktree
 

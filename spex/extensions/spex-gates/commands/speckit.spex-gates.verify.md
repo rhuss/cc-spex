@@ -7,7 +7,7 @@ description: "Final verification gate: tests, code hygiene, spec compliance, and
 ## Ship Pipeline Guard
 
 If `.specify/.spex-state` exists and its `status` is `running`, this command is part of an autonomous pipeline. Check the `ask` field:
-- If `ask` is `"smart"` or `"never"`: suppress all interactive prompts, complete the verification autonomously, and return immediately so the pipeline can advance.
+- If `ask` is `"smart"` or `"never"`: {harness:suppress-prompts-verify} autonomously, and return immediately so the pipeline can advance.
 - If `ask` is `"always"`: prompt the user as normal.
 
 ```bash
@@ -95,7 +95,7 @@ If this fails (not on a feature branch, no matching spec directory), fall back t
 find specs/ -name "spec.md" -type f 2>/dev/null | head -20
 ```
 
-**If specs found:** Present list and ask user to select one using a structured interactive prompt (skip in autonomous mode).
+**If specs found:** Present list and ask user to select one {harness:interactive-choice-skip}.
 
 **If no specs found:** Inform user:
 ```

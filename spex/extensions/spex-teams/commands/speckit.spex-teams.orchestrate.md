@@ -12,10 +12,10 @@ This command orchestrates parallel task implementation using parallel agent team
 
 ### Parallel Agent Teams Prerequisite
 
-<!-- harness:agent-teams -->
+{harness:agent-teams}
 Verify that the parallel agent teams feature is available on the current harness.
 If not available, fall back to sequential implementation for this session.
-<!-- /harness:agent-teams -->
+{/harness:agent-teams}
 
 **If teams are available:** Proceed with team orchestration.
 
@@ -123,10 +123,10 @@ Execute tasks sequentially in the current session following the standard impleme
 
 The parallel dispatch mechanism varies by harness:
 
-<!-- harness:agent-teams-dispatch -->
+{harness:agent-teams-dispatch}
 Use the agent's team mechanism to spawn teammates in isolated worktrees.
 If the current harness does not support parallel dispatch, execute tasks sequentially.
-<!-- /harness:agent-teams-dispatch -->
+{/harness:agent-teams-dispatch}
 
 ## Key Principles
 

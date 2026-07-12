@@ -214,9 +214,9 @@ The workflow auto-detects the agent harness, installs extensions, and applies pe
 
 Extension command files are written in harness-neutral vocabulary. They describe desired behaviors (e.g., "present the user with a structured choice") without referencing specific tools (e.g., `AskUserQuestion`). During setup, the `adapt-commands` step runs `spex-adapt-commands.sh` to transform neutral commands into harness-optimized versions using per-harness mapping tables in `spex/scripts/adapters/<harness>/command-map.json`.
 
-Capability markers (`<!-- harness:X -->...<!-- /harness:X -->`) delimit sections that need harness-specific replacement. Inline substitutions handle single-phrase replacements within flowing text.
+Harness markers use a unified `{harness:key}` token syntax. Inline tokens (`{harness:key}`) replace single phrases within flowing text. Block markers (`{harness:key}...{/harness:key}`) wrap multi-line sections replaced as a unit. The adaptation script processes blocks first, then inline tokens, and validates that no leftover markers remain. Use `--debug` for per-marker trace output.
 
-To add support for a new harness, create a `command-map.json` in `spex/scripts/adapters/<harness>/` with inline substitutions and section replacements. No changes to the adaptation script or source command files are needed.
+To add support for a new harness, create a `command-map.json` (v2.0.0 schema) in `spex/scripts/adapters/<harness>/` with a `tokens` object mapping keys to replacement strings. No changes to the adaptation script or source command files are needed.
 
 ## The Extensions System
 
