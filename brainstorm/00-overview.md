@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-12
+Last updated: 2026-07-13
 
 ## Sessions
 
@@ -40,7 +40,8 @@ Last updated: 2026-07-12
 | 32 | 2026-07-04 | update-check | active | - | [#12](https://github.com/rhuss/cc-spex/issues/12) |
 | 33 | 2026-07-06 | extension-local-scripts | spec-created | 036 | [#13](https://github.com/rhuss/cc-spex/pull/13) |
 | 34 | 2026-07-07 | workflow-based-setup | active | - | - |
-| 35 | 2026-07-12 | robust-harness-markers | active | - | - |
+| 35 | 2026-07-12 | robust-harness-markers | spec-created | 039 | - |
+| 36 | 2026-07-13 | codex-hook-contract | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -115,6 +116,9 @@ Last updated: 2026-07-12
 - Neutral vocabulary for subagent dispatch (ship/teams/deep-review CC coupling) (from #34)
 - Multi-line token values: JSON `\n` strings vs external file references? (from #35)
 - `--debug` output: stderr to avoid polluting stdout in dry-run mode? (from #35)
+- Verify Codex stdin contract against actual v0.144.1 binary or trust the docs? (from #36)
+- `transcript_path` in UserPromptSubmit: useful for richer context injection? (from #36)
+- Exit code 2 vs JSON deny: which is more reliable across Codex versions? (from #36)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
