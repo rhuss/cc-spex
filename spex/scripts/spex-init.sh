@@ -275,6 +275,8 @@ install_agent_adapter() {
       codex_pretool="$(cd "$script_dir/adapters/codex" 2>/dev/null && pwd)/pretool-gate.py"
       local codex_context
       codex_context="$(cd "$script_dir/adapters/codex" 2>/dev/null && pwd)/context-hook.py"
+      local python_resolve
+      python_resolve="$(cd "$script_dir/hooks" 2>/dev/null && pwd)/python-resolve.sh"
 
       if [ ! -f "$codex_pretool" ] || [ ! -f "$codex_context" ]; then
         echo "  WARNING: Codex adapter scripts not found at $script_dir/adapters/codex/" >&2
@@ -288,12 +290,12 @@ install_agent_adapter() {
     {
       "type": "command",
       "event": "UserPromptSubmit",
-      "command": "python3 $codex_context"
+      "command": "sh $python_resolve $codex_context"
     },
     {
       "type": "command",
       "event": "PreToolUse",
-      "command": "python3 $codex_pretool"
+      "command": "sh $python_resolve $codex_pretool"
     }
   ]
 }

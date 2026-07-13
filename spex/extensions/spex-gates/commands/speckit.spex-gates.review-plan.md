@@ -164,7 +164,7 @@ Findings:
 
 Then ask the user how to proceed (skip in autonomous mode, default to "Fix all"):
 
-Present options to the user:
+{harness:interactive-choice}:
 - header: "Findings"
 - Options (single-select):
   - "Fix all": "Address every finding automatically"

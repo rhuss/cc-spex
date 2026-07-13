@@ -220,7 +220,7 @@ The PR body MUST begin with:
 
 Followed by the phase section content (What Changed, Spec Compliance, Focus Areas, AI Assumptions).
 
-Present options to the user:
+{harness:interactive-choice}:
 
 **Question**: "Phase [N] is ready. What would you like to do?"
 **Options**:
@@ -411,7 +411,7 @@ Triage complete: ${COMMENT_COUNT} review comments handled (threshold: ${SPLIT_TH
 Recommendation: Continue on the same PR. The review surface is manageable.
 ```
 
-Present options to the user:
+{harness:interactive-choice}:
 
 **Question**: "Update this PR to include implementation?"
 **Options**:
@@ -452,7 +452,7 @@ Recommendation: The review surface is large. Consider merging this spec PR as-is
 and creating separate implementation PR(s) to keep reviews focused.
 ```
 
-Present options to the user:
+{harness:interactive-choice}:
 
 **Question**: "How would you like to proceed?"
 **Options**:

@@ -464,7 +464,7 @@ fi
 
 ### Step 4: Ask User How to Proceed
 
-Present options to the user (single-select, header: "Finish"):
+{harness:interactive-choice} (single-select, header: "Finish"):
 - "Merge and remove (Recommended)": "Fast-forward merge branch into default, remove worktree and branch"
 - "Remove only": "Remove worktree and branch without merging (changes stay in git reflog)"
 - "Cancel": "Keep worktree as-is"
@@ -491,7 +491,7 @@ git merge --ff-only "$BRANCH_NAME" 2>&1
 
 If fast-forward merge fails (branches diverged), ask the user:
 
-Present options to the user (single-select, header: "Merge"):
+{harness:interactive-choice} (single-select, header: "Merge"):
 - "Create merge commit": "Merge with a merge commit (branches have diverged)"
 - "Abort": "Keep worktree, resolve manually"
 

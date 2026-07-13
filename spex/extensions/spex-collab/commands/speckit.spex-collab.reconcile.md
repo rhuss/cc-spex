@@ -134,7 +134,7 @@ These tasks were added by the spec revision:
 ...
 ```
 
-Present options to the user (single-select, header: "Reconcile"):
+{harness:interactive-choice} (single-select, header: "Reconcile"):
 
 **"Apply this reconciliation to tasks.md?"**
 
@@ -146,7 +146,7 @@ Present options to the user (single-select, header: "Reconcile"):
 
 For each task classified as DONE, ask for confirmation:
 
-Present options to the user (multi-select, header: "Confirm"):
+{harness:interactive-choice} (multi-select, header: "Confirm"):
 
 **"Which DONE classifications are correct? Unselected tasks will remain [ ]."**
 

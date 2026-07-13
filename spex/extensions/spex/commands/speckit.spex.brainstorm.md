@@ -146,15 +146,16 @@ This is the decision point. The brainstorm document captures this agreement.
 
 ### Transition: next steps
 
-After the brainstorm document is written and overview updated, offer the user a choice of how to proceed:
+After the brainstorm document is written and overview updated, {harness:interactive-choice}:
 
-Present options to the user:
 - header: "Next steps"
 - multiSelect: false
 - Options:
   - "Specify step-by-step (/speckit-specify)": "Create a formal spec interactively, then plan and implement in separate steps"
   - "Ship autonomously (/speckit-spex-ship)": "Run the full pipeline (specify, plan, implement, review) with configurable oversight. Best for small to mid-sized features."
   - "Done for now": "Stop here. The brainstorm document is saved for later."
+
+{harness:interactive-choice-must} Do NOT output the options as text and wait for a free-form reply.
 
 If the user chooses "Specify step-by-step": invoke `/speckit-specify` with the brainstorm document as context.
 

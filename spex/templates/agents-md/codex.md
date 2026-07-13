@@ -12,20 +12,8 @@ You do not need to remember the rules; the hooks will block invalid actions.
 
 ## Interactive Prompts
 
-Codex does NOT have the AskUserQuestion tool. When a skill instructs you to
-present options to the user, use an **inline numbered list** instead:
-
-```
-Choose an option:
-1. Option A - description
-2. Option B - description
-3. Option C - description
-
-Enter the number of your choice:
-```
-
-Wait for the user's response before proceeding. Do NOT call AskUserQuestion
-(it does not exist on Codex). Do NOT assume a default choice.
+Codex does NOT have the AskUserQuestion tool. When presenting choices,
+use an inline numbered list and wait for the user's response.
 
 ## Parallel Work
 

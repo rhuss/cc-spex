@@ -391,11 +391,12 @@ steps:
             mkdir -p .codex
             CODEX_PRETOOL="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/pretool-gate.py"
             CODEX_CONTEXT="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/context-hook.py"
+            PYTHON_RESOLVE="$(cd "$SOURCE/scripts/hooks" 2>/dev/null && pwd)/python-resolve.sh"
             if [ ! -f "$CODEX_PRETOOL" ] || [ ! -f "$CODEX_CONTEXT" ]; then
               echo "WARNING: Codex adapter scripts not found" >&2
               exit 0
             fi
-            SPEX_HOOKS=$(jq -n --arg ctx "python3 $CODEX_CONTEXT" --arg pre "python3 $CODEX_PRETOOL" \
+            SPEX_HOOKS=$(jq -n --arg ctx "sh $PYTHON_RESOLVE $CODEX_CONTEXT" --arg pre "sh $PYTHON_RESOLVE $CODEX_PRETOOL" \
               '[{type:"command",event:"UserPromptSubmit",command:$ctx},{type:"command",event:"PreToolUse",command:$pre}]')
             if [ -f .codex/hooks.json ]; then
               TMP=$(mktemp)

@@ -201,7 +201,7 @@ ls specs/features/*.md 2>/dev/null
 ### Present Options to User
 
 **If multiple specs found:**
-Present options to the user to select which spec to use.
+{harness:interactive-choice} to select which spec to use.
 
 **If single spec found:**
 Confirm with user before proceeding: "Found specs/0001-auth/spec.md. Use this spec?"

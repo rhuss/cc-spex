@@ -42,7 +42,7 @@ Report the result to the user.
 
 1. Run `specify extension list` and check if the extension is already disabled. If so, report that and STOP.
 2. **Warn the user**: Disabling an extension requires regenerating all spec-kit files, which resets any manual customizations to `.claude/skills/speckit-*/SKILL.md` and `.specify/templates/*.md` files.
-3. Present options to the user to confirm:
+3. {harness:interactive-choice} to confirm:
    - **Question**: "Disabling an extension will reset all spec-kit files to defaults (losing any manual customizations). Proceed?"
    - **Header**: "Confirm"
    - **Options**:

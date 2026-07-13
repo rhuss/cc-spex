@@ -160,7 +160,7 @@ For each scenario (in order):
 
    **Never present a bare "pass/fail/skip?" without your recommendation and reasoning.** The human should be confirming or overriding your judgment, not making the judgment from scratch.
 
-5. **Ask for verdict**: Present options using AskUserQuestion with your recommendation as the first option:
+5. **Ask for verdict**: {harness:interactive-choice} with your recommendation as the first option:
    - **Pass**: Scenario works as expected
    - **Fail**: Scenario does not match expected behavior
    - **Skip**: Cannot verify right now, will test later

@@ -235,7 +235,7 @@ The branch has been squashed locally but the remote was not updated.
 
 If `AUTONOMOUS_MODE` is true AND `IN_WORKTREE` is false: skip the prompt and go directly to **Option A: Merge to default branch**.
 
-Present options to the user (single-select, header: "Finish"):
+{harness:interactive-choice} (single-select, header: "Finish"):
 
 **"Code is squashed and ready. How would you like to land it?"**
 
