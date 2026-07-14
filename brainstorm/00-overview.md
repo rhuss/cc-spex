@@ -42,7 +42,7 @@ Last updated: 2026-07-14
 | 34 | 2026-07-07 | workflow-based-setup | active | - | - |
 | 35 | 2026-07-12 | robust-harness-markers | spec-created | 039 | - |
 | 36 | 2026-07-13 | codex-hook-contract | active | - | - |
-| 37 | 2026-07-14 | spex-detach-hardening | active | - | - |
+| 37 | 2026-07-14 | spex-detach-hardening | active (revisited 2026-07-14) | - | - |
 | 38 | 2026-07-14 | codex-deep-review | active | - | - |
 
 ## Open Threads
@@ -121,11 +121,6 @@ Last updated: 2026-07-14
 - Verify Codex stdin contract against actual v0.144.1 binary or trust the docs? (from #36)
 - `transcript_path` in UserPromptSubmit: useful for richer context injection? (from #36)
 - Exit code 2 vs JSON deny: which is more reliable across Codex versions? (from #36)
-- Should spec archiving be mandatory before detach or remain optional? (from #37)
-- Does `git apply --index` with `--binary` handle all edge cases (renames, permissions)? (from #37)
-- Post-detach verification: `git ls-tree` (all files) vs `git diff` (changed files only)? (from #37)
-- Should brainstorms also be moved to sibling specs repo at archive time? (from #37)
-- Init flow for `archive.path`: auto-detect sibling `*-specs` dirs or always prompt? (from #37)
 - Exact output format of `codex review`: need to test with a real diff to determine parsing strategy (from #38)
 - Should Codex review run in parallel with internal agents or sequentially in Step 4? (from #38)
 - Auth failure handling: log and skip, or surface to user? (from #38)
