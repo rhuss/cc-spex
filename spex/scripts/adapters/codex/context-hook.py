@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """Codex CLI UserPromptSubmit hook adapter for spex.
 
-Reads JSON from stdin per Codex's hook contract, validates /spex: commands
-via the shared context-hook.sh, writes skill-pending markers, and injects
-spex context into the Codex session.
+Reads JSON from stdin per Codex's v0.144+ hook contract, validates /spex:
+commands via the shared context-hook.sh, writes skill-pending markers, and
+injects spex context into the Codex session.
 
-Codex hook contract (stdin JSON):
-  - session_id: string
-  - cwd: string
-  - model: string
-  - permission_mode: string
+Codex hook contract (stdin JSON, v0.144+):
   - prompt: string (user's input)
+  - turn_id: string (session/turn identifier, used as session_id for markers)
+  - cwd: string (working directory)
+  - permission_mode: string (ignored)
+  - transcript_path: string (ignored)
 
-Codex hook response (stdout JSON):
-  - For context injection: {"action": "context", "message": "<text>"}
-  - For errors: {"action": "context", "message": "<error>"}
+Codex hook response (stdout JSON, v0.144+):
+  - For context injection: {"systemMessage": "<text>"}
   - For pass-through: exit 0 with no output
 """
 import json
@@ -65,7 +64,7 @@ def main():
         sys.exit(0)
 
     prompt = hook_input.get('prompt', '')
-    session_id = hook_input.get('session_id', 'unknown')
+    session_id = hook_input.get('turn_id', 'unknown')
     cwd = Path(hook_input.get('cwd', '.'))
 
     # For non-spex commands, clean up any stale marker and exit
@@ -89,8 +88,7 @@ def main():
     if shared_result.startswith('error:'):
         error_msg = shared_result[6:]
         print(json.dumps({
-            "action": "context",
-            "message": f"<spex-error>{error_msg}</spex-error>"
+            "systemMessage": f"<spex-error>{error_msg}</spex-error>"
         }))
         sys.exit(0)
 
@@ -147,7 +145,7 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 <spex-init-command>{init_script}{init_args}</spex-init-command>
 </spex-context>{enforcement}"""
 
-    print(json.dumps({"action": "context", "message": ctx}))
+    print(json.dumps({"systemMessage": ctx}))
     sys.exit(0)
 
 

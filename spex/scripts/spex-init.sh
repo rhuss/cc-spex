@@ -283,23 +283,27 @@ install_agent_adapter() {
         return 1
       fi
 
-      # Write .codex/hooks.json with spex hook configuration
-      cat > .codex/hooks.json << HOOKEOF
-{
-  "hooks": [
-    {
-      "type": "command",
-      "event": "UserPromptSubmit",
-      "command": "sh $python_resolve $codex_context"
-    },
-    {
-      "type": "command",
-      "event": "PreToolUse",
-      "command": "sh $python_resolve $codex_pretool"
-    }
-  ]
-}
-HOOKEOF
+      # Write .codex/hooks.json with spex hook configuration (v0.144+ format)
+      if [ -f .codex/hooks.json ]; then
+        local tmp
+        tmp=$(mktemp)
+        jq --arg ctx "sh $python_resolve $codex_context" --arg pre "sh $python_resolve $codex_pretool" '
+          .hooks.UserPromptSubmit = [(.hooks.UserPromptSubmit // [] | .[] | select(
+            .hooks[0].command | test("context-hook\\.py") | not
+          ))] + [{hooks: [{command: $ctx, type: "command"}]}] |
+          .hooks.PreToolUse = [(.hooks.PreToolUse // [] | .[] | select(
+            .hooks[0].command | test("pretool-gate\\.py") | not
+          ))] + [{hooks: [{command: $pre, type: "command"}]}]
+        ' .codex/hooks.json > "$tmp"
+        mv "$tmp" .codex/hooks.json
+      else
+        jq -n --arg ctx "sh $python_resolve $codex_context" --arg pre "sh $python_resolve $codex_pretool" '{
+          hooks: {
+            UserPromptSubmit: [{hooks: [{command: $ctx, type: "command"}]}],
+            PreToolUse: [{hooks: [{command: $pre, type: "command"}]}]
+          }
+        }' > .codex/hooks.json
+      fi
       echo "  Codex adapter hooks installed to .codex/hooks.json"
 
       # Install AGENTS.md from template if available

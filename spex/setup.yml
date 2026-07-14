@@ -396,18 +396,26 @@ steps:
               echo "WARNING: Codex adapter scripts not found" >&2
               exit 0
             fi
-            SPEX_HOOKS=$(jq -n --arg ctx "sh $PYTHON_RESOLVE $CODEX_CONTEXT" --arg pre "sh $PYTHON_RESOLVE $CODEX_PRETOOL" \
-              '[{type:"command",event:"UserPromptSubmit",command:$ctx},{type:"command",event:"PreToolUse",command:$pre}]')
+            CTX_CMD="sh $PYTHON_RESOLVE $CODEX_CONTEXT"
+            PRE_CMD="sh $PYTHON_RESOLVE $CODEX_PRETOOL"
             if [ -f .codex/hooks.json ]; then
               TMP=$(mktemp)
-              jq --argjson spex "$SPEX_HOOKS" '
-                .hooks = ([.hooks // [] | .[] | select(
-                  (.command | test("context-hook\\.py|pretool-gate\\.py") | not)
-                )] + $spex)
+              jq --arg ctx "$CTX_CMD" --arg pre "$PRE_CMD" '
+                .hooks.UserPromptSubmit = [(.hooks.UserPromptSubmit // [] | .[] | select(
+                  .hooks[0].command | test("context-hook\\.py") | not
+                ))] + [{hooks: [{command: $ctx, type: "command"}]}] |
+                .hooks.PreToolUse = [(.hooks.PreToolUse // [] | .[] | select(
+                  .hooks[0].command | test("pretool-gate\\.py") | not
+                ))] + [{hooks: [{command: $pre, type: "command"}]}]
               ' .codex/hooks.json > "$TMP"
               mv "$TMP" .codex/hooks.json
             else
-              jq -n --argjson hooks "$SPEX_HOOKS" '{hooks: $hooks}' > .codex/hooks.json
+              jq -n --arg ctx "$CTX_CMD" --arg pre "$PRE_CMD" '{
+                hooks: {
+                  UserPromptSubmit: [{hooks: [{command: $ctx, type: "command"}]}],
+                  PreToolUse: [{hooks: [{command: $pre, type: "command"}]}]
+                }
+              }' > .codex/hooks.json
             fi
             echo "Codex adapter hooks installed" >&2
         - id: codex-agents-md
