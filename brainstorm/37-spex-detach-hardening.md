@@ -239,3 +239,68 @@ files are about to be stripped from the PR branch anyway.
   from other in-progress features.
 - How should the init flow prompt for `archive.path`? Auto-detect
   sibling `*-specs` directories, or always ask explicitly?
+
+---
+
+## Revisit: 2026-07-14
+
+### Resolved Open Questions
+
+All five open questions from the original brainstorm have been resolved:
+
+**Q1: Should archiving be mandatory before detach?**
+Decision: Default-on, skippable. Archive runs automatically as part of
+the detach flow (copy specs to sibling repo). Users can opt out with a
+flag if they don't want it. No separate "archive" step to remember.
+
+**Q2: Does `git apply --index` handle all edge cases?**
+Decision: Accept current risk. The detach workflow operates on source
+code contributions, which are text files in practice. The `--binary`
+flag on `git diff` provides basic binary coverage. Building a test
+matrix for edge cases that haven't occurred would be over-engineering.
+Document as a known limitation if someone hits it.
+
+**Q3: Should verification use `git ls-tree` or `git diff`?**
+Decision: Use `git diff` against the merge base (only check the PR's
+own changes). The goal is "don't leak your spec artifacts upstream."
+If the upstream repo already has spec-like directories, that's their
+concern, not something detach should flag.
+
+**Q4: Should brainstorm documents be moved to the sibling specs repo?**
+Decision: Yes, move brainstorms too. They're part of the design context
+and belong alongside the specs in the sibling repo. Cross-feature
+reference breakage is not a practical concern since features are
+typically worked sequentially in a fork.
+
+**Q5: How should init prompt for `archive.path`?**
+Decision: Auto-detect first, then confirm. If a sibling `*-specs`
+directory exists (e.g., `../openshell-specs/` when working in
+`openshell/`), suggest it as the default. If no match is found, ask
+the user for the path explicitly. Handles the common naming convention
+without being magical.
+
+### Updated Key Requirements
+
+The following requirements are refined based on the resolved questions:
+
+7. **Archive as default during detach**: When `archive.path` is
+   configured, the detach command archives specs, brainstorms, and
+   `.specify/` to the sibling repo before stripping. Skippable with
+   `--skip-archive`. Archive uses move semantics (delete source after
+   successful copy + commit to archive repo).
+
+8. **Brainstorm archiving**: Brainstorm documents are included in the
+   archive alongside `specs/` and `.specify/`. All three directories
+   are moved to the sibling specs repo.
+
+9. **Init auto-detection**: When `spex-detach` is enabled during
+   `specify init`, auto-detect sibling `*-specs` directories and
+   suggest as default `archive.path`. Fall back to explicit prompt
+   if no match.
+
+10. **Verification scope**: Post-detach verification checks `git diff`
+    against the merge base, not `git ls-tree`. Only the PR's own
+    changes are scanned for remaining SpecKit fingerprints.
+
+### Open Threads
+- None remaining. All questions resolved, ready for specification.
