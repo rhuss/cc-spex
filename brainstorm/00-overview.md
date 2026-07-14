@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-13
+Last updated: 2026-07-14
 
 ## Sessions
 
@@ -42,6 +42,7 @@ Last updated: 2026-07-13
 | 34 | 2026-07-07 | workflow-based-setup | active | - | - |
 | 35 | 2026-07-12 | robust-harness-markers | spec-created | 039 | - |
 | 36 | 2026-07-13 | codex-hook-contract | active | - | - |
+| 37 | 2026-07-14 | spex-detach-hardening | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -119,6 +120,9 @@ Last updated: 2026-07-13
 - Verify Codex stdin contract against actual v0.144.1 binary or trust the docs? (from #36)
 - `transcript_path` in UserPromptSubmit: useful for richer context injection? (from #36)
 - Exit code 2 vs JSON deny: which is more reliable across Codex versions? (from #36)
+- Should spec archiving be mandatory before detach or remain optional? (from #37)
+- Does `git apply --index` with `--binary` handle all edge cases (renames, permissions)? (from #37)
+- Post-detach verification: `git ls-tree` (all files) vs `git diff` (changed files only)? (from #37)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.
