@@ -106,9 +106,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         Layer comparison (checkpoint vs final) in ship mode.
                         Project hints via .specify/review-hints.md.
                         Combines with spex-teams for parallel execution.
-                        Optionally includes CodeRabbit + Copilot CLIs.
-                        Flags: --no-external, --no-coderabbit, --no-copilot
-                               --external, --coderabbit, --copilot
+                        Optionally includes CodeRabbit, Copilot, + Codex CLIs.
+                        Flags: --no-external, --no-coderabbit, --no-copilot, --no-codex
+                               --external, --coderabbit, --copilot, --codex
 
   spex-worktrees extension:
     /speckit-specify  → creates worktree at .claude/worktrees/<branch>,

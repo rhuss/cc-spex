@@ -2,6 +2,7 @@
 external_tools:
   coderabbit: true
   copilot: false
+  codex: true
 
 # Test suite configuration (used by fix loop)
 # Override auto-detected test command. When set, skips auto-detection.

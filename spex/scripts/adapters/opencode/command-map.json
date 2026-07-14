@@ -1,6 +1,8 @@
 {
   "harness": "opencode",
   "version": "2.0.0",
-  "tokens": {},
+  "tokens": {
+    "codex-review-tool": "Include Codex external tool detection and dispatch"
+  },
   "fallback_note": "> **Note:** This capability is not directly supported on OpenCode. {fallback_text}"
 }

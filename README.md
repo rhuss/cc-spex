@@ -231,7 +231,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 - `after_tasks`: runs plan review
 - `after_implement`: runs code review and verification
 
-**`spex-deep-review`** (requires `spex-gates`): Multi-perspective code review with five specialized agents (correctness, architecture, security, production readiness, test quality). Critical and Important findings trigger an autonomous fix loop (up to 3 rounds). Integrates with CodeRabbit CLI when available.
+**`spex-deep-review`** (requires `spex-gates`): Multi-perspective code review with five specialized agents (correctness, architecture, security, production readiness, test quality). Critical and Important findings trigger an autonomous fix loop (up to 3 rounds). Integrates with CodeRabbit and Codex CLIs when available.
 
 **`spex-teams`** (experimental, requires `spex-gates`): Parallel implementation via Claude Code Agent Teams. When combined with `spex-deep-review`, review agents run in parallel.
 
@@ -309,7 +309,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 `/speckit-spex-ship` is the autonomous full-cycle workflow that chains all stages from specification through verification. It requires both the `spex-gates` and `spex-deep-review` extensions to be enabled.
 
 ```
-/speckit-spex-ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--no-external] [--[no-]coderabbit] [--[no-]copilot]
+/speckit-spex-ship [brainstorm-file] [--ask always|smart|never] [--resume] [--start-from <stage>] [--no-external] [--[no-]coderabbit] [--[no-]copilot] [--[no-]codex]
 ```
 
 The pipeline runs nine stages in strict order:
