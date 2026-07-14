@@ -123,6 +123,8 @@ Last updated: 2026-07-14
 - Should spec archiving be mandatory before detach or remain optional? (from #37)
 - Does `git apply --index` with `--binary` handle all edge cases (renames, permissions)? (from #37)
 - Post-detach verification: `git ls-tree` (all files) vs `git diff` (changed files only)? (from #37)
+- Should brainstorms also be moved to sibling specs repo at archive time? (from #37)
+- Init flow for `archive.path`: auto-detect sibling `*-specs` dirs or always prompt? (from #37)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.

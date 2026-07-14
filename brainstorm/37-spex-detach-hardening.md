@@ -156,6 +156,67 @@ verification. No new architecture.
 6. **Quickstart update**: Document the `.gitignore` recommendation
    as a setup step for upstream contributions.
 
+## Additional Requirements: Sibling Specs Repo Model
+
+### Archive to sibling specs repo at finish time
+
+The intended production workflow uses a sibling directory layout:
+
+```
+~/Work/projects/openshell/           # code fork (upstream contributions)
+~/Work/projects/openshell-specs/     # private specs, brainstorms, archive
+```
+
+SpecKit runs inside the code fork during development. At `spex-finish`
+time, the detach extension should:
+
+1. Archive `specs/<feature>/` and `.specify/` to the sibling specs
+   repo (configured via `archive.path` in `spex-detach-config.yml`)
+2. Strip all SpecKit artifacts from the PR branch
+3. Verify the clean branch has no leaks
+
+The sibling specs repo is a regular git repo. The archive command
+already supports this (`spex-detach.py archive --target <path>`), but
+the `archive.path` config needs to be set during `specify init` when
+`spex-detach` is enabled. The init flow should prompt for the archive
+path.
+
+### Brainstorm discovery from sibling specs repo
+
+When running brainstorming in the code fork, the brainstorm skill
+should also scan the sibling specs repo's `brainstorm/` directory for
+existing documents on similar topics. This prevents duplicate
+brainstorms and helps the user discover prior thinking.
+
+The lookup path is already available via `archive.path` in the detach
+config. The brainstorm skill should:
+
+1. Check if spex-detach is enabled and `archive.path` is set
+2. Scan `<archive.path>/brainstorm/` for related documents (same
+   keyword overlap logic as local brainstorm revisit detection)
+3. Present matches alongside any local brainstorm matches
+4. If the user chooses to update an existing sibling brainstorm,
+   append a revisit section to the document in the sibling repo
+
+This keeps brainstorm history centralized in the specs repo while
+allowing brainstorming from the code fork where SpecKit operates.
+
+### Archive at detach time (move, not just copy)
+
+At `spex-finish` with detach enabled, the archive step should move
+(not just copy) the spec artifacts to the sibling specs repo. This
+ensures:
+
+- The specs repo has the authoritative copy
+- The code fork is clean after finish (no orphaned spec dirs)
+- The `.gitignore` entries in the code fork prevent re-creation
+
+The current `archive` subcommand copies. It should be updated to
+optionally move (delete source after successful copy and commit to
+the archive repo). The move behavior should be the default when
+detach is also being performed in the same finish flow, since the
+files are about to be stripped from the PR branch anyway.
+
 ## Open Questions
 
 - Should spec archiving (`spex-detach.py archive`) be mandatory
@@ -172,3 +233,9 @@ verification. No new architecture.
   all files on the branch) or `git diff` (checks only changed files)?
   `ls-tree` is more thorough but could flag SpecKit files that
   existed in the upstream base branch (unlikely but possible).
+- Should brainstorm documents also be moved to the sibling specs
+  repo at archive time, or only `specs/` and `.specify/`? Brainstorms
+  may span multiple features and moving them could break references
+  from other in-progress features.
+- How should the init flow prompt for `archive.path`? Auto-detect
+  sibling `*-specs` directories, or always ask explicitly?
