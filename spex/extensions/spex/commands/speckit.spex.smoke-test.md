@@ -144,7 +144,7 @@ For each scenario (in order):
    **Expected** (from spec): <quote the specific expected behavior>
    **Actual**: <what actually happened, with concrete details>
 
-   ### Recommendation: PASS | FAIL | SKIP
+   ### Recommendation: PASS | FAIL | SKIP | MANUAL
 
    **Why**: <1-2 sentences explaining the match/mismatch between expected and actual>
 
@@ -157,6 +157,7 @@ For each scenario (in order):
    - PASS: state exactly which expected conditions were met and how (e.g., "File exists at X, contains field Y with value Z")
    - FAIL: state exactly what differs (e.g., "Expected field 'status' to be 'active', got 'pending'")
    - SKIP: state exactly why it cannot be tested (e.g., "Requires a running SMTP server not available in this session")
+   - MANUAL: state why automation cannot cover this and provide numbered step-by-step instructions the user can follow right now (exact commands, expected output, what to look for)
 
    **Never present a bare "pass/fail/skip?" without your recommendation and reasoning.** The human should be confirming or overriding your judgment, not making the judgment from scratch.
 
@@ -164,6 +165,7 @@ For each scenario (in order):
    - **Pass**: Scenario works as expected
    - **Fail**: Scenario does not match expected behavior
    - **Skip**: Cannot verify right now, will test later
+   - **Run manually**: Cannot automate; detailed manual steps provided above
 
 6. **Record the verdict** with any notes the reviewer provides.
 
@@ -286,7 +288,7 @@ After all scenarios are reviewed, generate `SMOKE-TEST.md` in the spec directory
 <captured output or screenshot description>
 ```
 
-### Verdict: PASS | FAIL | SKIP
+### Verdict: PASS | FAIL | SKIP | MANUAL
 
 <reviewer notes if any>
 
@@ -365,7 +367,7 @@ Scenarios:
   3. <verdict emoji> <scenario instruction>
      <evidence summary>
 
-Summary: N passed, M skipped, K failed (out of TOTAL)
+Summary: N passed, M skipped, K failed, J manual (out of TOTAL)
 Full report: <path to SMOKE-TEST.md>
 
 ═══════════════════════════════════════════════════════
@@ -375,6 +377,7 @@ Full report: <path to SMOKE-TEST.md>
 - Pass: checkmark
 - Fail: cross mark
 - Skip: skip arrow
+- Manual: hand pointing right
 
 **For each scenario in the report, include:**
 - The scenario instruction text
@@ -382,6 +385,7 @@ Full report: <path to SMOKE-TEST.md>
 - A one-line evidence summary (what was done and observed)
 - For FAIL: expected vs. actual outcome (one line each)
 - For SKIP: the skip reason and a one-line manual test instruction
+- For MANUAL: numbered step-by-step instructions the user can follow (exact commands, expected output, what to verify)
 - For retried scenarios: note "(after retry)" next to the verdict
 
 **In pipeline mode**: Still suppress "Shall I proceed?" and next-step suggestions. But NEVER suppress the results report. The report is the whole point.

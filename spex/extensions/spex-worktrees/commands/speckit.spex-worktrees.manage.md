@@ -288,7 +288,21 @@ Print a machine-readable line followed by human-readable instructions:
 echo "WORKTREE_CREATED path=$WORKTREE_PATH"
 ```
 
-Then print instructions for the user. For inside-project worktrees, show the relative path (e.g., `.claude/worktrees/032-feature`). For external worktrees, show the absolute path.
+Then check whether this is running inside a ship pipeline:
+
+```bash
+if [ -n "$SPEX_STATE_CONTENT" ] && echo "$SPEX_STATE_CONTENT" | jq -e '.status == "running"' >/dev/null 2>&1; then
+  # Pipeline mode: suppress the completion box to avoid stalling the pipeline.
+  # Ship will handle the CWD switch and continue to the next stage.
+  echo "Worktree created at $WORKTREE_PATH (pipeline mode, continuing)"
+else
+  # Interactive mode: print full instructions for the user.
+fi
+```
+
+**Interactive mode output** (when NOT in pipeline mode):
+
+For inside-project worktrees, show the relative path (e.g., `.claude/worktrees/032-feature`). For external worktrees, show the absolute path.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -307,8 +321,6 @@ Then print instructions for the user. For inside-project worktrees, show the rel
 Where `<display-path>` is `.claude/worktrees/<branch>` for inside-project worktrees, or the full absolute path for external worktrees.
 
 Use the actual `WORKTREE_PATH` value (computed in Step 4) in the output.
-
-**Ship pipeline note:** When running inside a `speckit-spex-ship` pipeline, ship will automatically `cd` into the worktree and continue the pipeline there. No manual session restart needed.
 
 ## Action: Ensure
 

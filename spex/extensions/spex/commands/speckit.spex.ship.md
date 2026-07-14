@@ -460,7 +460,8 @@ Extension overlays (e.g., `spex-gates` adding review after specify) may run thei
    - The brainstorm content provides the problem statement, approaches considered, and decisions made.
    - Pass it as the user input to the specify command.
    - **Do not pause** after specify completes, even if an extension overlay runs a review or asks for confirmation. Proceed directly to step 4.
-4. After specify completes, extract the feature branch name and handle worktree integration:
+   - **CRITICAL: Specify triggers `after_specify` hooks (including worktree-manage).** When the last hook returns (you may see a "WORKTREE_CREATED" message or a completion box), you are back in the ship pipeline. Do NOT stop. Immediately proceed to step 4.
+4. After specify completes (including all its hooks), extract the feature branch name and handle worktree integration:
    ```bash
    FEATURE_BRANCH=$(git branch --show-current)
    ```
