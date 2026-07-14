@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """Codex CLI PreToolUse hook adapter for spex.
 
-Reads JSON from stdin per Codex's hook contract, calls shared POSIX shell
-enforcement functions, and formats responses per Codex's expected output.
+Reads JSON from stdin per Codex's v0.144+ hook contract, calls shared POSIX
+shell enforcement functions, and formats responses per Codex's expected output.
 
-Codex hook contract (stdin JSON):
-  - session_id: string
-  - cwd: string
-  - tool_name: string
-  - tool_input: object
+Codex hook contract (stdin JSON, v0.144+):
+  - tool_name: string (name of the tool being called)
+  - tool_input: object (arguments to the tool)
+  - turn_id: string (session/turn identifier, used as session_id for markers)
+  - cwd: string (working directory)
+  - permission_mode: string (ignored)
 
-Codex hook response (stdout JSON):
-  - For deny: {"action": "deny", "message": "<reason>"}
-  - For context: {"action": "context", "message": "<text>"}
-  - For allow: exit 0 with no output (or {"action": "allow"})
+Codex hook response (stdout JSON, v0.144+):
+  - For deny: {"hookSpecificOutput": {"hookEventName": "PreToolUse",
+      "permissionDecision": "deny", "permissionDecisionReason": "<reason>"}}
+  - For context: {"systemMessage": "<text>"}
+  - For allow: exit 0 with no output
 
 Side effects mirror Claude Code's pretool-gate.py behavior.
 """
@@ -66,14 +68,20 @@ def parse_result(result):
 
 
 def codex_deny(reason):
-    """Print a Codex-format deny response and exit."""
-    print(json.dumps({"action": "deny", "message": reason}))
+    """Print a Codex v0.144+ deny response and exit."""
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
     sys.exit(0)
 
 
 def codex_context(text):
-    """Print a Codex-format context response and exit."""
-    print(json.dumps({"action": "context", "message": text}))
+    """Print a Codex v0.144+ context response and exit."""
+    print(json.dumps({"systemMessage": text}))
     sys.exit(0)
 
 
@@ -100,7 +108,7 @@ def main():
 
     tool_name = hook_input.get('tool_name', '')
     tool_input = hook_input.get('tool_input', {})
-    session_id = hook_input.get('session_id', 'unknown')
+    session_id = hook_input.get('turn_id', 'unknown')
     cwd = hook_input.get('cwd', '.')
 
     # --- Side effects ---
