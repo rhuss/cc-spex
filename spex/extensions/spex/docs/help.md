@@ -106,9 +106,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                         Layer comparison (checkpoint vs final) in ship mode.
                         Project hints via .specify/review-hints.md.
                         Combines with spex-teams for parallel execution.
-                        Optionally includes CodeRabbit, Copilot, + Codex CLIs.
-                        Flags: --no-external, --no-coderabbit, --no-copilot, --no-codex
-                               --external, --coderabbit, --copilot, --codex
+                        Optionally includes CodeRabbit + Copilot CLIs.
+                        Flags: --no-external, --no-coderabbit, --no-copilot
+                               --external, --coderabbit, --copilot
 
   spex-worktrees extension:
     /speckit-specify  → creates worktree at .claude/worktrees/<branch>,
@@ -132,22 +132,15 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                                     Loop:  /loop 5m /speckit-spex-collab-triage
 
   spex-detach extension (opt-in, disabled by default):
-    /speckit-spex-finish → automatic detach integration: archives spec artifacts
-                           to sibling specs repo (with --move semantics), creates
-                           clean PR branch (pr/<branch>) with spec artifacts
-                           stripped, verifies no SpecKit fingerprints leaked,
-                           offers "Push clean PR branch to upstream" option.
-                           Archive default-on, skip with --skip-archive.
-                           .gitignore advisory when upstream remote detected.
-    /speckit-spex-detach-detach  → manual detach, archive, verify, or
-                                   brainstorm-context
-                                   Subcommands: detach, archive, verify,
-                                   is-enabled, clean-branch-name
+    /speckit-spex-finish → creates clean PR branch (pr/<branch>) with spec
+                           artifacts stripped, offers "Push clean PR branch
+                           to upstream" option. Verifies no .specify/, specs/,
+                           or brainstorm/ dirs remain on the clean branch.
+    /speckit-spex-detach-detach  → manual detach, archive, or brainstorm-context
+                                   Subcommands: detach, archive, brainstorm-context
     /speckit-spex-brainstorm     → when enabled + archive.path configured,
-                                   writes brainstorm docs to project-specs repo.
-                                   Scans sibling repo brainstorm/ for revisit
-                                   detection. Suggests sibling *-specs dirs
-                                   when archive.path is unconfigured.
+                                   writes brainstorm docs to project-specs repo
+    Optional before_finish hook archives specs to project-specs repo
 
   Triage lifecycle (spex-collab):
     After spec PR  → flow state: triage-spec, suggest /loop with delay notice
@@ -188,11 +181,9 @@ spex COMMANDS (helpers and configuration)
                                 --watch: monitor CI after PR, auto-fix failures,
                                          triage comments (if spex-collab enabled)
   /speckit-spex-finish        Smoke test + squash + merge/keep (land the code)
-                                Flags: --no-smoke-test, --skip-archive
+                                Flags: --no-smoke-test
                                 Runs smoke test gate, squashes commits with
-                                conventional commit message, merges or keeps.
-                                When spex-detach enabled: archives + detaches
-                                automatically, offers clean PR branch push
+                                conventional commit message, merges or keeps
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec

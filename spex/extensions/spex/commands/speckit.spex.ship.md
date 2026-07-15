@@ -106,6 +106,8 @@ Parse the invocation arguments. The skill accepts:
 | `--coderabbit` | (from config) | Enable CodeRabbit |
 | `--no-copilot` | (from config) | Disable Copilot |
 | `--copilot` | (from config) | Enable Copilot |
+| `--no-codex` | (from config) | Disable Codex |
+| `--codex` | (from config) | Enable Codex |
 
 ### Flag Resolution
 
@@ -123,19 +125,23 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
    DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
    DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
    DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
+   DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   DEFAULT_CODEX=${DEFAULT_CODEX:-true}
    ```
 
 2. Start with config defaults:
    ```
    coderabbit = DEFAULT_CODERABBIT
    copilot    = DEFAULT_COPILOT
+   codex      = DEFAULT_CODEX
    ```
 
 3. Apply CLI flag overrides (flags always win, applied in order):
-   - `--external` sets both to true
-   - `--no-external` sets both to false
+   - `--external` sets all to true
+   - `--no-external` sets all to false
    - `--coderabbit` / `--no-coderabbit` overrides coderabbit only
    - `--copilot` / `--no-copilot` overrides copilot only
+   - `--codex` / `--no-codex` overrides codex only
 
 4. Track whether `--coderabbit` was explicitly set (for auth validation).
 
@@ -460,7 +466,8 @@ Extension overlays (e.g., `spex-gates` adding review after specify) may run thei
    - The brainstorm content provides the problem statement, approaches considered, and decisions made.
    - Pass it as the user input to the specify command.
    - **Do not pause** after specify completes, even if an extension overlay runs a review or asks for confirmation. Proceed directly to step 4.
-4. After specify completes, extract the feature branch name and handle worktree integration:
+   - **CRITICAL: Specify triggers `after_specify` hooks (including worktree-manage).** When the last hook returns (you may see a "WORKTREE_CREATED" message or a completion box), you are back in the ship pipeline. Do NOT stop. Immediately proceed to step 4.
+4. After specify completes (including all its hooks), extract the feature branch name and handle worktree integration:
    ```bash
    FEATURE_BRANCH=$(git branch --show-current)
    ```
@@ -746,7 +753,7 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    Spec: <FEATURE_DIR>/spec.md
    Plan: <FEATURE_DIR>/plan.md
    Tasks: <FEATURE_DIR>/tasks.md
-   External tools: coderabbit=<true/false>, copilot=<true/false>
+   External tools: coderabbit=<true/false>, copilot=<true/false>, codex=<true/false>
 
    Invoke /speckit-spex-gates-review-code to run the full review chain:
    - Spec compliance check

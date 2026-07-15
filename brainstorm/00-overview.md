@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-13
+Last updated: 2026-07-14
 
 ## Sessions
 
@@ -42,6 +42,8 @@ Last updated: 2026-07-13
 | 34 | 2026-07-07 | workflow-based-setup | active | - | - |
 | 35 | 2026-07-12 | robust-harness-markers | spec-created | 039 | - |
 | 36 | 2026-07-13 | codex-hook-contract | active | - | - |
+| 37 | 2026-07-14 | spex-detach-hardening | active (revisited 2026-07-14) | - | - |
+| 38 | 2026-07-14 | codex-deep-review | active | - | - |
 
 ## Open Threads
 - Superpowers availability detection mechanism (from #10)
@@ -119,6 +121,9 @@ Last updated: 2026-07-13
 - Verify Codex stdin contract against actual v0.144.1 binary or trust the docs? (from #36)
 - `transcript_path` in UserPromptSubmit: useful for richer context injection? (from #36)
 - Exit code 2 vs JSON deny: which is more reliable across Codex versions? (from #36)
+- Exact output format of `codex review`: need to test with a real diff to determine parsing strategy (from #38)
+- Should Codex review run in parallel with internal agents or sequentially in Step 4? (from #38)
+- Auth failure handling: log and skip, or surface to user? (from #38)
 
 ## Parked Ideas
 - Plugin discovery fix (#31): Plugin marketplace install resolves plugin source incorrectly for nested plugin structures.

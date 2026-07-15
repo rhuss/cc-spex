@@ -18,7 +18,7 @@ The caller (review-code or ship) may provide these values. When not provided, th
 1. **Stage 1 result**: spec compliance score (or null if no spec)
 2. **Invocation context**: `superpowers` or `manual`
 3. **Hint text**: optional focus area from user (or null)
-4. **External tool settings**: `{coderabbit: true/false, copilot: true/false}` (see resolution below)
+4. **External tool settings**: `{coderabbit: true/false, copilot: true/false, codex: true/false}` (see resolution below)
 5. **Spec path**: path to spec.md (or null, see Spec Resolution below)
 6. **Feature directory**: path to the spec directory for artifact output
 
@@ -43,15 +43,18 @@ DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CO
 DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
 DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
+DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+DEFAULT_CODEX=${DEFAULT_CODEX:-true}
 ```
 
 ```
 Resolution:
   coderabbit = DEFAULT_CODERABBIT
   copilot    = DEFAULT_COPILOT
+  codex      = DEFAULT_CODEX
 ```
 
-This ensures CodeRabbit and Copilot are enabled by default regardless of how deep-review is invoked.
+This ensures CodeRabbit, Copilot, and Codex are enabled by default regardless of how deep-review is invoked.
 
 ### Test Suite Configuration
 
@@ -105,14 +108,23 @@ which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 # GitHub Copilot CLI (skip if copilot setting is false)
 which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
+{harness:codex-review-tool}
+# Codex CLI (skip only if explicitly disabled in config)
+# If codex setting is false: skip detection, set CODEX_STATUS="skipped (disabled in config)"
+# If codex setting is true: run detection
+#   - If `which codex` succeeds: set CODEX_AVAILABLE=true
+#   - If `which codex` fails: set CODEX_STATUS="skipped (CLI not installed)"
+which codex >/dev/null 2>&1 && echo "CODEX_AVAILABLE=true"
+{/harness:codex-review-tool}
 ```
 
 **External tool resolution:**
 1. Use the external tool settings from Prerequisites (either caller-provided or self-resolved from config)
 2. **CodeRabbit is enabled by default.** Only skip if the config explicitly sets `coderabbit: false`
 3. If `copilot` is `false`, skip Copilot detection entirely
-4. If a tool is enabled in settings but not installed, proceed silently without it
-5. **When CodeRabbit is available and enabled, it MUST be invoked.** Do not skip it for performance or convenience reasons. CodeRabbit provides external validation that complements the internal review agents.
+4. If `codex` is `false`, skip Codex detection entirely
+5. If a tool is enabled in settings but not installed, proceed silently without it
+6. **When CodeRabbit is available and enabled, it MUST be invoked.** Do not skip it for performance or convenience reasons. CodeRabbit provides external validation that complements the internal review agents.
 
 **Test command auto-detection:**
 
@@ -242,6 +254,35 @@ Parse output:
 2. For each block: extract Severity, File, Line, Description fields
 3. **Discard findings for files under `specs/`** (spec artifacts are not code to review)
 4. Set category = "external", source_agent = "copilot", confidence = 75
+
+{harness:codex-review-tool}
+**Codex CLI** (if available):
+
+Invoke Codex with the appropriate scope:
+```bash
+# Initial review (Step 4): review all changes against main branch
+codex review --base "${MAIN_BRANCH}" 2>&1
+
+# Fix loop re-review rounds (Step 7): review only uncommitted changes
+codex review --uncommitted 2>&1
+```
+
+Parse output:
+1. Check for empty output (no findings, zero issues found)
+2. Extract file references (file paths with optional line numbers)
+3. For each finding: extract file, line, severity keyword (critical, important, minor), description, and rationale
+4. Map severity: critical -> Critical, major/important -> Important, minor -> Minor
+5. Set category = "external", source_agent = "codex", confidence = 75
+6. Preserve the full rationale from Codex output for inclusion in review-findings.md
+7. If output cannot be parsed, log a warning, record zero findings, and set CODEX_STATUS = "completed (parse error)"
+8. **All Codex findings with severity Critical or Important MUST enter the fix loop** (Step 7). They are treated identically to CodeRabbit findings for gate and fix purposes.
+
+**Error handling** (follows the same pattern as CodeRabbit, FR-012):
+- If `codex review` times out: log the failure, set CODEX_STATUS = "failed (timeout)", record zero findings, continue the review
+- If `codex review` exits non-zero (auth failure, crash): log the error output, set CODEX_STATUS = "failed" with the error reason, record zero findings, continue the review
+- If `codex review` returns empty output: treat as zero findings, set CODEX_STATUS = "completed"
+- External tool failures (including Codex) MUST NOT block the review pipeline
+{/harness:codex-review-tool}
 
 **Error handling for external tools:**
 If a tool times out, crashes, or returns an error:
@@ -573,6 +614,7 @@ Review Agents:
 | Test Quality            |     N |     N |         N | completed |
 | CodeRabbit (external)   |     N |     N |         N | completed/skipped/failed |
 | Copilot (external)      |     N |     N |         N | completed/skipped/failed |
+| Codex (external)        |     N |     N |         N | completed/skipped/failed |
 | Test Suite (regression) |     N |     N |         N | passed/N failures/skipped |
 |-------------------------|-------|-------|-----------|-----------|
 | Total                   |     N |     N |         N |           |
@@ -1150,6 +1192,7 @@ Stage 2: Multi-perspective review (N changed files)
   Agent 5/5: Test Quality... done, N findings
   [CodeRabbit... done, N findings] (if available)
   [Copilot... done, N findings] (if available)
+  [Codex... done, N findings] (if available)
 
 Merging findings: N total, N after dedup (N Critical, N Important, N Minor)
 [Fix round 1/3: addressing N Critical + N Important findings...]

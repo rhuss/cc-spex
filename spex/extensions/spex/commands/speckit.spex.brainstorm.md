@@ -234,13 +234,25 @@ Last updated: YYYY-MM-DD
 **When:** During step 4 of the checklist (after checking idea inbox).
 
 **How:**
-1. Check if `brainstorm/` directory exists. If not, skip (no prior brainstorms).
+1. Check if `brainstorm/` directory exists. If not, skip local scan (no prior local brainstorms).
 2. List all `NN-*.md` files in `brainstorm/` (excluding `00-overview.md`).
 3. Extract topic slugs from filenames (the part after the number prefix).
-4. Compare the current brainstorm topic against existing slugs using keyword overlap.
-5. If a related brainstorm document is found, present options to the user:
+4. **Sibling specs repo scan** (when spex-detach is enabled with `archive.path` configured):
+   ```bash
+   DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
+   if [ -d ".specify/extensions/spex-detach" ]; then
+     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH/brainstorm" ]; then
+       # Scan sibling repo's brainstorm/ for NN-*.md files
+       # Include matches alongside local brainstorm matches
+     fi
+   fi
+   ```
+   Include sibling repo documents in the match results. When presenting matches, indicate the source (local vs. sibling repo) so the user knows which location the document is in.
+5. Compare the current brainstorm topic against all collected slugs (local + sibling) using keyword overlap.
+6. If a related brainstorm document is found, present options to the user:
    - **Option A: "Create new document"** - session produces a new numbered file
-   - **Option B: "Update existing"** - session appends a new dated section to the existing document
+   - **Option B: "Update existing"** - session appends a new dated section to the existing document (if the document is in the sibling repo, write the revisit section there)
 
 **If "Update existing" is chosen:**
 At session end, instead of creating a new file, append a new section to the existing document:
@@ -279,13 +291,21 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    BRAINSTORM_DIR="brainstorm"
 
    # Check if spex-detach is enabled and has an archive path
-   DETACH_SCRIPT=".specify/extensions/spex/scripts/spex-detach.sh"
+   DETACH_SCRIPT=".specify/extensions/spex-detach/scripts/spex-detach.sh"
    if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
      DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
      ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
      if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH" ]; then
        BRAINSTORM_DIR="$ARCHIVE_PATH/brainstorm"
        echo "spex-detach: writing brainstorm to project-specs repo at $BRAINSTORM_DIR"
+     else
+       # Auto-detect sibling *-specs directory and suggest as archive.path
+       for candidate in ../*-specs; do
+         if [ -d "$candidate" ]; then
+           echo "NOTE: Detected sibling specs repo at $candidate. Set archive.path in .specify/extensions/spex-detach/spex-detach-config.yml to use it for brainstorm archiving."
+           break
+         fi
+       done
      fi
    fi
 
