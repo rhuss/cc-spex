@@ -99,13 +99,11 @@ release: validate sync-scripts-check test-install
 	echo "Release v$$VERSION complete. VERSION bumped to $$NEXT_VERSION."
 
 # Script inventory: which canonical scripts (in spex/scripts/) belong to which extensions
-SCRIPTS_spex := spex-flow-state.sh spex-ship-state.sh spex-ship-statusline.sh spex-finish-context.sh spex-worktree-cwd.sh spex-detach.sh
+SCRIPTS_spex := spex-flow-state.sh spex-ship-state.sh spex-ship-state.py spex-ship-statusline.sh spex-finish-context.sh spex-worktree-cwd.sh
 SCRIPTS_spex_gates := spex-flow-state.sh spex-closeout-gate.sh
 SCRIPTS_spex_collab := spex-flow-state.sh spex-triage-state.sh sanitize-gh-json.py
 SCRIPTS_spex_deep_review := spex-flow-state.sh
-SCRIPTS_spex_detach := spex-detach.sh
-
-EXTENSIONS := spex spex-gates spex-collab spex-deep-review spex-detach
+EXTENSIONS := spex spex-gates spex-collab spex-deep-review
 
 sync-scripts:
 	@echo "Syncing canonical scripts to extension directories..."
@@ -145,8 +143,6 @@ _print-scripts-spex-collab:
 	@echo $(SCRIPTS_spex_collab)
 _print-scripts-spex-deep-review:
 	@echo $(SCRIPTS_spex_deep_review)
-_print-scripts-spex-detach:
-	@echo $(SCRIPTS_spex_detach)
 
 sync-scripts-check:
 	@echo "Checking extension scripts against canonical sources..."
