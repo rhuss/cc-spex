@@ -282,7 +282,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | Command | Extension | Purpose |
 |---------|-----------|---------|
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
-| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify` |
+| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify`. `--sync`: archive completed brainstorms to `brainstorm/attic/` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
 | `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
 | `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |

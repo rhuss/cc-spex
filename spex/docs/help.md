@@ -172,6 +172,7 @@ spex COMMANDS (helpers and configuration)
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
                                 Checks brainstorm/idea-inbox.md for review seeds
+                                Flags: --sync (archive completed brainstorms to attic)
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to completion)
                                 Requires: spex-gates + spex-deep-review extensions
                                 Flags: --ask always|smart|never,
