@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+
+
+DEFAULT_STRIP_PATHS = [".specify", "specs", "brainstorm"]
 
 
 def git(*args, check=False, cwd=None):
@@ -38,7 +42,7 @@ def read_config(key, default):
 
 def read_strip_paths():
     if not os.path.isfile(CONFIG_FILE) or shutil.which("yq") is None:
-        return [".specify", "specs", "brainstorm"]
+        return list(DEFAULT_STRIP_PATHS)
     r = subprocess.run(
         ["yq", "-r", ".detach.strip_paths // [] | .[]", CONFIG_FILE],
         capture_output=True, text=True,
@@ -91,6 +95,9 @@ def validate_path_component(name, value):
     if ".." in value:
         print("ERROR: {} contains '..' path traversal".format(name), file=sys.stderr)
         sys.exit(1)
+    if os.path.isabs(value):
+        print("ERROR: {} is an absolute path".format(name), file=sys.stderr)
+        sys.exit(1)
 
 
 def require_arg(flag, remaining):
@@ -118,6 +125,36 @@ def cmd_clean_branch_name(args):
         print("ERROR: Could not determine branch name", file=sys.stderr)
         sys.exit(1)
     print("pr/{}".format(branch))
+
+
+def check_gitignore():
+    """Check if .gitignore includes SpecKit paths when upstream remote exists. Non-blocking advisory."""
+    # Only check when an upstream remote exists (fork detection)
+    remotes = git("remote")
+    if not remotes or "upstream" not in remotes.split("\n"):
+        return
+
+    speckit_paths = list(DEFAULT_STRIP_PATHS)
+    gitignore_content = ""
+    if os.path.isfile(".gitignore"):
+        with open(".gitignore", "r") as f:
+            gitignore_content = f.read()
+
+    missing = []
+    for path in speckit_paths:
+        # Check for the path with or without trailing slash
+        found = False
+        for line in gitignore_content.split("\n"):
+            line = line.strip()
+            if line == path or line == path + "/" or line == "/" + path or line == "/" + path + "/":
+                found = True
+                break
+        if not found:
+            missing.append(path + "/")
+
+    if missing:
+        print("WARNING: .gitignore is missing SpecKit paths (recommended for fork workflows): {}".format(
+            ", ".join(missing)), file=sys.stderr)
 
 
 def cmd_detach(args):
@@ -154,6 +191,9 @@ def cmd_detach(args):
         print(file=sys.stderr)
         sys.exit(1)
 
+    # Non-blocking .gitignore advisory (FR-008)
+    check_gitignore()
+
     if not base:
         config_default = read_config(".upstream.default_branch", "")
         base = detect_upstream_default(config_default)
@@ -189,20 +229,29 @@ def cmd_detach(args):
     git("branch", "-D", pr_branch)
 
     original_branch = branch
+
+    def cleanup_pr_branch():
+        subprocess.run(["git", "checkout", original_branch, "--quiet"], capture_output=True)
+        git("branch", "-D", pr_branch)
+
     try:
         r = subprocess.run(["git", "checkout", "-b", pr_branch, merge_base, "--quiet"], capture_output=True, text=True)
         if r.returncode != 0:
-            json.dump({"error": "Failed to create PR branch"}, sys.stderr)
+            cleanup_pr_branch()
+            json.dump({"error": "Failed to create PR branch", "details": r.stderr.strip()}, sys.stderr)
             print(file=sys.stderr)
             sys.exit(1)
 
         p = subprocess.run(["git", "apply", "--index"], input=diff_output, capture_output=True)
         if p.returncode != 0:
-            json.dump({"error": "Failed to apply filtered diff"}, sys.stderr)
+            details = p.stderr.decode("utf-8", errors="replace").strip() if isinstance(p.stderr, bytes) else (p.stderr or "").strip()
+            cleanup_pr_branch()
+            json.dump({"error": "Failed to apply filtered diff", "details": details}, sys.stderr)
             print(file=sys.stderr)
             sys.exit(1)
 
-        files_changed = len(git("diff", "--cached", "--name-only").split("\n"))
+        diff_names = git("diff", "--cached", "--name-only")
+        files_changed = len([f for f in diff_names.split("\n") if f.strip()]) if diff_names else 0
 
         log_cmd = ["git", "log", "--format=%s", "{}..{}".format(merge_base, original_branch), "--", "."] + pathspec_excludes
         r = subprocess.run(log_cmd, capture_output=True, text=True)
@@ -210,8 +259,26 @@ def cmd_detach(args):
         if not commit_subject:
             commit_subject = "feat: {}".format(original_branch.replace("-", " ").replace("_", " "))
 
-        subprocess.run(["git", "commit", "-m", commit_subject, "--quiet"], capture_output=True)
+        cr = subprocess.run(["git", "commit", "-m", commit_subject, "--quiet"], capture_output=True)
+        if cr.returncode != 0:
+            cleanup_pr_branch()
+            json.dump({"error": "Failed to commit on PR branch"}, sys.stderr)
+            print(file=sys.stderr)
+            sys.exit(1)
+
         commit_sha = git("rev-parse", "HEAD")
+
+        leaked = scan_for_leaks(strip_paths, merge_base, pr_branch)
+
+        if leaked:
+            cleanup_pr_branch()
+            json.dump({
+                "error": "Post-detach verification failed: SpecKit artifacts leaked to PR branch",
+                "leaked_files": leaked,
+                "patterns_checked": [sp.rstrip("/") + "/" for sp in strip_paths],
+            }, sys.stderr)
+            print(file=sys.stderr)
+            sys.exit(1)
 
         subprocess.run(["git", "checkout", original_branch, "--quiet"], capture_output=True)
 
@@ -221,8 +288,9 @@ def cmd_detach(args):
             "commit": commit_sha,
             "files_changed": files_changed,
             "empty": False,
+            "verified": True,
         }))
-    except Exception:
+    except BaseException:
         subprocess.run(["git", "checkout", original_branch, "--quiet"], capture_output=True, text=True)
         git("branch", "-D", pr_branch)
         raise
@@ -233,6 +301,8 @@ def cmd_archive(args):
     project = ""
     feature = ""
     auto_commit = False
+    move = False
+    include_brainstorm = False
 
     i = 0
     while i < len(args):
@@ -248,6 +318,10 @@ def cmd_archive(args):
             feature = args[i + 1]; i += 2
         elif a == "--auto-commit":
             auto_commit = True; i += 1
+        elif a == "--move":
+            move = True; i += 1
+        elif a == "--include-brainstorm":
+            include_brainstorm = True; i += 1
         else:
             i += 1
 
@@ -274,17 +348,29 @@ def cmd_archive(args):
     os.makedirs(archive_dir, exist_ok=True)
 
     files_copied = 0
+    source_dirs_to_delete = []
 
     if os.path.isdir(".specify"):
-        shutil.copytree(".specify", os.path.join(archive_dir, ".specify"), dirs_exist_ok=True)
+        shutil.copytree(".specify", os.path.join(archive_dir, ".specify"), dirs_exist_ok=True, symlinks=True)
         files_copied += sum(len(files) for _, _, files in os.walk(".specify"))
+        # Note: .specify/ deletion is deferred (not added to source_dirs_to_delete)
+        # to avoid breaking post-completion hooks that reference .specify/
 
     spec_dir = "specs/{}".format(feature)
     if os.path.isdir(spec_dir):
         dest_specs = os.path.join(archive_dir, "specs")
         os.makedirs(dest_specs, exist_ok=True)
-        shutil.copytree(spec_dir, os.path.join(dest_specs, feature), dirs_exist_ok=True)
+        shutil.copytree(spec_dir, os.path.join(dest_specs, feature), dirs_exist_ok=True, symlinks=True)
         files_copied += sum(len(files) for _, _, files in os.walk(spec_dir))
+        if move:
+            source_dirs_to_delete.append(spec_dir)
+
+    if include_brainstorm and os.path.isdir("brainstorm"):
+        dest_brainstorm = os.path.join(archive_dir, "brainstorm")
+        shutil.copytree("brainstorm", dest_brainstorm, dirs_exist_ok=True, symlinks=True)
+        files_copied += sum(len(files) for _, _, files in os.walk("brainstorm"))
+        if move:
+            source_dirs_to_delete.append("brainstorm")
 
     committed = False
     should_commit = auto_commit or read_config(".archive.auto_commit", "true") == "true"
@@ -297,18 +383,106 @@ def cmd_archive(args):
             )
             committed = r.returncode == 0
 
-    print(json.dumps({"archive_path": archive_dir, "files_copied": files_copied, "committed": committed}))
+    # Move semantics: delete source directories after successful archive
+    source_deleted = False
+    if move and committed:
+        delete_warnings = []
+        for src_dir in source_dirs_to_delete:
+            try:
+                shutil.rmtree(src_dir)
+            except OSError as e:
+                delete_warnings.append("{}: {}".format(src_dir, str(e)))
+        source_deleted = len(delete_warnings) == 0
+        if delete_warnings:
+            for w in delete_warnings:
+                print("WARNING: Failed to delete source directory: {}".format(w), file=sys.stderr)
+
+    result = {"archive_path": archive_dir, "files_copied": files_copied, "committed": committed}
+    if move:
+        result["source_deleted"] = source_deleted
+    print(json.dumps(result))
+
+
+def scan_for_leaks(strip_paths, base, branch):
+    """Scan git diff for leaked SpecKit artifacts. Returns list of leaked file paths.
+    Raises RuntimeError if git diff fails (prevents false-clean results)."""
+    patterns = build_fingerprint_patterns(strip_paths)
+    r = subprocess.run(
+        ["git", "diff", "--name-only", "{}..{}".format(base, branch)],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        raise RuntimeError("git diff failed for {}..{}: {}".format(base, branch, r.stderr.strip()))
+    diff_files = r.stdout.strip()
+    leaked = []
+    if diff_files:
+        for f in diff_files.split("\n"):
+            f = f.strip()
+            if not f:
+                continue
+            for pat in patterns:
+                if pat.search(f):
+                    leaked.append(f)
+                    break
+    return leaked
+
+
+def build_fingerprint_patterns(strip_paths):
+    """Build regex patterns from strip_paths for SpecKit fingerprint detection."""
+    patterns = []
+    for sp in strip_paths:
+        sp_clean = sp.rstrip("/")
+        patterns.append(re.compile(r"^" + re.escape(sp_clean) + r"/"))
+    return patterns
+
+
+def cmd_verify(args):
+    branch = ""
+    base = ""
+
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--branch":
+            require_arg("--branch", len(args) - i)
+            branch = args[i + 1]; i += 2
+        elif a == "--base":
+            require_arg("--base", len(args) - i)
+            base = args[i + 1]; i += 2
+        else:
+            i += 1
+
+    if not branch or not base:
+        print("ERROR: --branch and --base are required for verify", file=sys.stderr)
+        sys.exit(1)
+
+    strip_paths = read_strip_paths()
+    try:
+        leaked = scan_for_leaks(strip_paths, base, branch)
+    except RuntimeError as e:
+        json.dump({"error": str(e)}, sys.stderr)
+        print(file=sys.stderr)
+        sys.exit(1)
+
+    result = {
+        "clean": len(leaked) == 0,
+        "leaked_files": leaked,
+        "patterns_checked": [sp.rstrip("/") + "/" for sp in strip_paths],
+    }
+    print(json.dumps(result))
+    sys.exit(0 if result["clean"] else 1)
 
 
 COMMANDS = {
     "detach": cmd_detach,
     "archive": cmd_archive,
+    "verify": cmd_verify,
     "is-enabled": lambda a: cmd_is_enabled(),
     "clean-branch-name": cmd_clean_branch_name,
 }
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print("Usage: spex-detach.py <detach|archive|is-enabled|clean-branch-name> [options]", file=sys.stderr)
+        print("Usage: spex-detach.py <detach|archive|verify|is-enabled|clean-branch-name> [options]", file=sys.stderr)
         sys.exit(1)
     COMMANDS[sys.argv[1]](sys.argv[2:])

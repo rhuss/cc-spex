@@ -1,6 +1,6 @@
 ---
 description: "Smoke test + squash + merge/keep (land the code on main)"
-argument-hint: "[--no-smoke-test]"
+argument-hint: "[--no-smoke-test] [--skip-archive]"
 ---
 
 # Finish - Smoke Test, Squash, and Land the Code
@@ -27,12 +27,15 @@ In autonomous mode: suppress all interactive prompts, UNLESS running inside a wo
 Parse the following flags from arguments:
 
 - If `--no-smoke-test` is passed, set `SKIP_SMOKE_TEST=true`. This bypasses the smoke test gate unconditionally.
+- If `--skip-archive` is passed, set `SKIP_ARCHIVE=true`. This skips the archive step during detach (the clean PR branch is still created).
 
 ```bash
 SKIP_SMOKE_TEST=false
+SKIP_ARCHIVE=false
 for arg in "$@"; do
   case "$arg" in
     --no-smoke-test) SKIP_SMOKE_TEST=true ;;
+    --skip-archive) SKIP_ARCHIVE=true ;;
   esac
 done
 ```
@@ -166,6 +169,73 @@ Assisted-By: 🤖 Claude Code"
 fi
 ```
 
+### Step 1.5: Detach (when spex-detach is enabled)
+
+Detect whether spex-detach is enabled:
+
+```bash
+DETACH_ENABLED=false
+DETACH_PR_BRANCH=""
+if [ -d ".specify/extensions/spex-detach" ]; then
+  DETACH_ENABLED=true
+fi
+```
+
+If `DETACH_ENABLED` is true, run the detach flow. The ordering matters: archive copies artifacts to the sibling repo first (without deleting sources), then detach creates the clean PR branch, and only after the PR branch is verified clean do we delete the archived source directories. This ensures FR-004 compliance (source deletion occurs after PR branch creation and verification).
+
+```bash
+DETACH_SCRIPT=".specify/extensions/spex-detach/scripts/spex-detach.sh"
+DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
+ARCHIVE_SUCCEEDED=false
+```
+
+1. **Archive** (copy + commit to sibling repo, without deleting sources):
+   ```bash
+   if [ "$SKIP_ARCHIVE" != "true" ]; then
+     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH" ]; then
+       ARCHIVE_RESULT=$("$DETACH_SCRIPT" archive --include-brainstorm)
+       if [ $? -eq 0 ]; then
+         ARCHIVE_SUCCEEDED=true
+         echo "Archive: specs copied to sibling repo"
+       else
+         echo "WARNING: Archive failed, continuing with detach"
+       fi
+     else
+       echo "WARNING: archive.path not configured or not reachable, skipping archive"
+     fi
+   fi
+   ```
+
+2. **Create clean PR branch** (runs .gitignore check and post-creation verification internally). Stderr flows to the terminal for warnings (e.g., .gitignore advisory); only stdout (JSON) is captured:
+   ```bash
+   DETACH_RESULT=$("$DETACH_SCRIPT" detach)
+   DETACH_EXIT=$?
+   if [ "$DETACH_EXIT" -eq 0 ]; then
+     DETACH_PR_BRANCH=$(echo "$DETACH_RESULT" | jq -r '.pr_branch // empty')
+     echo "Clean PR branch created: $DETACH_PR_BRANCH (verified clean)"
+   elif [ "$DETACH_EXIT" -eq 2 ]; then
+     echo "Detach: no code changes found (all changes are spec-only). Nothing to push upstream."
+     # STOP: spec-only branch has no code to contribute upstream
+   else
+     echo "ERROR: Detach failed. Check output above for details."
+     # STOP: do not continue to squash/merge with spec artifacts still on branch
+   fi
+   ```
+
+3. **Delete archived source directories** (only after PR branch is verified):
+   ```bash
+   if [ -n "$DETACH_PR_BRANCH" ] && [ "$ARCHIVE_SUCCEEDED" = "true" ]; then
+     FEATURE_BRANCH=$(git branch --show-current)
+     SPEC_DIR="specs/$FEATURE_BRANCH"
+     [ -d "$SPEC_DIR" ] && rm -rf "$SPEC_DIR" && echo "Deleted $SPEC_DIR (archived)"
+     [ -d "brainstorm" ] && rm -rf "brainstorm" && echo "Deleted brainstorm/ (archived)"
+     # .specify/ deletion is deferred: it stays on disk so post-completion hooks work
+   fi
+   ```
+
+The source directory deletions are uncommitted at this point. They are included in the squash commit (Step 6), ensuring the fork's main branch stays clean after merge. The `.specify/` directory is intentionally preserved throughout the finish flow so post-completion hooks can still access it.
+
 ### Step 2: Compute merge base and commit count
 
 ```bash
@@ -241,7 +311,8 @@ If `AUTONOMOUS_MODE` is true AND `IN_WORKTREE` is false: skip the prompt and go 
 
 1. **If `EXISTING_PR_NUMBER` is set:** **"Merge PR #${EXISTING_PR_NUMBER}"**: "Merge the pull request via gh"
    **Otherwise:** **"Merge to default branch"**: "Fast-forward merge into the default branch, clean up branch and worktree"
-2. **"Keep branch as-is"**: "Leave branch for manual handling later"
+2. **If `DETACH_PR_BRANCH` is set:** **"Push clean PR branch"**: "Push the detached pr/<branch> branch to upstream for a clean upstream PR"
+3. **"Keep branch as-is"**: "Leave branch for manual handling later"
 
 ## Phase 5: Execute Action
 
@@ -381,7 +452,31 @@ fi
 
 Then handle worktree cleanup (same prompt-before-cleanup pattern as Option A).
 
-### Option C: Keep Branch
+### Option C: Push Clean PR Branch
+
+When `DETACH_PR_BRANCH` is set and the user selected "Push clean PR branch":
+
+```bash
+REMOTE=$(git remote | grep -x upstream 2>/dev/null || echo origin)
+git push "$REMOTE" "$DETACH_PR_BRANCH" 2>&1
+PUSH_EXIT=$?
+```
+
+If push succeeds:
+```
+Pushed $DETACH_PR_BRANCH to $REMOTE. You can now create an upstream PR from this branch.
+```
+
+If push fails:
+```
+Push failed. You can push manually: git push <remote> $DETACH_PR_BRANCH
+```
+
+```bash
+ACTION_TAKEN="push-pr-branch"
+```
+
+### Option D: Keep Branch
 
 ```bash
 ACTION_TAKEN="keep"
