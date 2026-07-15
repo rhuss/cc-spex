@@ -45,6 +45,7 @@ Last updated: 2026-07-15
 | 37 | 2026-07-14 | spex-detach-hardening | active (revisited 2026-07-14) | - | - |
 | 38 | 2026-07-14 | codex-deep-review | active | - | - |
 | 39 | 2026-07-15 | extension-owned-scripts | active | - | - |
+| 40 | 2026-07-15 | brainstorm-sync | active | - | - |
 
 ## Open Threads
 
@@ -149,6 +150,9 @@ Last updated: 2026-07-15
 - Auth failure handling: log and skip, or surface to user? (from #38)
 - Should `make sync-scripts-check` verify no stale copies of extension-owned scripts in `spex/scripts/`? (from #39)
 - Should constitution's "Extension-local scripts" constraint distinguish shared vs extension-owned? (from #39)
+- Should `--sync` also validate that "active" brainstorms without recent git activity are flagged as potentially stale? (from #40)
+- Should the attic directory preserve any index file of its own for historical reference? (from #40)
+- Should `--sync` be its own standalone command rather than a flag on the brainstorm skill? (from #40)
 
 ## Parked Ideas
 
