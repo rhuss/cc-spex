@@ -1,10 +1,12 @@
 ---
-description: "Refine rough ideas into executable specifications through collaborative questioning, alternative exploration, and incremental validation"
+description: "Refine rough ideas into executable specifications through collaborative questioning, alternative exploration, and incremental validation. Use --sync to archive completed brainstorm documents."
 ---
 
 # Brainstorming Ideas Into Specifications
 
 Help turn rough ideas into clear, agreed-upon feature descriptions through natural collaborative dialogue. The output is a brainstorm document capturing the problem, approaches considered, and the decision, ready for formal specification.
+
+**Maintenance:** Use `--sync` to scan the brainstorm directory, detect completed/implemented brainstorms, and archive them to `brainstorm/attic/`. See [Sync Process](#sync-process).
 
 **Key Principle:** Brainstorming explores WHAT to build and WHY. The formal spec (via `/speckit-specify`) and implementation planning come after.
 
