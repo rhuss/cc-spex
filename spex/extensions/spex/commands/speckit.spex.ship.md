@@ -751,9 +751,11 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
-   Plan: <FEATURE_DIR>/plan.md
-   Tasks: <FEATURE_DIR>/tasks.md
    External tools: coderabbit=<true/false>, copilot=<true/false>, codex=<true/false>
+
+   IMPORTANT: Do NOT read plan.md or tasks.md. These are implementation
+   artifacts that reveal author intent and would anchor your review.
+   Review the code against the spec only.
 
    Invoke /speckit-spex-gates-review-code to run the full review chain:
    - Spec compliance check
