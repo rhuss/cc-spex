@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-16
+Last updated: 2026-07-21
 
 ## Sessions
 
@@ -11,7 +11,7 @@ Last updated: 2026-07-16
 | 12 | 2026-05-22 | hardening-review-process | active | - | - |
 | 15 | 2026-06-08 | opencode-adaptation | idea | - | - |
 | 19 | 2026-06-11 | cross-feature-amendments | active | - | - |
-| 23 | 2026-06-23 | dual-repo-spec-workflow | active (revisited 2026-06-24) | - | - |
+| 23 | 2026-06-23 | dual-repo-spec-workflow | active (revisited 2026-06-24, 2026-07-21) | - | - |
 | 28 | 2026-07-02 | harness-agnostic-spex | active (revisited 2026-07-08) | - | - |
 | 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
 | 40 | 2026-07-15 | brainstorm-sync | active | 044 | - |
@@ -36,11 +36,10 @@ Last updated: 2026-07-16
 - Reliability of entity/API overlap detection via text scanning (from #19)
 - Should amendment blocks be machine-parseable or free-form markdown? (from #19)
 - Handling concurrent amendments to the same older spec from parallel branches (from #19)
-- What should `specify init` upstream mode option be called? (from #23)
-- Should archive step at finish be automatic or interactive? (from #23)
-- How to flow context from archived specs back into new features? (from #23)
-- Should upstream mode auto-add spec dirs to `.git/info/exclude`? (from #23)
-- How to handle worktree-to-worktree spec migration? (from #23)
+- Should global gitignore also get exclude entries as belt-and-suspenders? (from #23)
+- How should brainstorm skill handle archive path when detach is enabled? (from #23)
+- Should `spex-detach enable` warn if spec files are already tracked? (from #23)
+- Best upstream engagement format for SPECIFY_ROOT proposal: Discussion, Issue, or PR? (from #23)
 - Commands neutral-first then specialize for ALL harnesses, or Claude-first then de-specialize? (from #28)
 - Delimiter marker approach noise in command files (from #28)
 - Testing neutral commands on each harness for acceptable behavior (from #28)
