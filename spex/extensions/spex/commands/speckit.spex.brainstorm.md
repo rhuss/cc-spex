@@ -1,10 +1,12 @@
 ---
-description: "Refine rough ideas into executable specifications through collaborative questioning, alternative exploration, and incremental validation"
+description: "Refine rough ideas into executable specifications through collaborative questioning, alternative exploration, and incremental validation. Use --sync to archive completed brainstorm documents."
 ---
 
 # Brainstorming Ideas Into Specifications
 
 Help turn rough ideas into clear, agreed-upon feature descriptions through natural collaborative dialogue. The output is a brainstorm document capturing the problem, approaches considered, and the decision, ready for formal specification.
+
+**Maintenance:** Use `--sync` to scan the brainstorm directory, detect completed/implemented brainstorms, and archive them to `brainstorm/attic/`. See [Sync Process](#sync-process).
 
 **Key Principle:** Brainstorming explores WHAT to build and WHY. The formal spec (via `/speckit-specify`) and implementation planning come after.
 
@@ -22,6 +24,10 @@ speckit core commands use the `speckit-` prefix (e.g., `/speckit-specify`, `/spe
 
 Commands like `/spex:specify`, `/spex:plan`, `/spex:implement`, `/spex:tasks` DO NOT EXIST.
 </HARD-GATE>
+
+## Argument Handling
+
+**`--sync` flag**: If the arguments contain `--sync`, execute only step 1 (Initialize spec-kit) from the checklist below, then skip steps 2-10 and jump directly to the [Sync Process](#sync-process) section. The sync process is a separate workflow for archiving completed brainstorm documents.
 
 ## Checklist
 
@@ -198,10 +204,19 @@ Each brainstorm session produces a structured summary document. The document use
 ```
 
 **Status values:**
+
+Terminal states (sync will propose for attic):
+- `spec-created` - a spec was created from this brainstorm (include spec path)
+- `abandoned` - session stopped, idea is not being pursued
+- `completed` - idea was fully realized outside the spec workflow
+- `resolved` - the problem this brainstorm addressed has been resolved
+- `decided` - a decision was reached and documented elsewhere
+
+Non-terminal states (sync will keep in main directory):
 - `active` - session completed, idea is being pursued
 - `parked` - session stopped intentionally, idea may be revisited
-- `abandoned` - session stopped, idea is not being pursued
-- `spec-created` - a spec was created from this brainstorm (include spec path)
+- `draft` - session is still being written
+- `idea` - raw idea captured, not yet explored
 
 ## Overview Document Structure
 
@@ -468,6 +483,140 @@ Present to the user: **"Save this brainstorm session?"**
 - **Option C: "Discard"** - Do not create any brainstorm document, do not update overview
 
 If the user chooses to save, follow the "Writing the Brainstorm Document" and "Updating the Overview" procedures above.
+
+## Sync Process
+
+The sync process archives completed brainstorm documents to `brainstorm/attic/`, keeping the main directory focused on active and parked ideas. It is triggered by the `--sync` flag and replaces the normal brainstorm flow entirely.
+
+### Step 1: Scan Documents
+
+1. **Check directory exists**: If `brainstorm/` does not exist or contains no `.md` files, report "No brainstorm documents found" and exit cleanly.
+
+2. **List all documents**: List all `.md` files in `brainstorm/`, excluding:
+   - `00-overview.md` (the index file)
+   - `idea-inbox.md` (the idea inbox)
+   - Any files inside `brainstorm/attic/` (already archived)
+
+3. **Parse each document**: For each file, extract:
+   - **Filename**: The full filename (e.g., `09-traits-to-extensions.md`)
+   - **Number**: The numeric prefix for numbered files (`NN-*.md` pattern). For unnumbered files (no `NN-` prefix), set number to `null`
+   - **Slug**: For numbered files, the portion after the number prefix (e.g., `traits-to-extensions`). For unnumbered files, the full filename minus `.md` (e.g., `sdd-showcase-projects`)
+   - **Status**: Parse the `**Status:**` field from the document header. Use regex pattern `^\*\*Status\*\*:\s*(.+)$` on the first 20 lines. Extract only the first word as the canonical status (e.g., from `**Status:** abandoned (superseded by #24)`, extract `abandoned`). Normalize to lowercase. If no Status field is found, default to `active`
+
+### Step 2: Build Spec Index
+
+1. **Check specs directory**: If `specs/` does not exist, skip spec cross-referencing entirely (skip Steps 2, 3, and 4) and proceed to Step 5 (Classification) using only document status fields.
+
+2. **Index spec directories**: List all directories in `specs/`. For each directory:
+   - Extract the number prefix (e.g., `016` from `016-traits-to-extensions`)
+   - Extract the slug (e.g., `traits-to-extensions`)
+   - Store as a spec entry with `number` and `slug`
+
+### Step 3: Slug Token Matching
+
+For each brainstorm document, attempt to find a matching spec using token overlap:
+
+1. **Split slugs**: Split both the brainstorm slug and each spec slug on hyphens to produce token lists
+2. **Count shared tokens**: Find the intersection of tokens between the brainstorm and spec
+3. **Match criteria**: A match is found if:
+   - At least 2 shared tokens exist, OR
+   - The brainstorm slug is a complete substring of the spec slug, OR
+   - The spec slug is a complete substring of the brainstorm slug
+4. **Record match**: When a match is found, record the spec number and set `match_source` to `slug`. If multiple specs match the same brainstorm document, prefer the spec with the most shared tokens. If still tied, prefer the spec with the highest number (most recent). Record only the best match.
+
+**Examples of matches**:
+- `rename-to-cc-spex` matches `rename-to-cc-spex` (4 shared tokens)
+- `traits-to-extensions` matches `traits-to-extensions` (3 shared tokens)
+- `smoke-test-v2` matches `smoke-test-rethink` (2 shared tokens: smoke, test)
+
+**Examples of non-matches**:
+- `spec-evolution` does not match `smoke-test-rethink` (0 shared tokens)
+
+### Step 4: Overview Table Spec Column Parsing
+
+1. **Read overview**: If `brainstorm/00-overview.md` exists, read it and locate the Sessions table (the table under `## Sessions`)
+2. **Parse rows**: For each row in the Sessions table, extract:
+   - Brainstorm number (first column, the `#` field)
+   - Spec number from the Spec column (e.g., `024` or `-` for no spec)
+3. **Supplement matches**: For any brainstorm document that was not matched by slug in Step 3, check if the overview table provides a spec number mapping. If so, record the match with `match_source` set to `overview`
+
+### Step 5: Classification
+
+For each brainstorm document, determine the action:
+
+1. **Terminal states** (propose for attic): `spec-created`, `abandoned`, `completed`, `resolved`, `decided`
+   - Set `action` to `attic`
+
+2. **Keep states**: `active`, `parked`, `draft`, `idea`
+   - If a spec match was found (from Step 3 or Step 4) AND the status is `active`, `draft`, or `idea` (not `parked`):
+     - Set `inferred_status` to `spec-created`
+     - Set `action` to `attic`
+     - This document will be annotated with "(inferred)" in the confirmation table
+   - Otherwise: set `action` to `keep`
+
+3. **No status**: Documents with no parseable Status field default to `active` with action `keep`
+
+4. **Unknown status**: Any status value not listed in the terminal or keep sets above defaults to `keep`. Warn the user: "Unknown status '[value]' for [filename], keeping in main directory."
+
+### Step 6: Interactive Confirmation
+
+Present the sync summary to the user using {harness:interactive-choice}:
+
+1. **Build summary text**: Include a count of documents scanned and how many are proposed for archival. List the documents that will be kept (action = `keep`) with their status in the question text, so the user can see the full picture.
+
+2. **Build options**: Each attic candidate becomes a pre-selected option:
+   - **Label**: The document filename (e.g., `09-traits-to-extensions.md`)
+   - **Description**: Status information, e.g., `spec-created -> attic` or `active -> attic (inferred: spec-created, matched spec 016)`
+   - Pre-select all attic candidates by default
+
+3. **Present choice**:
+   - header: "Brainstorm Sync: Archive to attic?"
+   - multiSelect: true
+   - All attic candidates as pre-selected options
+   - Include a "Cancel" option (not pre-selected) to abort the entire sync
+
+4. **Handle response**:
+   - If the user selects "Cancel" or deselects all items: exit cleanly with no changes
+   - Otherwise: proceed with the selected items only
+
+{harness:interactive-choice-must} Do NOT output the options as text and wait for a free-form reply.
+
+### Step 7: Execute File Moves
+
+1. **Create attic directory**: If `brainstorm/attic/` does not exist, create it:
+   ```bash
+   mkdir -p brainstorm/attic
+   ```
+
+2. **Move confirmed files**: For each confirmed attic candidate:
+   - Check if the file already exists in `brainstorm/attic/`. If so, skip this file and warn the user: "Skipping [filename]: already exists in attic"
+   - Otherwise, move using git: `git mv "brainstorm/<filename>" "brainstorm/attic/<filename>"`
+   - If `git mv` fails for any file, stop processing immediately. Report which files were successfully moved and which failed. Do NOT proceed to Step 8 (overview update) or Step 9 (commit). Inform the user they can run `git checkout -- brainstorm/` to undo all staged moves, or manually resolve the failed move and re-run `--sync`.
+
+3. **Handle empty result**: If all files were skipped due to conflicts, report "No files moved" and exit cleanly (no overview update, no commit)
+
+### Step 8: Update Overview
+
+After moving files, rebuild `brainstorm/00-overview.md` using the same idempotent full-rebuild procedure defined in the "Updating the Overview" section above. Since the attic'd files are no longer in `brainstorm/`, the rebuild naturally excludes them from the Sessions table, Open Threads, and Parked Ideas sections.
+
+If `brainstorm/00-overview.md` does not exist, create it from scratch using the rebuild procedure. If the `brainstorm/` directory contains no remaining documents after the sync (all were moved to attic), write a minimal overview with empty sections.
+
+### Step 9: Commit Changes
+
+Stage and commit all sync changes in a single commit:
+
+```bash
+# Stage only sync-related changes (git mv already stages moved files)
+git add brainstorm/attic/
+git add brainstorm/00-overview.md
+git commit -m "chore(brainstorm): sync - archive N documents to attic
+
+Assisted-By: 🤖 Claude Code"
+```
+
+Where `N` is the number of files actually moved (not counting skipped files).
+
+After the commit, the sync process is complete. Exit without offering the normal brainstorm transition options.
 
 ## Key Principles
 

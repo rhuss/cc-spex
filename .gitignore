@@ -74,3 +74,4 @@ build/
 **/.specify/**
 !**/.specify/memory/
 !**/.specify/memory/constitution.md
+.playwright-mcp/

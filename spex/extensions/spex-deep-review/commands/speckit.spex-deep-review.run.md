@@ -108,15 +108,18 @@ which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 # GitHub Copilot CLI (skip if copilot setting is false)
 which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
+```
+
 {harness:codex-review-tool}
+```bash
 # Codex CLI (skip only if explicitly disabled in config)
 # If codex setting is false: skip detection, set CODEX_STATUS="skipped (disabled in config)"
 # If codex setting is true: run detection
 #   - If `which codex` succeeds: set CODEX_AVAILABLE=true
 #   - If `which codex` fails: set CODEX_STATUS="skipped (CLI not installed)"
 which codex >/dev/null 2>&1 && echo "CODEX_AVAILABLE=true"
-{/harness:codex-review-tool}
 ```
+{/harness:codex-review-tool}
 
 **External tool resolution:**
 1. Use the external tool settings from Prerequisites (either caller-provided or self-resolved from config)

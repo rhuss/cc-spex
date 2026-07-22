@@ -132,17 +132,12 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                                     Loop:  /loop 5m /speckit-spex-collab-triage
 
   spex-detach extension (opt-in, disabled by default):
-    /speckit-spex-finish → automatic detach integration: archives spec artifacts
-                           to sibling specs repo (with --move semantics), creates
-                           clean PR branch (pr/<branch>) with spec artifacts
-                           stripped, verifies no SpecKit fingerprints leaked,
-                           offers "Push clean PR branch to upstream" option.
-                           Archive default-on, skip with --skip-archive.
-                           .gitignore advisory when upstream remote detected.
-    /speckit-spex-detach-detach  → manual detach, archive, verify, or
-                                   brainstorm-context
-                                   Subcommands: detach, archive, verify,
-                                   is-enabled, clean-branch-name
+    Stealth mode: hides spec artifacts from git via .git/info/exclude.
+    Spec files stay on disk for normal workflows but never appear in
+    commits, PRs, or git status. Archives to sibling repo at finish time.
+    /speckit-spex-detach-detach  → enable stealth mode, archive specs,
+                                   or check detach status
+                                   Subcommands: enable, archive, is-enabled
     /speckit-spex-brainstorm     → when enabled + archive.path configured,
                                    writes brainstorm docs to project-specs repo.
                                    Scans sibling repo brainstorm/ for revisit
@@ -172,6 +167,7 @@ spex COMMANDS (helpers and configuration)
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
                                 Checks brainstorm/idea-inbox.md for review seeds
+                                Flags: --sync (archive completed brainstorms to attic)
   /speckit-spex-ship          Autonomous full-cycle pipeline (brainstorm to completion)
                                 Requires: spex-gates + spex-deep-review extensions
                                 Flags: --ask always|smart|never,
@@ -191,8 +187,8 @@ spex COMMANDS (helpers and configuration)
                                 Flags: --no-smoke-test, --skip-archive
                                 Runs smoke test gate, squashes commits with
                                 conventional commit message, merges or keeps.
-                                When spex-detach enabled: archives + detaches
-                                automatically, offers clean PR branch push
+                                When spex-detach enabled: archives specs
+                                to sibling repo automatically
   /speckit-spex-review-spec   Check spec quality and completeness
   /speckit-spex-review-plan   Validate plan coverage, task quality, red flags
   /speckit-spex-review-code   Check code compliance against spec

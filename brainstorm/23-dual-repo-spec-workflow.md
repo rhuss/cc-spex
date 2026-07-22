@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-23
 **Status:** active
-**Revisited:** 2026-06-24
+**Revisited:** 2026-06-24, 2026-07-21
 
 ## Problem Framing
 
@@ -319,3 +319,173 @@ project-specs/                    # personal specs repo, always on main
   `specs/` to the code repo's `.git/info/exclude` as a safety net?
 - How to handle worktree-to-worktree spec migration if a feature
   moves between worktrees?
+
+---
+
+## Revisit: 2026-07-21
+
+### Updated Problem Framing
+
+Approach E (Worktree-Native with Clean PR Branch) from the previous
+revisit was implemented as the spex-detach extension. After using it
+on real upstream contributions, two failure modes emerged:
+
+1. **Spec files leak into unrelated PRs.** Even though detach creates
+   a clean `pr/` branch at PR time, the spec directories (`.specify/`,
+   `specs/`, `brainstorm/`) remain in the working tree. When working
+   on a subsequent task outside the SDD workflow (no spec-kit
+   initialized), `git add .` or rebase operations carry these files
+   into unrelated commits and PRs. This happened twice in practice.
+
+2. **Re-initialization burden.** After a PR is submitted and the
+   developer returns to the main branch, the `.specify/` directory
+   is either stale or absent. Re-running `specify init` is required
+   to restore spec-kit functionality, losing constitution and memory
+   state unless carefully preserved.
+
+The root cause: Approach E commits spec files to the feature branch
+during development, then strips them at PR time. This means spec
+files exist in git history and can be carried forward by rebase or
+merge operations.
+
+### Upstream Research Findings
+
+The upstream spec-kit community has the same pain points:
+
+- [Issue #2612](https://github.com/github/spec-kit/issues/2612):
+  "Global installation mode" requests separating tooling from project
+  state. Maintainer acknowledged complexity, community clearly wants
+  it. Approved for contribution.
+- [Issue #2681](https://github.com/github/spec-kit/issues/2681):
+  "Separate framework assets from project memory" raises the same
+  ownership-boundary concern.
+- [Issue #1173](https://github.com/github/spec-kit/issues/1173):
+  Brownfield documentation request, still open with no solution.
+- [PR #1579](https://github.com/github/spec-kit/pull/1579): Adds
+  `SPECIFY_SPECS_DIR` env var for external specs directory. Open but
+  stale (unmerged, has conflicts). Would enable sibling-directory
+  workflows.
+- No stealth-mode documentation exists upstream. No `.gitignore`
+  template for projects using spec-kit on brownfield/upstream repos.
+
+The `specify` CLI hardcodes `project_root = Path.cwd()` everywhere.
+No env var override exists on main. Waiting for upstream changes is
+not practical for a near-term solution.
+
+### New Approaches Considered
+
+#### F: git-info-exclude Stealth Mode (Chosen)
+
+Instead of committing spec files and stripping them at PR time, never
+commit them at all. Use `.git/info/exclude` to make spec files
+invisible to git while keeping them on disk for spec-kit to use.
+
+**Key insight (verified experimentally):** `.git/info/exclude` works
+identically to `.gitignore` but is local-only (never committed, never
+pushed, never appears in PRs). When spec paths are excluded:
+
+- `git add .` and `git add -A` do NOT stage excluded files
+- `git status` does NOT show them as untracked
+- Since files are never committed to any branch, rebase and merge
+  operations cannot carry them forward
+- Files remain on disk, fully accessible to spec-kit (cwd resolution)
+- Only `git add -f` (explicit force) can override the exclusion
+
+This makes leaks structurally impossible rather than defended against.
+
+**How it works:**
+
+1. When the detach extension is enabled and `specify init` runs,
+   auto-add `.specify/`, `specs/`, `brainstorm/` to
+   `.git/info/exclude`. A manual `spex-detach enable` command can
+   verify/fix entries for existing clones.
+2. During development, spec files live as untracked (excluded) files
+   in the working directory. Spec-kit works normally via cwd
+   resolution. No `pr/` branch mechanism needed.
+3. At `spex-finish` time (when detach is enabled), archive spec
+   artifacts to the configured sibling specs repo for version control,
+   then finish normally.
+
+**What gets removed:** The entire `pr/` clean-branch-stripping
+mechanism (detach subcommand, leak scanning, merge-base diff
+filtering). This code is no longer needed because there is nothing
+to strip.
+
+**Tradeoff:** Spec files have no version control within the code
+repo. The archive to a sibling specs repo provides version control
+at feature-completion time. During active development, specs are
+unversioned working files. This is acceptable because spec files
+rarely change once written, and the archive captures the final state.
+
+#### G: Sibling Directory (Considered, Deferred)
+
+Move all spec artifacts to a sibling directory entirely outside the
+code repo. Explored but deferred because:
+
+- Requires `cd` to specs dir for all spec-kit commands (no upstream
+  env var override available)
+- Would need significant changes to all spex skills to handle
+  two-directory navigation
+- The `.git/info/exclude` approach achieves the same leak prevention
+  with far less disruption
+
+May revisit if upstream adds `SPECIFY_ROOT` env var support.
+
+### Updated Decision
+
+**Approach F (git-info-exclude Stealth Mode)** replaces Approach E.
+The `pr/` branch mechanism is removed entirely. The detach extension
+becomes a lightweight setup step (write exclude entries) plus an
+archive step at finish time.
+
+**Upstream engagement:** Open a discussion on github/spec-kit
+proposing a `SPECIFY_ROOT` env var, referencing community demand
+from issues #2612, #2681, and #1173. This would enable the sibling
+directory approach (G) as a future option.
+
+### Updated Key Requirements
+
+#### Detach extension changes
+
+1. **New: `enable` subcommand** writes `.specify/`, `specs/`,
+   `brainstorm/` to `.git/info/exclude`. Idempotent (skips entries
+   that already exist). Also called automatically during
+   `specify init` when detach extension is active.
+2. **New: archive at finish time.** The `before_finish` hook archives
+   `.specify/`, `specs/`, and `brainstorm/` to the configured sibling
+   specs repo path. Only when detach is enabled.
+3. **Removed: `detach` subcommand.** The `pr/` clean-branch mechanism
+   is removed. No more merge-base diff, leak scanning, or branch
+   switching.
+4. **Removed: `verify` subcommand.** No longer needed without the
+   `pr/` branch approach.
+5. **Removed: `clean-branch-name` subcommand.** No longer needed.
+6. **Kept: `archive` subcommand.** Simplified to copy-and-commit
+   without the move semantics or branch context.
+7. **Kept: `is-enabled` subcommand.** Still needed for other
+   extensions to check detach state.
+
+#### Extension integration points
+
+| Hook | Behavior |
+|------|----------|
+| `specify init` (when detach enabled) | Write `.git/info/exclude` entries |
+| `before_finish` (when detach enabled) | Archive specs to sibling repo |
+
+#### Default mode (no detach extension)
+
+No changes. Everything stays in a single directory, committed to the
+repo. The detach extension is purely opt-in.
+
+### Open Questions
+
+- Should we also add the exclude entries to the user's global
+  gitignore (`~/.gitignore`) as a belt-and-suspenders measure?
+- How should the brainstorm skill handle the archive path when
+  detach is enabled? Currently it checks `spex-detach-config.yml`
+  for `archive.path` and writes brainstorms there.
+- Should `spex-detach enable` also verify that no spec files are
+  currently tracked (already committed) and warn if so?
+- What is the right upstream engagement format: GitHub Discussion,
+  Issue, or PR? Given the existing stale PR #1579, a Discussion
+  proposing `SPECIFY_ROOT` may get more traction.

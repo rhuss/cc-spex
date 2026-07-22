@@ -239,7 +239,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 **`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
 
-**`spex-detach`** (opt-in): Detach spec artifacts at PR time for contributing to upstream projects that don't use spec-driven development. Integrates directly into `/speckit-spex-finish`: archives spec artifacts (`.specify/`, `specs/`, `brainstorm/`) to a configured sibling specs repo with move semantics, creates a clean PR branch (`pr/<feature-branch>`) containing only code changes, verifies no SpecKit fingerprints leaked into the PR diff, and offers to push the clean branch upstream. Archive is default-on (skip with `--skip-archive`). When an `upstream` remote is detected, emits a `.gitignore` advisory for SpecKit paths. The brainstorm skill auto-detects sibling `*-specs` directories and scans them for revisit detection.
+**`spex-detach`** (opt-in): Stealth mode for contributing to upstream projects that don't use spec-driven development. Uses `.git/info/exclude` to hide spec artifacts (`.specify/`, `specs/`, `brainstorm/`) from git without modifying any committed files. Spec files remain on disk for normal spex workflows but are invisible to `git status`, `git add`, and PRs. The `enable` subcommand writes exclude entries (runs automatically via `after_init` hook). At finish time, the `archive` subcommand copies spec artifacts to a configured sibling specs repo for version control. The brainstorm skill auto-detects sibling `*-specs` directories and scans them for revisit detection.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR
 - `before_implement`: presents phase split proposal for implementation PRs
 - `phase-manager`: coordinates PR creation, code review updates, and phase boundaries. After spec PR creation, suggests triage with a `/loop` command and delay notice. After spec triage completes, runs a gate check comparing review comment count against `triage.split_threshold` (default 100) to recommend continuing on the same PR or splitting into separate implementation PR(s). After implementation push, suggests triage (with deep-review first if that extension is enabled).
@@ -282,7 +282,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | Command | Extension | Purpose |
 |---------|-----------|---------|
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
-| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify` |
+| `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify`. `--sync`: archive completed brainstorms to `brainstorm/attic/` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
 | `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
 | `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |
@@ -292,7 +292,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook) |
 | `/speckit-spex-smoke-test` | spex | Focused interactive smoke test from spec's `## Smoke Test` section. Claude automates setup/execution, human provides pass/fail judgment. Auto-skips when section absent. Writes SMOKE-TEST.md report. Always interactive, even in ship pipeline |
 | `/speckit-spex-submit` | spex | Push and create PR for team review. Runs verification, commits outstanding changes, creates PR with spec-linked body and REVIEWERS.md. `--watch`: monitor CI, auto-fix failures, triage review comments |
-| `/speckit-spex-finish` | spex | Smoke test + squash + merge/keep (land the code). Runs smoke test gate, squashes commits with conventional commit message, merges or keeps. When spex-detach enabled: archives, creates clean PR branch, offers push. `--no-smoke-test`: skip smoke test gate. `--skip-archive`: skip archive during detach |
+| `/speckit-spex-finish` | spex | Smoke test + squash + merge/keep (land the code). Runs smoke test gate, squashes commits with conventional commit message, merges or keeps. When spex-detach enabled: archives specs to sibling repo. `--no-smoke-test`: skip smoke test gate |
 | `/speckit-spex-gates-stamp` | spex-gates | Verification only (use finish for full flow) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, create, or clean up git worktrees |
@@ -302,7 +302,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-collab-revise` | spex-collab | Revise spec from PR review feedback, cascade to plan/tasks, update REVIEWERS.md |
 | `/speckit-spex-collab-reconcile` | spex-collab | Reconcile revised tasks against existing implementation, produce delta |
 | `/speckit-spex-collab-triage` | spex-collab | Triage PR review comments: handle bot suggestions autonomously, review human comments interactively |
-| `/speckit-spex-detach-detach` | spex-detach | Create clean PR branch (with post-detach verification), archive specs (with move semantics and brainstorm support), or verify PR branch cleanliness |
+| `/speckit-spex-detach-detach` | spex-detach | Enable stealth mode (.git/info/exclude), archive specs to sibling repo, or check detach status |
 
 ## Ship Command
 
