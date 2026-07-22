@@ -6,13 +6,9 @@ archive:
   # Auto-commit archived specs to the project-specs repo
   auto_commit: true
 
-upstream:
-  # Override upstream's default branch (auto-detected from origin if empty)
-  default_branch: ""
-
-detach:
-  # Paths to strip from the clean PR branch
-  strip_paths:
-    - ".specify"
-    - "specs"
-    - "brainstorm"
+exclude:
+  # Paths to add to .git/info/exclude (stealth mode)
+  paths:
+    - ".specify/"
+    - "specs/"
+    - "brainstorm/"

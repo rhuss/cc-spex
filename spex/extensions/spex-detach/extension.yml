@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: spex-detach
   name: "Spex Detach"
-  version: "1.0.0"
-  description: "Detach spec artifacts at PR time for contributing to projects that don't use spec-driven development"
+  version: "2.0.0"
+  description: "Stealth mode for upstream contributions: hide spec artifacts via .git/info/exclude, archive to sibling repo at finish time"
   author: cc-spex
   license: MIT
 
@@ -22,15 +22,22 @@ provides:
   commands:
     - name: speckit.spex-detach.detach
       file: commands/speckit.spex-detach.detach.md
-      description: "Create clean PR branch with spec artifacts stripped"
+      description: "Enable stealth mode (exclude spec files from git) or archive specs to sibling repo"
 
   config:
     - name: "spex-detach-config.yml"
       template: "config-template.yml"
-      description: "Detach extension configuration (archive path, upstream branch)"
+      description: "Detach extension configuration (exclude paths, archive path)"
       required: false
 
 hooks:
+  after_init:
+    command: speckit.spex-detach.detach
+    args: "enable"
+    optional: false
+    prompt: "Set up .git/info/exclude entries for stealth mode?"
+    description: "Write exclude entries to hide spec artifacts from git"
+
   before_finish:
     command: speckit.spex-detach.detach
     args: "archive"
@@ -42,4 +49,5 @@ tags:
   - "spex"
   - "upstream"
   - "contribution"
+  - "stealth"
   - "detach"
