@@ -39,44 +39,33 @@ steps:
         printf "%s" "$version"
         exit 0
       fi
-      if [ "$major" -eq 0 ] && [ "$minor" -gt 7 ] 2>/dev/null; then
+      if [ "$major" -eq 0 ] && [ "$minor" -gt 12 ] 2>/dev/null; then
         printf "%s" "$version"
         exit 0
       fi
-      if [ "$major" -eq 0 ] && [ "$minor" -eq 7 ] && [ "$patch" -ge 4 ] 2>/dev/null; then
+      if [ "$major" -eq 0 ] && [ "$minor" -eq 12 ] && [ "$patch" -ge 16 ] 2>/dev/null; then
         printf "%s" "$version"
         exit 0
       fi
-      echo "ERROR: spec-kit $version too old (requires >= 0.7.4). Upgrade:" >&2
+      echo "ERROR: spec-kit $version too old (requires >= 0.12.16 for workflow_dir). Upgrade:" >&2
       echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git" >&2
       exit 1
 
-  - id: locate-source
+  - id: validate-source
     type: shell
     run: |
-      if [ -n "${SPEX_SOURCE:-}" ] && [ -d "${SPEX_SOURCE}/extensions/spex" ]; then
-        printf "%s" "$SPEX_SOURCE"
-        exit 0
-      fi
-      if [ -d "spex/extensions/spex" ]; then
-        printf "%s" "$(cd spex && pwd)"
-        exit 0
-      fi
-      if ! command -v git >/dev/null 2>&1; then
-        echo "ERROR: git is required to clone spex extensions. Install git or set SPEX_SOURCE." >&2
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
+      if [ -z "$SOURCE" ]; then
+        echo "ERROR: Cannot determine spex source directory." >&2
+        echo "Run from a file (specify workflow run spex/setup.yml)" >&2
+        echo "or set SPEX_SOURCE." >&2
         exit 1
       fi
-      CLONE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/spex-setup-XXXXXX")
-      echo "Cloning spex from GitHub..." >&2
-      if git clone --depth 1 https://github.com/rhuss/cc-spex.git "$CLONE_DIR" >/dev/null 2>&1; then
-        printf "%s" "$CLONE_DIR/spex"
-        exit 0
+      if [ ! -d "$SOURCE/extensions/spex" ]; then
+        echo "ERROR: Spex extensions not found at $SOURCE/extensions/spex" >&2
+        exit 1
       fi
-      rm -rf "$CLONE_DIR" 2>/dev/null || true
-      echo "ERROR: Cannot locate spex extensions." >&2
-      echo "Either set SPEX_SOURCE, run from within the cc-spex repo," >&2
-      echo "or ensure network access to github.com is available." >&2
-      exit 1
+      printf "%s" "$SOURCE"
 
   - id: detect-agent
     type: shell
@@ -87,7 +76,7 @@ steps:
         claude|codex|opencode) printf "%s" "$INPUT"; exit 0 ;;
         *) echo "ERROR: Unknown integration '$INPUT'. Use: auto, claude, codex, opencode" >&2; exit 1 ;;
       esac
-      DETECT_SCRIPT="{{ steps.locate-source.output.stdout }}/scripts/hooks/shared/detect-agent.sh"
+      DETECT_SCRIPT="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}/scripts/hooks/shared/detect-agent.sh"
       if [ -f "$DETECT_SCRIPT" ]; then
         AGENT=$(sh "$DETECT_SCRIPT" "$(pwd)")
         printf "%s" "${AGENT:-claude}"
@@ -122,7 +111,7 @@ steps:
   - id: install-ext-spex
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -130,13 +119,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-gates
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-gates"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -144,13 +133,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-worktrees
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-worktrees"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -158,13 +147,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-deep-review
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-deep-review"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -172,13 +161,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-teams
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-teams"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -186,13 +175,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-collab
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-collab"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -200,13 +189,13 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
 
   - id: install-ext-spex-detach
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       EXT="spex-detach"
       EXT_PATH="$SOURCE/extensions/$EXT"
       [ -f "$EXT_PATH/extension.yml" ] || { echo "Extension $EXT not found at $EXT_PATH" >&2; exit 1; }
@@ -214,7 +203,7 @@ steps:
         echo "y" | specify extension remove "$EXT" >/dev/null 2>&1 || true
       fi
       DEV_FLAG=""
-      case "$SOURCE" in */spex-setup-*) ;; *) DEV_FLAG="--dev" ;; esac
+      case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
       specify extension disable "$EXT" 2>/dev/null || true
 
@@ -333,7 +322,7 @@ steps:
   - id: adapt-commands
     type: shell
     run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
       AGENT="{{ steps.detect-agent.output.stdout }}"
       ADAPT_SCRIPT="$SOURCE/scripts/spex-adapt-commands.sh"
       ADAPTERS_DIR="$SOURCE/scripts/adapters"
@@ -358,7 +347,7 @@ steps:
         - id: claude-statusline
           type: shell
           run: |
-            SOURCE="{{ steps.locate-source.output.stdout }}"
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
             STATUSLINE_SCRIPT="$SOURCE/scripts/spex-ship-statusline.sh"
             [ -f "$STATUSLINE_SCRIPT" ] || exit 0
             chmod +x "$STATUSLINE_SCRIPT" 2>/dev/null || true
@@ -387,7 +376,7 @@ steps:
         - id: codex-hooks
           type: shell
           run: |
-            SOURCE="{{ steps.locate-source.output.stdout }}"
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
             mkdir -p .codex
             CODEX_PRETOOL="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/pretool-gate.py"
             CODEX_CONTEXT="$(cd "$SOURCE/scripts/adapters/codex" 2>/dev/null && pwd)/context-hook.py"
@@ -421,7 +410,7 @@ steps:
         - id: codex-agents-md
           type: shell
           run: |
-            SOURCE="{{ steps.locate-source.output.stdout }}"
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
             TEMPLATE="$SOURCE/templates/agents-md/codex.md"
             if [ -f "$TEMPLATE" ]; then
               cp "$TEMPLATE" AGENTS.md
@@ -431,7 +420,7 @@ steps:
         - id: opencode-plugin
           type: shell
           run: |
-            SOURCE="{{ steps.locate-source.output.stdout }}"
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
             mkdir -p .opencode/plugins
             PLUGIN="$SOURCE/scripts/adapters/opencode/spex-plugin.ts"
             if [ -f "$PLUGIN" ]; then
@@ -441,7 +430,7 @@ steps:
         - id: opencode-agents-md
           type: shell
           run: |
-            SOURCE="{{ steps.locate-source.output.stdout }}"
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
             TEMPLATE="$SOURCE/templates/agents-md/opencode.md"
             if [ -f "$TEMPLATE" ]; then
               cp "$TEMPLATE" AGENTS.md
@@ -568,14 +557,3 @@ steps:
       echo "Latest spex release: $LATEST" >&2
       printf "%s" "$LATEST"
 
-  - id: cleanup-source
-    type: shell
-    run: |
-      SOURCE="{{ steps.locate-source.output.stdout }}"
-      case "$SOURCE" in
-        "${TMPDIR:-/tmp}"/spex-setup-*/spex|/tmp/spex-setup-*/spex)
-          CLONE_DIR="${SOURCE%/spex}"
-          rm -rf "$CLONE_DIR" 2>/dev/null || true
-          ;;
-      esac
-      printf "ok"

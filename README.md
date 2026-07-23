@@ -199,8 +199,8 @@ This runs Spec-Kit's `specify init`, installs seven bundled extensions (six enab
 In spex 6.0, a spec-kit setup workflow replaces the plugin-based init as the primary install path. The workflow is harness-agnostic (Claude Code, Codex, OpenCode) and executable from a single command:
 
 ```bash
-# Install from GitHub release URL (no clone needed)
-specify workflow run https://github.com/rhuss/cc-spex/releases/latest/download/setup.yml
+# Run from a clone of the cc-spex repo
+specify workflow run spex/setup.yml
 
 # Customize with inputs
 specify workflow run spex/setup.yml -i "extensions=spex-gates,spex-worktrees"
@@ -208,7 +208,7 @@ specify workflow run spex/setup.yml -i "permissions=yolo"
 specify workflow run spex/setup.yml -i "integration=codex"
 ```
 
-The workflow auto-detects the agent harness, installs extensions, and applies per-agent configuration (including command adaptation, see below). Prerequisites: `specify` CLI (>= 0.7.4), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
+The workflow uses spec-kit's `SPECKIT_WORKFLOW_DIR` to locate its sibling scripts and extensions from the YAML file path, so it must be run from a local checkout (not a bare URL). It auto-detects the agent harness, installs extensions, and applies per-agent configuration (including command adaptation, see below). Prerequisites: `specify` CLI (>= 0.12.16), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
 
 ### Neutral Command Vocabulary
 

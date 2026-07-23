@@ -15,32 +15,29 @@
 
 set -euo pipefail
 
-# --- Check specify CLI version (require >= 0.5.0) ---
+# --- Check specify CLI version (require >= 0.12.16 for workflow_dir) ---
 check_version() {
   local version_output
   version_output=$(specify version 2>/dev/null) || return 1
 
-  # Extract semver from decorated output (e.g., "CLI Version    0.5.1.dev0")
   local version
   version=$(echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
   [ -n "$version" ] || return 1
 
-  # Parse major.minor.patch
   local major minor patch
   major=$(echo "$version" | cut -d. -f1)
   minor=$(echo "$version" | cut -d. -f2)
   patch=$(echo "$version" | cut -d. -f3)
 
-  # Require >= 0.5.0
   if [ "$major" -gt 0 ] 2>/dev/null; then
     return 0
-  elif [ "$major" -eq 0 ] && [ "$minor" -ge 5 ] 2>/dev/null; then
+  elif [ "$major" -eq 0 ] && [ "$minor" -gt 12 ] 2>/dev/null; then
+    return 0
+  elif [ "$major" -eq 0 ] && [ "$minor" -eq 12 ] && [ "$patch" -ge 16 ] 2>/dev/null; then
     return 0
   fi
 
-  echo "ERROR: spec-kit version $version is too old for this version of spex."
-  echo ""
-  echo "spex v4.0.0+ requires spec-kit >= 0.5.0, which uses the Agent Skills format."
+  echo "ERROR: spec-kit version $version is too old (requires >= 0.12.16)."
   echo ""
   echo "Upgrade with:"
   echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git"
@@ -607,6 +604,8 @@ case "${1:-}" in
             exit 1
           fi
         fi
+        # SPEX_SOURCE is legacy defense-in-depth; the workflow engine now
+        # sets SPECKIT_WORKFLOW_DIR automatically from the YAML file path.
         _spex_root="$(cd "$_script_dir/.." && pwd)"
         SPEX_SOURCE="$_spex_root" specify workflow run "$_setup_workflow"
         exit $?
