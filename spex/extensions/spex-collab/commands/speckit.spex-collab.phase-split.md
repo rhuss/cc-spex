@@ -56,6 +56,98 @@ FEATURE_DIR=$(echo "$PREREQ" | jq -r '.FEATURE_DIR')
 
 Read `tasks.md` from FEATURE_DIR.
 
+## Estimate File Count
+
+Estimate how many files the feature will touch. This determines whether to propose multi-phase splitting or silently default to single phase.
+
+### Parse File Paths from plan.md
+
+If `plan.md` exists in FEATURE_DIR, extract file path references:
+
+```bash
+PLAN_FILE="${FEATURE_DIR}/plan.md"
+ESTIMATED_FILES=0
+ESTIMATION_SOURCE="heuristic"
+
+if [ -f "$PLAN_FILE" ]; then
+  # Extract file paths: match patterns like src/foo/bar.sh, `path/to/file.md`, ./relative/path.yml
+  # Filter: must contain a directory separator (/), have a file extension (1-5 chars)
+  # Exclude: URLs (http/https lines), version-like patterns (v1.5), bare filenames without paths
+  FILE_PATHS=$(grep -oE '[a-zA-Z0-9_./-]+\.[a-zA-Z]{1,5}' "$PLAN_FILE" 2>/dev/null | \
+    grep '/' | \
+    grep -v '^http' | \
+    grep -v '^\.' | \
+    sort -u)
+  FILE_COUNT=$(echo "$FILE_PATHS" | grep -c '.' 2>/dev/null || echo "0")
+
+  if [ "$FILE_COUNT" -ge 5 ]; then
+    ESTIMATED_FILES=$FILE_COUNT
+    ESTIMATION_SOURCE="plan.md"
+  fi
+fi
+```
+
+### Fall Back to Task-Count Heuristic
+
+If fewer than 5 unique file paths were found in plan.md (or plan.md does not exist), use the task-count heuristic:
+
+```bash
+if [ "$ESTIMATED_FILES" -eq 0 ]; then
+  # Count all task lines (completed or not) in tasks.md
+  TASK_COUNT=$(grep -cE '^\s*- \[([ Xx])\] T[0-9]+' "${FEATURE_DIR}/tasks.md" 2>/dev/null || echo "0")
+  # Estimate: each task touches ~1.5 files on average
+  ESTIMATED_FILES=$(echo "$TASK_COUNT * 1.5" | bc 2>/dev/null || echo "$((TASK_COUNT + TASK_COUNT / 2))")
+  # Round to integer
+  ESTIMATED_FILES=$(printf "%.0f" "$ESTIMATED_FILES" 2>/dev/null || echo "$ESTIMATED_FILES")
+  ESTIMATION_SOURCE="heuristic"
+fi
+```
+
+## Threshold Gate
+
+Read the file threshold from collab-config.yml and compare against the estimated file count. When the estimate is at or below the threshold, silently default to single-phase mode without prompting the user.
+
+```bash
+# Read configurable threshold (default: 20)
+FILE_THRESHOLD=20
+COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
+if [ -f "$COLLAB_CONFIG" ]; then
+  CONFIGURED_THRESHOLD=$(yq -r '.phases.file_threshold // 20' "$COLLAB_CONFIG" 2>/dev/null)
+  if [ -n "$CONFIGURED_THRESHOLD" ] && [ "$CONFIGURED_THRESHOLD" != "null" ]; then
+    FILE_THRESHOLD=$CONFIGURED_THRESHOLD
+  fi
+fi
+```
+
+### Below Threshold: Silent Single Phase
+
+If the estimated file count is at or below the threshold, skip the phase split entirely and default to single-phase mode:
+
+```bash
+if [ "$ESTIMATED_FILES" -le "$FILE_THRESHOLD" ]; then
+  echo "Estimated files ($ESTIMATED_FILES, source: $ESTIMATION_SOURCE) at or below threshold ($FILE_THRESHOLD). Defaulting to single phase."
+  # Fall through to single-phase setup (persisting a single "Full Implementation" phase plan)
+fi
+```
+
+When below threshold:
+1. Do NOT show any phase split prompt or proposal
+2. Collect all task IDs from tasks.md into a single phase named "Full Implementation"
+3. Persist the single-phase plan to `.spex-state` (see "Persist Phase Plan" section below)
+4. Output single-phase implementation instructions (see "Single-Phase Implementation Instructions" section below)
+5. Return immediately (skip "Detect Task Phases", "Present Phase Split Proposal", and merge logic)
+
+### Above Threshold: Continue to Phase Detection
+
+If the estimated file count exceeds the threshold, continue to the phase detection and merge logic below:
+
+```bash
+if [ "$ESTIMATED_FILES" -gt "$FILE_THRESHOLD" ]; then
+  echo "Estimated files ($ESTIMATED_FILES, source: $ESTIMATION_SOURCE) exceeds threshold ($FILE_THRESHOLD). Proposing phase split."
+  # Continue to Detect Task Phases
+fi
+```
+
 ## Detect Task Phases
 
 Parse tasks.md for heading-based groupings. Look for these patterns:
@@ -71,23 +163,86 @@ For each heading group:
 
 If no phase-like headings are found, treat all tasks as a single phase named "All Tasks".
 
+## Merge Adjacent Small Phases
+
+When the estimated file count exceeds the threshold (meaning we're proposing a multi-phase split), merge adjacent phases that are too small for meaningful PR review. The per-phase merge minimum is 10 files.
+
+### Distribute Files Across Phases
+
+Since plan.md does not map files to specific phases, distribute the estimated file count proportionally based on each phase's task count:
+
+```bash
+TOTAL_TASKS=[total tasks across all phases]
+for each phase:
+  PHASE_TASKS=[number of tasks in this phase]
+  PHASE_FILES=$(( ESTIMATED_FILES * PHASE_TASKS / TOTAL_TASKS ))
+  # Ensure at least 1 file per phase
+  if [ "$PHASE_FILES" -lt 1 ]; then PHASE_FILES=1; fi
+```
+
+### Greedy Forward Merge
+
+Iterate through phases and merge adjacent small phases:
+
+```bash
+MERGE_MINIMUM=10  # per-phase merge minimum (internal heuristic, not configurable)
+
+merged_phases=()
+current_phase=[first phase]
+current_files=[first phase's estimated files]
+
+for each remaining phase:
+  if current_files < MERGE_MINIMUM:
+    # Merge this phase into current: combine names, tasks, and file estimates
+    current_phase.name = current_phase.name + " + " + next_phase.name
+    current_phase.tasks = current_phase.tasks + next_phase.tasks
+    current_files = current_files + next_phase.estimated_files
+  else:
+    # Current phase is large enough, finalize it
+    merged_phases.append(current_phase)
+    current_phase = next_phase
+    current_files = next_phase.estimated_files
+
+# Don't forget the last phase
+merged_phases.append(current_phase)
+```
+
+### Post-Merge Check
+
+After merging, check if only one phase remains:
+
+```bash
+if [ ${#merged_phases[@]} -eq 1 ]; then
+  # Merging reduced everything to a single phase
+  # Treat as single-phase mode (no prompt shown)
+  # Fall through to single-phase setup
+fi
+```
+
+If only one phase remains after merging, silently default to single-phase mode (same behavior as threshold-defaulted single phase). Do NOT show a proposal for a single merged phase.
+
+If multiple phases remain after merging, continue to "Present Phase Split Proposal" below. Re-number the merged phases sequentially (1, 2, 3, ...).
+
 ## Present Phase Split Proposal
 
-Display the parsed phases as a table:
+Display the phases (after merging, if applicable) as a table. Merged phases show combined names joined with " + " and include the aggregate task count:
 
 ```
 ## Proposed PR Split
 
-| Phase | Name | Tasks | Completed | Task IDs |
-|-------|------|-------|-----------|----------|
-| 1     | Setup (Extension Scaffold) | 3 | 0 | T001, T002, T003 |
-| 2     | US1 - Spec PR with REVIEWERS.md | 6 | 0 | T004-T009 |
-| 3     | US2 - Phase-Based Implementation PRs | 10 | 0 | T010-T019 |
-| 4     | US3 - Code PR with Updated REVIEWERS.md | 3 | 0 | T020-T022 |
-| 5     | Polish & Integration | 6 | 0 | T023-T028 |
+Estimated files: [ESTIMATED_FILES] (source: [ESTIMATION_SOURCE])
+
+| Phase | Name | Est. Files | Tasks | Completed | Task IDs |
+|-------|------|-----------|-------|-----------|----------|
+| 1     | Setup + US1 | 12 | 9 | 0 | T001-T009 |
+| 2     | US2 - Phase-Based Implementation PRs | 15 | 10 | 0 | T010-T019 |
+| 3     | US3 + Polish | 18 | 9 | 0 | T020-T028 |
 
 Each phase becomes a separate PR for focused review.
+Phases were merged to ensure each touches at least ~10 files for meaningful review.
 ```
+
+Note: The "Phases were merged..." line is only shown when merging actually reduced the number of phases from the original tasks.md groupings.
 
 {harness:interactive-choice}:
 
@@ -173,3 +328,26 @@ proceed to the next phase. The phase-manager will handle code review, REVIEWERS.
 ```
 
 **IMPORTANT**: After outputting these instructions, do NOT invoke `/speckit-implement` automatically. The instructions are for the user (or the calling workflow) to follow manually, one phase at a time. This ensures the implementation pauses at each phase boundary for review and PR management.
+
+## Single-Phase Implementation Instructions
+
+When single-phase mode is active (either threshold-defaulted or user-selected "Single phase (no split)"), output instructions that run implementation straight through all tasks with phase-manager called only once at the end:
+
+```
+## Implementation Plan (Single Phase)
+
+Run implementation for all tasks at once:
+
+### Full Implementation
+Tasks: [all task IDs]
+Run: /speckit-implement
+Then: /speckit-spex-collab-phase-manager
+```
+
+The key difference from multi-phase instructions:
+- A single `/speckit-implement` call with NO phase filter (runs all tasks)
+- Phase-manager is called exactly once after all tasks complete
+- No inter-phase pauses or boundaries during implementation
+- Phase-manager handles the final review gate and PR creation offer
+
+**IMPORTANT**: In single-phase mode, implementation MUST run continuously through all tasks without any phase-manager interruption. The phase-manager fires only once at the end to offer the review gate and PR creation.

@@ -119,7 +119,10 @@ spex EXTENSIONS (quality gates for spec-kit commands)
 
   spex-collab extension:
     /speckit-tasks    → auto-generates REVIEWERS.md, offers [Spec] PR
-    /speckit-implement → presents phase split proposal (before hook)
+    /speckit-implement → smart phase split: estimates file count, skips
+                         prompt for small features (< file_threshold),
+                         merges adjacent small phases for large features
+                         (before hook)
     /speckit-spex-collab-phase-manager → PR creation + REVIEWERS.md updates per phase
                                          After spec PR: suggests triage with /loop command
                                          After spec triage: gate check recommends same-PR or split
@@ -151,7 +154,10 @@ spex EXTENSIONS (quality gates for spec-kit commands)
                      Above threshold: recommend separate impl PR(s)
     After impl PR  → flow state: triage-impl, suggest /loop with delay notice
     Status line    → T badge: ○ pending, ▶ active, ✓ complete
-    Config         → triage.split_threshold (100), triage.loop_interval ("5m")
+    Config         → phases.file_threshold (20): min estimated files to
+                       propose multi-phase split. Below threshold, single
+                       phase is used silently. Set to 0 to always propose.
+                     → triage.split_threshold (100), triage.loop_interval ("5m")
                      in .specify/extensions/spex-collab/collab-config.yml
 
 

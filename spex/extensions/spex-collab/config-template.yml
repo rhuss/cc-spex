@@ -14,6 +14,9 @@ labels:
 
 # Bot reviewer profiles for PR comment triage.
 # Override built-in profiles (CodeRabbit, Copilot) or add custom bots.
+phases:
+  file_threshold: 20     # minimum estimated files to propose multi-phase split
+
 triage:
   split_threshold: 100   # comment count above which PR split is recommended
   loop_interval: "5m"    # default interval for /loop triage suggestion

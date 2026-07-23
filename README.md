@@ -97,7 +97,7 @@ After the spec is approved, implementation can proceed. Two patterns are support
 
 **Separate PRs** (for larger scopes): Merge the spec PR first, then create one or more implementation PRs. Each implementation PR references the approved spec via `REVIEWERS.md`.
 
-With `spex-collab` enabled, a phase split proposal is presented before implementation begins (via the `before_implement` hook). You confirm or adjust how tasks.md phases map to PRs, then implementation pauses after each phase. At each pause, the `phase-manager` command runs code review, updates `REVIEWERS.md` with code-specific review hints, and offers to create a PR via `gh`.
+With `spex-collab` enabled, a smart phase split evaluates the feature size before implementation begins (via the `before_implement` hook). Small features (below the configurable file threshold, default 20) silently default to single-phase mode with no prompt. Larger features get a merged phase proposal where adjacent small phases are combined for meaningful review. You confirm or adjust the proposed groupings, then implementation pauses after each phase. At each pause, the `phase-manager` command runs code review, updates `REVIEWERS.md` with code-specific review hints, and offers to create a PR via `gh`.
 
 ```
 /speckit-implement                        # Starts with phase split proposal
@@ -237,7 +237,7 @@ cc-spex uses spec-kit's native extension system. Each extension lives in `spex/e
 
 **`spex-worktrees`**: Git worktree isolation for feature development. After `/speckit-specify`, creates a worktree at `.claude/worktrees/<branch>` (inside the project directory) and copies `.claude/` and `.specify/` config to it. This default location keeps CWD stable across Claude Code subagent returns. Projects can override `base_path` in `worktree-config.yml` for external worktrees.
 
-**`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them.
+**`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them. Smart phase splitting estimates file count from plan.md (with a task-count heuristic fallback) and silently defaults to single-phase mode for small features (configurable via `phases.file_threshold` in collab-config.yml, default 20). For large features, adjacent small phases are merged to ensure each phase touches at least 10 files for meaningful review.
 
 **`spex-detach`** (opt-in): Stealth mode for contributing to upstream projects that don't use spec-driven development. Uses `.git/info/exclude` to hide spec artifacts (`.specify/`, `specs/`, `brainstorm/`) from git without modifying any committed files. Spec files remain on disk for normal spex workflows but are invisible to `git status`, `git add`, and PRs. The `enable` subcommand writes exclude entries (runs automatically via `after_init` hook). At finish time, the `archive` subcommand copies spec artifacts to a configured sibling specs repo for version control. The brainstorm skill auto-detects sibling `*-specs` directories and scans them for revisit detection.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR

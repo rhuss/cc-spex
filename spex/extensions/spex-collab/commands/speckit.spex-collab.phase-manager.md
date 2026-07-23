@@ -50,6 +50,22 @@ If no phase plan exists (`collab.phase_plan` is empty or missing):
 - Output: "No phase plan found. Run the phase-split command first, or invoke `/speckit.spex-collab.phase-split` to create one."
 - Return.
 
+## Single-Phase Detection
+
+Check if the phase plan contains exactly one entry, indicating single-phase mode (either threshold-defaulted or user-selected):
+
+```bash
+PHASE_COUNT=$(jq '.collab.phase_plan | length' .specify/.spex-state 2>/dev/null || echo "0")
+```
+
+If `PHASE_COUNT` equals 1, this is a single-phase implementation. In single-phase mode:
+- This invocation is the **final and only** phase-manager call
+- It happens after all tasks have been completed
+- Skip any "next phase" logic; proceed directly to the review gate, REVIEWERS.md update, and PR offer
+- When displaying the phase, indicate single-phase mode: "Phase 1: Full Implementation (single phase)"
+
+The rest of the phase-manager flow (review gate, REVIEWERS.md update, PR offer) proceeds normally for this single phase. The key behavioral difference is that this call should never have been made during implementation (the phase-split single-phase instructions ensure it is only called once at the end).
+
 ## Determine Current Phase
 
 Find the next phase to process:
