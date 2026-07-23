@@ -744,25 +744,32 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
    ```
 
-2. {harness:spawn-worker}. Pass external tool settings resolved during argument parsing:
+2. {harness:spawn-worker}. Do NOT pass external tool settings in the prompt. The deep-review skill reads its own config file (`deep-review-config.yml`) and determines which tools to run. Only pass explicit `--no-*` CLI flags if the user provided them at ship invocation time.
 
    ```
    You are executing the code review stage of a speckit-spex-ship pipeline.
 
    Feature directory: <FEATURE_DIR>
    Spec: <FEATURE_DIR>/spec.md
-   External tools: coderabbit=<true/false>, copilot=<true/false>, codex=<true/false>
 
    IMPORTANT: Do NOT read plan.md or tasks.md. These are implementation
    artifacts that reveal author intent and would anchor your review.
    Review the code against the spec only.
+
+   IMPORTANT: Do NOT pass external tool settings (coderabbit, copilot, codex)
+   to the review-code or deep-review commands. They read their own config.
+   Only pass explicit --no-* flags if the user provided them at ship invocation.
+   <If user passed --no-coderabbit: include "--no-coderabbit">
+   <If user passed --no-copilot: include "--no-copilot">
+   <If user passed --no-codex: include "--no-codex">
+   <If user passed --no-external: include "--no-external">
 
    Invoke /speckit-spex-gates-review-code to run the full review chain:
    - Spec compliance check
    - Code review validation
    - Deep review (if spex-deep-review extension is enabled): 5 review agents, fix loop,
      Deep Review Report output to console
-   - External tools (CodeRabbit, Copilot) if enabled
+   - External tools as configured in deep-review-config.yml
 
    Report the compliance score, gate outcome, and a summary of findings when done.
    ```

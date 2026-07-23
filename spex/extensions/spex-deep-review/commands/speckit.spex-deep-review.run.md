@@ -34,10 +34,12 @@ If this succeeds (outputs JSON with `FEATURE_SPEC`), use the resolved spec path 
 
 ### External Tool Settings Resolution
 
-If external tool settings are provided by the caller, use them directly. If not (e.g., when invoked directly by `speckit-spex-ship` or manually), resolve from config:
+**Always read config first.** The deep-review command is self-contained and reads its own config regardless of what the caller provides. Caller-provided values in prompt text are ignored for external tool settings. Only explicit CLI flags (`--no-coderabbit`, `--no-codex`, `--no-copilot`, `--no-external`) serve as overrides.
+
+This prevents callers (e.g., ship pipeline subagent prompts) from accidentally disabling tools by passing stale or incorrect values.
 
 ```bash
-# Read config defaults from deep-review extension config (all default to true if key is missing)
+# ALWAYS read config defaults (never skip this step, never trust caller values)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
@@ -48,13 +50,23 @@ DEFAULT_CODEX=${DEFAULT_CODEX:-true}
 ```
 
 ```
-Resolution:
+Resolution (always start from config, then apply CLI flag overrides only):
   coderabbit = DEFAULT_CODERABBIT
   copilot    = DEFAULT_COPILOT
   codex      = DEFAULT_CODEX
+
+  CLI overrides (applied in order, only if explicitly passed as flags):
+    --external       -> coderabbit = true,  copilot = true,  codex = true
+    --no-external    -> coderabbit = false, copilot = false, codex = false
+    --no-coderabbit  -> coderabbit = false
+    --no-copilot     -> copilot = false
+    --no-codex       -> codex = false
+    --coderabbit     -> coderabbit = true
+    --copilot        -> copilot = true
+    --codex          -> codex = true
 ```
 
-This ensures CodeRabbit, Copilot, and Codex are enabled by default regardless of how deep-review is invoked.
+**IMPORTANT**: If a caller passes external tool settings as prompt text (e.g., "External tools: coderabbit=false"), IGNORE those values. The config file is the source of truth. Only CLI flags override the config.
 
 ### Test Suite Configuration
 
