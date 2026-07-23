@@ -71,12 +71,13 @@ ESTIMATION_SOURCE="heuristic"
 
 if [ -f "$PLAN_FILE" ]; then
   # Extract file paths: match patterns like src/foo/bar.sh, `path/to/file.md`, ./relative/path.yml
-  # Filter: must contain a directory separator (/), have a file extension (1-5 chars)
-  # Exclude: URLs (http/https lines), version-like patterns (v1.5), bare filenames without paths
-  FILE_PATHS=$(grep -oE '[a-zA-Z0-9_./-]+\.[a-zA-Z]{1,5}' "$PLAN_FILE" 2>/dev/null | \
+  # Filter: must contain a directory separator (/), have a file extension (1-10 chars)
+  # Exclude: URLs (http/https), version-like patterns (v1.5)
+  FILE_PATHS=$(grep -oE '[a-zA-Z0-9_./-]+\.[a-zA-Z]{1,10}' "$PLAN_FILE" 2>/dev/null | \
     grep '/' | \
-    grep -v '^http' | \
-    grep -v '^\.' | \
+    grep -vE '^https?://' | \
+    grep -vE '^//' | \
+    grep -v '^v[0-9]' | \
     sort -u)
   FILE_COUNT=$(echo "$FILE_PATHS" | grep -c '.' 2>/dev/null || echo "0")
 
@@ -94,7 +95,7 @@ If fewer than 5 unique file paths were found in plan.md (or plan.md does not exi
 ```bash
 if [ "$ESTIMATED_FILES" -eq 0 ]; then
   # Count all task lines (completed or not) in tasks.md
-  TASK_COUNT=$(grep -cE '^\s*- \[([ Xx])\] T[0-9]+' "${FEATURE_DIR}/tasks.md" 2>/dev/null || echo "0")
+  TASK_COUNT=$(grep -cE '^[[:space:]]*- \[([ Xx])\] T[0-9]+' "${FEATURE_DIR}/tasks.md" 2>/dev/null || echo "0")
   # Estimate: each task touches ~1.5 files on average
   ESTIMATED_FILES=$(echo "$TASK_COUNT * 1.5" | bc 2>/dev/null || echo "$((TASK_COUNT + TASK_COUNT / 2))")
   # Round to integer
@@ -161,7 +162,7 @@ For each heading group:
 - Collect all task IDs (lines matching `- [ ] T[0-9]+` or `- [X] T[0-9]+`)
 - Count total tasks and completed tasks
 
-If no phase-like headings are found, treat all tasks as a single phase named "All Tasks".
+If no phase-like headings are found, treat all tasks as a single phase named "Full Implementation".
 
 ## Merge Adjacent Small Phases
 
@@ -169,20 +170,27 @@ When the estimated file count exceeds the threshold (meaning we're proposing a m
 
 ### Distribute Files Across Phases
 
-Since plan.md does not map files to specific phases, distribute the estimated file count proportionally based on each phase's task count:
+Since plan.md does not map files to specific phases, distribute the estimated file count proportionally based on each phase's task count. Assign leftover files from rounding to the largest phase to prevent truncation loss:
 
 ```bash
 TOTAL_TASKS=[total tasks across all phases]
+ALLOCATED=0
 for each phase:
   PHASE_TASKS=[number of tasks in this phase]
   PHASE_FILES=$(( ESTIMATED_FILES * PHASE_TASKS / TOTAL_TASKS ))
-  # Ensure at least 1 file per phase
   if [ "$PHASE_FILES" -lt 1 ]; then PHASE_FILES=1; fi
+  ALLOCATED=$((ALLOCATED + PHASE_FILES))
+
+# Assign rounding remainder to the phase with the most tasks
+REMAINDER=$((ESTIMATED_FILES - ALLOCATED))
+if [ "$REMAINDER" -gt 0 ]; then
+  largest_phase.estimated_files += REMAINDER
+fi
 ```
 
 ### Greedy Forward Merge
 
-Iterate through phases and merge adjacent small phases:
+Iterate through phases and merge adjacent small phases. After the loop, check the trailing phase and merge it backward if it is too small:
 
 ```bash
 MERGE_MINIMUM=10  # per-phase merge minimum (internal heuristic, not configurable)
@@ -203,8 +211,15 @@ for each remaining phase:
     current_phase = next_phase
     current_files = next_phase.estimated_files
 
-# Don't forget the last phase
+# Finalize the last phase
 merged_phases.append(current_phase)
+
+# Trailing-phase fix: if the last phase is too small, merge it into the previous one
+if len(merged_phases) > 1 and merged_phases[-1].estimated_files < MERGE_MINIMUM:
+  last = merged_phases.pop()
+  merged_phases[-1].name = merged_phases[-1].name + " + " + last.name
+  merged_phases[-1].tasks = merged_phases[-1].tasks + last.tasks
+  merged_phases[-1].estimated_files += last.estimated_files
 ```
 
 ### Post-Merge Check
