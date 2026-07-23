@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-21
+Last updated: 2026-07-23
 
 ## Sessions
 
@@ -15,6 +15,7 @@ Last updated: 2026-07-21
 | 28 | 2026-07-02 | harness-agnostic-spex | active (revisited 2026-07-08) | - | - |
 | 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
 | 40 | 2026-07-15 | brainstorm-sync | active | 044 | - |
+| 41 | 2026-07-23 | smart-phase-splitting | active | - | - |
 
 ## Open Threads
 
@@ -49,6 +50,9 @@ Last updated: 2026-07-21
 - Should `--sync` also validate that "active" brainstorms without recent git activity are flagged as potentially stale? (from #40)
 - Should the attic directory preserve any index file of its own for historical reference? (from #40)
 - Should `--sync` be its own standalone command rather than a flag on the brainstorm skill? (from #40)
+- What is the right minimum files-per-phase threshold for merging? (from #41)
+- Should file estimation also consider test files, or only production code? (from #41)
+- How to handle files shared across phases in the count? (from #41)
 
 ## Parked Ideas
 
