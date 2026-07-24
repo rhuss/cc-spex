@@ -8,6 +8,14 @@
 
 **Input**: User description: "Provide first-class Codex support from the same repository as the Claude plugin, including a marketplace-installed Codex plugin, interactive `spex:init`, selectable extensions and project-wide security levels, reliable worktree and state continuity, Codex-native progress and subagents, and a hardened ship pipeline that continues autonomously through recoverable blockers. Preserve a shared Spex core and allow an OpenCode adapter later."
 
+## Clarifications
+
+### Session 2026-07-24
+
+- Q: When main-checkout and worktree state files conflict, which state is authoritative? → A: Choose the state matching the existing feature worktree, branch, and spec directory; if validation is inconclusive, refuse mutation.
+- Q: What default budget should each autonomous recovery episode use? → A: Maximum 3 attempts and 30 minutes.
+- Q: If Codex cannot express the selected security level, what must initialization do? → A: Offer the closest safer supported level and require confirmation; otherwise fail without changing configuration.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Install and Initialize Spex in Codex (Priority: P1)
@@ -151,7 +159,7 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - **FR-011**: YOLO MUST broadly suppress routine approvals for project work while continuing to block destructive actions outside the workspace and other actions requiring authority the user has not granted.
 - **FR-012**: Before persisting Autonomous or YOLO, initialization MUST clearly state which safeguards remain and what additional autonomy is granted.
 - **FR-013**: The selected security level MUST apply consistently to Spex commands, ship stages, delegated reviews, implementation work, and Codex subagents within the project.
-- **FR-014**: If the active Codex version cannot express the selected security behavior, initialization MUST fail safely or offer the closest safer supported level rather than silently weakening or broadening it.
+- **FR-014**: If the active Codex version cannot express the selected security behavior, initialization MUST offer the closest safer supported level and require user confirmation before persisting it; if no safer level is supported or the user declines, initialization MUST fail without changing configuration.
 
 #### Worktree and state reliability
 
@@ -163,7 +171,7 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - **FR-020**: Specification discovery, extension configuration, hook execution, artifact validation, and state mutation MUST resolve against the active feature worktree after transfer.
 - **FR-021**: The orchestrator MUST re-establish and validate active worktree context after every delegated stage returns.
 - **FR-022**: Resume MUST recover the same active feature and unfinished activity when invoked from either the main checkout or the feature worktree.
-- **FR-023**: When competing state files exist, recovery MUST detect the conflict, select a validated authoritative state using deterministic rules, and preserve diagnostic evidence.
+- **FR-023**: When competing state files exist, recovery MUST preserve diagnostic evidence and select as authoritative the state that matches the existing feature worktree, feature branch, and specification directory; if those checks do not identify exactly one valid state, Spex MUST refuse feature mutations.
 - **FR-024**: Spex MUST refuse feature mutations when it cannot establish which checkout and state are authoritative.
 
 #### Continuous ship execution
@@ -174,7 +182,7 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - **FR-028**: In Autonomous and YOLO modes, ship MUST execute safe in-scope recovery recommendations without asking whether to proceed.
 - **FR-029**: Recovery results MUST be incorporated into the artifact responsible for the finding and MUST trigger revalidation of every affected downstream artifact and gate.
 - **FR-030**: Ship MUST persist recovery objectives, attempts, outcomes, and the exact resume point.
-- **FR-031**: Ship MUST enforce finite attempt and elapsed-work budgets for each recovery episode to prevent infinite loops.
+- **FR-031**: Ship MUST limit each recovery episode to a default maximum of 3 attempts and 30 minutes of elapsed work; explicitly configured limits MAY override these defaults but MUST remain finite.
 - **FR-032**: Ship MUST detect non-converging recovery, including repeated equivalent findings and oscillation between incompatible remedies.
 - **FR-033**: On terminal failure, ship MUST report the evidence gathered, actions attempted, remaining blockers or exposure, affected artifacts, and a precise resume action.
 - **FR-034**: Ship MUST pause for user input only when continuation requires new authority, unavailable credentials or infrastructure, an irreversible external action, or a material product decision not supported by current requirements.
@@ -222,7 +230,7 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - **SC-002**: Across 100 automated worktree lifecycle runs containing delegated stages and interruption/resume points, zero feature mutations or state advances occur in the wrong checkout.
 - **SC-003**: In every tested recoverable review-blocker scenario, Autonomous and YOLO ship runs either complete recovery and continue or reach a bounded terminal report without asking a routine “should I continue?” question.
 - **SC-004**: Every terminal ship failure test ends with a validated resume point and a report of attempted recovery actions, residual blockers, and affected artifacts.
-- **SC-005**: No tested ship recovery episode exceeds its configured attempt or elapsed-work budget, and all injected oscillation scenarios are detected before an additional equivalent cycle begins.
+- **SC-005**: No tested ship recovery episode exceeds its configured attempt or elapsed-work budget, with unconfigured episodes capped at 3 attempts and 30 minutes, and all injected oscillation scenarios are detected before an additional equivalent cycle begins.
 - **SC-006**: Users can identify the active stage and whether normal, delegated, or recovery work is running within one progress update of a transition in all supported Codex clients.
 - **SC-007**: Static compatibility validation reports zero unresolved harness markers and zero known cross-harness tool, command, path, or status-line references in released Claude and Codex artifacts.
 - **SC-008**: Claude-only, Codex-only, and combined installation suites complete successfully on every supported release platform.
@@ -241,4 +249,3 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - Claude and Codex may expose different user experiences while preserving the same observable Spex workflow guarantees.
 - OpenCode support is limited in this feature to architectural extensibility and a representative adapter proof; a production OpenCode plugin is separate future work.
 - Existing Spex feature specifications remain historical records and are not rewritten as part of this feature.
-
