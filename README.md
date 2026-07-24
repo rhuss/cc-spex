@@ -321,6 +321,10 @@ These commands are provided by spex extensions and available after `/spex:init`.
 
 ## Ship Command
 
+Codex users should run `spex:init` before shipping. Ship re-resolves the active
+feature worktree after delegated stages and presents ordered native progress
+with a concise transcript fallback.
+
 `/speckit-spex-ship` is the autonomous full-cycle workflow that chains all stages from specification through verification. It requires both the `spex-gates` and `spex-deep-review` extensions to be enabled.
 
 ```

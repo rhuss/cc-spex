@@ -91,6 +91,14 @@ for index in "${!kinds[@]}"; do
   else
     fail "${kinds[index]} transition presentation (exit=$output_status output=$output)"
   fi
+  transcript_output="$(present unavailable 2>&1)"
+  if jq -e --arg message "${messages[index]}" \
+      '.native == null and (.transcript | contains($message))' \
+      <<<"$transcript_output" >/dev/null 2>&1; then
+    pass "${kinds[index]} transition is reported in the immediately following transcript event"
+  else
+    fail "${kinds[index]} transcript client missed the immediate transition"
+  fi
 done
 
 write_event 6 implement recovery updated "Recovery evidence recorded"

@@ -15,6 +15,7 @@ trap spex_test_cleanup EXIT HUP INT TERM
 PASSED=0
 FAILED=0
 SKIPPED=0
+PRE_FEATURE_ACCEPTANCE_RATE=100
 pass() { printf 'PASS: %s\n' "$1"; PASSED=$((PASSED + 1)); }
 fail() { printf 'FAIL: %s\n' "$1" >&2; FAILED=$((FAILED + 1)); }
 skip() { printf 'SKIP: %s\n' "$1"; SKIPPED=$((SKIPPED + 1)); }
@@ -187,4 +188,13 @@ else
 fi
 
 summary
+executed=$((PASSED + FAILED))
+if [[ $executed -gt 0 ]]; then
+  current_rate=$((PASSED * 100 / executed))
+  if [[ $current_rate -lt $PRE_FEATURE_ACCEPTANCE_RATE ]]; then
+    fail "Claude acceptance rate regressed: ${current_rate}% < ${PRE_FEATURE_ACCEPTANCE_RATE}% baseline"
+  else
+    pass "Claude acceptance rate meets the ${PRE_FEATURE_ACCEPTANCE_RATE}% pre-feature baseline"
+  fi
+fi
 [[ $FAILED -eq 0 ]]

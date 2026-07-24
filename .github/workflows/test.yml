@@ -1,0 +1,38 @@
+name: Cross-harness tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  install-suites:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        suite: [claude, codex, combined]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install schema validator
+        run: uv tool install check-jsonschema
+      - name: Install yq
+        uses: mikefarah/yq@v4.45.4
+      - name: Run harness installation suite
+        run: make test-install-${{ matrix.suite }} JSON_SCHEMA_VALIDATOR=check-jsonschema
+
+  core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv tool install check-jsonschema
+      - uses: mikefarah/yq@v4.45.4
+      - run: make test-unit JSON_SCHEMA_VALIDATOR=check-jsonschema
+      - run: make test-lifecycle test-recovery test-progress test-teams

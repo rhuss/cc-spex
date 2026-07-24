@@ -4,6 +4,10 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 
 # Autonomous Full-Cycle Workflow (speckit-spex-ship)
 
+Codex projects must run `spex:init` first. Ship resumes from validated
+WorkflowState and reports ordered ProgressEvents; visible progress never
+overrides durable feature/worktree authority.
+
 ## CONTINUOUS EXECUTION RULE (READ THIS FIRST)
 
 **This pipeline runs ALL stages without stopping.** After completing any stage, you MUST immediately begin the next stage. There are no natural stopping points between stages.

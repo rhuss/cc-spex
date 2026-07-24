@@ -8,8 +8,9 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 STATE_FILE = os.environ.get("SHIP_STATE_FILE", ".specify/.spex-state")
 STAGES = ["specify", "clarify", "review-spec", "plan", "tasks", "review-plan", "implement", "review-code"]
@@ -31,6 +32,14 @@ STATUSES = {
 }
 BRANCH_PATTERN = re.compile(r"^[0-9]{3}-[a-z0-9-]+$")
 OID_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
+PROGRESS_SCHEMA_VERSION = "1.0.0"
+PROGRESS_FIELDS = {
+    "schema_version", "workflow_id", "sequence", "timestamp", "stage",
+    "kind", "status", "message", "objective", "attempt",
+}
+REQUIRED_PROGRESS_FIELDS = PROGRESS_FIELDS - {"objective", "attempt"}
+PROGRESS_KINDS = {"normal", "delegated", "recovery", "pause", "complete"}
+PROGRESS_STATUSES = {"started", "updated", "succeeded", "failed", "paused"}
 
 
 class StateError(Exception):
@@ -150,6 +159,365 @@ def validate_workflow_state(state):
     return state
 
 
+def validate_progress_event(event):
+    _require(isinstance(event, dict), "progress event must be an object")
+    fields = set(event)
+    _require(not (REQUIRED_PROGRESS_FIELDS - fields),
+             "progress event is missing required fields: {}".format(
+                 ", ".join(sorted(REQUIRED_PROGRESS_FIELDS - fields))))
+    _require(not (fields - PROGRESS_FIELDS),
+             "progress event contains unknown fields: {}".format(
+                 ", ".join(sorted(fields - PROGRESS_FIELDS))))
+    _require(event["schema_version"] == PROGRESS_SCHEMA_VERSION,
+             "progress schema_version must be {}".format(PROGRESS_SCHEMA_VERSION))
+    _require(isinstance(event["workflow_id"], str) and len(event["workflow_id"]) >= 8,
+             "progress workflow_id must contain at least eight characters")
+    _require(isinstance(event["sequence"], int) and not isinstance(event["sequence"], bool)
+             and event["sequence"] >= 1, "progress sequence must be a positive integer")
+    _timestamp(event["timestamp"], "progress timestamp")
+    _require(isinstance(event["stage"], str) and event["stage"].strip(),
+             "progress stage must be nonempty")
+    _require(event["kind"] in PROGRESS_KINDS, "progress kind is invalid")
+    _require(event["status"] in PROGRESS_STATUSES, "progress status is invalid")
+    _require(isinstance(event["message"], str) and event["message"].strip(),
+             "progress message must be nonempty")
+    if "objective" in event:
+        _require(event["objective"] is None or isinstance(event["objective"], str),
+                 "progress objective must be a string or null")
+    if "attempt" in event:
+        _require(event["attempt"] is None or (
+            isinstance(event["attempt"], int) and not isinstance(event["attempt"], bool)
+            and event["attempt"] >= 1), "progress attempt must be a positive integer or null")
+    _require(event["kind"] != "pause" or event["status"] == "paused",
+             "pause progress events must have paused status")
+    _require(event["kind"] != "complete" or event["status"] == "succeeded",
+             "complete progress events must have succeeded status")
+    return event
+
+
+def _decode_progress_events(raw, path):
+    events = []
+    for line_number, line in enumerate(raw.splitlines(), 1):
+        if not line.strip():
+            raise StateError("blank line in progress event log {} at line {}".format(path, line_number))
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise StateError("invalid progress event log {} at line {}: {}".format(
+                path, line_number, error)) from error
+        validate_progress_event(event)
+        _require(event["sequence"] == line_number,
+                 "progress event sequence is not contiguous at line {}".format(line_number))
+        if events:
+            _require(event["workflow_id"] == events[0]["workflow_id"],
+                     "progress event log contains multiple workflow IDs")
+        events.append(event)
+    return events
+
+
+def read_progress_events(path):
+    source = Path(path)
+    if not source.exists():
+        return []
+    try:
+        raw = source.read_text(encoding="utf-8")
+    except OSError as error:
+        raise StateError("cannot read progress event log {}: {}".format(source, error)) from error
+    return _decode_progress_events(raw, source)
+
+
+def emit_progress_event(state_path, event_log_path, kind, status, message, timestamp,
+                        objective=None, attempt=None):
+    state = read_workflow_state(state_path)
+    template = {
+        "schema_version": PROGRESS_SCHEMA_VERSION,
+        "workflow_id": state["workflow_id"],
+        "sequence": 1,
+        "timestamp": timestamp,
+        "stage": state["stage"],
+        "kind": kind,
+        "status": status,
+        "message": message,
+    }
+    if objective is not None:
+        template["objective"] = objective
+    if attempt is not None:
+        template["attempt"] = attempt
+    validate_progress_event(template)
+
+    return _append_progress_event(event_log_path, template)
+
+
+def _append_progress_event(event_log_path, template):
+    validate_progress_event(template)
+    destination = Path(event_log_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(destination, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        with os.fdopen(descriptor, "r+", encoding="utf-8", closefd=False) as handle:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            raw = handle.read()
+            events = _decode_progress_events(raw, destination)
+            if events:
+                _require(events[0]["workflow_id"] == template["workflow_id"],
+                         "progress event log belongs to another workflow")
+            event = dict(template)
+            event["sequence"] = len(events) + 1
+            validate_progress_event(event)
+            handle.seek(0, os.SEEK_END)
+            handle.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+            handle.flush()
+            os.fsync(descriptor)
+            return event
+    finally:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.close(descriptor)
+
+
+def progress_transcript(event):
+    validate_progress_event(event)
+    message = " ".join(event["message"].split())
+    suffix = []
+    if event.get("objective"):
+        suffix.append("objective={}".format(" ".join(event["objective"].split())))
+    if event.get("attempt") is not None:
+        suffix.append("attempt {}".format(event["attempt"]))
+    details = " ({})".format(", ".join(suffix)) if suffix else ""
+    return "[{}] {} {}/{}: {}{}".format(
+        event["sequence"], event["stage"], event["kind"], event["status"], message, details)
+
+
+def _transition_progress(previous, current):
+    recovery = current.get("recovery")
+    if current["status"] == "paused_authority":
+        return "pause", "paused", "Workflow paused for authority", None, None
+    if current["status"] == "completed":
+        return "complete", "succeeded", "Workflow completed", None, None
+    if current["status"].startswith("failed_"):
+        objective = recovery.get("objective") if recovery else None
+        return ("recovery" if recovery else "normal", "failed",
+                "Workflow transition failed: {}".format(current["status"]), objective,
+                len(recovery.get("attempts", [])) if recovery and recovery.get("attempts") else None)
+    if current["status"] == "recovering":
+        objective = recovery.get("objective") if recovery else None
+        attempts = recovery.get("attempts", []) if recovery else []
+        if previous.get("status") != "recovering":
+            return "recovery", "started", "Recovery started", objective, None
+        return "recovery", "updated", "Recovery progress persisted", objective, len(attempts) or None
+    if previous.get("stage") != current["stage"]:
+        return ("normal", "succeeded", "Advanced from {} to {}".format(
+            previous.get("stage"), current["stage"]), None, None)
+    return "normal", "updated", "Workflow state updated", None, None
+
+
+def _canonical_text(value):
+    _require(isinstance(value, str) and value.strip(), "fingerprint input must be nonempty text")
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return " ".join(normalized.split())
+
+
+def _fingerprint(value):
+    if isinstance(value, str):
+        canonical = _canonical_text(value)
+    else:
+        try:
+            canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        except (TypeError, ValueError) as error:
+            raise StateError("fingerprint input must be JSON serializable") from error
+    return "sha256:{}".format(hashlib.sha256(canonical.encode("utf-8")).hexdigest())
+
+
+def fingerprint_finding(value):
+    return _fingerprint(value)
+
+
+def fingerprint_remedy(value):
+    return _fingerprint(value)
+
+
+def fingerprint_artifact_inputs(value):
+    _require(isinstance(value, dict), "artifact inputs must be an object")
+    _require(all(isinstance(path, str) and isinstance(digest, str) for path, digest in value.items()),
+             "artifact inputs must map paths to digests")
+    return _fingerprint(value)
+
+
+def fingerprint_result(value):
+    return _fingerprint(value)
+
+
+def recovery_refusal_reason(episode, *, finding_fingerprint=None,
+                            remedy_fingerprint=None,
+                            artifact_input_fingerprint=None,
+                            result_fingerprint=None):
+    _require(isinstance(episode, dict), "recovery episode must be an object")
+    attempts = episode.get("attempts", [])
+    _require(isinstance(attempts, list), "recovery attempts must be an array")
+    if finding_fingerprint is not None and finding_fingerprint == episode.get("finding_fingerprint"):
+        return "repeated_finding"
+    if remedy_fingerprint is not None and any(
+            item.get("remedy_fingerprint") == remedy_fingerprint for item in attempts):
+        return "equivalent_remedy"
+    if artifact_input_fingerprint is not None and any(
+            fingerprint_artifact_inputs(item.get("input_hashes", {})) == artifact_input_fingerprint
+            for item in attempts):
+        return "equivalent_artifact_inputs"
+    if result_fingerprint is not None and len(attempts) >= 2:
+        if attempts[-2].get("result_fingerprint") == result_fingerprint:
+            return "oscillation"
+    return None
+
+
+def _parse_utc(value, field):
+    _timestamp(value, field)
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized).astimezone(timezone.utc)
+
+
+def _format_utc(value):
+    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _next_recovery_state(state, observed_at):
+    updated = deepcopy(validate_workflow_state(state))
+    updated["revision"] += 1
+    updated["updated_at"] = _format_utc(observed_at)
+    return updated
+
+
+def recovery_start(state, *, objective, finding_fingerprint,
+                   affected_artifacts, affected_gates, now,
+                   max_attempts=3, max_elapsed_seconds=1800):
+    validate_workflow_state(state)
+    _require(state["status"] == "running", "recovery can start only from running state")
+    _require(state.get("recovery") is None or state["recovery"].get("outcome") != "running",
+             "a recovery episode is already running")
+    _require(isinstance(objective, str) and objective.strip(), "recovery objective is required")
+    _require(isinstance(finding_fingerprint, str) and finding_fingerprint,
+             "finding fingerprint is required")
+    for field, value in (("max_attempts", max_attempts),
+                         ("max_elapsed_seconds", max_elapsed_seconds)):
+        _require(isinstance(value, int) and not isinstance(value, bool) and value >= 1,
+                 "{} must be a finite positive integer".format(field))
+    _require(isinstance(affected_artifacts, list) and
+             all(isinstance(item, str) for item in affected_artifacts),
+             "affected_artifacts must be an array of strings")
+    _require(isinstance(affected_gates, list) and
+             all(isinstance(item, str) for item in affected_gates),
+             "affected_gates must be an array of strings")
+    started = _parse_utc(now, "recovery start")
+    updated = _next_recovery_state(state, started)
+    episode_seed = "{}\0{}\0{}\0{}".format(
+        state["workflow_id"], state["revision"], finding_fingerprint, _format_utc(started)
+    )
+    updated["status"] = "recovering"
+    updated["recovery"] = {
+        "episode_id": "recovery-{}".format(
+            hashlib.sha256(episode_seed.encode("utf-8")).hexdigest()[:16]
+        ),
+        "objective": objective.strip(),
+        "origin_stage": state["stage"],
+        "finding_fingerprint": finding_fingerprint,
+        "max_attempts": max_attempts,
+        "max_elapsed_seconds": max_elapsed_seconds,
+        "started_at": _format_utc(started),
+        "deadline": _format_utc(started + timedelta(seconds=max_elapsed_seconds)),
+        "attempts": [],
+        "affected_artifacts": list(dict.fromkeys(affected_artifacts)),
+        "affected_gates": list(dict.fromkeys(affected_gates)),
+        "outcome": "running",
+    }
+    updated["resume_point"] = {
+        "stage": state["stage"],
+        "action": "resume recovery episode",
+        "artifact": affected_artifacts[0] if affected_artifacts else None,
+    }
+    return validate_workflow_state(updated)
+
+
+def _terminal_recovery(state, outcome, observed_at):
+    updated = _next_recovery_state(state, observed_at)
+    statuses = {
+        "accepted": "running",
+        "budget_exhausted": "failed_budget",
+        "nonconvergent": "failed_nonconvergent",
+        "authority_required": "paused_authority",
+        "failed": "failed_validation",
+    }
+    _require(outcome in statuses, "recovery completion outcome is invalid")
+    updated["status"] = statuses[outcome]
+    updated["recovery"]["outcome"] = outcome
+    updated["resume_point"] = {
+        "stage": updated["recovery"]["origin_stage"],
+        "action": "resume {} after recovery".format(updated["recovery"]["origin_stage"]),
+        "artifact": (updated["recovery"]["affected_artifacts"] or [None])[0],
+    }
+    return validate_workflow_state(updated)
+
+
+def recovery_record(state, *, remedy_fingerprint, input_hashes,
+                    result_fingerprint, evidence, started_at,
+                    finished_at, outcome):
+    validate_workflow_state(state)
+    _require(state["status"] == "recovering" and state.get("recovery") and
+             state["recovery"]["outcome"] == "running",
+             "attempt requires a running recovery episode")
+    _require(isinstance(remedy_fingerprint, str) and remedy_fingerprint,
+             "remedy fingerprint is required")
+    _require(isinstance(result_fingerprint, str) and result_fingerprint,
+             "result fingerprint is required")
+    fingerprint_artifact_inputs(input_hashes)
+    _require(isinstance(evidence, list) and evidence and
+             all(isinstance(item, str) and item for item in evidence),
+             "attempt evidence must be a nonempty array of strings")
+    _require(outcome in {"running", "accepted", "rejected", "failed"},
+             "attempt outcome is invalid")
+    started = _parse_utc(started_at, "attempt started_at")
+    finished = _parse_utc(finished_at, "attempt finished_at")
+    _require(finished >= started, "attempt finished_at cannot precede started_at")
+    deadline = _parse_utc(state["recovery"]["deadline"], "recovery deadline")
+    if started > deadline or finished > deadline:
+        return _terminal_recovery(state, "budget_exhausted", max(started, finished))
+    attempts = state["recovery"]["attempts"]
+    if len(attempts) >= state["recovery"]["max_attempts"]:
+        return _terminal_recovery(state, "budget_exhausted", started)
+    reason = recovery_refusal_reason(
+        state["recovery"], remedy_fingerprint=remedy_fingerprint,
+        result_fingerprint=result_fingerprint,
+    )
+    if reason is not None:
+        terminal = _terminal_recovery(state, "nonconvergent", started)
+        terminal.setdefault("diagnostics", []).append({
+            "kind": "recovery_refusal", "reason": reason,
+            "episode_id": state["recovery"]["episode_id"],
+        })
+        return validate_workflow_state(terminal)
+    updated = _next_recovery_state(state, finished)
+    updated["recovery"]["attempts"].append({
+        "number": len(attempts) + 1,
+        "remedy_fingerprint": remedy_fingerprint,
+        "input_hashes": deepcopy(input_hashes),
+        "result_fingerprint": result_fingerprint,
+        "evidence": list(evidence),
+        "started_at": _format_utc(started),
+        "finished_at": _format_utc(finished),
+        "outcome": outcome,
+    })
+    return validate_workflow_state(updated)
+
+
+def recovery_complete(state, *, outcome, now):
+    validate_workflow_state(state)
+    _require(state["status"] == "recovering" and state.get("recovery") and
+             state["recovery"]["outcome"] == "running",
+             "completion requires a running recovery episode")
+    observed = _parse_utc(now, "recovery completion")
+    return _terminal_recovery(state, outcome, observed)
+
+
 def migrate_legacy_state(state, *, context, now=None):
     if isinstance(state, dict) and state.get("schema_version") == SCHEMA_VERSION:
         return validate_workflow_state(state)
@@ -202,10 +570,12 @@ def write_workflow_state(path, state, *, expected_revision):
     directory.mkdir(parents=True, exist_ok=True)
     directory_fd = os.open(directory, os.O_RDONLY)
     temporary = None
+    previous = None
     try:
         fcntl.flock(directory_fd, fcntl.LOCK_EX)
         if destination.is_file():
-            current_revision = read_workflow_state(destination)["revision"]
+            previous = read_workflow_state(destination)
+            current_revision = previous["revision"]
         else:
             current_revision = 0
         _require(current_revision == expected_revision,
@@ -223,6 +593,19 @@ def write_workflow_state(path, state, *, expected_revision):
             os.replace(temporary, destination)
             temporary = None
             os.fsync(directory_fd)
+            # Keep the state-directory lock through projection so concurrent
+            # revisions cannot append their events out of transition order.
+            if previous is not None:
+                kind, status, message, objective, attempt = _transition_progress(previous, state)
+                try:
+                    emit_progress_event(
+                        destination, destination.with_name(".spex-progress.jsonl"),
+                        kind, status, message, state["updated_at"],
+                        objective=objective, attempt=attempt,
+                    )
+                except (OSError, StateError) as error:
+                    print("progress unavailable after persisted revision {}: {}".format(
+                        state["revision"], error), file=sys.stderr)
         except Exception:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
@@ -679,6 +1062,41 @@ def do_resume(args):
     emit_json(state)
 
 
+def do_progress_emit(args):
+    if "--help" in args:
+        print("Usage: spex-ship-state.py progress-emit --state-file <path> --event-log <path> --kind <kind> --status <status> --message <message> [--stage <stage>]")
+        return
+    state_path = Path(_option(args, "--state-file", required=True))
+    event_log = _option(args, "--event-log", required=True)
+    kind = _option(args, "--kind", required=True)
+    status = _option(args, "--status", required=True)
+    message = _option(args, "--message", required=True)
+    stage = _option(args, "--stage")
+    try:
+        with state_path.open(encoding="utf-8") as handle:
+            state = json.load(handle)
+    except (OSError, json.JSONDecodeError) as error:
+        raise StateError("cannot read flow state {}: {}".format(state_path, error)) from error
+    _require(isinstance(state, dict) and state.get("mode") == "flow",
+             "progress-emit requires persisted flow state")
+    branch = state.get("feature_branch")
+    _require(isinstance(branch, str) and branch, "flow state feature_branch is required")
+    identity = "{}:{}".format(state_path.resolve(), branch)
+    workflow_id = "flow-{}".format(hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16])
+    event = {
+        "schema_version": PROGRESS_SCHEMA_VERSION,
+        "workflow_id": workflow_id,
+        "sequence": 1,
+        "timestamp": now_iso(),
+        "stage": stage or state.get("running") or "flow",
+        "kind": kind,
+        "status": status,
+        "message": message,
+    }
+    persisted = _append_progress_event(event_log, event)
+    print(progress_transcript(persisted))
+
+
 COMMANDS = {
     "create": lambda a: do_create(a),
     "advance": lambda a: do_advance(),
@@ -693,6 +1111,7 @@ COMMANDS = {
     "resolve": do_resolve,
     "validate": do_validate,
     "resume": do_resume,
+    "progress-emit": do_progress_emit,
 }
 
 if __name__ == "__main__":

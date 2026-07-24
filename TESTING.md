@@ -9,6 +9,18 @@ disposable homes, marketplaces, caches, repositories, and worktrees; a missing
 optional client is reported as an explicit platform skip. macOS and Linux are
 the supported release platforms.
 
+### Supported Codex client matrix
+
+| Client surface | Supported versions | Progress contract |
+|---|---|---|
+| Codex CLI interactive | 0.145.x and later 0.x releases | Native operation plus transcript for every ProgressEvent |
+| Codex CLI exec/headless | 0.145.x and later 0.x releases | Concise transcript fallback for every ProgressEvent |
+
+`tests/integration/test_codex_progress.sh` feeds normal, delegated, recovery,
+pause, and completion transitions through both client modes and requires each
+transition to appear in the output produced for that immediately following
+ProgressEvent. Durable WorkflowState remains authoritative after interruption.
+
 This document provides a comprehensive testing plan to validate that the cc-spex plugin works as intended.
 
 ## Prerequisites
