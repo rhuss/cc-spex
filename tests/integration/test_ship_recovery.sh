@@ -227,7 +227,7 @@ for attempt in 1 2 3; do
   revision=$((revision + 1))
   if [[ "$record_status" -ne 0 ]] ||
      ! jq -e --argjson revision "$revision" --argjson attempts "$attempt" \
-       '.revision == $revision and (.recovery.attempts | length) == $attempt' \
+       '.revision == $revision and (.recovery.attempts | length) == $attempts' \
        <<<"$record" >/dev/null 2>&1; then
     fail "recovery attempt $attempt was not durably bounded: $record"
     break

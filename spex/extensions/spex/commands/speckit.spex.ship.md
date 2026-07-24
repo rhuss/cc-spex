@@ -14,10 +14,13 @@ description: "Autonomous full-cycle workflow: specify through verify with config
 - Do NOT treat a stage completion as a task completion.
 - Do NOT output a summary and stop.
 
-The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to pause are:
-1. `ask` is `always` AND a review stage has findings requiring user input.
-2. A blocker error occurs (test failure, syntax error, security issue).
-3. Stage 7 (review-code) completes: the pipeline is done and presents a completion prompt for the user to decide how to proceed (submit PR, merge directly, or stop).
+The pipeline is ONE continuous task. It starts at the first stage and runs through the last stage. The ONLY reasons to yield to the user are:
+1. A genuine authority boundary exists (a product choice, permission, destructive/external action, secret, or scope expansion that the agent cannot authorize).
+2. `ask` is `always` and the user explicitly requested review-time judgment.
+3. A durable terminal recovery state (`failed_budget`, `failed_nonconvergent`, or `failed_validation`) has been reached and its evidence report is ready.
+4. Stage 7 completes and presents the completion prompt.
+
+Test failures, syntax errors, security findings, infeasible approaches, delegated-agent returns, and exhaustion of ordinary correction retries are **not** by themselves pause reasons. Route recoverable findings into the bounded recovery lifecycle below.
 
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
@@ -455,7 +458,7 @@ Before executing each stage, verify that:
 1. The previous stage's state file entry shows it completed (stage_index is one less than current, or this is the first stage)
 2. The state file status was updated to `running` for the current stage
 
-If a stage fails or is interrupted, the pipeline MUST NOT silently proceed to the next stage. It must either pause (for findings), fail (for errors), or retry (within the 2-retry limit).
+If a stage fails or is interrupted, the pipeline MUST NOT silently proceed to the next stage. It must retry ordinary corrections, enter bounded recovery, record an evidenced terminal state, or pause at a genuine authority boundary.
 
 ### Rule 5: No implicit intelligence
 
@@ -911,111 +914,174 @@ After `PIPELINE_COMPLETE`, the pipeline is done. Present the user with a choice 
 
 ## Oversight Decision Logic
 
-After each review stage (review-spec, review-plan, review-code, finish), evaluate the findings:
+After each review stage, classify findings by **authority**, not by difficulty:
 
 ### Finding Classification
 
-Classify each finding into one of three categories:
+**Routine correction**: A local, reversible fix within the accepted spec and
+security boundary. Apply it and rerun the affected check (maximum two ordinary
+correction cycles before recovery routing).
 
-**Unambiguous** (auto-fixable in `smart` and `never`):
-- Formatting issues (indentation, whitespace, line length)
-- Style violations (naming conventions, import ordering)
-- Typos in comments or documentation
-- Missing imports or unused variables
-- Minor spec wording improvements
+**Recoverable finding**: The current approach remains infeasible after ordinary
+correction, but in-scope research, artifact revision, or an alternative
+implementation may resolve it. This includes compilation/test failures,
+missing local dependencies, security defects, feasibility conflicts, and
+incorrect architecture. Start or continue a bounded RecoveryEpisode.
 
-**Ambiguous** (requires judgment, pauses in `smart`):
-- Architecture or design changes
-- API contract modifications
-- Requirement interpretation questions
-- Performance vs. readability trade-offs
-- Missing functionality that could be intentional
-- Unclear whether a finding is a bug or a feature
-
-**Blocker** (always pauses, even in `never`):
-- Compilation errors or syntax errors
-- Missing critical dependencies
-- Failing tests that cannot be auto-resolved
-- Contradictory requirements
-- Security vulnerabilities
-- Data loss risks
+**Authority boundary**: Progress requires a product/requirement choice with no
+authorized default, new credentials or permission, destructive or external
+side effects, or a scope expansion. Only this category may transition to
+`paused_authority`. Difficulty, uncertainty, retry exhaustion, or a subagent
+failure alone never qualifies.
 
 ### Oversight Rules
 
-| Oversight Level | Unambiguous | Ambiguous | Blocker |
-|----------------|-------------|-----------|---------|
-| `always` | Pause | Pause | Pause |
-| `smart` | Auto-fix | Pause | Pause |
-| `never` | Auto-fix | Auto-fix | Pause |
+| Oversight Level | Routine correction | Recoverable finding | Authority boundary |
+|----------------|--------------------|---------------------|--------------------|
+| `always` | Apply; ask only where explicitly requested | Bounded recovery | Pause with evidence |
+| `smart` | Apply | Bounded recovery | Pause with evidence |
+| `never` | Apply | Bounded recovery | Pause with evidence |
 
 ### Applying the Rules
 
-1. After a review stage completes, collect all findings.
-2. Classify each finding using the categories above.
-3. Based on the oversight level:
-   - **Auto-fix**: Apply the fix, increment retry count, re-run the review stage.
-   - **Pause**: Present findings to user (see Pause and Resume below).
-4. If no findings need attention, proceed to the next stage.
+1. Collect findings and evidence, normalize the finding description, and
+   identify affected artifacts and gates.
+2. Apply routine corrections and rerun the affected check up to two times.
+3. Route anything still recoverable into the durable lifecycle below. Do not
+   ask for routine confirmation before continuing.
+4. Pause only after writing an `authority_required` recovery completion with an
+   exact resume point and residual risk.
+5. If no findings remain, proceed immediately.
 
-## Auto-Fix and Re-Run
+## Bounded Autonomous Recovery
 
-When auto-fixing findings:
+After ordinary correction is exhausted, resolve current authority and start an
+episode using CAS:
 
-1. Apply fixes for all findings classified as auto-fixable under the current oversight level.
-2. Increment `retries` in the state file.
-3. Re-run the same review stage to verify fixes.
-4. If new findings appear, classify and handle them.
-5. **Max 2 retry cycles per stage.** After 2 retries with remaining findings, pause regardless of oversight level:
-
+```bash
+resolve_feature_context
+RECOVERY_STATE=$(env -u SHIP_STATE_FILE "$SHIP_STATE" recovery-start \
+  --expected-revision "$STATE_REVISION" \
+  --objective "<specific recovery objective>" \
+  --origin-stage "$(echo "$RESOLVED_STATE" | jq -r '.stage')" \
+  --finding "<normalized finding with relevant constraint>" \
+  --affected-artifact "<artifact>" \
+  --affected-gate "<gate>") || exit 1
 ```
-Pipeline paused after 2 fix cycles for stage "review-code".
-Remaining findings could not be auto-resolved.
 
-[Present remaining findings here]
+Defaults are three attempts and 1,800 elapsed seconds. Never reset either bound
+after interruption. For each attempt:
 
-Please provide guidance on how to proceed.
+1. Re-resolve FeatureContext and confirm the same episode/revision.
+2. Research or implement one materially different in-scope remedy.
+3. Hash every artifact input used by the remedy.
+4. Run focused verification and collect concrete evidence.
+5. Persist the attempt before deciding whether to continue:
+
+```bash
+resolve_feature_context
+RECOVERY_STATE=$(env -u SHIP_STATE_FILE "$SHIP_STATE" recovery-record \
+  --expected-revision "$STATE_REVISION" \
+  --remedy "<remedy attempted>" \
+  --input-hash "<path>=sha256:<digest>" \
+  --result "<normalized verification result>" \
+  --evidence "<test, inspection, or research evidence>" \
+  --outcome "<accepted|rejected|failed>") || exit 1
 ```
 
-6. Reset `retries` to 0 when moving to the next stage.
+Equivalent findings/remedies and A→B→A result oscillation terminate as
+`failed_nonconvergent` before another attempt is appended. Deadline or attempt
+exhaustion terminates as `failed_budget`. Do not restart an episode to evade a
+terminal state.
+
+### Accepted Recovery: Invalidate and Rewind
+
+When a remedy is accepted, determine the earliest affected stage from durable
+artifact identity, not the current stage:
+
+| Earliest affected input | Rewind stage | Invalidate/rebuild |
+|-------------------------|--------------|--------------------|
+| `spec.md` or requirement contract | `specify` | spec review, plan/research/data model/contracts, tasks, implementation and later gates |
+| plan/research/data model/contract | `plan` | plan gate, tasks, implementation and later gates |
+| `tasks.md` | `tasks` | task-dependent implementation and code gates |
+| source/test implementation | `implement` | implementation result and code gates |
+
+Persist completion before continuing:
+
+```bash
+resolve_feature_context
+RECOVERY_STATE=$(env -u SHIP_STATE_FILE "$SHIP_STATE" recovery-complete \
+  --expected-revision "$STATE_REVISION" \
+  --outcome accepted \
+  --rewind-stage "<earliest-stage>" \
+  --resume-action "<exact gates/artifacts to rebuild>" \
+  --resume-artifact "<earliest affected artifact>") || exit 1
+```
+
+The completion removes affected entries from `completed_gates`, preserves the
+episode evidence, and rewinds WorkflowState. Delete or overwrite stale derived
+artifacts only as part of rerunning their owning stage; never treat them as
+valid input after rewind. Call `resolve_feature_context` and continue at the
+persisted `resume_point` without asking the user.
 
 ## Pause and Resume
 
-### Pausing
+### Pausing at a Genuine Authority Boundary
 
-When the pipeline pauses (due to findings that need human input):
+Before pausing, persist the boundary through the recovery authority:
 
-1. Update state file: `status: "paused"`.
-2. Present all findings that triggered the pause, grouped by severity:
+```bash
+resolve_feature_context
+env -u SHIP_STATE_FILE "$SHIP_STATE" recovery-complete \
+  --expected-revision "$STATE_REVISION" \
+  --outcome authority_required \
+  --resume-stage "<stage>" \
+  --resume-action "<specific user decision or authority needed>" \
+  --resume-artifact "<artifact>" \
+  --residual-risk "<consequence of proceeding without authority>"
+```
+
+Then present the objective, evidence already gathered, the exact choice or
+permission required, residual risk, affected artifacts, and resume action:
 
 ```
 ## Pipeline Paused at Stage: review-spec
 
 ### Findings Requiring Your Input
 
-**Ambiguous (need your judgment):**
-1. [Finding description with context]
-2. [Finding description with context]
+**Authority required:** <specific decision/permission>
+**Evidence:** <what was tried or established>
+**Residual risk:** <why the agent cannot safely choose>
+**Resume:** <exact persisted resume action>
 
-**Blockers (must be resolved):**
-1. [Finding description with context]
-
-Please review these findings and provide guidance. You can:
-- Address specific findings ("fix #1 by doing X")
-- Skip findings ("skip #2, it's intentional")
-- Provide general guidance ("proceed, these are acceptable")
+Please provide the required decision or authority.
 ```
 
-3. Wait for user response.
+Wait for user response. Do not use this path for mere retry exhaustion.
 
 ### Resuming After User Input
 
 After the user responds:
 
-1. Update state file: `status: "running"`.
-2. Apply any fixes the user requested.
-3. If user said to skip findings, proceed to the next stage.
-4. If user provided fixes, apply them and optionally re-run the review.
-5. Continue the pipeline from the current stage.
+1. Re-resolve WorkflowState and verify it is `paused_authority`.
+2. Resume with `env -u SHIP_STATE_FILE "$SHIP_STATE" resume --expected-revision "$STATE_REVISION"`.
+3. Apply the authorized decision and continue from the persisted resume point.
+
+### Terminal Recovery Report
+
+For `budget_exhausted`, `nonconvergent`, or unrecoverable validation failure,
+call `recovery-complete` with the terminal outcome, exact resume stage/action,
+resume artifact, and residual risk. Report:
+
+- objective and terminal reason;
+- every attempted action and its evidence;
+- affected artifacts and invalidated gates;
+- residual blocker/risk;
+- exact persisted resume point.
+
+Terminal state remains durable and resolvable after interruption. Do not imply
+that work completed, discard evidence, or replace the exact resume action with
+generic advice.
 
 ## Pipeline Completion
 

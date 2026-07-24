@@ -96,6 +96,180 @@ except authority.StateError as error:
 PY
 fi
 
+case "${1:-}" in
+  recovery-start|recovery-record|recovery-complete)
+    RECOVERY_COMMAND="$1"
+    shift
+    if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+      case "$RECOVERY_COMMAND" in
+        recovery-start)
+          echo "Usage: spex-ship-state.sh recovery-start --expected-revision <n> --objective <text> --origin-stage <stage> --finding <text> [--affected-artifact <path>] [--affected-gate <gate>]"
+          ;;
+        recovery-record)
+          echo "Usage: spex-ship-state.sh recovery-record --expected-revision <n> --remedy <text> [--input-hash <path=digest>] --result <text> --evidence <text> --outcome <running|accepted|rejected|failed>"
+          ;;
+        recovery-complete)
+          echo "Usage: spex-ship-state.sh recovery-complete --expected-revision <n> --outcome <accepted|budget_exhausted|nonconvergent|authority_required|failed> [--rewind-stage <stage>|--resume-stage <stage>] --resume-action <text> [--resume-artifact <path>] [--residual-risk <text>]"
+          ;;
+      esac
+      exit 0
+    fi
+    exec "$PYTHON" - "$STATE_AUTHORITY" "$RECOVERY_COMMAND" "$@" <<'PY'
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+
+def emit(value):
+    json.dump(value, sys.stdout, indent=2, sort_keys=True)
+    sys.stdout.write("\n")
+
+
+authority_path = Path(sys.argv[1])
+command = sys.argv[2]
+arguments = sys.argv[3:]
+spec = importlib.util.spec_from_file_location("spex_ship_state_authority", authority_path)
+if spec is None or spec.loader is None:
+    print("ERROR: cannot load WorkflowState authority", file=sys.stderr)
+    raise SystemExit(1)
+authority = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(authority)
+
+
+def parse_options(raw):
+    repeatable = {"--affected-artifact", "--affected-gate", "--input-hash", "--evidence"}
+    values = {name: [] for name in repeatable}
+    index = 0
+    while index < len(raw):
+        option = raw[index]
+        authority._require(option.startswith("--"), "unexpected argument: {}".format(option))
+        authority._require(index + 1 < len(raw), "{} requires a value".format(option))
+        value = raw[index + 1]
+        if option in repeatable:
+            values[option].append(value)
+        else:
+            authority._require(option not in values, "{} may be specified only once".format(option))
+            values[option] = value
+        index += 2
+    return values
+
+
+def required(options, name):
+    value = options.get(name)
+    authority._require(value not in (None, "", []), "{} is required".format(name))
+    return value
+
+
+try:
+    options = parse_options(arguments)
+    expected_revision = int(required(options, "--expected-revision"))
+    state = authority.resolve_workflow_state()
+    authority._require(
+        state["revision"] == expected_revision,
+        "state revision conflict: expected {}, found {}".format(expected_revision, state["revision"]),
+    )
+    destination = Path(state["context"]["state_file"])
+    now = authority.now_iso()
+
+    if command == "recovery-start":
+        origin_stage = required(options, "--origin-stage")
+        authority._require(state["stage"] == origin_stage, "origin stage does not match WorkflowState")
+        kwargs = {}
+        if "--max-attempts" in options:
+            kwargs["max_attempts"] = int(options["--max-attempts"])
+        if "--max-elapsed-seconds" in options:
+            kwargs["max_elapsed_seconds"] = int(options["--max-elapsed-seconds"])
+        updated = authority.recovery_start(
+            state,
+            objective=required(options, "--objective"),
+            finding_fingerprint=authority.fingerprint_finding(required(options, "--finding")),
+            affected_artifacts=options["--affected-artifact"],
+            affected_gates=options["--affected-gate"],
+            now=now,
+            **kwargs
+        )
+    elif command == "recovery-record":
+        input_hashes = {}
+        for item in options["--input-hash"]:
+            authority._require("=" in item, "--input-hash must be path=digest")
+            path, digest = item.split("=", 1)
+            authority._require(path and digest and path not in input_hashes, "invalid or duplicate input hash")
+            input_hashes[path] = digest
+        updated = authority.recovery_record(
+            state,
+            remedy_fingerprint=authority.fingerprint_remedy(required(options, "--remedy")),
+            input_hashes=input_hashes,
+            result_fingerprint=authority.fingerprint_result(required(options, "--result")),
+            evidence=options["--evidence"],
+            started_at=now,
+            finished_at=now,
+            outcome=required(options, "--outcome"),
+        )
+    else:
+        outcome = required(options, "--outcome")
+        updated = authority.recovery_complete(state, outcome=outcome, now=now)
+        resume_stage = options.get("--rewind-stage") or options.get("--resume-stage")
+        if resume_stage:
+            updated["stage"] = resume_stage
+            updated["resume_point"] = {
+                "stage": resume_stage,
+                "action": required(options, "--resume-action"),
+                "artifact": options.get("--resume-artifact"),
+            }
+        if outcome == "accepted":
+            invalidated = set(updated["recovery"]["affected_gates"])
+            rewind_stage = options.get("--rewind-stage")
+            stage_rank = {
+                "specify": 0, "clarify": 1, "review-spec": 2, "plan": 3,
+                "tasks": 4, "review-plan": 5, "implement": 6, "review-code": 7,
+            }
+            gate_rank = {"review-spec": 2, "review-plan": 5, "review-code": 7}
+            if rewind_stage in stage_rank:
+                invalidated.update(
+                    gate for gate, rank in gate_rank.items()
+                    if rank >= stage_rank[rewind_stage]
+                )
+            updated["completed_gates"] = [
+                gate for gate in updated["completed_gates"] if gate not in invalidated
+            ]
+        if outcome == "authority_required":
+            attempts = updated["recovery"]["attempts"]
+            updated.setdefault("diagnostics", []).append({
+                "kind": "authority_boundary",
+                "episode_id": updated["recovery"]["episode_id"],
+                "objective": updated["recovery"]["objective"],
+                "evidence": [evidence for item in attempts for evidence in item.get("evidence", [])],
+                "residual_risk": options.get("--residual-risk", ""),
+                "affected_artifacts": updated["recovery"]["affected_artifacts"],
+                "resume_point": updated["resume_point"],
+            })
+        if outcome in {"budget_exhausted", "nonconvergent", "failed"}:
+            attempts = updated["recovery"]["attempts"]
+            updated.setdefault("diagnostics", []).append({
+                "kind": "terminal_recovery_report",
+                "episode_id": updated["recovery"]["episode_id"],
+                "attempted_actions": [item["remedy_fingerprint"] for item in attempts],
+                "evidence": [evidence for item in attempts for evidence in item.get("evidence", [])],
+                "residual_risk": options.get("--residual-risk", ""),
+                "affected_artifacts": updated["recovery"]["affected_artifacts"],
+                "affected_gates": updated["recovery"]["affected_gates"],
+                "resume_point": updated["resume_point"],
+            })
+        authority.validate_workflow_state(updated)
+
+    authority.write_workflow_state(destination, updated, expected_revision=expected_revision)
+    emit(updated)
+except (authority.StateError, ValueError) as error:
+    emit({"status": "failed_validation", "diagnostics": [{"reasons": [str(error)]}]})
+    print("ERROR: {}".format(error), file=sys.stderr)
+    raise SystemExit(1)
+PY
+    ;;
+esac
+
 if [ "${1:-}" != "transfer" ]; then
   exec "$PYTHON" "$STATE_AUTHORITY" "$@"
 fi
