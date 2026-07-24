@@ -14,12 +14,12 @@ inputs:
     prompt: "Agent harness (auto, claude, codex, opencode)"
   extensions:
     type: string
-    default: "all"
-    prompt: "Extensions to enable (all, interactive, or comma-separated list)"
-  permissions:
+    default: "recommended"
+    prompt: "Extensions to enable (recommended, all, interactive, or comma-separated list)"
+  security:
     type: string
-    default: "standard"
-    prompt: "Permission level (standard, yolo, none)"
+    default: "safe"
+    prompt: "Security profile (Safe, Autonomous, or YOLO)"
 
 steps:
   - id: check-version
@@ -83,6 +83,18 @@ steps:
       else
         printf "%s" "claude"
       fi
+
+  - id: validate-security
+    type: shell
+    run: |
+      SECURITY="{{ inputs.security }}"
+      case "$SECURITY" in
+        safe|autonomous|yolo) printf "%s" "$SECURITY" ;;
+        *)
+          echo "ERROR: Unknown security profile '$SECURITY'. Use: safe, autonomous, yolo" >&2
+          exit 1
+          ;;
+      esac
 
   - id: migrate-commands
     type: shell
@@ -205,12 +217,76 @@ steps:
       DEV_FLAG=""
       case "$SOURCE" in /tmp/*|"${TMPDIR:-/tmp}"/*) ;; *) DEV_FLAG="--dev" ;; esac
       specify extension add "$EXT_PATH" $DEV_FLAG
-      specify extension disable "$EXT" 2>/dev/null || true
+
+  - id: load-refresh-profile
+    type: shell
+    run: |
+      # Refresh metadata is advisory until the profile persistence step writes
+      # a new revision. Existing enabled_extensions and requested_security are
+      # preserved whenever the user keeps the recommended/Safe defaults.
+      PROFILE=".specify/spex-profile.yml"
+      if [ ! -f "$PROFILE" ] || ! command -v yq >/dev/null 2>&1; then
+        printf '{"enabled_extensions":[],"requested_security":""}'
+        exit 0
+      fi
+      yq -o=json '{
+        "enabled_extensions": (.enabled_extensions // []),
+        "requested_security": (.requested_security // "")
+      }' "$PROFILE"
 
   - id: select-extensions
     type: switch
     expression: "{{ inputs.extensions }}"
     cases:
+      recommended:
+        - id: ext-recommended
+          type: shell
+          run: |
+            PROFILE=".specify/spex-profile.yml"
+            RECOMMENDED_EXTENSIONS="spex-gates spex-deep-review spex-worktrees"
+            OPTIONAL_EXTENSIONS="spex-teams spex-collab spex-detach"
+            MANAGED_EXTENSIONS="$RECOMMENDED_EXTENSIONS $OPTIONAL_EXTENSIONS"
+            GATES_DEPENDENTS="spex-deep-review spex-teams spex-collab"
+            ENABLED_LIST="$RECOMMENDED_EXTENSIONS"
+
+            # On refresh, preserve the prior valid selection by default.
+            if [ -f "$PROFILE" ] && command -v yq >/dev/null 2>&1; then
+              SAVED_EXTENSIONS=$(yq -r '.enabled_extensions // [] | join(" ")' "$PROFILE" 2>/dev/null || true)
+              if [ -n "$SAVED_EXTENSIONS" ]; then
+                ENABLED_LIST="$SAVED_EXTENSIONS"
+              fi
+            fi
+
+            # Preserve a valid dependency closure even if an older profile was
+            # written before dependency validation was introduced.
+            gates_needed=false
+            for dependent in $GATES_DEPENDENTS; do
+              for enabled in $ENABLED_LIST; do
+                if [ "$dependent" = "$enabled" ]; then gates_needed=true; break; fi
+              done
+            done
+            if [ "$gates_needed" = true ]; then
+              gates_present=false
+              for enabled in $ENABLED_LIST; do
+                if [ "$enabled" = "spex-gates" ]; then gates_present=true; break; fi
+              done
+              if [ "$gates_present" = false ]; then
+                ENABLED_LIST="spex-gates $ENABLED_LIST"
+              fi
+            fi
+
+            # Recommended extensions are gates, deep review, and worktrees.
+            # Teams (experimental), collaboration, and detach require opt-in.
+            for ext in $MANAGED_EXTENSIONS; do
+              selected=false
+              for enabled in $ENABLED_LIST; do
+                if [ "$ext" = "$enabled" ]; then selected=true; break; fi
+              done
+              if [ "$selected" = false ]; then
+                specify extension disable "$ext" 2>/dev/null || true
+              fi
+            done
+            printf "%s" "$ENABLED_LIST"
       all:
         - id: ext-all-noop
           type: shell
@@ -226,7 +302,7 @@ steps:
             - spex-gates: Quality gates (spec, plan, code review)
             - spex-worktrees: Git worktree isolation for feature branches
             - spex-deep-review: Multi-perspective code review with 5 agents
-            - spex-teams: Parallel implementation via agent teams
+            - spex-teams: Experimental parallel implementation via agent teams (explicit opt-in)
             - spex-collab: Collaborative PR workflows (reviewers, phases, triage)
             - spex-detach: Strip spec artifacts for upstream PRs
 
@@ -236,8 +312,12 @@ steps:
         - id: ext-interactive-fallback
           type: shell
           run: |
+            # spex-teams is experimental and remains an explicit opt-in.
             RESPONSE="{{ steps.ext-interactive-prompt.output.stdout | default('') }}"
-            if [ -z "$RESPONSE" ] || [ "$RESPONSE" = "all" ]; then
+            if [ -z "$RESPONSE" ]; then
+              RESPONSE="spex-gates,spex-deep-review,spex-worktrees"
+              echo "No selection received; keeping recommended extensions." >&2
+            elif [ "$RESPONSE" = "all" ]; then
               echo "All extensions enabled." >&2
               printf "ok"
               exit 0
@@ -446,7 +526,7 @@ steps:
 
   - id: configure-permissions
     type: if
-    condition: "{{ inputs.permissions }} != 'none'"
+    condition: "{{ inputs.security }} != 'safe'"
     then:
       - id: permissions-dispatch
         type: switch
@@ -456,7 +536,7 @@ steps:
             - id: claude-permissions
               type: shell
               run: |
-                LEVEL="{{ inputs.permissions }}"
+                LEVEL="{{ inputs.security }}"
                 SETTINGS=".claude/settings.json"
                 mkdir -p .claude
 
@@ -556,4 +636,3 @@ steps:
       LATEST="${LATEST_TAG#v}"
       echo "Latest spex release: $LATEST" >&2
       printf "%s" "$LATEST"
-
