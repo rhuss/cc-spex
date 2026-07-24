@@ -192,9 +192,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 6
 
-- [ ] T062 [P] [US6] Refactor existing Claude marketplace coverage into a harness-specific suite in `tests/integration/test_install_claude.sh`
-- [ ] T063 [P] [US6] Add combined manifest, cache, hook, generated-artifact, and project-config collision tests in `tests/integration/test_install_combined.sh`
-- [ ] T064 [P] [US6] Add OpenCode minimal-adapter reuse and explicit degradation tests in `tests/unit/test_opencode_adapter_fixture.sh`
+- [X] T062 [P] [US6] Refactor existing Claude marketplace coverage into a harness-specific suite in `tests/integration/test_install_claude.sh`
+- [X] T063 [P] [US6] Add combined manifest, cache, hook, generated-artifact, and project-config collision tests in `tests/integration/test_install_combined.sh`
+- [X] T064 [P] [US6] Add OpenCode minimal-adapter reuse and explicit degradation tests in `tests/unit/test_opencode_adapter_fixture.sh`
 - [ ] T065 [P] [US6] Add released-artifact unresolved-marker and reciprocal foreign-reference scans in `tests/unit/test_harness_leakage.sh`
 
 ### Implementation for User Story 6
