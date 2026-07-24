@@ -48,7 +48,7 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 - [X] T008 Implement contract validation runner for all schemas and fixtures in `tests/unit/test_contracts.sh`
 - [X] T009 Define Claude, Codex, and OpenCode adapter declarations conforming to the adapter contract in `spex/scripts/adapters/claude/adapter.json`, `spex/scripts/adapters/codex/adapter.json`, and `spex/scripts/adapters/opencode/adapter.json`
 - [ ] T010 Implement deterministic staged plugin materialization with atomic output and no canonical-source mutation in `spex/scripts/spex-materialize-plugin.sh`
-- [ ] T011 Implement fail-closed unresolved-marker, foreign-tool, absolute-path, identity-collision, and output-inventory validation in `spex/scripts/spex-validate-materialized.sh`
+- [X] T011 Implement fail-closed unresolved-marker, foreign-tool, absolute-path, identity-collision, and output-inventory validation in `spex/scripts/spex-validate-materialized.sh`
 - [ ] T012 Add materialization idempotence, malformed adapter, missing map, and leakage tests in `tests/unit/test_materialize_plugins.sh`
 - [ ] T013 Wire `materialize`, `validate-materialized`, and `test-unit` targets into `Makefile`
 
