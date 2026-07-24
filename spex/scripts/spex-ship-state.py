@@ -8,8 +8,9 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 STATE_FILE = os.environ.get("SHIP_STATE_FILE", ".specify/.spex-state")
 STAGES = ["specify", "clarify", "review-spec", "plan", "tasks", "review-plan", "implement", "review-code"]
@@ -148,6 +149,211 @@ def validate_workflow_state(state):
     _timestamp(state["created_at"], "created_at")
     _timestamp(state["updated_at"], "updated_at")
     return state
+
+
+def _canonical_text(value):
+    _require(isinstance(value, str) and value.strip(), "fingerprint input must be nonempty text")
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return " ".join(normalized.split())
+
+
+def _fingerprint(value):
+    if isinstance(value, str):
+        canonical = _canonical_text(value)
+    else:
+        try:
+            canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        except (TypeError, ValueError) as error:
+            raise StateError("fingerprint input must be JSON serializable") from error
+    return "sha256:{}".format(hashlib.sha256(canonical.encode("utf-8")).hexdigest())
+
+
+def fingerprint_finding(value):
+    return _fingerprint(value)
+
+
+def fingerprint_remedy(value):
+    return _fingerprint(value)
+
+
+def fingerprint_artifact_inputs(value):
+    _require(isinstance(value, dict), "artifact inputs must be an object")
+    _require(all(isinstance(path, str) and isinstance(digest, str) for path, digest in value.items()),
+             "artifact inputs must map paths to digests")
+    return _fingerprint(value)
+
+
+def fingerprint_result(value):
+    return _fingerprint(value)
+
+
+def recovery_refusal_reason(episode, *, finding_fingerprint=None,
+                            remedy_fingerprint=None,
+                            artifact_input_fingerprint=None,
+                            result_fingerprint=None):
+    _require(isinstance(episode, dict), "recovery episode must be an object")
+    attempts = episode.get("attempts", [])
+    _require(isinstance(attempts, list), "recovery attempts must be an array")
+    if finding_fingerprint is not None and finding_fingerprint == episode.get("finding_fingerprint"):
+        return "repeated_finding"
+    if remedy_fingerprint is not None and any(
+            item.get("remedy_fingerprint") == remedy_fingerprint for item in attempts):
+        return "equivalent_remedy"
+    if artifact_input_fingerprint is not None and any(
+            fingerprint_artifact_inputs(item.get("input_hashes", {})) == artifact_input_fingerprint
+            for item in attempts):
+        return "equivalent_artifact_inputs"
+    if result_fingerprint is not None and len(attempts) >= 2:
+        if attempts[-2].get("result_fingerprint") == result_fingerprint:
+            return "oscillation"
+    return None
+
+
+def _parse_utc(value, field):
+    _timestamp(value, field)
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized).astimezone(timezone.utc)
+
+
+def _format_utc(value):
+    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _next_recovery_state(state, observed_at):
+    updated = deepcopy(validate_workflow_state(state))
+    updated["revision"] += 1
+    updated["updated_at"] = _format_utc(observed_at)
+    return updated
+
+
+def recovery_start(state, *, objective, finding_fingerprint,
+                   affected_artifacts, affected_gates, now,
+                   max_attempts=3, max_elapsed_seconds=1800):
+    validate_workflow_state(state)
+    _require(state["status"] == "running", "recovery can start only from running state")
+    _require(state.get("recovery") is None or state["recovery"].get("outcome") != "running",
+             "a recovery episode is already running")
+    _require(isinstance(objective, str) and objective.strip(), "recovery objective is required")
+    _require(isinstance(finding_fingerprint, str) and finding_fingerprint,
+             "finding fingerprint is required")
+    for field, value in (("max_attempts", max_attempts),
+                         ("max_elapsed_seconds", max_elapsed_seconds)):
+        _require(isinstance(value, int) and not isinstance(value, bool) and value >= 1,
+                 "{} must be a finite positive integer".format(field))
+    _require(isinstance(affected_artifacts, list) and
+             all(isinstance(item, str) for item in affected_artifacts),
+             "affected_artifacts must be an array of strings")
+    _require(isinstance(affected_gates, list) and
+             all(isinstance(item, str) for item in affected_gates),
+             "affected_gates must be an array of strings")
+    started = _parse_utc(now, "recovery start")
+    updated = _next_recovery_state(state, started)
+    episode_seed = "{}\0{}\0{}\0{}".format(
+        state["workflow_id"], state["revision"], finding_fingerprint, _format_utc(started)
+    )
+    updated["status"] = "recovering"
+    updated["recovery"] = {
+        "episode_id": "recovery-{}".format(
+            hashlib.sha256(episode_seed.encode("utf-8")).hexdigest()[:16]
+        ),
+        "objective": objective.strip(),
+        "origin_stage": state["stage"],
+        "finding_fingerprint": finding_fingerprint,
+        "max_attempts": max_attempts,
+        "max_elapsed_seconds": max_elapsed_seconds,
+        "started_at": _format_utc(started),
+        "deadline": _format_utc(started + timedelta(seconds=max_elapsed_seconds)),
+        "attempts": [],
+        "affected_artifacts": list(dict.fromkeys(affected_artifacts)),
+        "affected_gates": list(dict.fromkeys(affected_gates)),
+        "outcome": "running",
+    }
+    updated["resume_point"] = {
+        "stage": state["stage"],
+        "action": "resume recovery episode",
+        "artifact": affected_artifacts[0] if affected_artifacts else None,
+    }
+    return validate_workflow_state(updated)
+
+
+def _terminal_recovery(state, outcome, observed_at):
+    updated = _next_recovery_state(state, observed_at)
+    statuses = {
+        "accepted": "running",
+        "budget_exhausted": "failed_budget",
+        "nonconvergent": "failed_nonconvergent",
+        "authority_required": "paused_authority",
+        "failed": "failed_validation",
+    }
+    _require(outcome in statuses, "recovery completion outcome is invalid")
+    updated["status"] = statuses[outcome]
+    updated["recovery"]["outcome"] = outcome
+    updated["resume_point"] = {
+        "stage": updated["recovery"]["origin_stage"],
+        "action": "resume {} after recovery".format(updated["recovery"]["origin_stage"]),
+        "artifact": (updated["recovery"]["affected_artifacts"] or [None])[0],
+    }
+    return validate_workflow_state(updated)
+
+
+def recovery_record(state, *, remedy_fingerprint, input_hashes,
+                    result_fingerprint, evidence, started_at,
+                    finished_at, outcome):
+    validate_workflow_state(state)
+    _require(state["status"] == "recovering" and state.get("recovery") and
+             state["recovery"]["outcome"] == "running",
+             "attempt requires a running recovery episode")
+    _require(isinstance(remedy_fingerprint, str) and remedy_fingerprint,
+             "remedy fingerprint is required")
+    _require(isinstance(result_fingerprint, str) and result_fingerprint,
+             "result fingerprint is required")
+    fingerprint_artifact_inputs(input_hashes)
+    _require(isinstance(evidence, list) and evidence and
+             all(isinstance(item, str) and item for item in evidence),
+             "attempt evidence must be a nonempty array of strings")
+    _require(outcome in {"running", "accepted", "rejected", "failed"},
+             "attempt outcome is invalid")
+    started = _parse_utc(started_at, "attempt started_at")
+    finished = _parse_utc(finished_at, "attempt finished_at")
+    _require(finished >= started, "attempt finished_at cannot precede started_at")
+    deadline = _parse_utc(state["recovery"]["deadline"], "recovery deadline")
+    if started > deadline or finished > deadline:
+        return _terminal_recovery(state, "budget_exhausted", max(started, finished))
+    attempts = state["recovery"]["attempts"]
+    if len(attempts) >= state["recovery"]["max_attempts"]:
+        return _terminal_recovery(state, "budget_exhausted", started)
+    reason = recovery_refusal_reason(
+        state["recovery"], remedy_fingerprint=remedy_fingerprint,
+        result_fingerprint=result_fingerprint,
+    )
+    if reason is not None:
+        terminal = _terminal_recovery(state, "nonconvergent", started)
+        terminal.setdefault("diagnostics", []).append({
+            "kind": "recovery_refusal", "reason": reason,
+            "episode_id": state["recovery"]["episode_id"],
+        })
+        return validate_workflow_state(terminal)
+    updated = _next_recovery_state(state, finished)
+    updated["recovery"]["attempts"].append({
+        "number": len(attempts) + 1,
+        "remedy_fingerprint": remedy_fingerprint,
+        "input_hashes": deepcopy(input_hashes),
+        "result_fingerprint": result_fingerprint,
+        "evidence": list(evidence),
+        "started_at": _format_utc(started),
+        "finished_at": _format_utc(finished),
+        "outcome": outcome,
+    })
+    return validate_workflow_state(updated)
+
+
+def recovery_complete(state, *, outcome, now):
+    validate_workflow_state(state)
+    _require(state["status"] == "recovering" and state.get("recovery") and
+             state["recovery"]["outcome"] == "running",
+             "completion requires a running recovery episode")
+    observed = _parse_utc(now, "recovery completion")
+    return _terminal_recovery(state, outcome, observed)
 
 
 def migrate_legacy_state(state, *, context, now=None):
