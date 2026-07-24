@@ -22,6 +22,17 @@ The pipeline is ONE continuous task. It starts at the first stage and runs throu
 
 Test failures, syntax errors, security findings, infeasible approaches, delegated-agent returns, and exhaustion of ordinary correction retries are **not** by themselves pause reasons. Route recoverable findings into the bounded recovery lifecycle below.
 
+### Continuation Invariant
+
+Stage completion, delegated/subagent return, context compression or automatic
+conversation compaction, ordinary retry exhaustion, and discovery of a
+recoverable finding all mean **continue this same ship run**. After any of
+these events, re-resolve durable WorkflowState and perform its next action.
+Never translate an agent summary, a shortened context window, or the end of a
+stage into a final response. Ship may end only when WorkflowState is
+`completed`, a durable terminal failure report has been persisted, or a
+`paused_authority` boundary requires user authority.
+
 **After every stage: update the state file, then immediately start the next stage.** No waiting, no confirmation, no stopping.
 
 ## Overview
@@ -703,8 +714,10 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
 
    4. If tests FAIL: attempt to fix the failure. You get a maximum of 2 fix
       attempts per checkpoint. If the fix succeeds, continue to the next task.
-      If both attempts fail, STOP implementation and report the failing tests
-      with context about which task introduced the regression.
+      If both attempts fail, return the failing tests and task context to the
+      ship orchestrator. This is a recoverable finding, not permission to end
+      ship; the orchestrator MUST enter bounded recovery and continue from its
+      durable result.
    "
    fi
    ```

@@ -9,7 +9,8 @@
 #   result=$(sh stage-gate.sh <tool_name> <skill_name> <state_file_path>)
 #   # result is "deny:<reason>" or "context:<text>" or "allow"
 #
-# Reads .spex-state JSON for pipeline status, stage, and stage_index.
+# Reads WorkflowState JSON. Durable status is the only authority for whether
+# ship continues, pauses at an authority boundary, or ends terminally.
 
 set -eu
 
@@ -25,18 +26,33 @@ fi
 
 # Parse state file with jq
 if ! command -v jq >/dev/null 2>&1; then
-  echo "allow"
+  echo "deny:SHIP STATE UNAVAILABLE: jq is required to validate active WorkflowState. Refuse mutation and do not treat the pipeline as complete."
   exit 0
 fi
 
 STATUS=$(jq -r '.status // ""' "$STATE_FILE" 2>/dev/null || echo "")
-if [ "$STATUS" != "running" ] && [ "$STATUS" != "paused" ]; then
-  echo "allow"
-  exit 0
-fi
-
-CURRENT_INDEX=$(jq -r '.stage_index // "-1"' "$STATE_FILE" 2>/dev/null || echo "-1")
 CURRENT_STAGE=$(jq -r '.stage // "unknown"' "$STATE_FILE" 2>/dev/null || echo "unknown")
+
+case "$STATUS" in
+  completed)
+    echo "allow"
+    exit 0
+    ;;
+  paused_authority)
+    echo "deny:SHIP AUTHORITY BOUNDARY: Durable WorkflowState is paused_authority at ${CURRENT_STAGE}. Do not advance or claim completion. Report the persisted evidence and exact resume action, then wait for the required authority."
+    exit 0
+    ;;
+  failed_budget|failed_nonconvergent|failed_validation)
+    echo "deny:SHIP TERMINAL STATE: Durable WorkflowState is ${STATUS} at ${CURRENT_STAGE}. Do not advance or claim completion. Report attempted actions, evidence, residual risk, affected artifacts, and the exact persisted resume point."
+    exit 0
+    ;;
+  running|recovering)
+    ;;
+  *)
+    echo "deny:SHIP STATE INVALID: Unrecognized durable status '${STATUS}'. Refuse mutation and resolve or validate WorkflowState; do not treat this as completion."
+    exit 0
+    ;;
+esac
 
 # Stage skill mapping (index -> skill name)
 stage_skill() {
@@ -69,6 +85,30 @@ stage_name() {
     *) echo "unknown" ;;
   esac
 }
+
+stage_to_index() {
+  case "$1" in
+    specify) echo "0" ;;
+    clarify) echo "1" ;;
+    review-spec) echo "2" ;;
+    plan) echo "3" ;;
+    tasks) echo "4" ;;
+    review-plan) echo "5" ;;
+    implement) echo "6" ;;
+    review-code) echo "7" ;;
+    stamp) echo "8" ;;
+    *) echo "-1" ;;
+  esac
+}
+
+CURRENT_INDEX=$(jq -r '.stage_index // empty' "$STATE_FILE" 2>/dev/null || echo "")
+if [ -z "$CURRENT_INDEX" ]; then
+  CURRENT_INDEX=$(stage_to_index "$CURRENT_STAGE")
+fi
+if [ "$CURRENT_INDEX" = "-1" ]; then
+  echo "deny:SHIP STATE INVALID: Unknown active stage '${CURRENT_STAGE}'. Validate WorkflowState and refuse mutation; do not treat this as completion."
+  exit 0
+fi
 
 # Skill to stage index mapping
 skill_to_stage() {
@@ -129,4 +169,9 @@ case "$CURRENT_INDEX" in
     ;;
 esac
 
-echo "context:<ship-pipeline stage=\"${CURRENT_STAGE}\" index=\"${CURRENT_INDEX}\" expected-skill=\"${EXPECTED_SKILL}\">Active ship pipeline at stage ${CURRENT_INDEX}/8: ${CURRENT_STAGE}. Next action: invoke ${EXPECTED_SKILL}. Do not explore or shortcut. Follow the pipeline.${BRIEF}</ship-pipeline>"
+CONTINUATION="Stage completion, delegated-agent return, context compression, ordinary retry exhaustion, and recoverable findings are continuation events, not stopping conditions."
+if [ "$STATUS" = "recovering" ]; then
+  CONTINUATION="Bounded recovery is active. Persist attempt evidence and continue recovery until accepted, a finite terminal budget/nonconvergence state, or a genuine authority boundary. Do not advance the normal stage or stop merely because ordinary retries were exhausted."
+fi
+
+echo "context:<ship-pipeline status=\"${STATUS}\" stage=\"${CURRENT_STAGE}\" index=\"${CURRENT_INDEX}\" expected-skill=\"${EXPECTED_SKILL}\">Active ship pipeline at stage ${CURRENT_INDEX}/8: ${CURRENT_STAGE}. ${CONTINUATION} Next action: invoke ${EXPECTED_SKILL}. Do not shortcut or claim completion. Follow the durable pipeline.${BRIEF}</ship-pipeline>"
