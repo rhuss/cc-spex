@@ -24,6 +24,86 @@ from pathlib import Path
 
 
 SHARED_DIR = Path(__file__).parent.parent.parent / 'hooks' / 'shared'
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+STATE_TOOL = PLUGIN_ROOT / 'scripts' / 'spex-ship-state.sh'
+
+
+def git_root(cwd):
+    """Return the physical Git root for cwd, or None outside a repository."""
+    try:
+        result = subprocess.run(
+            ['git', '-C', str(cwd), 'rev-parse', '--show-toplevel'],
+            capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return Path(result.stdout.strip()).resolve()
+
+
+def state_candidates(root):
+    """Find state presence only; candidates never become authority here."""
+    candidates = [root / '.specify' / '.spex-state']
+    try:
+        result = subprocess.run(
+            ['git', '-C', str(root), 'worktree', 'list', '--porcelain'],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            candidates.extend(
+                Path(line[9:]).resolve() / '.specify' / '.spex-state'
+                for line in result.stdout.splitlines()
+                if line.startswith('worktree ')
+            )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return [path for path in candidates if path.is_file()]
+
+
+def resolve_project_context(cwd):
+    """Resolve project/state authority without trusting cwd or env state paths."""
+    root = git_root(cwd)
+    if root is None:
+        return {'error': 'Cannot establish a Git project root', 'project_dir': None}
+    base = {'git_root': root, 'project_dir': root, 'state': None, 'state_file': None}
+    if not STATE_TOOL.is_file():
+        if state_candidates(root):
+            base['error'] = 'Workflow state exists but the validated state resolver is unavailable'
+        return base
+    environment = os.environ.copy()
+    environment.pop('SHIP_STATE_FILE', None)
+    try:
+        result = subprocess.run(
+            ['sh', str(STATE_TOOL), 'resolve'], cwd=root, env=environment,
+            capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        base['error'] = f'Workflow state resolution failed: {exc}'
+        return base
+    try:
+        payload = json.loads(result.stdout) if result.stdout.strip() else None
+    except json.JSONDecodeError:
+        payload = None
+    if result.returncode == 0 and isinstance(payload, dict):
+        context = payload.get('context', {})
+        base.update({
+            'state': payload,
+            'project_dir': Path(context['active_worktree']).resolve(),
+            'state_file': Path(context['state_file']).resolve(),
+            'spec_dir': Path(context['spec_dir']).resolve(),
+        })
+        return base
+    diagnostics = payload.get('diagnostics', []) if isinstance(payload, dict) else []
+    has_candidate = any(isinstance(item, dict) and item.get('candidate') for item in diagnostics)
+    if has_candidate or state_candidates(root):
+        reasons = []
+        for item in diagnostics:
+            if isinstance(item, dict):
+                reasons.extend(item.get('reasons', []))
+        detail = '; '.join(dict.fromkeys(str(reason) for reason in reasons if reason))
+        base['error'] = f'Ambiguous or invalid workflow state{": " + detail if detail else ""}'
+    return base
 
 
 def get_marker_path(session_id):
@@ -65,20 +145,31 @@ def main():
 
     prompt = hook_input.get('prompt', '')
     session_id = hook_input.get('turn_id', 'unknown')
-    cwd = Path(hook_input.get('cwd', '.'))
+    cwd = Path(hook_input.get('cwd', '.')).resolve()
 
     # For non-spex commands, clean up any stale marker and exit
     if not prompt.startswith('/spex:'):
         clear_marker(session_id)
         sys.exit(0)
 
-    # Resolve plugin root from script location:
-    # scripts/adapters/codex/context-hook.py -> adapters/codex -> adapters -> scripts -> plugin_root
-    plugin_root = Path(__file__).parent.parent.parent.parent
+    resolved = resolve_project_context(cwd)
+    if resolved.get('error'):
+        clear_marker(session_id)
+        print(json.dumps({
+            "systemMessage": f"<spex-error>{resolved['error']}. Refusing feature workflow dispatch.</spex-error>"
+        }))
+        sys.exit(0)
+    project_dir = resolved['project_dir']
+    if project_dir is None:
+        clear_marker(session_id)
+        print(json.dumps({
+            "systemMessage": "<spex-error>Cannot resolve the repository for this Spex command.</spex-error>"
+        }))
+        sys.exit(0)
 
     # Delegate command validation to shared shell function
     shared_result = run_shared('context-hook.sh', [
-        prompt, session_id, str(cwd), str(plugin_root)
+        prompt, session_id, str(project_dir), str(PLUGIN_ROOT)
     ])
 
     if shared_result is None or shared_result == 'skip':
@@ -109,13 +200,13 @@ def main():
         clear_marker(session_id)
 
     # Check project state
-    spex_configured = (cwd / '.specify' / 'extensions' / '.registry').exists()
+    spex_configured = (project_dir / '.specify' / 'extensions' / '.registry').exists()
     spex_initialized = (
-        (cwd / '.specify').is_dir()
-        and (cwd / '.specify' / 'templates' / 'spec-template.md').exists()
+        (project_dir / '.specify').is_dir()
+        and (project_dir / '.specify' / 'templates' / 'spec-template.md').exists()
     )
 
-    init_script = plugin_root / 'scripts' / 'spex-init.sh'
+    init_script = PLUGIN_ROOT / 'scripts' / 'spex-init.sh'
 
     # Parse init arguments
     init_args = ''
@@ -136,8 +227,11 @@ A PreToolUse hook will BLOCK any other tool call until the Skill tool is invoked
 </skill-enforcement>"""
 
     ctx = f"""<spex-context>
-<plugin-root>{plugin_root}</plugin-root>
-<project-dir>{cwd}</project-dir>
+<plugin-root>{PLUGIN_ROOT}</plugin-root>
+<repository-root>{resolved['git_root']}</repository-root>
+<project-dir>{project_dir}</project-dir>
+<state-file>{resolved.get('state_file') or ''}</state-file>
+<spec-dir>{resolved.get('spec_dir') or ''}</spec-dir>
 <session-id>{session_id}</session-id>
 <agent>codex</agent>
 <spex-configured>{str(spex_configured).lower()}</spex-configured>
