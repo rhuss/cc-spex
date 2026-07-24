@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "id": "opencode",
+  "version": "0.1.0",
+  "manifest_root": "plugins/opencode",
+  "config_root": ".opencode",
+  "capabilities": {},
+  "permission_profiles": {
+    "safe": {},
+    "autonomous": {}
+  }
+}

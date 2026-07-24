@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "id": "codex",
+  "version": "1.0.0",
+  "manifest_root": "plugins/codex",
+  "config_root": ".codex",
+  "command_map": "spex/scripts/adapters/codex/command-map.json",
+  "hook_adapter": "spex/scripts/adapters/codex/context-hook.py",
+  "progress_adapter": "spex/scripts/adapters/codex/progress.py",
+  "subagent_adapter": null,
+  "capabilities": {
+    "hooks": {
+      "status": "adapted"
+    },
+    "progress": {
+      "status": "degraded",
+      "reason": "Native task progress is not available in every client.",
+      "fallback": "Emit ordered concise transcript updates."
+    },
+    "status_line": {
+      "status": "unavailable",
+      "reason": "The Claude custom status line is not a Codex surface.",
+      "fallback": "Use native task progress or transcript updates."
+    },
+    "worktrees": {
+      "status": "native"
+    }
+  },
+  "permission_profiles": {
+    "safe": {
+      "preserve_host_policy": true
+    },
+    "autonomous": {
+      "workspace_scoped": true
+    },
+    "yolo": {
+      "non_destructive_only": true
+    }
+  }
+}

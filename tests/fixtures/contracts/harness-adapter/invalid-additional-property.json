@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "id": "claude",
+  "version": "1.0.0",
+  "manifest_root": "plugins/claude",
+  "config_root": ".claude",
+  "capabilities": {},
+  "permission_profiles": {
+    "safe": {},
+    "autonomous": {},
+    "yolo": {}
+  },
+  "unexpected": true
+}

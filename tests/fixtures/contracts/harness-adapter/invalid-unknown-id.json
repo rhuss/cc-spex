@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "id": "unknown",
+  "version": "1.0.0",
+  "manifest_root": "plugins/unknown",
+  "config_root": ".unknown",
+  "capabilities": {},
+  "permission_profiles": {
+    "safe": {},
+    "autonomous": {},
+    "yolo": {}
+  }
+}

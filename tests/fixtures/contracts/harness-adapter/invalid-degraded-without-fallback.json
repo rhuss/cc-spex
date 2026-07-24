@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "id": "codex",
+  "version": "1.0.0",
+  "manifest_root": "plugins/codex",
+  "config_root": ".codex",
+  "capabilities": {
+    "progress": {
+      "status": "degraded",
+      "reason": "Native progress is unavailable in this client."
+    }
+  },
+  "permission_profiles": {
+    "safe": {},
+    "autonomous": {},
+    "yolo": {}
+  }
+}
