@@ -296,6 +296,11 @@ continue_after_delegation() {
 never mutation authority. A nonzero resolver result is a hard refusal; do not
 select a candidate or create a replacement state file.
 
+Visible progress is presentation metadata, not workflow authority. A native
+task-progress view, status line, transcript line, or remembered stage may lag,
+disappear after interruption, or belong to an earlier process. Never use any
+of them to select a state file, stage, revision, worktree, or resume action.
+
 ### Available Commands
 
 | Command | What it does |
@@ -400,17 +405,66 @@ When `--resume` is set:
    esac
    ```
 
-3. Check the `status` field to determine resume behavior:
+3. Reconcile the visible presentation with the validated durable state before
+   deciding what work to run. The active harness may provide its last
+   presented `VISIBLE_PROGRESS_SEQUENCE` and `VISIBLE_PROGRESS_STAGE`; both are
+   optional, untrusted presentation inputs. Compare them only after
+   `resolve_feature_context` succeeds:
+
+   ```bash
+   DURABLE_PROGRESS_SEQUENCE=$(echo "$STATE" | jq -r '.revision')
+   DURABLE_PROGRESS_STAGE=$(echo "$STATE" | jq -r '.stage')
+   PROGRESS_DISCREPANCY=""
+
+   case "${VISIBLE_PROGRESS_SEQUENCE:-}" in
+     ""|*[!0-9]*)
+       [ -z "${VISIBLE_PROGRESS_SEQUENCE:-}" ] ||
+         PROGRESS_DISCREPANCY="visible sequence is invalid"
+       ;;
+     *)
+       [ "$VISIBLE_PROGRESS_SEQUENCE" = "$DURABLE_PROGRESS_SEQUENCE" ] ||
+         PROGRESS_DISCREPANCY="visible sequence $VISIBLE_PROGRESS_SEQUENCE differs from durable sequence $DURABLE_PROGRESS_SEQUENCE"
+       ;;
+   esac
+   if [ -n "${VISIBLE_PROGRESS_STAGE:-}" ] &&
+      [ "$VISIBLE_PROGRESS_STAGE" != "$DURABLE_PROGRESS_STAGE" ]; then
+     PROGRESS_DISCREPANCY="${PROGRESS_DISCREPANCY:+$PROGRESS_DISCREPANCY; }visible stage $VISIBLE_PROGRESS_STAGE differs from durable stage $DURABLE_PROGRESS_STAGE"
+   fi
+   ```
+
+   If `PROGRESS_DISCREPANCY` is nonempty, emit one concise reconciliation
+   update before any stage output:
+
+   ```text
+   Progress reconciled: <discrepancy>. Durable WorkflowState is authoritative; resuming sequence <revision> at <stage>.
+   ```
+
+   Then replace the harness presentation with `DURABLE_PROGRESS_SEQUENCE` and
+   `DURABLE_PROGRESS_STAGE`. In Codex, update native task progress when that
+   surface is available and always emit the transcript update; when it is not
+   available, emit the same transcript update with the adapter's explicit
+   degradation. If no visible snapshot exists, initialize presentation from
+   the durable values without claiming a discrepancy. This operation changes
+   presentation only: it MUST NOT write WorkflowState, append a transition,
+   change revision, or infer a stage from visible progress.
+
+4. Check the validated `status` field to determine resume behavior:
    - If `status` is `"paused_authority"`, run
      `env -u SHIP_STATE_FILE "$SHIP_STATE" resume --expected-revision "$STATE_REVISION"`,
-     then call `resolve_feature_context` again and resume `LAST_INDEX`.
+     then call `resolve_feature_context` again. Recompute `STATE`,
+     `DURABLE_PROGRESS_SEQUENCE`, `DURABLE_PROGRESS_STAGE`, and `LAST_INDEX`
+     from that newly resolved state, reconcile presentation again, and resume
+     the resulting durable stage.
    - If `status` is `"running"`: resume from `LAST_INDEX` (the stage was interrupted mid-execution) without rewriting state.
    - If `status` is a failure state, refuse automatic resume and report its validated `resume_point`.
    - If `status` is `"completed"`: report that the pipeline already completed and clean up the state file.
 
-4. Before invoking the resumed stage, call `resolve_feature_context` once more.
-   Use only its `context.spec_dir` for artifact discovery and its revision for
-   subsequent mutation. Never edit retry/status fields directly.
+5. Before invoking the resumed stage, call `resolve_feature_context` once more.
+   If its workflow ID, revision, or stage differs from the state used for the
+   reconciliation update, discard the pending stage invocation and repeat
+   steps 2–4 with the newly resolved state. Use only its `context.spec_dir` for
+   artifact discovery and its revision for subsequent mutation. Never edit
+   retry/status fields directly.
 
 ## Start-From Logic
 
