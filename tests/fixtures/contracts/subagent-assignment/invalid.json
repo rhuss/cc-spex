@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "assignment_id": "",
+  "kind": "write",
+  "workdir": "relative/worktree",
+  "objective": "",
+  "security_profile": "unrestricted",
+  "dependencies": [],
+  "allowed_files": [],
+  "required_evidence": []
+}

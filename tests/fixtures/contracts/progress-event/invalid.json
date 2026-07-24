@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0.0",
+  "workflow_id": "workflow-047-codex",
+  "sequence": 0,
+  "timestamp": "not-a-timestamp",
+  "stage": "implement",
+  "kind": "retrying",
+  "status": "running",
+  "message": "",
+  "attempt": 0
+}

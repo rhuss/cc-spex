@@ -1,0 +1,63 @@
+{
+  "schema_version": "2.0.0",
+  "workflow_id": "workflow-047-codex",
+  "revision": 7,
+  "mode": "ship",
+  "context": {
+    "repository_root": "/workspace/cc-spex",
+    "git_common_dir": "/workspace/cc-spex/.git",
+    "active_worktree": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support",
+    "feature_branch": "047-codex-plugin-support",
+    "spec_dir": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support/specs/047-codex-plugin-support",
+    "state_file": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support/.specify/.spex-state",
+    "head_oid": "0123456789abcdef0123456789abcdef01234567",
+    "validated_at": "2026-07-24T10:15:30Z"
+  },
+  "stage": "implement",
+  "status": "recovering",
+  "completed_gates": [
+    "review-spec",
+    "review-plan"
+  ],
+  "recovery": {
+    "episode_id": "recovery-001",
+    "objective": "Resolve a materialization feasibility finding",
+    "origin_stage": "implement",
+    "finding_fingerprint": "sha256:finding-001",
+    "max_attempts": 3,
+    "max_elapsed_seconds": 1800,
+    "started_at": "2026-07-24T10:15:30Z",
+    "deadline": "2026-07-24T10:45:30Z",
+    "attempts": [
+      {
+        "number": 1,
+        "remedy_fingerprint": "sha256:remedy-001",
+        "input_hashes": {
+          "plan.md": "sha256:plan-001"
+        },
+        "result_fingerprint": "sha256:result-001",
+        "evidence": [
+          "Focused unit test reproduces the finding"
+        ],
+        "started_at": "2026-07-24T10:16:00Z",
+        "finished_at": null,
+        "outcome": "running"
+      }
+    ],
+    "affected_artifacts": [
+      "plan.md"
+    ],
+    "affected_gates": [
+      "review-plan"
+    ],
+    "outcome": "running"
+  },
+  "resume_point": {
+    "stage": "implement",
+    "action": "continue recovery attempt 1",
+    "artifact": "plan.md"
+  },
+  "diagnostics": [],
+  "created_at": "2026-07-24T09:00:00Z",
+  "updated_at": "2026-07-24T10:16:00Z"
+}

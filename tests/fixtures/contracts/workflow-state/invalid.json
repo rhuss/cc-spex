@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "workflow_id": "short",
+  "revision": 0,
+  "mode": "ship",
+  "context": {
+    "repository_root": "relative/path",
+    "git_common_dir": "/workspace/cc-spex/.git",
+    "active_worktree": "/workspace/cc-spex/feature",
+    "feature_branch": "feature/codex",
+    "spec_dir": "/workspace/cc-spex/feature/specs/047-codex-plugin-support",
+    "state_file": "/workspace/cc-spex/feature/.specify/.spex-state",
+    "validated_at": "invalid"
+  },
+  "stage": "",
+  "status": "blocked",
+  "completed_gates": [
+    "review-spec",
+    "review-spec"
+  ],
+  "resume_point": {
+    "stage": "implement"
+  },
+  "created_at": "invalid",
+  "updated_at": "invalid"
+}

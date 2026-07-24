@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "workflow_id": "workflow-047-codex",
+  "sequence": 12,
+  "timestamp": "2026-07-24T10:16:00Z",
+  "stage": "implement",
+  "kind": "recovery",
+  "status": "updated",
+  "message": "Running recovery attempt 1 of 3",
+  "objective": "Resolve a materialization feasibility finding",
+  "attempt": 1
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "assignment_id": "assignment-t007",
+  "kind": "write",
+  "workdir": "/workspace/cc-spex/.claude/worktrees/047-t007",
+  "objective": "Create contract fixtures for workflow state",
+  "spec_context": [
+    "specs/047-codex-plugin-support/spec.md",
+    "specs/047-codex-plugin-support/data-model.md"
+  ],
+  "task_ids": [
+    "T007"
+  ],
+  "security_profile": "autonomous",
+  "dependencies": [
+    "T002"
+  ],
+  "allowed_files": [
+    "tests/fixtures/contracts/workflow-state/valid.json"
+  ],
+  "required_evidence": [
+    "Schema validation passes",
+    "Changed-file inventory matches assignment"
+  ],
+  "isolated_worktree": true
+}
