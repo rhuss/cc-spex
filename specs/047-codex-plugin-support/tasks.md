@@ -168,9 +168,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 5
 
-- [ ] T054 [P] [US5] Add assignment validation, dependency/file-conflict analysis, and minimum-context tests in `tests/unit/test_subagent_assignments.py`
-- [ ] T055 [P] [US5] Add isolated writer-worktree lifecycle, partial failure, reconciliation, and cleanup tests in `tests/integration/test_codex_teams.sh`
-- [ ] T056 [P] [US5] Add unavailable/unsafe/not-beneficial sequential fallback scenarios in `tests/integration/test_codex_teams_fallback.sh`
+- [X] T054 [P] [US5] Add assignment validation, dependency/file-conflict analysis, and minimum-context tests in `tests/unit/test_subagent_assignments.py`
+- [X] T055 [P] [US5] Add isolated writer-worktree lifecycle, partial failure, reconciliation, and cleanup tests in `tests/integration/test_codex_teams.sh`
+- [X] T056 [P] [US5] Add unavailable/unsafe/not-beneficial sequential fallback scenarios in `tests/integration/test_codex_teams_fallback.sh`
 
 ### Implementation for User Story 5
 
