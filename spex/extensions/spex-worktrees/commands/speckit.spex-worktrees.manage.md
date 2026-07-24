@@ -171,9 +171,13 @@ fi
 
 Using `git add -u` (tracked modifications only) plus explicit paths for new spec artifacts limits the commit scope to intended files. The `git diff --cached --quiet` guard skips the commit when there are no staged changes, avoiding empty commits.
 
-### Step 5b: Capture Feature Directory and Flow State Before Branch Switch
+### Step 5b: Record Feature Directory and Source State Before Branch Switch
 
-The next step switches to the default branch, which changes tracked files on disk. Since `.specify/feature.json` is tracked, its contents will revert to whatever the default branch has. And `.specify/.spex-state` is gitignored, so it won't survive the branch switch. Capture both now, while still on the feature branch:
+The next step switches to the default branch, which changes tracked files on
+disk. Since `.specify/feature.json` is tracked, its contents will revert to
+whatever the default branch has. The gitignored `.specify/.spex-state` remains
+in the main checkout and must stay there until verified transfer. Record the
+feature directory and source path now, while still on the feature branch:
 
 ```bash
 FEATURE_DIR=""
@@ -183,14 +187,19 @@ fi
 # Fallback to branch-derived path if feature.json is missing or empty
 FEATURE_DIR=${FEATURE_DIR:-"specs/$BRANCH_NAME"}
 
-# Capture flow state content (gitignored, will be lost on branch switch)
-SPEX_STATE_CONTENT=""
-if [ -f ".specify/.spex-state" ]; then
-  SPEX_STATE_CONTENT=$(cat ".specify/.spex-state")
+# Keep the source state in place until the state helper has written and
+# validated the worktree candidate. Never carry state in a shell variable.
+SOURCE_STATE="$REPO_ROOT/.specify/.spex-state"
+PIPELINE_MODE=false
+if [ -f "$SOURCE_STATE" ] && jq -e '.status == "running"' "$SOURCE_STATE" >/dev/null 2>&1; then
+  PIPELINE_MODE=true
 fi
 ```
 
-These values are used in Step 8b to set the correct feature context in the worktree.
+`SOURCE_STATE` deliberately remains on disk through worktree creation. It is
+removed only by the verified `transfer` command in Step 8b. A failure before
+that terminal transition therefore preserves the original state and its
+diagnostic evidence.
 
 ### Step 6: Restore Default Branch (before worktree creation)
 
@@ -240,9 +249,9 @@ fi
 Gitignored config directories (`.claude/` and `.specify/`) won't exist in the new worktree. Copy them so spec-kit extensions, skills, and settings work immediately without re-running init:
 
 ```bash
-# Copy .specify/ (extensions registry, hooks, state, config)
+# Copy .specify/ (extensions registry, hooks, and config; state transfers later)
 if [ -d ".specify" ]; then
-  rsync -a --exclude='.git' ".specify/" "$WORKTREE_PATH/.specify/"
+  rsync -a --exclude='.git' --exclude='.spex-state' ".specify/" "$WORKTREE_PATH/.specify/"
 fi
 
 # Copy .claude/ (skills, settings, commands)
@@ -254,35 +263,150 @@ fi
 
 This ensures the worktree has the same extensions, hooks, permissions, and skills as the main repo. No `/spex:init` needed in the worktree.
 
-### Step 8b: Update feature.json and flow state for the Worktree Branch
+### Step 8b: Create WorktreeIdentity and Transfer State Transactionally
 
 The copied `.specify/feature.json` may point to whatever feature was active on the default branch (since feature.json is tracked and reverts on branch switch). Write the correct value captured in Step 5b:
 
 ```bash
+case "$FEATURE_DIR" in
+  "$REPO_ROOT"/*) WORKTREE_FEATURE_DIR="$WORKTREE_PATH/${FEATURE_DIR#"$REPO_ROOT"/}" ;;
+  /*)
+    echo "ERROR: Feature directory is outside the repository: $FEATURE_DIR"
+    echo "Source state remains at $SOURCE_STATE"
+    # Stop here. Do not transfer or remove source state.
+    ;;
+  *) WORKTREE_FEATURE_DIR="$WORKTREE_PATH/$FEATURE_DIR" ;;
+esac
+
 FEATURE_JSON="$WORKTREE_PATH/.specify/feature.json"
-jq -n --arg dir "$FEATURE_DIR" '{"feature_directory": $dir}' > "$FEATURE_JSON"
+jq -n --arg dir "$WORKTREE_FEATURE_DIR" '{"feature_directory": $dir}' > "$FEATURE_JSON"
 ```
 
-This writes the `FEATURE_DIR` value captured in Step 5b, which reflects the actual spec directory created by speckit-specify (not a branch-name derivation that may differ).
+This preserves the actual feature directory selected by `speckit-specify` while
+rebasing an absolute main-checkout path onto the new worktree.
 
-The `.specify/.spex-state` file is gitignored but persists on disk across branch switches. It may still be present in the main repo after `git checkout $DEFAULT_BRANCH`. Restore it to the worktree from the content captured in Step 5b, then remove it from the main repo to prevent the statusline from showing stale state:
+Create a WorktreeIdentity from Git's registered worktree data. Use physical
+absolute paths so downstream commands do not depend on the caller's CWD:
 
 ```bash
-STATE_FILE="$WORKTREE_PATH/.specify/.spex-state"
-if [ -n "$SPEX_STATE_CONTENT" ]; then
-  echo "$SPEX_STATE_CONTENT" | jq --arg branch "$BRANCH_NAME" --arg dir "$FEATURE_DIR" \
-    '.feature_branch = $branch | .spec_dir = $dir' > "$STATE_FILE"
-fi
+WORKTREE_PATH=$(cd "$WORKTREE_PATH" && pwd -P)
+REPO_ROOT=$(cd "$REPO_ROOT" && pwd -P)
+GIT_COMMON_RAW=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir)
+case "$GIT_COMMON_RAW" in
+  /*) GIT_COMMON_DIR=$(cd "$GIT_COMMON_RAW" && pwd -P) ;;
+  *) GIT_COMMON_DIR=$(cd "$WORKTREE_PATH/$GIT_COMMON_RAW" && pwd -P) ;;
+esac
+WORKTREE_FEATURE_DIR=$(cd "$WORKTREE_FEATURE_DIR" && pwd -P) || {
+  echo "ERROR: Feature spec directory is missing in worktree: $WORKTREE_FEATURE_DIR"
+  echo "Source state remains at $SOURCE_STATE"
+  # Stop here.
+}
+HEAD_OID=$(git -C "$WORKTREE_PATH" rev-parse HEAD)
+DESTINATION_STATE="$WORKTREE_PATH/.specify/.spex-state"
+IDENTITY_FILE="$REPO_ROOT/.specify/.spex-worktree-identity.json"
+IDENTITY_TEMP="$IDENTITY_FILE.tmp"
+VALIDATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Remove stale state from main repo — the pipeline continues in the worktree
-rm -f ".specify/.spex-state"
+jq -n \
+  --arg repository_root "$REPO_ROOT" \
+  --arg git_common_dir "$GIT_COMMON_DIR" \
+  --arg active_worktree "$WORKTREE_PATH" \
+  --arg feature_branch "$BRANCH_NAME" \
+  --arg spec_dir "$WORKTREE_FEATURE_DIR" \
+  --arg state_file "$DESTINATION_STATE" \
+  --arg head_oid "$HEAD_OID" \
+  --arg validated_at "$VALIDATED_AT" \
+  '{repository_root:$repository_root, git_common_dir:$git_common_dir,
+    active_worktree:$active_worktree, feature_branch:$feature_branch,
+    spec_dir:$spec_dir, state_file:$state_file, head_oid:$head_oid,
+    validated_at:$validated_at}' > "$IDENTITY_TEMP" && mv "$IDENTITY_TEMP" "$IDENTITY_FILE"
 ```
 
-This restores the flow state (including any quality gate results from the specify phase) in the worktree and ensures the main repo's statusline does not display stale pipeline progress.
+Resolve the public state helper from the installed core extension. The
+development-tree fallback supports running this command directly from the Spex
+repository without changing the installed layout:
+
+```bash
+STATE_TOOL="$REPO_ROOT/.specify/extensions/spex/scripts/spex-ship-state.sh"
+if [ ! -f "$STATE_TOOL" ]; then
+  STATE_TOOL="$WORKTREE_PATH/.specify/extensions/spex/scripts/spex-ship-state.sh"
+fi
+if [ ! -f "$STATE_TOOL" ] && [ -f "$REPO_ROOT/spex/scripts/spex-ship-state.sh" ]; then
+  STATE_TOOL="$REPO_ROOT/spex/scripts/spex-ship-state.sh"
+fi
+[ -f "$STATE_TOOL" ] || {
+  echo "ERROR: WorkflowState helper is unavailable; cannot validate worktree identity"
+  echo "Source state remains at $SOURCE_STATE"
+  # Stop here.
+}
+
+VALIDATED_IDENTITY=$(env -u SHIP_STATE_FILE sh "$STATE_TOOL" validate \
+  --identity-file "$IDENTITY_FILE") || {
+  echo "ERROR: WorktreeIdentity validation failed"
+  echo "Identity evidence preserved at $IDENTITY_FILE"
+  echo "Source state remains at $SOURCE_STATE"
+  # Stop here. Do not create destination authority.
+}
+```
+
+If workflow state exists, invoke the public two-phase transfer. The helper
+writes a candidate, reads it back, validates identity, commits worktree
+authority, and only then removes the main-checkout source. Never copy, rewrite,
+or remove either state file inline:
+
+```bash
+TRANSFER_RESULT=null
+if [ -f "$SOURCE_STATE" ]; then
+  TRANSFER_ID="worktree-${BRANCH_NAME}-${HEAD_OID}"
+  set +e
+  TRANSFER_OUTPUT=$(env -u SHIP_STATE_FILE sh "$STATE_TOOL" transfer \
+    --source "$SOURCE_STATE" \
+    --destination "$DESTINATION_STATE" \
+    --identity-file "$IDENTITY_FILE" \
+    --transfer-id "$TRANSFER_ID")
+  TRANSFER_STATUS=$?
+  set -e
+
+  if [ "$TRANSFER_STATUS" -ne 0 ]; then
+    echo "ERROR: WorkflowState transfer failed; no new mutation authority was accepted"
+    echo "$TRANSFER_OUTPUT"
+    echo "Identity evidence preserved at $IDENTITY_FILE"
+    if [ ! -f "$SOURCE_STATE" ]; then
+      echo "ERROR: Source state disappeared before verified transfer completion"
+    else
+      echo "Source state preserved at $SOURCE_STATE"
+    fi
+    # Stop here. Preserve both copies and diagnostics for deterministic recovery.
+  fi
+  TRANSFER_RESULT="$TRANSFER_OUTPUT"
+
+  RESOLVED_STATE=$(cd "$WORKTREE_PATH" && env -u SHIP_STATE_FILE \
+    sh "$STATE_TOOL" resolve) || {
+      echo "ERROR: Transferred state cannot be resolved from the feature worktree"
+      echo "Transfer evidence preserved; refuse further feature mutations"
+      # Stop here.
+    }
+  printf '%s\n' "$RESOLVED_STATE" | jq -e --argjson identity "$VALIDATED_IDENTITY" \
+    '.context == $identity' >/dev/null || {
+      echo "ERROR: Resolved workflow context differs from validated WorktreeIdentity"
+      echo "Transfer evidence preserved; refuse further feature mutations"
+      # Stop here.
+    }
+fi
+
+jq -n --argjson worktree_identity "$VALIDATED_IDENTITY" \
+  --argjson state_transfer "$TRANSFER_RESULT" \
+  '{worktree_identity:$worktree_identity, state_transfer:$state_transfer}'
+```
+
+The final JSON object is the machine-readable creation result consumed by
+orchestration. When no workflow state exists, `state_transfer` is `null`. On a
+successful transfer it contains the terminal `main_removed` report.
 
 ### Step 9: Print Output
 
-Print a machine-readable line followed by human-readable instructions:
+After the structured JSON emitted in Step 8b, print the compatibility locator
+followed by human-readable instructions:
 
 ```bash
 echo "WORKTREE_CREATED path=$WORKTREE_PATH"
@@ -291,7 +415,7 @@ echo "WORKTREE_CREATED path=$WORKTREE_PATH"
 Then check whether this is running inside a ship pipeline:
 
 ```bash
-if [ -n "$SPEX_STATE_CONTENT" ] && echo "$SPEX_STATE_CONTENT" | jq -e '.status == "running"' >/dev/null 2>&1; then
+if [ "$PIPELINE_MODE" = true ]; then
   # Pipeline mode: suppress the completion box to avoid stalling the pipeline.
   # Ship will handle the CWD switch and continue to the next stage.
   echo "Worktree created at $WORKTREE_PATH (pipeline mode, continuing)"
