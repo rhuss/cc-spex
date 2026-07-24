@@ -102,9 +102,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 - [X] T031 [US2] Implement WorkflowState v2 serialization, legacy migration, schema validation, optimistic revisions, and atomic persistence in `spex/scripts/spex-ship-state.py`
 - [X] T032 [US2] Implement FeatureContext identity validation, candidate conflict diagnostics, and JSON-returning state command handlers in `spex/scripts/spex-ship-state.py`
-- [ ] T033 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
-- [ ] T034 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
-- [ ] T035 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
+- [X] T033 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
+- [X] T034 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
+- [X] T035 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
 - [ ] T036 [US2] Require ship resume, spec discovery, stage advancement, and post-delegation continuation to consume validated FeatureContext in `spex/extensions/spex/commands/speckit.spex.ship.md`
 - [ ] T037 [US2] Resolve Codex hook state and project paths from validated workflow context and Git root in `spex/scripts/adapters/codex/context-hook.py` and `spex/scripts/adapters/codex/pretool-gate.py`
 - [ ] T038 [US2] Sync canonical state/worktree scripts into owning extensions and update the inventory in `Makefile`
