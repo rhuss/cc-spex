@@ -121,9 +121,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Add RecoveryEpisode attempt/deadline transition and restart persistence tests in `tests/unit/test_ship_recovery.py`
-- [ ] T040 [P] [US3] Add repeated-finding, equivalent-remedy, artifact-hash, and A→B→A oscillation tests in `tests/unit/test_recovery_convergence.py`
-- [ ] T041 [P] [US3] Add downstream invalidation, earliest-stage rewind, authority pause, and terminal resume-report fixtures in `tests/integration/test_ship_recovery.sh`
+- [X] T039 [P] [US3] Add RecoveryEpisode attempt/deadline transition and restart persistence tests in `tests/unit/test_ship_recovery.py`
+- [X] T040 [P] [US3] Add repeated-finding, equivalent-remedy, artifact-hash, and A→B→A oscillation tests in `tests/unit/test_recovery_convergence.py`
+- [X] T041 [P] [US3] Add downstream invalidation, earliest-stage rewind, authority pause, and terminal resume-report fixtures in `tests/integration/test_ship_recovery.sh`
 
 ### Implementation for User Story 3
 
