@@ -151,10 +151,10 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] Emit ProgressEvent records from every workflow and recovery state transition in `spex/scripts/spex-ship-state.py` and `spex/scripts/spex-flow-state.sh`
+- [X] T050 [US4] Emit ProgressEvent records from every workflow and recovery state transition in `spex/scripts/spex-ship-state.py` and `spex/scripts/spex-flow-state.sh`
 - [ ] T051 [US4] Implement Codex native task-progress presentation with concise transcript fallback in `spex/scripts/adapters/codex/progress.py`
 - [ ] T052 [US4] Report and reconcile visible-progress/state disagreement during resume in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T053 [US4] Preserve Claude status-line behavior as an adapter specialization and exclude it from Codex materialization in `spex/scripts/adapters/claude/adapter.json` and `spex/scripts/adapters/codex/adapter.json`
+- [X] T053 [US4] Preserve Claude status-line behavior as an adapter specialization and exclude it from Codex materialization in `spex/scripts/adapters/claude/adapter.json` and `spex/scripts/adapters/codex/adapter.json`
 
 **Checkpoint**: User Story 4 independently exposes accurate Codex progress and state-authoritative resume.
 
