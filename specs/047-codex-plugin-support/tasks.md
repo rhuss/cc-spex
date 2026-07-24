@@ -93,9 +93,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 2
 
-- [ ] T027 [P] [US2] Add WorkflowState identity, optimistic revision, atomic write, and schema migration tests in `tests/unit/test_ship_state.py`
-- [ ] T028 [P] [US2] Add worktree identity and two-phase transfer fault injection at every transition in `tests/unit/test_worktree_transfer.py`
-- [ ] T029 [P] [US2] Add competing-state, moved/deleted worktree, invalid spec, and deterministic refusal tests in `tests/unit/test_state_resolver.py`
+- [X] T027 [P] [US2] Add WorkflowState identity, optimistic revision, atomic write, and schema migration tests in `tests/unit/test_ship_state.py`
+- [X] T028 [P] [US2] Add worktree identity and two-phase transfer fault injection at every transition in `tests/unit/test_worktree_transfer.py`
+- [X] T029 [P] [US2] Add competing-state, moved/deleted worktree, invalid spec, and deterministic refusal tests in `tests/unit/test_state_resolver.py`
 - [ ] T030 [P] [US2] Add delegated CWD reset and 100-run wrong-checkout lifecycle scenarios in `tests/integration/test_worktree_lifecycle.sh`
 
 ### Implementation for User Story 2
