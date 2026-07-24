@@ -194,14 +194,93 @@ Create a brainstorm document first with /speckit-spex-brainstorm
 
 The pipeline tracks its progress in `.specify/.spex-state` as JSON. **All state file operations use the `spex-ship-state.sh` script. Never write the state file directly.**
 
-Locate the script and set the absolute state file path:
+Locate the script from the checkout where ship was invoked. Do not export or
+persist a CWD-derived state path:
 ```bash
 SHIP_STATE=".specify/extensions/spex/scripts/spex-ship-state.sh"
-# Use absolute path so state file location survives CWD changes (e.g., worktree switches)
-export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
+[ -x "$SHIP_STATE" ] || { echo "ERROR: WorkflowState authority is unavailable: $SHIP_STATE" >&2; exit 1; }
+SHIP_STATE="$(cd "$(dirname "$SHIP_STATE")" && pwd -P)/$(basename "$SHIP_STATE")"
 ```
 
-**IMPORTANT:** Both `SHIP_STATE` (script path) and `SHIP_STATE_FILE` (absolute state file path) must be set before any state operations. The `SHIP_STATE_FILE` env var ensures the state script and statusline script always reference the same file, even when CWD changes during worktree creation.
+Define one authority refresh routine and call it before every spec lookup, state
+mutation, stage transition, and continuation after delegated work:
+
+```bash
+resolve_feature_context() {
+  RESOLVED_STATE=$(env -u SHIP_STATE_FILE "$SHIP_STATE" resolve) || {
+    echo "ERROR: WorkflowState resolution failed; refusing ambiguous or invalid checkout authority." >&2
+    exit 1
+  }
+  echo "$RESOLVED_STATE" | jq -e '
+    .schema_version == "2.0.0" and
+    (.revision | type == "number") and
+    (.context.active_worktree | startswith("/")) and
+    (.context.spec_dir | startswith("/")) and
+    (.context.state_file | startswith("/")) and
+    (.context.feature_branch | test("^[0-9]{3}-[a-z0-9-]+$"))
+  ' >/dev/null || { echo "ERROR: Resolver returned invalid FeatureContext." >&2; exit 1; }
+
+  ACTIVE_WORKTREE=$(echo "$RESOLVED_STATE" | jq -r '.context.active_worktree')
+  FEATURE_DIR=$(echo "$RESOLVED_STATE" | jq -r '.context.spec_dir')
+  STATE_FILE=$(echo "$RESOLVED_STATE" | jq -r '.context.state_file')
+  FEATURE_BRANCH=$(echo "$RESOLVED_STATE" | jq -r '.context.feature_branch')
+  STATE_REVISION=$(echo "$RESOLVED_STATE" | jq -r '.revision')
+
+  [ -d "$ACTIVE_WORKTREE" ] && [ -f "$FEATURE_DIR/spec.md" ] || {
+    echo "ERROR: Validated worktree or specification no longer exists." >&2; exit 1;
+  }
+  case "$FEATURE_DIR/" in "$ACTIVE_WORKTREE"/*) ;; *)
+    echo "ERROR: Specification is outside the validated worktree." >&2; exit 1;;
+  esac
+  [ "$STATE_FILE" = "$ACTIVE_WORKTREE/.specify/.spex-state" ] || {
+    echo "ERROR: State file is outside the validated worktree." >&2; exit 1;
+  }
+  [ "$(git -C "$ACTIVE_WORKTREE" branch --show-current)" = "$FEATURE_BRANCH" ] || {
+    echo "ERROR: Validated feature branch no longer matches its worktree." >&2; exit 1;
+  }
+
+  cd "$ACTIVE_WORKTREE" || exit 1
+  SHIP_STATE="$ACTIVE_WORKTREE/.specify/extensions/spex/scripts/spex-ship-state.sh"
+  [ -x "$SHIP_STATE" ] || { echo "ERROR: Worktree state authority is unavailable." >&2; exit 1; }
+
+  # Re-resolve after changing checkout and reject any cross-checkout disagreement.
+  CONFIRMED_STATE=$(env -u SHIP_STATE_FILE "$SHIP_STATE" resolve) || exit 1
+  [ "$(echo "$CONFIRMED_STATE" | jq -r '.workflow_id + ":" + (.revision|tostring)')" = \
+    "$(echo "$RESOLVED_STATE" | jq -r '.workflow_id + ":" + (.revision|tostring)')" ] || {
+    echo "ERROR: Workflow authority changed while restoring the feature worktree." >&2; exit 1;
+  }
+  RESOLVED_STATE="$CONFIRMED_STATE"
+}
+
+advance_stage() {
+  resolve_feature_context
+  env -u SHIP_STATE_FILE "$SHIP_STATE" advance
+}
+
+begin_delegated_stage() {
+  resolve_feature_context
+  DELEGATED_WORKFLOW_ID=$(echo "$RESOLVED_STATE" | jq -r '.workflow_id')
+  DELEGATED_STAGE=$(echo "$RESOLVED_STATE" | jq -r '.stage')
+  DELEGATED_WORKTREE="$ACTIVE_WORKTREE"
+}
+
+continue_after_delegation() {
+  EXPECTED_WORKFLOW_ID="$DELEGATED_WORKFLOW_ID"
+  EXPECTED_STAGE="$DELEGATED_STAGE"
+  EXPECTED_WORKTREE="$DELEGATED_WORKTREE"
+  resolve_feature_context
+  [ "$(echo "$RESOLVED_STATE" | jq -r '.workflow_id')" = "$EXPECTED_WORKFLOW_ID" ] &&
+  [ "$(echo "$RESOLVED_STATE" | jq -r '.stage')" = "$EXPECTED_STAGE" ] &&
+  [ "$ACTIVE_WORKTREE" = "$EXPECTED_WORKTREE" ] || {
+    echo "ERROR: Workflow authority changed during delegated work; refusing continuation." >&2
+    exit 1
+  }
+}
+```
+
+`SHIP_STATE_FILE`, the apparent CWD, branch-name guesses, and file mtimes are
+never mutation authority. A nonzero resolver result is a hard refusal; do not
+select a candidate or create a replacement state file.
 
 ### Available Commands
 
@@ -218,24 +297,26 @@ export SHIP_STATE_FILE="$(pwd -P)/.specify/.spex-state"
 
 **After every stage completes**, run:
 ```bash
-SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance
+advance_stage
 ```
 
 This advances `stage` and `stage_index` to the next stage with `status: running`. After the final stage (verify), `advance` automatically removes the state file and outputs `PIPELINE_COMPLETE`.
 
 **Do NOT manually write JSON to the state file. Always use the script.**
 
-### CWD Recovery After Subagents (Worktree Pipelines)
+### Authority Recovery After Subagents (Worktree Pipelines)
 
-When the pipeline runs in a worktree, the shell CWD may be reset to the main repo directory after a subagent returns (Stages 2, 5, 6, 7 all use subagents). **After every subagent returns**, recover CWD using the worktree recovery script:
+When a subagent returns, the host may reset the apparent CWD to the main
+checkout. **After every subagent returns**, discard all remembered paths and
+re-resolve durable authority:
 
 ```bash
-WORKTREE_CWD=".specify/extensions/spex/scripts/spex-worktree-cwd.sh"
-RECOVERY_DIR=$("$WORKTREE_CWD")
-[ -n "$RECOVERY_DIR" ] && cd "$RECOVERY_DIR"
+resolve_feature_context
 ```
 
-The script uses `SHIP_STATE_FILE` (set as an absolute path during initialization) to find the worktree root. It is safe to call unconditionally; it outputs nothing when CWD is already correct or when not in a worktree.
+Do not use a persisted environment variable or previously remembered worktree
+path as a fallback. If resolution is ambiguous or identity validation fails,
+stop before reading artifacts, advancing state, or applying delegated output.
 
 ## Ship Pipeline Guard
 
@@ -287,39 +368,35 @@ When `.specify/.spex-state` exists with `status: running`:
 
 When `--resume` is set:
 
-1. Read the state file:
+1. Resolve and validate durable authority from the invocation checkout. Never
+   probe `.specify/.spex-state` directly:
    ```bash
-   if [ ! -f .specify/.spex-state ]; then
-     echo "ERROR: No interrupted pipeline found."
-     echo "Start a new pipeline with: /speckit-spex-ship <brainstorm-file>"
-     exit 1
-   fi
-   STATE=$(cat .specify/.spex-state)
+   resolve_feature_context
+   STATE="$RESOLVED_STATE"
    ```
 
-2. Extract the last stage and its index:
+2. Extract the validated stage and map its name to the fixed pipeline index:
    ```bash
    LAST_STAGE=$(echo "$STATE" | jq -r '.stage')
-   LAST_INDEX=$(echo "$STATE" | jq -r '.stage_index')
-   AUTONOMY=$(echo "$STATE" | jq -r '.ask')
-   BRAINSTORM=$(echo "$STATE" | jq -r '.brainstorm_file')
+   case "$LAST_STAGE" in
+     specify) LAST_INDEX=0 ;; clarify) LAST_INDEX=1 ;; review-spec) LAST_INDEX=2 ;;
+     plan) LAST_INDEX=3 ;; tasks) LAST_INDEX=4 ;; review-plan) LAST_INDEX=5 ;;
+     implement) LAST_INDEX=6 ;; review-code) LAST_INDEX=7 ;;
+     *) echo "ERROR: Invalid stage in resolved WorkflowState: $LAST_STAGE" >&2; exit 1 ;;
+   esac
    ```
 
 3. Check the `status` field to determine resume behavior:
-   - If `status` is `"paused"` or `"failed"`: resume from `LAST_INDEX` (retry the same stage).
-   - If `status` is `"running"`: resume from `LAST_INDEX` (the stage was interrupted mid-execution).
+   - If `status` is `"paused_authority"`, run
+     `env -u SHIP_STATE_FILE "$SHIP_STATE" resume --expected-revision "$STATE_REVISION"`,
+     then call `resolve_feature_context` again and resume `LAST_INDEX`.
+   - If `status` is `"running"`: resume from `LAST_INDEX` (the stage was interrupted mid-execution) without rewriting state.
+   - If `status` is a failure state, refuse automatic resume and report its validated `resume_point`.
    - If `status` is `"completed"`: report that the pipeline already completed and clean up the state file.
 
-4. If the calculated resume index is >= 9, the pipeline was already complete. Report this and clean up.
-
-5. Reset `retries` to 0 in the state file before resuming (so the resumed stage gets fresh retry attempts).
-
-6. Re-validate values from the state file before proceeding:
-   - Validate `ask` is one of `always`, `smart`, `never`
-   - Validate `brainstorm_file` exists (if resuming the specify stage)
-   - Validate `stage_index` is in range 0-7
-
-7. Update the state file with `status: running` before proceeding.
+4. Before invoking the resumed stage, call `resolve_feature_context` once more.
+   Use only its `context.spec_dir` for artifact discovery and its revision for
+   subsequent mutation. Never edit retry/status fields directly.
 
 ## Start-From Logic
 
@@ -467,31 +544,28 @@ Extension overlays (e.g., `spex-gates` adding review after specify) may run thei
    - Pass it as the user input to the specify command.
    - **Do not pause** after specify completes, even if an extension overlay runs a review or asks for confirmation. Proceed directly to step 4.
    - **CRITICAL: Specify triggers `after_specify` hooks (including worktree-manage).** When the last hook returns (you may see a "WORKTREE_CREATED" message or a completion box), you are back in the ship pipeline. Do NOT stop. Immediately proceed to step 4.
-4. After specify completes (including all its hooks), extract the feature branch name and handle worktree integration:
-   ```bash
-   FEATURE_BRANCH=$(git branch --show-current)
-   ```
+4. After specify completes (including all its hooks), discard the apparent CWD
+   and call `resolve_feature_context`. The resolver output is the only accepted
+   feature branch, worktree, spec directory, and state location.
 
-5. **Worktree integration:** If the `spex-worktrees` extension is enabled, check whether the `after_specify` hook already created a worktree. If not, create one now (the hook is optional and may have been skipped).
+5. **Worktree integration:** If the `spex-worktrees` extension is enabled, the
+   `after_specify` hook must return only after its two-phase state transfer is
+   committed. Resolve that transferred authority rather than searching Git
+   worktree output by branch name.
    ```bash
    WORKTREE_ENABLED=$(jq -r '.extensions["spex-worktrees"].enabled // false' .specify/extensions/.registry 2>/dev/null)
    ```
-   If `WORKTREE_ENABLED` is `true`, look for an existing worktree for the feature branch:
-   ```bash
-   WORKTREE_PATH=$(git worktree list --porcelain | grep -B1 "branch refs/heads/$FEATURE_BRANCH" | head -1 | sed 's/^worktree //')
-   ```
+   If resolution fails because no transferred feature candidate exists, invoke
+   `/speckit-spex-worktrees-manage` once. After it returns, call
+   `resolve_feature_context`; if it still fails or reports competing candidates,
+   stop. Never fall back to `git worktree list`, branch matching, timestamps, or
+   the prior CWD.
 
-   If a worktree path is found and it is not the current directory:
-   - Run `cd "$WORKTREE_PATH"` to switch into the worktree.
-   - Verify `.specify/.spex-state` exists in the worktree.
-   - Log: "Switched to worktree at $WORKTREE_PATH. Main directory remains on default branch."
-   - Update `SHIP_STATE` to point to the worktree's copy of the state script (the path is relative, so cd handles this).
+   If worktrees are not enabled, still call `resolve_feature_context`; the
+   validated active checkout may equal the invocation checkout, but apparent
+   CWD alone is never sufficient authority.
 
-   If `WORKTREE_ENABLED` is `true` but NO worktree was found (the hook was skipped), invoke `/speckit-spex-worktrees-manage` to create one. This runs the worktree create action, which commits spec files, switches the main repo to the default branch, and creates a sibling worktree. After it completes, re-detect the worktree path and `cd` into it as above.
-
-   If worktrees are NOT enabled, stay in the current directory (existing behavior).
-
-6. Run `"$SHIP_STATE" advance` to move to Stage 1, then **immediately** begin it (do not stop).
+6. Run `advance_stage` to move to Stage 1, then **immediately** begin it (do not stop).
 
 ### Stage 1: Clarify (ALWAYS runs, even if the spec "looks clear")
 
@@ -503,16 +577,16 @@ Do NOT skip this stage. Clarify may uncover ambiguities that are not obvious fro
    - If `ask` is `always`: Present each question to the user interactively.
 
 4. Invoke `/speckit-clarify` on the generated spec. **The clarify command will try to present interactive questions. In `smart` and `never` modes, this is overridden: answer every question yourself with the recommended option. Do NOT wait for user input. Do NOT display questions with "You can reply with..." prompts. Process all questions in a single pass and update the spec.**
-5. After clarification completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 2 (do not stop).
+5. After clarification completes, run `advance_stage` then **immediately** begin Stage 2 (do not stop).
 
 ### Stage 2: Review Spec (Forked Subagent)
 
 Do NOT skip this stage. Review-spec validates structural quality, not just ambiguities. This stage runs in an isolated subagent for clean context separation between generation and review.
 
-1. Resolve the spec directory:
+1. Resolve validated workflow authority, consume its spec directory, and
+   snapshot delegated-stage identity:
    ```bash
-   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
-   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   begin_delegated_stage
    ```
 
 2. {harness:spawn-worker}:
@@ -530,30 +604,31 @@ Do NOT skip this stage. Review-spec validates structural quality, not just ambig
    Report the overall assessment and any findings when done.
    ```
 
-3. When the subagent returns, capture its summary.
+3. When the subagent returns, capture its summary, then immediately call
+   `continue_after_delegation` before interpreting or applying it.
 4. Apply **Oversight Decision Logic** (see below) to handle findings.
-5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 3 (do not stop).
+5. After findings are resolved, run `advance_stage` then **immediately** begin Stage 3 (do not stop).
 
 ### Stage 3: Plan
 
 1. Invoke `/speckit-plan` to generate the implementation plan.
 2. This produces `plan.md`, `research.md`, `data-model.md`, and other artifacts.
-3. After plan generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 4 (do not stop).
+3. After plan generation completes, run `advance_stage` then **immediately** begin Stage 4 (do not stop).
 
 ### Stage 4: Tasks
 
 1. Invoke `/speckit-tasks` to generate the task breakdown.
 2. This produces `tasks.md`.
-3. After task generation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 5 (do not stop).
+3. After task generation completes, run `advance_stage` then **immediately** begin Stage 5 (do not stop).
 
 ### Stage 5: Review Plan (Forked Subagent)
 
 This stage runs in an isolated subagent for clean context separation between planning and review.
 
-1. Resolve the spec directory:
+1. Resolve validated workflow authority, consume its spec directory, and
+   snapshot delegated-stage identity:
    ```bash
-   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
-   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   begin_delegated_stage
    ```
 
 2. {harness:spawn-worker}:
@@ -574,18 +649,19 @@ This stage runs in an isolated subagent for clean context separation between pla
    Report the findings and overall assessment when done.
    ```
 
-3. When the subagent returns, capture its summary.
+3. When the subagent returns, capture its summary, then immediately call
+   `continue_after_delegation` before interpreting or applying it.
 4. Apply **Oversight Decision Logic** to handle findings.
-5. After findings are resolved, run `"$SHIP_STATE" advance` then **immediately** begin Stage 6 (do not stop).
+5. After findings are resolved, run `advance_stage` then **immediately** begin Stage 6 (do not stop).
 
 ### Stage 6: Implement (Forked Subagent)
 
 This stage runs in an isolated subagent to prevent context accumulation in the orchestrator.
 
-1. Resolve the spec directory for the current branch:
+1. Resolve validated workflow authority, consume its spec directory, and
+   snapshot delegated-stage identity:
    ```bash
-   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
-   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   begin_delegated_stage
    ```
 
 2. Check if spex-teams should handle implementation:
@@ -731,17 +807,17 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Report a brief summary of completed tasks when done.
    ```
 
-3. When the subagent returns, capture its summary. Do NOT carry the full implementation context into the orchestrator.
-4. After implementation completes, run `"$SHIP_STATE" advance` then **immediately** begin Stage 7 (do not stop).
+3. When the subagent returns, capture its summary. Do NOT carry the full implementation context into the orchestrator. Immediately call `continue_after_delegation`; refuse to apply the summary if workflow ID, worktree identity, or expected stage changed while delegated work was running.
+4. After implementation completes, run `advance_stage` then **immediately** begin Stage 7 (do not stop).
 
 ### Stage 7: Review Code (Forked Subagent)
 
 This stage runs in an isolated subagent so the reviewer has no implementation context, enabling an unbiased review.
 
-1. Resolve the spec directory (same as Stage 6):
+1. Resolve validated workflow authority, consume its spec directory, and
+   snapshot delegated-stage identity:
    ```bash
-   PREREQS=$(.specify/scripts/bash/check-prerequisites.sh --json --paths-only 2>/dev/null)
-   FEATURE_DIR=$(echo "$PREREQS" | jq -r '.FEATURE_DIR')
+   begin_delegated_stage
    ```
 
 2. {harness:spawn-worker}. Do NOT pass external tool settings in the prompt. The deep-review skill reads its own config file (`deep-review-config.yml`) and determines which tools to run. Only pass explicit `--no-*` CLI flags if the user provided them at ship invocation time.
@@ -774,12 +850,10 @@ This stage runs in an isolated subagent so the reviewer has no implementation co
    Report the compliance score, gate outcome, and a summary of findings when done.
    ```
 
-3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts).
-
-   **CWD recovery (worktree):** Run the CWD recovery script (see "CWD Recovery After Subagents" above).
+3. When the subagent returns, capture its summary (compliance score, gate outcome, finding counts), then immediately call `continue_after_delegation`. Refuse to apply results if authority no longer matches the delegated stage.
 
 4. Apply **Oversight Decision Logic** to any remaining findings reported by the subagent.
-5. After findings are resolved, run `"$SHIP_STATE" advance` to mark the pipeline as complete. The advance command at index 7 outputs `PIPELINE_COMPLETE`.
+5. After findings are resolved, run `advance_stage` to mark the pipeline as complete. The advance command at index 7 outputs `PIPELINE_COMPLETE`.
 
 ### Post-Pipeline: Completion Prompt (Always Interactive)
 
