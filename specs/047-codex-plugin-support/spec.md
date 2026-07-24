@@ -154,9 +154,9 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 #### Security profiles
 
 - **FR-008**: Initialization MUST ask the user to select exactly one project-wide security level: Safe, Autonomous, or YOLO.
-- **FR-009**: Safe MUST retain normal approval and sandbox safeguards for Spex operations.
-- **FR-010**: Autonomous MUST allow routine in-workspace Spex operations to proceed without repeated approval while preserving approval requirements for destructive actions, external side effects, and actions outside granted authority.
-- **FR-011**: YOLO MUST broadly suppress routine approvals for project work while continuing to block destructive actions outside the workspace and other actions requiring authority the user has not granted.
+- **FR-009**: Safe MUST leave the host's approval policy and sandbox boundaries unchanged; Spex MUST NOT add approval bypasses or expand writable, network, or external-action permissions.
+- **FR-010**: Autonomous MUST allow only enumerated, non-destructive Spex workflow operations within the active repository and feature worktree to proceed without repeated approval: repository reads, file edits, artifact generation, local tests, linters, builds, and non-destructive local Git operations. Other commands, network access, external side effects, destructive actions, and operations outside the writable workspace or granted authority MUST retain host approval requirements.
+- **FR-011**: YOLO MUST allow any non-destructive project operation within the active repository and feature worktree to proceed without repeated approval, including workspace-scoped commands not enumerated by Spex. Network access, external side effects, destructive actions, and operations outside the writable workspace or granted authority MUST retain host approval requirements.
 - **FR-012**: Before persisting Autonomous or YOLO, initialization MUST clearly state which safeguards remain and what additional autonomy is granted.
 - **FR-013**: The selected security level MUST apply consistently to Spex commands, ship stages, delegated reviews, implementation work, and Codex subagents within the project.
 - **FR-014**: If the active Codex version cannot express the selected security behavior, initialization MUST offer the closest safer supported level and require user confirmation before persisting it; if no safer level is supported or the user declines, initialization MUST fail without changing configuration.
@@ -238,6 +238,7 @@ A Spex maintainer can evolve Claude and Codex support in the same repository fro
 - **SC-010**: When parallel execution is disabled or unavailable, 100% of eligible Teams scenarios continue through the sequential fallback without loss of required work.
 - **SC-011**: A representative OpenCode adapter can reuse all shared workflow definitions while supplying only harness-specific packaging and behavior specialization.
 - **SC-012**: Existing Claude Spex acceptance workflows retain their pre-feature pass rate after the Codex plugin is introduced.
+- **SC-013**: Security-profile acceptance tests verify that Safe adds no bypasses, Autonomous suppresses approval only for the enumerated Spex workflow operations, and YOLO additionally suppresses approval for non-destructive workspace-scoped project operations; all three profiles continue to require host approval at their stated boundaries.
 
 ## Assumptions
 
