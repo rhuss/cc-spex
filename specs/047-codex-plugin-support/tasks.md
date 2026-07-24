@@ -100,8 +100,8 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Implement WorkflowState v2 serialization, legacy migration, schema validation, optimistic revisions, and atomic persistence in `spex/scripts/spex-ship-state.py`
-- [ ] T032 [US2] Implement FeatureContext identity validation, candidate conflict diagnostics, and JSON-returning state command handlers in `spex/scripts/spex-ship-state.py`
+- [X] T031 [US2] Implement WorkflowState v2 serialization, legacy migration, schema validation, optimistic revisions, and atomic persistence in `spex/scripts/spex-ship-state.py`
+- [X] T032 [US2] Implement FeatureContext identity validation, candidate conflict diagnostics, and JSON-returning state command handlers in `spex/scripts/spex-ship-state.py`
 - [ ] T033 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
 - [ ] T034 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
 - [ ] T035 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
