@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cc-spex.dev/contracts/workflow-state.schema.json",
+  "title": "Spex Workflow State",
+  "type": "object",
+  "required": ["schema_version", "workflow_id", "revision", "mode", "context", "stage", "status", "completed_gates", "resume_point", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "workflow_id": { "type": "string", "minLength": 8 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "mode": { "enum": ["flow", "ship", "watch"] },
+    "context": { "$ref": "worktree-identity.schema.json" },
+    "stage": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["running", "recovering", "paused_authority", "failed_budget", "failed_nonconvergent", "failed_validation", "completed"] },
+    "completed_gates": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "recovery": {
+      "type": ["object", "null"],
+      "required": ["episode_id", "objective", "origin_stage", "finding_fingerprint", "max_attempts", "max_elapsed_seconds", "started_at", "deadline", "attempts", "affected_artifacts", "affected_gates", "outcome"],
+      "properties": {
+        "episode_id": { "type": "string" },
+        "objective": { "type": "string", "minLength": 1 },
+        "origin_stage": { "type": "string" },
+        "finding_fingerprint": { "type": "string" },
+        "max_attempts": { "type": "integer", "minimum": 1 },
+        "max_elapsed_seconds": { "type": "integer", "minimum": 1 },
+        "started_at": { "type": "string", "format": "date-time" },
+        "deadline": { "type": "string", "format": "date-time" },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["number", "remedy_fingerprint", "started_at", "outcome"],
+            "properties": {
+              "number": { "type": "integer", "minimum": 1 },
+              "remedy_fingerprint": { "type": "string" },
+              "input_hashes": { "type": "object" },
+              "result_fingerprint": { "type": "string" },
+              "evidence": { "type": "array", "items": { "type": "string" } },
+              "started_at": { "type": "string", "format": "date-time" },
+              "finished_at": { "type": ["string", "null"], "format": "date-time" },
+              "outcome": { "enum": ["running", "accepted", "rejected", "failed"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "affected_artifacts": { "type": "array", "items": { "type": "string" } },
+        "affected_gates": { "type": "array", "items": { "type": "string" } },
+        "outcome": { "enum": ["running", "accepted", "budget_exhausted", "nonconvergent", "authority_required", "failed"] }
+      },
+      "additionalProperties": false
+    },
+    "resume_point": {
+      "type": "object",
+      "required": ["stage", "action"],
+      "properties": {
+        "stage": { "type": "string" },
+        "action": { "type": "string" },
+        "artifact": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "diagnostics": { "type": "array", "items": { "type": "object" } },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

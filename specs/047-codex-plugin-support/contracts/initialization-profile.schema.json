@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cc-spex.dev/contracts/initialization-profile.schema.json",
+  "title": "Spex Initialization Profile",
+  "type": "object",
+  "required": ["schema_version", "active_harness", "enabled_extensions", "requested_security", "effective_security", "capabilities", "config_revision", "updated_at"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "active_harness": { "enum": ["claude", "codex", "opencode"] },
+    "enabled_extensions": { "type": "array", "uniqueItems": true, "contains": { "const": "spex" }, "items": { "type": "string", "pattern": "^spex(?:-[a-z0-9-]+)?$" } },
+    "requested_security": { "enum": ["safe", "autonomous", "yolo"] },
+    "effective_security": { "enum": ["safe", "autonomous", "yolo"] },
+    "capabilities": { "type": "object" },
+    "config_revision": { "type": "integer", "minimum": 1 },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

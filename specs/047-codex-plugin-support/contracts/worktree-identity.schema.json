@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cc-spex.dev/contracts/worktree-identity.schema.json",
+  "title": "Spex Worktree Identity",
+  "type": "object",
+  "required": ["repository_root", "git_common_dir", "active_worktree", "feature_branch", "spec_dir", "state_file", "validated_at"],
+  "properties": {
+    "repository_root": { "type": "string", "pattern": "^/" },
+    "git_common_dir": { "type": "string", "pattern": "^/" },
+    "active_worktree": { "type": "string", "pattern": "^/" },
+    "feature_branch": { "type": "string", "pattern": "^[0-9]{3}-[a-z0-9-]+$" },
+    "spec_dir": { "type": "string", "pattern": "^/" },
+    "state_file": { "type": "string", "pattern": "^/" },
+    "head_oid": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+    "validated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

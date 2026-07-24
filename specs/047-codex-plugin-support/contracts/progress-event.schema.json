@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cc-spex.dev/contracts/progress-event.schema.json",
+  "title": "Spex Progress Event",
+  "type": "object",
+  "required": ["schema_version", "workflow_id", "sequence", "timestamp", "stage", "kind", "status", "message"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "workflow_id": { "type": "string" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "stage": { "type": "string" },
+    "kind": { "enum": ["normal", "delegated", "recovery", "pause", "complete"] },
+    "status": { "enum": ["started", "updated", "succeeded", "failed", "paused"] },
+    "message": { "type": "string", "minLength": 1 },
+    "objective": { "type": ["string", "null"] },
+    "attempt": { "type": ["integer", "null"], "minimum": 1 }
+  },
+  "additionalProperties": false
+}

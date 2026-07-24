@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cc-spex.dev/contracts/harness-adapter.schema.json",
+  "title": "Spex Harness Adapter",
+  "type": "object",
+  "required": ["schema_version", "id", "version", "manifest_root", "config_root", "capabilities", "permission_profiles"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "id": { "enum": ["claude", "codex", "opencode"] },
+    "version": { "type": "string", "minLength": 1 },
+    "manifest_root": { "type": "string", "minLength": 1 },
+    "config_root": { "type": "string", "minLength": 1 },
+    "command_map": { "type": "string" },
+    "hook_adapter": { "type": ["string", "null"] },
+    "progress_adapter": { "type": ["string", "null"] },
+    "subagent_adapter": { "type": ["string", "null"] },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "enum": ["native", "adapted", "degraded", "unavailable"] },
+          "reason": { "type": "string" },
+          "fallback": { "type": "string" }
+        },
+        "allOf": [{ "if": { "properties": { "status": { "enum": ["degraded", "unavailable"] } } }, "then": { "required": ["reason", "fallback"] } }]
+      }
+    },
+    "permission_profiles": {
+      "type": "object",
+      "required": ["safe", "autonomous", "yolo"],
+      "properties": {
+        "safe": { "type": "object" },
+        "autonomous": { "type": "object" },
+        "yolo": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
