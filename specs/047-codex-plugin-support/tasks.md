@@ -174,11 +174,11 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 5
 
-- [ ] T057 [US5] Generate bounded SubagentAssignment records with explicit workdirs, effective security, dependencies, allowed files, and evidence in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
-- [ ] T058 [US5] Implement dependency and file/contract conflict analysis before Codex dispatch in `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
-- [ ] T059 [US5] Allow shared read views for research and create isolated Git worktrees for concurrent writers in `spex/extensions/spex-teams/commands/speckit.spex-teams.research.md` and `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
+- [X] T057 [US5] Generate bounded SubagentAssignment records with explicit workdirs, effective security, dependencies, allowed files, and evidence in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
+- [X] T058 [US5] Implement dependency and file/contract conflict analysis before Codex dispatch in `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
+- [X] T059 [US5] Allow shared read views for research and create isolated Git worktrees for concurrent writers in `spex/extensions/spex-teams/commands/speckit.spex-teams.research.md` and `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
 - [ ] T060 [US5] Require orchestrator wait, specification review, reconciliation, dependent release, and partial-work preservation in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
-- [ ] T061 [US5] Implement sequential fallback as a successful execution mode when capability or safety checks fail in `spex/scripts/adapters/codex/command-map.json`
+- [X] T061 [US5] Implement sequential fallback as a successful execution mode when capability or safety checks fail in `spex/scripts/adapters/codex/command-map.json`
 
 **Checkpoint**: User Story 5 independently proves safe parallel writers and lossless sequential fallback.
 
