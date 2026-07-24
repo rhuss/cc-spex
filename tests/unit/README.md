@@ -42,4 +42,3 @@ make test-unit
 During development, run the affected file directly (`bash` for shell suites or
 `python3 -m unittest`/`python3 -m pytest` as selected by that suite). A unit
 test must leave the working tree unchanged after both success and failure.
-
