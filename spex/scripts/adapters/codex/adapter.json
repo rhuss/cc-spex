@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "id": "codex",
+  "version": "2.0.0",
+  "manifest_root": ".codex-plugin",
+  "config_root": ".codex",
+  "command_map": "command-map.json",
+  "hook_adapter": "context-hook.py",
+  "progress_adapter": "progress.py",
+  "subagent_adapter": null,
+  "capabilities": {
+    "installation": { "status": "native" },
+    "interaction": { "status": "native" },
+    "hooks": { "status": "adapted" },
+    "permissions": { "status": "adapted" },
+    "progress": { "status": "adapted" },
+    "context_lifecycle": { "status": "adapted" },
+    "worktrees": { "status": "adapted" },
+    "subagents": { "status": "native" }
+  },
+  "permission_profiles": {
+    "safe": {
+      "mode": "inherit",
+      "scope": "host-policy"
+    },
+    "autonomous": {
+      "mode": "allowlisted",
+      "scope": "repository-and-feature-worktrees",
+      "network": "host-approval",
+      "external_actions": "host-approval",
+      "destructive_actions": "host-approval"
+    },
+    "yolo": {
+      "mode": "non-destructive-workspace",
+      "scope": "repository-and-feature-worktrees",
+      "network": "host-approval",
+      "external_actions": "host-approval",
+      "destructive_actions": "host-approval"
+    }
+  }
+}
