@@ -49,6 +49,19 @@ Replace CWD- and environment-dependent workflow recovery with a versioned state 
 
 No constitutional violations require complexity exceptions.
 
+## Global Constraints
+
+Every implementation task inherits these specification and constitution constraints:
+
+- Safe MUST leave the host's approval policy and sandbox boundaries unchanged; Spex MUST NOT add approval bypasses or expand writable, network, or external-action permissions.
+- Autonomous MUST allow only enumerated, non-destructive Spex workflow operations within the active repository and feature worktree to proceed without repeated approval: repository reads, file edits, artifact generation, local tests, linters, builds, and non-destructive local Git operations.
+- YOLO MUST allow any non-destructive project operation within the active repository and feature worktree to proceed without repeated approval, while network access, external side effects, destructive actions, and operations outside the writable workspace or granted authority retain host approval requirements.
+- Each recovery episode defaults to a maximum of 3 attempts and 30 minutes; configured overrides MUST remain finite.
+- Behavior shared by supported harnesses MUST have one canonical source of truth, and materialized artifacts MUST contain no unresolved harness directives or unavailable tool, command, path, or UI references.
+- Adding a future OpenCode adapter MUST NOT require copying or forking the complete shared Spex workflow set.
+- State operations MUST be implemented in dedicated scripts under `spex/scripts/`; this plugin adds no compiled artifacts or dependencies beyond the existing shell/Python tooling, `jq`, `yq`, `git`, and `specify` CLI.
+- Documentation and cross-references MUST be updated whenever commands, skills, extensions, hooks, or workflows change.
+
 ## Project Structure
 
 ### Documentation (this feature)
