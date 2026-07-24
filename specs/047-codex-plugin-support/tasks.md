@@ -67,7 +67,7 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 - [X] T014 [P] [US1] Add Codex manifest, marketplace inventory, plugin-root hook, and collision assertions in `tests/unit/test_codex_plugin_manifest.sh`
 - [X] T015 [P] [US1] Add initialization-profile transition, safer-fallback confirmation, refusal, and atomic-write tests in `tests/unit/test_initialization_profile.sh`
 - [X] T016 [P] [US1] Add recommended extension, dependency closure, explicit Teams opt-in, and refresh-preservation fixtures in `tests/unit/test_setup_profiles.sh`
-- [ ] T017 [P] [US1] Add clean install, init, refresh, and first-command integration scenarios in `tests/integration/test_install_codex.sh`
+- [X] T017 [P] [US1] Add clean install, init, refresh, and first-command integration scenarios in `tests/integration/test_install_codex.sh`
 
 ### Implementation for User Story 1
 
