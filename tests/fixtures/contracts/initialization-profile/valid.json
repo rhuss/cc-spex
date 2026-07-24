@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "active_harness": "codex",
+  "enabled_extensions": [
+    "spex",
+    "spex-gates",
+    "spex-worktrees"
+  ],
+  "requested_security": "autonomous",
+  "effective_security": "safe",
+  "capabilities": {
+    "hooks": {
+      "status": "native"
+    },
+    "subagents": {
+      "status": "degraded",
+      "fallback": "sequential execution"
+    }
+  },
+  "config_revision": 3,
+  "updated_at": "2026-07-24T10:15:30Z"
+}

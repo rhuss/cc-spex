@@ -1,0 +1,10 @@
+{
+  "repository_root": "/workspace/cc-spex",
+  "git_common_dir": "/workspace/cc-spex/.git",
+  "active_worktree": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support",
+  "feature_branch": "047-codex-plugin-support",
+  "spec_dir": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support/specs/047-codex-plugin-support",
+  "state_file": "/workspace/cc-spex/.claude/worktrees/047-codex-plugin-support/.specify/.spex-state",
+  "head_oid": "0123456789abcdef0123456789abcdef01234567",
+  "validated_at": "2026-07-24T10:15:30Z"
+}

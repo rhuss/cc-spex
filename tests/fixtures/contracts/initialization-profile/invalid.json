@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "active_harness": "codex",
+  "enabled_extensions": [
+    "spex-gates",
+    "spex-worktrees"
+  ],
+  "requested_security": "autonomous",
+  "effective_security": "safe",
+  "capabilities": {},
+  "config_revision": 0,
+  "updated_at": "not-a-timestamp"
+}
