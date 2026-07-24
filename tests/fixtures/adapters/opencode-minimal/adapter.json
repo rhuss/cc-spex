@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "id": "opencode",
+  "version": "0.1.0",
+  "manifest_root": ".opencode",
+  "config_root": ".opencode",
+  "command_map": "command-map.json",
+  "hook_adapter": "spex-plugin.ts",
+  "progress_adapter": null,
+  "subagent_adapter": null,
+  "capabilities": {
+    "installation": {
+      "status": "adapted"
+    },
+    "interaction": {
+      "status": "native"
+    },
+    "hooks": {
+      "status": "adapted"
+    },
+    "permissions": {
+      "status": "degraded",
+      "reason": "The fixture does not model project-wide OpenCode permission configuration.",
+      "fallback": "Retain the host's existing approval and sandbox policy."
+    },
+    "progress": {
+      "status": "degraded",
+      "reason": "No OpenCode-specific progress presenter is included in the minimal adapter.",
+      "fallback": "Emit ordered workflow transitions as concise transcript messages."
+    },
+    "context_lifecycle": {
+      "status": "adapted"
+    },
+    "worktrees": {
+      "status": "adapted"
+    },
+    "subagents": {
+      "status": "unavailable",
+      "reason": "The minimal adapter does not declare an OpenCode subagent integration.",
+      "fallback": "Run delegated work sequentially in the active validated worktree."
+    }
+  },
+  "permission_profiles": {
+    "safe": {
+      "inherit_host_policy": true
+    },
+    "autonomous": {
+      "inherit_host_policy": true,
+      "workspace_scope": "active_repository"
+    },
+    "yolo": {
+      "inherit_host_policy": true,
+      "workspace_scope": "active_repository"
+    }
+  }
+}
