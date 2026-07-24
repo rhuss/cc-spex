@@ -129,9 +129,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 - [X] T042 [US3] Implement RecoveryEpisode lifecycle, three-attempt/1,800-second defaults, UTC deadlines, attempt evidence, and terminal states in `spex/scripts/spex-ship-state.py`
 - [X] T043 [US3] Implement normalized finding, remedy, artifact-input, and result fingerprints with repeat/oscillation refusal in `spex/scripts/spex-ship-state.py`
-- [ ] T044 [US3] Replace retry-exhaustion pauses with bounded research, feasibility, revision, alternative, or decomposition recovery routing in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T045 [US3] Implement affected-artifact/gate invalidation and earliest-stage rewind after accepted recovery in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T046 [US3] Add focused authority-boundary pauses and terminal evidence/residual-risk/resume reporting in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [X] T044 [US3] Replace retry-exhaustion pauses with bounded research, feasibility, revision, alternative, or decomposition recovery routing in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [X] T045 [US3] Implement affected-artifact/gate invalidation and earliest-stage rewind after accepted recovery in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [X] T046 [US3] Add focused authority-boundary pauses and terminal evidence/residual-risk/resume reporting in `spex/extensions/spex/commands/speckit.spex.ship.md`
 - [ ] T047 [US3] Prevent stage completion, subagent return, context compression, and recoverable findings from ending ship in `spex/scripts/hooks/shared/stage-gate.sh` and `spex/extensions/spex/commands/speckit.spex.ship.md`
 
 **Checkpoint**: User Story 3 independently demonstrates continuous bounded recovery and deterministic terminal behavior.
