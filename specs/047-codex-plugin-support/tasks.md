@@ -76,10 +76,10 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 - [X] T020 [US1] Refactor extension selection to recommend gates, deep review, and worktrees while requiring explicit Teams, collaboration, and detach selection in `spex/setup.yml`
 - [X] T021 [US1] Implement InitializationProfile load, dependency validation, revisioning, and atomic persistence in `spex/scripts/spex-init-profile.py`
 - [X] T022 [US1] Implement Codex capability probing and Safe/Autonomous/YOLO mapping to trusted project configuration in `spex/scripts/adapters/codex/configure-project.py`
-- [ ] T023 [US1] Make `spex:init` preserve existing selections, require confirmation for safer fallback, and leave configuration unchanged on refusal/failure in `spex/skills/init/SKILL.md` and `spex/setup.yml`
+- [X] T023 [US1] Make `spex:init` preserve existing selections, require confirmation for safer fallback, and leave configuration unchanged on refusal/failure in `spex/skills/init/SKILL.md` and `spex/setup.yml`
 - [X] T024 [US1] Reduce the legacy bootstrap to harness-aware setup delegation and remove generic Claude-only readiness/status-line behavior in `spex/scripts/spex-init.sh`
-- [ ] T025 [US1] Merge sentinel-owned Codex guidance without replacing unrelated repository instructions in `spex/templates/agents-md/codex.md` and `spex/scripts/adapters/codex/configure-project.py`
-- [ ] T026 [US1] Add Codex plugin materialization and local install targets to `Makefile`
+- [X] T025 [US1] Merge sentinel-owned Codex guidance without replacing unrelated repository instructions in `spex/templates/agents-md/codex.md` and `spex/scripts/adapters/codex/configure-project.py`
+- [X] T026 [US1] Add Codex plugin materialization and local install targets to `Makefile`
 
 **Checkpoint**: User Story 1 is independently installable, refreshable, and acceptance-tested as the MVP.
 
