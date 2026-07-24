@@ -106,7 +106,13 @@ MANIFEST_FILE="$(mktemp "$OUTPUT_PARENT/.${OUTPUT_NAME}.manifest.XXXXXX")"
 
 cleanup() {
   [[ -z "$STAGE" || ! -e "$STAGE" ]] || rm -rf -- "$STAGE"
-  [[ -z "$BACKUP" || ! -e "$BACKUP" ]] || rm -rf -- "$BACKUP"
+  if [[ -n "$BACKUP" && -e "$BACKUP" ]]; then
+    if [[ ! -e "$OUTPUT" ]]; then
+      mv -- "$BACKUP" "$OUTPUT"
+    else
+      rm -rf -- "$BACKUP"
+    fi
+  fi
   rm -f -- "$LIST_FILE" "$INVENTORY_FILE" "$MANIFEST_FILE"
 }
 trap cleanup EXIT
