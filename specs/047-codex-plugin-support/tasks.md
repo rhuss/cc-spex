@@ -71,9 +71,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Create the native Codex plugin manifest and bundled hook declaration in `plugins/codex/.codex-plugin/plugin.json` and `plugins/codex/hooks/hooks.json`
-- [ ] T019 [P] [US1] Add the Codex plugin to the repository personal marketplace with a collision-free identity in `.codex-plugin/marketplace.json`
-- [ ] T020 [US1] Refactor extension selection to recommend gates, deep review, and worktrees while requiring explicit Teams, collaboration, and detach selection in `spex/setup.yml`
+- [X] T018 [P] [US1] Create the native Codex plugin manifest and bundled hook declaration in `plugins/codex/.codex-plugin/plugin.json` and `plugins/codex/hooks/hooks.json`
+- [X] T019 [P] [US1] Add the Codex plugin to the repository personal marketplace with a collision-free identity in `.codex-plugin/marketplace.json`
+- [X] T020 [US1] Refactor extension selection to recommend gates, deep review, and worktrees while requiring explicit Teams, collaboration, and detach selection in `spex/setup.yml`
 - [ ] T021 [US1] Implement InitializationProfile load, dependency validation, revisioning, and atomic persistence in `spex/scripts/spex-init-profile.py`
 - [ ] T022 [US1] Implement Codex capability probing and Safe/Autonomous/YOLO mapping to trusted project configuration in `spex/scripts/adapters/codex/configure-project.py`
 - [ ] T023 [US1] Make `spex:init` preserve existing selections, require confirmation for safer fallback, and leave configuration unchanged on refusal/failure in `spex/skills/init/SKILL.md` and `spex/setup.yml`
