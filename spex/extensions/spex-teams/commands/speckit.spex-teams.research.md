@@ -4,146 +4,67 @@ description: "Parallel codebase research for planning via parallel agent teams"
 
 # Teams Research: Parallel Codebase Exploration for Planning
 
-## Overview
+Research parallelism is read-only. It may share a repository view because it
+does not reconcile code, but it still requires explicit bounded assignments.
 
-This command orchestrates parallel codebase research using parallel agent teams during the plan phase. The lead session analyzes the spec to identify research topics, spawns research agents to explore different parts of the codebase simultaneously, collects their findings, and then generates the plan with comprehensive codebase knowledge.
+## Prerequisites and Fallback
 
-## Prerequisites
+Verify `{harness:agent-teams}` is available and that the validated feature
+worktree can be exposed read-only to subagents. If the capability, repository
+identity, or read-only restriction cannot be established, research every topic
+sequentially in the lead session. Never turn a research assignment into a
+writer merely to preserve parallelism.
 
-### Parallel Agent Teams Prerequisite
+## Identify Independent Topics
 
-{harness:agent-teams}
-Verify that the parallel agent teams feature is available on the current harness.
-If not available, fall back to single-session research for this session.
-{/harness:agent-teams}
+Read the relevant spec sections and identify focused questions about existing
+code, patterns, integration points, tests, and constraints. Add dependencies
+between topics when one requires another's answer.
 
-**If teams are available:** Proceed with team research.
+- With fewer than 2 independent topics, research sequentially.
+- With 2+ independent topics, dispatch at most four read assignments.
+- Merge related or overlapping questions rather than duplicating broad scans.
 
-## Phase 1: Research Topic Identification
+## Shared Read View
 
-Read the spec.md and identify what codebase knowledge is needed to create a solid plan.
+All research agents may use the **same shared read view** and the same explicit
+absolute `workdir`: the validated active feature worktree at its recorded HEAD.
+Set `kind: read`; do not create isolated writer branches or worktrees for
+research. Sharing is permitted only because every assignment prohibits file,
+index, branch, configuration, lockfile, and external mutations.
 
-### Identify Research Areas
+Each assignment receives only:
 
-From the spec, extract:
+- a unique assignment ID and one focused objective;
+- the relevant spec context, not the complete unrelated specification;
+- its topic/task IDs and dependencies;
+- the absolute shared read-view workdir;
+- the inherited effective security profile without escalation; and
+- required evidence: files examined, patterns, integration points,
+  constraints, and recommendations.
 
-1. **Existing code to modify**: Which files, modules, or packages does the spec reference or affect?
-2. **Patterns to follow**: What existing patterns in the codebase should the plan adopt?
-3. **Integration points**: Where does the new feature connect to existing code?
-4. **Technology questions**: What libraries, frameworks, or tools are already in use that are relevant?
+Before dispatch, record the shared HEAD and worktree status. After all agents
+return, verify that HEAD, index, and tracked/untracked status are unchanged. If
+any research agent mutated the shared view, reject that result, preserve the
+diagnostic evidence, restore no files automatically, and continue through the
+safe sequential fallback after the user-owned change is resolved.
 
-### Group into Independent Research Topics
-
-Organize the areas into independent research topics that can be explored in parallel. Each topic should be:
-
-- **Self-contained**: An agent can research it without needing results from other topics
-- **Focused**: Specific enough to produce actionable findings (not "explore the whole codebase")
-- **Relevant**: Directly needed for plan creation
-
-**Examples of good research topics:**
-- "Explore the authentication module: middleware chain, session handling, token validation patterns"
-- "Map the database schema and migration patterns for the user-related tables"
-- "Analyze the existing API endpoint structure: routing, validation, error handling conventions"
-- "Review the test infrastructure: test helpers, fixtures, integration test patterns"
-
-### Parallelism Assessment
-
-- **If 0-1 research topics exist** (spec is simple or self-contained): Skip team creation, research directly in the current session. Report: "Single research area, no parallelism benefit. Researching directly."
-- **If 2+ independent research topics exist**: Proceed with agent spawning.
-
-## Phase 2: Research Agent Spawning
-
-### Spawn Rules
-
-- Spawn **one agent per research topic**
-- **Maximum 4 research agents** (research is read-only, so less coordination overhead than implementation, but keep it bounded)
-- If more than 4 topics, merge the least complex ones together
-- **All agents are read-only**: They explore and report, they do not modify files
-
-### Agent Prompt Template
-
-Each research agent receives:
-
-```
-You are a codebase research agent for the [feature-name] feature planning phase.
-
-## Your Research Topic
-
-[Description of what to research]
-
-## Spec Context
-
-[Relevant sections of spec.md that motivate this research]
-
-## Research Instructions
-
-1. Explore the relevant code thoroughly using Read, Grep, and Glob tools
-2. Document your findings in a structured format:
-   - **Files examined**: List the key files you looked at
-   - **Patterns found**: Describe coding patterns, conventions, and structures
-   - **Integration points**: Where new code would connect to existing code
-   - **Constraints discovered**: Anything that limits or shapes the implementation approach
-   - **Recommendations**: Suggest how the plan should handle this area
-3. Be specific: include file paths, function names, and line references
-4. Do NOT modify any files. This is a read-only research mission.
-5. When done, send your findings back to the lead.
-```
-
-### Spawning Process
-
-Create an agent team for parallel research:
-
-```
-Create an agent team for codebase research on [feature-name].
-
-Spawn [N] research agents:
-- Agent 1: [research topic description]
-- Agent 2: [research topic description]
-...
-
-Each agent should explore the codebase and report findings. Read-only, no file modifications.
-Wait for all agents to complete before proceeding.
-```
-
-## Phase 3: Findings Consolidation
-
-After all research agents report back:
-
-1. **Collect all findings** from teammate messages
-2. **Synthesize**: Identify common patterns across findings, resolve contradictions, note gaps
-3. **Build a research summary**: Organize findings by relevance to plan sections
-4. **Identify any remaining unknowns**: If research revealed new questions, note them for the plan's assumptions section
-
-## Phase 4: Plan Generation
-
-With research findings in hand, generate the plan:
-
-1. Use the consolidated research as input alongside the spec
-2. Reference specific files, patterns, and integration points discovered by agents
-3. The plan should reflect the actual codebase state, not assumptions
-4. Include a brief "Research Basis" note in the plan acknowledging what was explored
-
-Then proceed with normal plan-phase flow (review-spec if spex-gates extension is active, etc.).
-
-## Sequential Fallback
-
-When teams cannot be used (feature flag not active, single research topic, simple spec):
-
-Research the codebase directly in the current session, then generate the plan. This is the normal behavior when the teams extension is not active.
-
-## Multi-Agent Dispatch
-
-The parallel dispatch mechanism varies by harness:
+## Dispatch and Consolidation
 
 {harness:agent-teams-research-dispatch}
-Use the agent's team mechanism to spawn research agents.
-If the current harness does not support parallel dispatch, research all topics sequentially.
+Dispatch the independent read assignments against the explicit shared workdir.
+If the harness cannot guarantee read-only behavior, use sequential research.
 {/harness:agent-teams-research-dispatch}
 
-## Key Principles
+Wait for every research result. Consolidate only evidence relevant to the
+plan, resolve contradictions against repository sources, call out remaining
+unknowns, and cite concrete files/functions. The lead owns the resulting plan;
+research agents do not edit planning artifacts.
 
-- **Research is read-only**: Agents explore, they never modify files
-- **Lead consolidates and plans**: Research agents gather data, the lead makes design decisions
-- **Breadth over depth**: Better to have a broad understanding than deep knowledge of one area
-- **Graceful degradation**: Always fall back to single-session research if teams can't help
-- **Keep research focused**: Every research topic must tie back to a plan need from the spec
+## Key Invariants
+
+- Research shares a read view; concurrent implementation never does.
+- Every path is explicit and absolute.
+- Parallelism requires at least two genuinely independent topics.
+- Capability or safety uncertainty produces sequential fallback, not weaker
+  isolation.
