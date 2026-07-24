@@ -20,6 +20,10 @@ inputs:
     type: string
     default: "safe"
     prompt: "Security profile (Safe, Autonomous, or YOLO)"
+  fallback_confirmation:
+    type: string
+    default: "decline"
+    prompt: "Confirm a proposed safer security fallback (accept or decline)"
 
 steps:
   - id: check-version
@@ -88,6 +92,12 @@ steps:
     type: shell
     run: |
       SECURITY="{{ inputs.security }}"
+      PROFILE=".specify/spex-profile.yml"
+      # Keeping the default on refresh preserves the user's prior request.
+      if [ "$SECURITY" = "safe" ] && [ -f "$PROFILE" ]; then
+        SAVED_SECURITY=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("requested_security", ""))' "$PROFILE" 2>/dev/null || true)
+        [ -z "$SAVED_SECURITY" ] || SECURITY="$SAVED_SECURITY"
+      fi
       case "$SECURITY" in
         safe|autonomous|yolo) printf "%s" "$SECURITY" ;;
         *)
@@ -286,11 +296,14 @@ steps:
                 specify extension disable "$ext" 2>/dev/null || true
               fi
             done
-            printf "%s" "$ENABLED_LIST"
+            printf "spex %s" "$ENABLED_LIST" > .specify/.spex-extension-selection
+            cat .specify/.spex-extension-selection
       all:
         - id: ext-all-noop
           type: shell
-          run: printf "all"
+          run: |
+            printf "spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach" > .specify/.spex-extension-selection
+            cat .specify/.spex-extension-selection
       interactive:
         - id: ext-interactive-prompt
           type: prompt
@@ -319,7 +332,8 @@ steps:
               echo "No selection received; keeping recommended extensions." >&2
             elif [ "$RESPONSE" = "all" ]; then
               echo "All extensions enabled." >&2
-              printf "ok"
+              printf "spex spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach" > .specify/.spex-extension-selection
+              cat .specify/.spex-extension-selection
               exit 0
             fi
             OPTIONAL_EXTS="spex-gates spex-worktrees spex-deep-review spex-teams spex-collab spex-detach"
@@ -352,7 +366,8 @@ steps:
               fi
             done
             echo "Extension selection applied." >&2
-            printf "ok"
+            printf "spex %s" "$ENABLED_LIST" > .specify/.spex-extension-selection
+            cat .specify/.spex-extension-selection
     default:
       - id: ext-filter
         type: shell
@@ -397,7 +412,8 @@ steps:
               echo "Disabled: $ext" >&2
             fi
           done
-          printf "ok"
+          printf "spex %s" "$ENABLED_LIST" > .specify/.spex-extension-selection
+          cat .specify/.spex-extension-selection
 
   - id: adapt-commands
     type: shell
@@ -524,61 +540,140 @@ steps:
           echo "Extensions installed with neutral defaults." >&2
           echo "Use 'specify extension list' to see available extensions." >&2
 
-  - id: configure-permissions
-    type: if
-    condition: "{{ inputs.security }} != 'safe'"
-    then:
-      - id: permissions-dispatch
-        type: switch
-        expression: "{{ steps.detect-agent.output.stdout }}"
-        cases:
-          claude:
-            - id: claude-permissions
-              type: shell
-              run: |
-                LEVEL="{{ inputs.security }}"
-                SETTINGS=".claude/settings.json"
-                mkdir -p .claude
+  - id: configure-security
+    type: switch
+    expression: "{{ steps.detect-agent.output.stdout }}"
+    cases:
+      codex:
+        - id: codex-security
+          type: shell
+          run: |
+            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
+            ROOT=$(pwd -P)
+            REQUESTED="{{ steps.validate-security.output.stdout }}"
+            CONFIRMATION="{{ inputs.fallback_confirmation }}"
+            CONFIGURATOR="$SOURCE/scripts/adapters/codex/configure-project.py"
+            [ -f "$CONFIGURATOR" ] || { echo "ERROR: Codex configurator is unavailable" >&2; exit 1; }
 
-                if [ "$LEVEL" = "yolo" ]; then
-                  ALLOW='["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "Agent(*)", "WebFetch", "WebSearch", "EnterPlanMode", "ExitPlanMode", "EnterWorktree", "ExitWorktree"]'
-                  MODE='"bypassPermissions"'
-                else
-                  ALLOW='["Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]'
-                  MODE='null'
-                fi
+            # A persisted safer fallback was already explicitly accepted.
+            if [ "$CONFIRMATION" != "accept" ] && [ -f .specify/spex-profile.yml ]; then
+              SAVED=$(python3 -c 'import json; print(json.load(open(".specify/spex-profile.yml")).get("effective_security", ""))' 2>/dev/null || true)
+              SAVED_REQUESTED=$(python3 -c 'import json; print(json.load(open(".specify/spex-profile.yml")).get("requested_security", ""))' 2>/dev/null || true)
+              if [ "$SAVED_REQUESTED" = "$REQUESTED" ] && [ -n "$SAVED" ] && [ "$SAVED" != "$REQUESTED" ]; then
+                CONFIRMATION="accept"
+              fi
+            fi
 
-                if [ -f "$SETTINGS" ]; then
-                  TMP=$(mktemp)
-                  if [ "$MODE" = "null" ]; then
-                    jq --argjson allow "$ALLOW" '
-                      .permissions.allow = ((.permissions.allow // []) + $allow | unique)
-                    ' "$SETTINGS" > "$TMP"
-                  else
-                    jq --argjson allow "$ALLOW" --argjson mode "$MODE" '
-                      .permissions.allow = ((.permissions.allow // []) + $allow | unique) |
-                      .permissions.defaultMode = $mode
-                    ' "$SETTINGS" > "$TMP"
-                  fi
-                  mv "$TMP" "$SETTINGS"
-                else
-                  if [ "$MODE" = "null" ]; then
-                    jq -n --argjson allow "$ALLOW" '{permissions: {allow: $allow}}' > "$SETTINGS"
-                  else
-                    jq -n --argjson allow "$ALLOW" --argjson mode "$MODE" '{permissions: {defaultMode: $mode, allow: $allow}}' > "$SETTINGS"
-                  fi
-                fi
-                echo "Claude Code permissions configured ($LEVEL)" >&2
-          codex:
-            - id: codex-permissions
-              type: shell
-              run: |
-                echo "Codex permissions are managed via .codex/hooks.json (configured in adapt-harness step)" >&2
-          opencode:
-            - id: opencode-permissions
-              type: shell
-              run: |
-                echo "OpenCode permissions are managed via the spex-plugin.ts (configured in adapt-harness step)" >&2
+            CONFIRM_ARGS=""
+            [ "$CONFIRMATION" != "accept" ] || CONFIRM_ARGS="--confirm-fallback safe"
+            set +e
+            RESULT=$(python3 "$CONFIGURATOR" configure --root "$ROOT" --security "$REQUESTED" $CONFIRM_ARGS)
+            STATUS=$?
+            set -e
+            if [ "$STATUS" -eq 3 ]; then
+              echo "A safer security fallback requires explicit confirmation:" >&2
+              echo "$RESULT" | jq -r '"  requested: \(.requested_security)\n  proposed: \(.proposed_security)\n  reason: \(.reason)"' >&2
+              echo "Re-run with fallback_confirmation=accept, or decline to leave configuration unchanged." >&2
+              rm -f .specify/.spex-extension-selection .specify/.spex-security-result.json
+              exit 1
+            fi
+            [ "$STATUS" -eq 0 ] || { rm -f .specify/.spex-extension-selection; echo "$RESULT" >&2; exit "$STATUS"; }
+            printf "%s" "$RESULT" > .specify/.spex-security-result.json
+            cat .specify/.spex-security-result.json
+      claude:
+        - id: claude-security
+          type: shell
+          run: |
+            REQUESTED="{{ steps.validate-security.output.stdout }}"
+            jq -cn --arg security "$REQUESTED" '{
+              status: "configured",
+              requested_security: $security,
+              effective_security: $security,
+              config_changed: false,
+              capabilities: {permissions: {status: "native"}}
+            }' > .specify/.spex-security-result.json
+            cat .specify/.spex-security-result.json
+      opencode:
+        - id: opencode-security
+          type: shell
+          run: |
+            REQUESTED="{{ steps.validate-security.output.stdout }}"
+            if [ "$REQUESTED" != "safe" ] && [ "{{ inputs.fallback_confirmation }}" != "accept" ]; then
+              echo "OpenCode currently supports only the Safe profile; explicit fallback confirmation is required." >&2
+              rm -f .specify/.spex-extension-selection
+              exit 1
+            fi
+            jq -cn --arg requested "$REQUESTED" '{
+              status: "configured",
+              requested_security: $requested,
+              effective_security: "safe",
+              config_changed: false,
+              reason: (if $requested == "safe" then null else "OpenCode permission mapping is unavailable" end),
+              capabilities: {permissions: {status: "degraded", reason: "Project policy is retained", fallback: "safe"}}
+            }' > .specify/.spex-security-result.json
+            cat .specify/.spex-security-result.json
+    default:
+      - id: neutral-security
+        type: shell
+        run: |
+          REQUESTED="{{ steps.validate-security.output.stdout }}"
+          jq -cn --arg security "$REQUESTED" '{
+            status: "configured",
+            requested_security: $security,
+            effective_security: $security,
+            config_changed: false,
+            capabilities: {}
+          }' > .specify/.spex-security-result.json
+          cat .specify/.spex-security-result.json
+
+  - id: persist-initialization-profile
+    type: shell
+    run: |
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
+      ROOT=$(pwd -P)
+      trap 'rm -f .specify/.spex-security-result.json .specify/.spex-extension-selection' EXIT
+      PROFILE_TOOL="$SOURCE/scripts/spex-init-profile.py"
+      HARNESS="{{ steps.detect-agent.output.stdout }}"
+      REQUESTED="{{ steps.validate-security.output.stdout }}"
+      SECURITY_RESULT=$(cat .specify/.spex-security-result.json)
+      EFFECTIVE=$(printf "%s" "$SECURITY_RESULT" | jq -r '.effective_security')
+      CAPABILITIES=$(printf "%s" "$SECURITY_RESULT" | jq -c '.capabilities // {}')
+      EXTENSIONS=$(cat .specify/.spex-extension-selection)
+      EXPECTED=0
+      if [ -f .specify/spex-profile.yml ]; then
+        EXPECTED=$(python3 "$PROFILE_TOOL" load --root "$ROOT" | jq -r '.config_revision')
+      fi
+
+      set --
+      for extension in $EXTENSIONS; do
+        set -- "$@" --extension "$extension"
+      done
+      PROPOSAL=$(python3 "$PROFILE_TOOL" propose --root "$ROOT" --harness "$HARNESS" \
+        "$@" --requested-security "$REQUESTED" --effective-security "$EFFECTIVE" \
+        --capabilities-json "$CAPABILITIES") || exit 1
+      printf "%s" "$PROPOSAL" | python3 "$PROFILE_TOOL" validate --root "$ROOT" >/dev/null || exit 1
+
+      FALLBACK="decline"
+      [ "$REQUESTED" = "$EFFECTIVE" ] || FALLBACK="accept"
+      printf "%s" "$PROPOSAL" | python3 "$PROFILE_TOOL" persist --root "$ROOT" \
+        --expected-revision "$EXPECTED" --fallback-confirmation "$FALLBACK"
+
+  - id: setup-summary
+    type: shell
+    run: |
+      PROFILE=.specify/spex-profile.yml
+      python3 - "$PROFILE" <<'PY'
+      import json, sys
+      profile = json.load(open(sys.argv[1]))
+      print("Spex initialization complete")
+      print("  harness:", profile["active_harness"])
+      print("  extensions:", ", ".join(profile["enabled_extensions"]))
+      print("  requested security:", profile["requested_security"])
+      print("  effective security:", profile["effective_security"])
+      if profile["requested_security"] != profile["effective_security"]:
+          print("  safer fallback: confirmed")
+      print("  profile revision:", profile["config_revision"])
+      PY
 
   - id: configure-gitignore
     type: shell
