@@ -198,6 +198,21 @@ This runs Spec-Kit's `specify init`, installs seven bundled extensions (six enab
 
 In spex 6.0, a spec-kit setup workflow replaces the plugin-based init as the primary install path. The workflow is harness-agnostic (Claude Code, Codex, OpenCode) and executable from a single command:
 
+Codex users can also install the native personal plugin from a local clone:
+
+```bash
+marketplace=$(mktemp -d)
+user_home=$(mktemp -d)
+codex_home=$(mktemp -d)
+make install-codex-local CODEX_MARKETPLACE_ROOT="$marketplace" \
+  CODEX_USER_HOME="$user_home" CODEX_LOCAL_HOME="$codex_home"
+```
+
+The Claude and Codex distributions have separate manifests, marketplace
+identities, hooks, configuration roots, and caches, so both may be installed
+together. Harness-specific capability and safe-degradation declarations live
+under `spex/scripts/adapters/<harness>/capabilities.json`.
+
 ```bash
 # Run from a clone of the cc-spex repo
 specify workflow run spex/setup.yml

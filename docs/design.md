@@ -18,6 +18,16 @@ A Claude Code plugin that merges superpowers' process discipline with specificat
 
 ## Architecture
 
+### Harness distributions
+
+The canonical workflow core remains under `spex/`. Thin descriptors under
+`plugins/claude/` and `plugins/codex/` select a single adapter during
+materialization. Release validation rejects unresolved harness markers,
+foreign paths or tools, ambiguous identities, and undeclared degradation.
+Claude retains its status-line specialization; Codex uses project hooks,
+durable ProgressEvents, and native/transcript progress. The OpenCode adapter is
+a minimal proof that reuses the same workflow inventory without forking it.
+
 ```
 User Request
      ↓

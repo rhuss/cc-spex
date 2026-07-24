@@ -1,5 +1,14 @@
 # Testing Guide for cc-spex
 
+## Automated cross-harness gates
+
+Run `make test` for contract, materialization, lifecycle, recovery, progress,
+Teams fallback, and Claude/Codex/combined installation coverage. Run
+`make release-check` for the complete pre-tag path. All installation suites use
+disposable homes, marketplaces, caches, repositories, and worktrees; a missing
+optional client is reported as an explicit platform skip. macOS and Linux are
+the supported release platforms.
+
 This document provides a comprehensive testing plan to validate that the cc-spex plugin works as intended.
 
 ## Prerequisites

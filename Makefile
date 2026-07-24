@@ -1,4 +1,4 @@
-.PHONY: validate validate-contracts check-contract-deps materialize materialize-codex validate-materialized test-unit install install-codex-local uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
+.PHONY: validate validate-contracts check-contract-deps materialize materialize-codex validate-materialized test-unit test-install-claude test-install-codex test-install-combined test-lifecycle test-recovery test-progress test-teams test release-check install install-codex-local uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -85,6 +85,39 @@ test-unit: validate-contracts
 		JSON_SCHEMA_VALIDATOR="$(JSON_SCHEMA_VALIDATOR)" bash "$$test_script"; \
 	done
 
+test-install-claude:
+	@tests/integration/test_install_claude.sh
+
+test-install-codex:
+	@tests/integration/test_install_codex.sh
+
+test-install-combined:
+	@tests/integration/test_install_combined.sh
+
+test-lifecycle:
+	@tests/integration/test_worktree_lifecycle.sh
+
+test-recovery:
+	@tests/integration/test_ship_recovery.sh
+
+test-progress:
+	@tests/integration/test_codex_progress.sh
+
+test-teams:
+	@tests/integration/test_codex_teams.sh
+	@tests/integration/test_codex_teams_fallback.sh
+
+test: test-unit test-lifecycle test-recovery test-progress test-teams test-install-claude test-install-codex test-install-combined
+
+release-check: sync-scripts-check test
+	@stage_root=$$(mktemp -d "$${TMPDIR:-/tmp}/spex-release-check.XXXXXX"); \
+	trap 'rm -rf -- "$$stage_root"' EXIT; \
+	./spex/scripts/spex-materialize-plugin.sh --harness claude --output "$$stage_root/claude" >/dev/null; \
+	./spex/scripts/spex-materialize-plugin.sh --harness codex --output "$$stage_root/codex" >/dev/null; \
+	./spex/scripts/spex-validate-materialized.sh --harness claude --input "$$stage_root/claude" >/dev/null; \
+	./spex/scripts/spex-validate-materialized.sh --harness codex --input "$$stage_root/codex" >/dev/null; \
+	echo "Release check passed without creating a tag."
+
 migrate:
 	@# Remove old sdd plugin and marketplace from pre-3.0.0 installations
 	@if claude plugin list 2>/dev/null | grep -q "$(OLD_PLUGIN)"; then \
@@ -130,7 +163,7 @@ test-install:
 test-install-remote:
 	@./tests/test_marketplace_install.sh
 
-release: validate sync-scripts-check test-install
+release: validate release-check
 	@VERSION=$$(cat VERSION 2>/dev/null | tr -d '[:space:]'); \
 	if [ -z "$$VERSION" ]; then \
 		echo "Error: VERSION file not found or empty"; exit 1; \
@@ -143,15 +176,18 @@ release: validate sync-scripts-check test-install
 	fi; \
 	echo "Releasing v$$VERSION..."; \
 	echo ""; \
-	echo "Updating version to $$VERSION in marketplace.json, plugin.json, setup.yml, bundle.yml, and spex/VERSION..."; \
+	echo "Updating version to $$VERSION across Claude and Codex distributions, setup, and bundle inventories..."; \
 	tmp=$$(mktemp); \
 	jq --arg v "$$VERSION" '(.plugins[] | select(.name == "spex")).version = $$v' .claude-plugin/marketplace.json > "$$tmp" && mv "$$tmp" .claude-plugin/marketplace.json; \
 	tmp=$$(mktemp); \
 	jq --arg v "$$VERSION" '.version = $$v' spex/.claude-plugin/plugin.json > "$$tmp" && mv "$$tmp" spex/.claude-plugin/plugin.json; \
+	tmp=$$(mktemp); \
+	jq --arg v "$$VERSION" '.version = $$v' plugins/codex/.codex-plugin/plugin.json > "$$tmp" && mv "$$tmp" plugins/codex/.codex-plugin/plugin.json; \
 	sed -i.bak "s/^  version: \".*\"/  version: \"$$VERSION\"/" spex/setup.yml && rm -f spex/setup.yml.bak; \
 	sed -i.bak "s/^  version: \".*\"/  version: \"$$VERSION\"/" spex/bundle.yml && rm -f spex/bundle.yml.bak; \
+	sed -i.bak "s/^      version: \".*\"/      version: \"$$VERSION\"/" spex/bundle.yml && rm -f spex/bundle.yml.bak; \
 	echo "$$VERSION" > spex/VERSION; \
-	git add VERSION spex/VERSION .claude-plugin/marketplace.json spex/.claude-plugin/plugin.json spex/setup.yml spex/bundle.yml; \
+	git add VERSION spex/VERSION .claude-plugin/marketplace.json spex/.claude-plugin/plugin.json plugins/codex/.codex-plugin/plugin.json spex/setup.yml spex/bundle.yml; \
 	git commit -m "chore: bump version to $$VERSION"; \
 	echo "Creating tag v$$VERSION..."; \
 	git tag "v$$VERSION"; \
@@ -275,6 +311,11 @@ help:
 	@echo "  materialize-codex   - Build an external local Codex marketplace (requires CODEX_MARKETPLACE_ROOT)"
 	@echo "  validate-materialized - Validate staged Claude and Codex outputs (requires CLAUDE_OUT and CODEX_OUT)"
 	@echo "  test-unit           - Validate contracts and run all shell unit tests"
+	@echo "  test                - Run unit, lifecycle, recovery, Teams, progress, and install suites"
+	@echo "  test-install-claude - Run the isolated Claude installation suite"
+	@echo "  test-install-codex  - Run the isolated Codex installation suite"
+	@echo "  test-install-combined - Run the combined harness installation suite"
+	@echo "  release-check       - Run all pre-tag release gates without tagging"
 	@echo "  install-codex-local - Materialize and install Codex into explicit isolated home paths"
 	@echo "  install             - Install plugin (adds marketplace, installs/updates plugin)"
 	@echo "  uninstall           - Remove plugin and marketplace"

@@ -282,6 +282,10 @@ PR TITLE CONVENTIONS
 MULTI-AGENT SUPPORT
 
   spex works across Claude Code, Codex CLI, and OpenCode.
+  Claude and Codex are independently materialized and installable; their
+  manifests, hooks, configuration roots, marketplaces, and caches are disjoint.
+  Each adapter publishes capabilities.json with native, adapted, degraded, or
+  unavailable behavior and an explicit safe fallback for every reduction.
   Unified setup: specify workflow run spex/setup.yml
   Enforcement adapts to each agent's hook API.
 
