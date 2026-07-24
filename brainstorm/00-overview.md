@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 ## Sessions
 
@@ -16,6 +16,7 @@ Last updated: 2026-07-23
 | 31 | 2026-07-04 | plugin-discovery-fix | parked | - | [#7](https://github.com/rhuss/cc-spex/issues/7) |
 | 40 | 2026-07-15 | brainstorm-sync | active | 044 | - |
 | 41 | 2026-07-23 | smart-phase-splitting | active | - | - |
+| 42 | 2026-07-24 | first-class-codex-plugin | active | - | - |
 
 ## Open Threads
 
@@ -53,6 +54,12 @@ Last updated: 2026-07-23
 - What is the right minimum files-per-phase threshold for merging? (from #41)
 - Should file estimation also consider test files, or only production code? (from #41)
 - How to handle files shared across phases in the count? (from #41)
+- What canonical shared-source layout lets both marketplace manifests package one core without duplicating generated artifacts? (from #42)
+- Which Codex project configuration should implement Safe, Autonomous, and bounded-YOLO modes across supported versions? (from #42)
+- What finite recovery budget should ship use before declaring a genuine terminal failure? (from #42)
+- Should recovery spikes remain in the feature worktree or use disposable experimental worktrees? (from #42)
+- Which harness adaptations should be generation-time transforms versus adapter-owned files? (from #42)
+- What evidence should be required before Codex Teams graduates from experimental to recommended? (from #42)
 
 ## Parked Ideas
 
