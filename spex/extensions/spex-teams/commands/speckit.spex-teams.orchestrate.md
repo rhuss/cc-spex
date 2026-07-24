@@ -181,24 +181,118 @@ Wait for all teammates to complete before proceeding to review.
 
 After spawning teammates:
 
-1. **Wait for all teammates to finish** their assigned tasks
-2. **Do not implement tasks yourself** while teammates are working (coordinate only)
-3. **Monitor for stuck teammates**: if a teammate stops responding or errors, note the issue
-4. **Handle teammate failures**: if a teammate crashes mid-task, either:
-   - Spawn a replacement teammate for the remaining tasks
-   - Fall back to implementing the remaining tasks directly
+1. Record every dispatched `assignment_id`, workdir, branch, base commit, and
+   dependency edge in the lead's coordination state.
+2. **Wait for all assigned work** in the current runnable wave to return a
+   result or an explicit failed/unavailable outcome. Do not treat the first
+   successful writer as completion, and do not release a dependent while any
+   prerequisite assignment is running, unreviewed, rejected, or unresolved.
+3. **Do not implement tasks yourself** while teammates are working (coordinate
+   only). Monitor stuck teammates and request a final result/evidence report
+   before classifying an assignment as failed.
+4. Require each result to identify its `assignment_id`, status, commit OID(s),
+   changed-file inventory, evidence for every `required_evidence` item, checks,
+   summary, and residual risks. Missing evidence is a rejected result, not an
+   implicit success.
 
 ## Spec Guardian Review Loop
 
-When a teammate reports completion, the lead reviews their changes:
+Review every returned result independently before changing the feature branch:
 
-1. **Review changes**: Examine the teammate's commits and modified files
-2. **Run spec compliance check** via `speckit.spex-gates.review-code` against spec.md
-3. **If PASS**: Merge worktree changes, update tasks.md checkboxes to `[X]` for completed tasks
-4. **If FAIL**: Send feedback to the teammate with specific spec violations. The teammate fixes the issues and re-submits for review.
-5. **If 3+ failures on the same task**: Report to the user and pause. Do not continue retrying.
+1. **Schema and identity review**: Revalidate the original assignment against
+   `subagent-assignment.schema.json`. Match the result to its `assignment_id`,
+   recorded workdir/branch/base, and commit OIDs. Reject ambiguous or missing
+   identity.
+2. **Scope review**: Diff the recorded base through every returned commit.
+   Require the changed-file inventory to match the diff exactly and require all
+   changed paths to be within `allowed_files`, including contract/schema paths.
+   Reject unrelated changes, uncommitted mutations, and dependency changes not
+   authorized by the assignment.
+3. **Evidence review**: Evaluate every `required_evidence` entry against the
+   returned checks and artifacts. Record an explicit accepted/rejected decision
+   with reasons; a process exit code or teammate claim is not evidence by
+   itself.
+4. **Spec guardian review**: Run `speckit.spex-gates.review-code` against the
+   bounded `spec_context`, objective, task IDs, and relevant full specification.
+   Record the gate evidence and reject any material deviation.
+5. **Acceptance**: Mark a result `accepted` only when schema/identity, scope,
+   evidence, tests, and spec guardian review all pass. Otherwise mark it
+   `rejected`, send the concrete findings to the same teammate for an in-scope
+   correction, and repeat the entire review. After three failed reviews of the
+   same task, preserve the evidence and report the decision boundary instead of
+   continuing retries.
+
+Acceptance is a review decision only. It does not satisfy dependencies until
+accepted reconciliation has completed on the feature branch.
+
+## Accepted Reconciliation and Dependent Release
+
+After every prerequisite result in a runnable wave is accepted:
+
+1. Re-read the feature branch HEAD and verify it is the expected reconciliation
+   base. Fetch each accepted commit by exact OID from its isolated branch.
+2. Reconcile accepted commits one at a time in deterministic assignment order
+   using a non-interactive cherry-pick (or an equivalently auditable operation).
+   Before each commit, verify that its patch remains within `allowed_files`.
+3. After each reconciliation, rerun the assignment's focused checks plus all
+   affected shared contract and downstream tests. If reconciliation conflicts
+   or validation fails, abort only that in-progress integration, restore the
+   feature branch to its pre-integration state with a recoverable operation,
+   retain the accepted writer branch/commit/evidence, and classify it for
+   correction. Never auto-resolve an ambiguous conflict.
+4. Record the reconciled feature-branch OID and evidence. Only now may the lead
+   mark the assignment reconciled and update its completed task IDs.
+5. Evaluate the dependency graph again. **Dependent release** is permitted only
+   when every declared prerequisite is both accepted and reconciled into the
+   dependent's base. Create the dependent worktree from that reconciled OID and
+   validate its assignment again before dispatch. Acceptance without
+   reconciliation never releases a dependent.
 
 The lead never implements code directly. The lead's sole job during this phase is review and coordination.
+
+## Partial Failure, Replacement, and Sequential Degradation
+
+On a crash, timeout, rejected result, or partially completed assignment:
+
+1. **Preserve partial work** before replacement: record the failure status and
+   diagnostics, branch name, workdir, base and HEAD OIDs, changed-file
+   inventory, commits, uncommitted patch (if any), checks, and returned evidence.
+   Commit or otherwise store a recoverable evidence snapshot on the failed
+   assignment branch; never reconcile rejected partial changes into the feature
+   branch.
+2. Keep dependents blocked. Do not delete the failed branch or worktree while
+   evidence collection or salvage is incomplete.
+3. Generate a new bounded **replacement assignment** for only the remaining
+   objective. Give it a new `assignment_id`, the same effective security
+   profile, an explicit workdir, a reference to the failed assignment/evidence,
+   and revalidated dependencies, allowed files, and required evidence. A
+   replacement may inspect preserved evidence but must not silently inherit
+   rejected mutations.
+4. If a safe replacement cannot be dispatched, degrade to sequential execution
+   as a successful orchestration mode. Apply the same assignment scope,
+   security, evidence, spec review, acceptance, reconciliation, and dependency
+   gates; sequential mode is not permission to bypass them.
+
+## Safe Worktree Cleanup
+
+Run cleanup only after all accepted results are reconciled, all failure evidence
+is recoverable by branch/commit, and no dependent or review still needs the
+worktree:
+
+1. Verify the worktree is the exact recorded path and registered branch. Refuse
+   cleanup for an unresolved path, dirty writer, unrecorded commit, or the main
+   repository/feature checkout.
+2. For successful writers, confirm every accepted commit is reachable from the
+   feature branch. For failed/rejected writers, confirm partial evidence is
+   reachable from the preserved assignment branch.
+3. Use the repository's worktree command to **cleanup worktree** registrations
+   one explicit path at a time, then prune stale registrations. Never use a
+   recursive delete or a broad path/glob.
+4. Delete a temporary assignment branch only when its commits are reconciled or
+   preserved elsewhere and no audit evidence depends on it. Retaining a failed
+   evidence branch is valid cleanup.
+5. Report removed worktrees, retained evidence branches, reconciliation OIDs,
+   and any cleanup refusal. Cleanup failure does not invalidate accepted work.
 
 ## Sequential Fallback
 
@@ -228,6 +322,9 @@ If the current harness does not support parallel dispatch, execute tasks sequent
 
 ## Failure Handling
 
-- **Teammate crashes**: Spawn a replacement teammate for unfinished tasks, or implement directly if near the end of the work
-- **Merge conflicts**: Do NOT auto-resolve. Report the conflict to the user and wait for guidance
-- **Review deadlock (3+ attempts)**: Message the teammate to stop work, report the situation to the user, and pause orchestration
+- **Teammate crashes**: Preserve its partial work/evidence, then dispatch a
+  validated replacement or use the same gated protocol sequentially.
+- **Reconciliation conflicts**: Do NOT auto-resolve. Keep the source branch and
+  evidence, restore the pre-integration feature state, and report the conflict.
+- **Review deadlock (3+ attempts)**: Preserve the rejected results, message the
+  teammate to stop work, report the situation, and pause orchestration.
