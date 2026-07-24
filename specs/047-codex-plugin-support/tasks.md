@@ -199,8 +199,8 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 6
 
-- [ ] T066 [P] [US6] Create the thin Claude distribution descriptor while preserving current marketplace compatibility in `plugins/claude/adapter.json`
-- [ ] T067 [P] [US6] Publish capability and degradation summaries for Claude, Codex, and OpenCode in `spex/scripts/adapters/claude/capabilities.json`, `spex/scripts/adapters/codex/capabilities.json`, and `spex/scripts/adapters/opencode/capabilities.json`
+- [X] T066 [P] [US6] Create the thin Claude distribution descriptor while preserving current marketplace compatibility in `plugins/claude/adapter.json`
+- [X] T067 [P] [US6] Publish capability and degradation summaries for Claude, Codex, and OpenCode in `spex/scripts/adapters/claude/capabilities.json`, `spex/scripts/adapters/codex/capabilities.json`, and `spex/scripts/adapters/opencode/capabilities.json`
 - [ ] T068 [US6] Make unresolved markers, unavailable commands, foreign paths, and identity collisions fatal during release in `spex/scripts/spex-validate-materialized.sh`
 - [ ] T069 [US6] Extend version synchronization and package inventories across both distributions in `Makefile`, `VERSION`, `spex/VERSION`, `spex/setup.yml`, and `spex/bundle.yml`
 - [ ] T070 [US6] Add `test-install-claude`, `test-install-codex`, `test-install-combined`, aggregate `test`, and pre-tag cross-harness gates to `Makefile`
