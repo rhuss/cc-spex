@@ -146,8 +146,8 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 4
 
-- [ ] T048 [P] [US4] Add ordered ProgressEvent schema, sequence, transition-kind, and fallback tests in `tests/unit/test_progress_events.py`
-- [ ] T049 [P] [US4] Add Codex transcript/native presentation and no-Claude-statusline initialization scenarios in `tests/integration/test_codex_progress.sh`
+- [X] T048 [P] [US4] Add ordered ProgressEvent schema, sequence, transition-kind, and fallback tests in `tests/unit/test_progress_events.py`
+- [X] T049 [P] [US4] Add Codex transcript/native presentation and no-Claude-statusline initialization scenarios in `tests/integration/test_codex_progress.sh`
 
 ### Implementation for User Story 4
 
