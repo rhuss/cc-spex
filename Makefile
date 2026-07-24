@@ -1,4 +1,4 @@
-.PHONY: validate validate-contracts check-contract-deps materialize validate-materialized test-unit install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
+.PHONY: validate validate-contracts check-contract-deps materialize materialize-codex validate-materialized test-unit install install-codex-local uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -31,6 +31,42 @@ materialize:
 	@test -n "$(OUT)" || { echo "Error: OUT is required and must be an absolute directory path" >&2; exit 2; }
 	@case "$(OUT)" in /*) ;; *) echo "Error: OUT must be an absolute directory path" >&2; exit 2;; esac
 	@./spex/scripts/spex-materialize-plugin.sh --harness "$(HARNESS)" --output "$(OUT)"
+
+materialize-codex:
+	@test -n "$(CODEX_MARKETPLACE_ROOT)" || { echo "Error: CODEX_MARKETPLACE_ROOT is required" >&2; exit 2; }
+	@case "$(CODEX_MARKETPLACE_ROOT)" in /*) ;; *) echo "Error: CODEX_MARKETPLACE_ROOT must be an absolute directory path" >&2; exit 2;; esac
+	@test "$(CODEX_MARKETPLACE_ROOT)" != "/" || { echo "Error: refusing to use filesystem root as CODEX_MARKETPLACE_ROOT" >&2; exit 2; }
+	@test -d "$(CODEX_MARKETPLACE_ROOT)" || { echo "Error: CODEX_MARKETPLACE_ROOT must already exist" >&2; exit 2; }
+	@root=$$(cd "$(CODEX_MARKETPLACE_ROOT)" && pwd -P); repo=$$(pwd -P); \
+	case "$$root/" in "$$repo/"*) echo "Error: CODEX_MARKETPLACE_ROOT must be outside the repository" >&2; exit 2;; esac; \
+	mkdir -p "$$root/.codex-plugin" "$$root/.agents/plugins" "$$root/plugins"; \
+	cp .codex-plugin/marketplace.json "$$root/.codex-plugin/marketplace.json"; \
+	cp .codex-plugin/marketplace.json "$$root/.agents/plugins/marketplace.json"; \
+	./spex/scripts/spex-materialize-plugin.sh --harness codex --output "$$root/plugins/codex"
+
+install-codex-local:
+	@test -n "$(CODEX_USER_HOME)" || { echo "Error: CODEX_USER_HOME is required for an isolated install" >&2; exit 2; }
+	@test -n "$(CODEX_LOCAL_HOME)" || { echo "Error: CODEX_LOCAL_HOME is required for an isolated install" >&2; exit 2; }
+	@case "$(CODEX_USER_HOME)" in /*) ;; *) echo "Error: CODEX_USER_HOME must be an absolute directory path" >&2; exit 2;; esac
+	@case "$(CODEX_LOCAL_HOME)" in /*) ;; *) echo "Error: CODEX_LOCAL_HOME must be an absolute directory path" >&2; exit 2;; esac
+	@test "$(CODEX_USER_HOME)" != "/" -a "$(CODEX_LOCAL_HOME)" != "/" || { echo "Error: refusing to use filesystem root as a Codex home" >&2; exit 2; }
+	@test -d "$(CODEX_USER_HOME)" || { echo "Error: CODEX_USER_HOME must already exist" >&2; exit 2; }
+	@test -d "$(CODEX_LOCAL_HOME)" || { echo "Error: CODEX_LOCAL_HOME must already exist" >&2; exit 2; }
+	@user_home=$$(cd "$(CODEX_USER_HOME)" && pwd -P); local_home=$$(cd "$(CODEX_LOCAL_HOME)" && pwd -P); repo=$$(pwd -P); \
+	case "$$user_home/" in "$$repo/"*) echo "Error: CODEX_USER_HOME must be outside the repository" >&2; exit 2;; esac; \
+	case "$$local_home/" in "$$repo/"*) echo "Error: CODEX_LOCAL_HOME must be outside the repository" >&2; exit 2;; esac
+	@command -v codex >/dev/null 2>&1 || { echo "Error: codex CLI is required" >&2; exit 1; }
+	@command -v jq >/dev/null 2>&1 || { echo "Error: jq is required" >&2; exit 1; }
+	@codex plugin marketplace add --help >/dev/null 2>&1 && codex plugin add --help >/dev/null 2>&1 || \
+		{ echo "Error: installed Codex CLI does not support personal plugin marketplaces" >&2; exit 1; }
+	@$(MAKE) --no-print-directory materialize-codex CODEX_MARKETPLACE_ROOT="$(CODEX_MARKETPLACE_ROOT)"
+	@set -e; \
+	marketplace=$$(jq -er '.name | select(length > 0)' "$(CODEX_MARKETPLACE_ROOT)/.agents/plugins/marketplace.json"); \
+	plugin=$$(jq -er '.name | select(length > 0)' "$(CODEX_MARKETPLACE_ROOT)/plugins/codex/.codex-plugin/plugin.json"); \
+	HOME="$(CODEX_USER_HOME)" CODEX_HOME="$(CODEX_LOCAL_HOME)" \
+		codex plugin marketplace add "$(CODEX_MARKETPLACE_ROOT)" --json | jq -e .; \
+	HOME="$(CODEX_USER_HOME)" CODEX_HOME="$(CODEX_LOCAL_HOME)" \
+		codex plugin add "$$plugin@$$marketplace" --json | jq -e .
 
 validate-materialized:
 	@test -n "$(CLAUDE_OUT)" || { echo "Error: CLAUDE_OUT is required and must be an absolute directory path" >&2; exit 2; }
@@ -236,8 +272,10 @@ help:
 	@echo "  validate            - Validate plugin manifests"
 	@echo "  validate-contracts  - Validate feature contracts against their JSON metaschema"
 	@echo "  materialize         - Stage a harness plugin (requires HARNESS and absolute OUT)"
+	@echo "  materialize-codex   - Build an external local Codex marketplace (requires CODEX_MARKETPLACE_ROOT)"
 	@echo "  validate-materialized - Validate staged Claude and Codex outputs (requires CLAUDE_OUT and CODEX_OUT)"
 	@echo "  test-unit           - Validate contracts and run all shell unit tests"
+	@echo "  install-codex-local - Materialize and install Codex into explicit isolated home paths"
 	@echo "  install             - Install plugin (adds marketplace, installs/updates plugin)"
 	@echo "  uninstall           - Remove plugin and marketplace"
 	@echo "  reinstall           - Full uninstall and reinstall"
