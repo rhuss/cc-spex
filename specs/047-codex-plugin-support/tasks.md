@@ -105,9 +105,9 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 - [X] T033 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
 - [X] T034 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
 - [X] T035 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
-- [ ] T036 [US2] Require ship resume, spec discovery, stage advancement, and post-delegation continuation to consume validated FeatureContext in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T037 [US2] Resolve Codex hook state and project paths from validated workflow context and Git root in `spex/scripts/adapters/codex/context-hook.py` and `spex/scripts/adapters/codex/pretool-gate.py`
-- [ ] T038 [US2] Sync canonical state/worktree scripts into owning extensions and update the inventory in `Makefile`
+- [X] T036 [US2] Require ship resume, spec discovery, stage advancement, and post-delegation continuation to consume validated FeatureContext in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [X] T037 [US2] Resolve Codex hook state and project paths from validated workflow context and Git root in `spex/scripts/adapters/codex/context-hook.py` and `spex/scripts/adapters/codex/pretool-gate.py`
+- [X] T038 [US2] Sync canonical state/worktree scripts into owning extensions and update the inventory in `Makefile`
 
 **Checkpoint**: User Story 2 passes all transfer, conflict, resume, and 100-run isolation scenarios independently.
 
