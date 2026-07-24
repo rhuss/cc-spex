@@ -1,4 +1,4 @@
-.PHONY: validate validate-contracts check-contract-deps install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
+.PHONY: validate validate-contracts check-contract-deps materialize validate-materialized test-unit install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -15,7 +15,7 @@ validate:
 	claude plugin validate ./spex/
 
 check-contract-deps:
-	@command -v "$(JSON_SCHEMA_VALIDATOR)" >/dev/null 2>&1 || { \
+	@command -v "$(word 1,$(JSON_SCHEMA_VALIDATOR))" >/dev/null 2>&1 || { \
 		echo "Error: $(JSON_SCHEMA_VALIDATOR) is required for JSON Schema validation." >&2; \
 		echo "Install it with: python3 -m pip install check-jsonschema" >&2; \
 		exit 1; \
@@ -24,6 +24,31 @@ check-contract-deps:
 validate-contracts: check-contract-deps
 	@test -n "$(CONTRACT_SCHEMAS)" || { echo "Error: no contract schemas found" >&2; exit 1; }
 	$(JSON_SCHEMA_VALIDATOR) --check-metaschema $(CONTRACT_SCHEMAS)
+
+materialize:
+	@test -n "$(HARNESS)" || { echo "Error: HARNESS is required (claude, codex, or opencode)" >&2; exit 2; }
+	@case "$(HARNESS)" in claude|codex|opencode) ;; *) echo "Error: HARNESS must be claude, codex, or opencode" >&2; exit 2;; esac
+	@test -n "$(OUT)" || { echo "Error: OUT is required and must be an absolute directory path" >&2; exit 2; }
+	@case "$(OUT)" in /*) ;; *) echo "Error: OUT must be an absolute directory path" >&2; exit 2;; esac
+	@./spex/scripts/spex-materialize-plugin.sh --harness "$(HARNESS)" --output "$(OUT)"
+
+validate-materialized:
+	@test -n "$(CLAUDE_OUT)" || { echo "Error: CLAUDE_OUT is required and must be an absolute directory path" >&2; exit 2; }
+	@test -n "$(CODEX_OUT)" || { echo "Error: CODEX_OUT is required and must be an absolute directory path" >&2; exit 2; }
+	@case "$(CLAUDE_OUT)" in /*) ;; *) echo "Error: CLAUDE_OUT must be an absolute directory path" >&2; exit 2;; esac
+	@case "$(CODEX_OUT)" in /*) ;; *) echo "Error: CODEX_OUT must be an absolute directory path" >&2; exit 2;; esac
+	@test "$(CLAUDE_OUT)" != "$(CODEX_OUT)" || { echo "Error: CLAUDE_OUT and CODEX_OUT must be different directories" >&2; exit 2; }
+	@./spex/scripts/spex-validate-materialized.sh --harness claude --input "$(CLAUDE_OUT)"
+	@./spex/scripts/spex-validate-materialized.sh --harness codex --input "$(CODEX_OUT)"
+
+test-unit: validate-contracts
+	@set -e; \
+	tests=$$(find tests/unit -maxdepth 1 -type f -name 'test_*.sh' | LC_ALL=C sort); \
+	test -n "$$tests" || { echo "Error: no unit test scripts found" >&2; exit 1; }; \
+	for test_script in $$tests; do \
+		echo "Running $$test_script..."; \
+		JSON_SCHEMA_VALIDATOR="$(JSON_SCHEMA_VALIDATOR)" bash "$$test_script"; \
+	done
 
 migrate:
 	@# Remove old sdd plugin and marketplace from pre-3.0.0 installations
@@ -210,6 +235,9 @@ help:
 	@echo "Available targets:"
 	@echo "  validate            - Validate plugin manifests"
 	@echo "  validate-contracts  - Validate feature contracts against their JSON metaschema"
+	@echo "  materialize         - Stage a harness plugin (requires HARNESS and absolute OUT)"
+	@echo "  validate-materialized - Validate staged Claude and Codex outputs (requires CLAUDE_OUT and CODEX_OUT)"
+	@echo "  test-unit           - Validate contracts and run all shell unit tests"
 	@echo "  install             - Install plugin (adds marketplace, installs/updates plugin)"
 	@echo "  uninstall           - Remove plugin and marketplace"
 	@echo "  reinstall           - Full uninstall and reinstall"
