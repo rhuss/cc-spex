@@ -173,7 +173,8 @@ release: validate sync-scripts-check test-install
 	echo "Release v$$VERSION complete. VERSION bumped to $$NEXT_VERSION."
 
 # Script inventory: which canonical scripts (in spex/scripts/) belong to which extensions
-SCRIPTS_spex := spex-flow-state.sh spex-ship-state.sh spex-ship-state.py spex-ship-statusline.sh spex-finish-context.sh spex-worktree-cwd.sh
+SCRIPTS_spex_state_worktree := spex-ship-state.py spex-ship-state.sh spex-worktree-cwd.sh
+SCRIPTS_spex := spex-finish-context.sh spex-flow-state.sh spex-ship-statusline.sh $(SCRIPTS_spex_state_worktree)
 SCRIPTS_spex_gates := spex-flow-state.sh spex-closeout-gate.sh
 SCRIPTS_spex_collab := spex-flow-state.sh spex-triage-state.sh sanitize-gh-json.py
 SCRIPTS_spex_deep_review := spex-flow-state.sh
@@ -187,7 +188,7 @@ sync-scripts:
 		if [ -z "$$scripts" ]; then \
 			echo "Error: empty script list for extension '$$ext'"; exit 1; \
 		fi; \
-		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null); do \
+		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null | LC_ALL=C sort); do \
 			relpath=$${actual#spex/extensions/$$ext/scripts/}; \
 			found=false; \
 			for script in $$scripts; do \
@@ -243,7 +244,7 @@ sync-scripts-check:
 				fail=1; \
 			fi; \
 		done; \
-		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null); do \
+		for actual in $$(find "spex/extensions/$$ext/scripts" -type f 2>/dev/null | LC_ALL=C sort); do \
 			relpath=$${actual#spex/extensions/$$ext/scripts/}; \
 			found=false; \
 			for script in $$scripts; do \
