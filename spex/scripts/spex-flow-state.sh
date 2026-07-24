@@ -16,6 +16,16 @@
 set -euo pipefail
 
 STATE_FILE="${SHIP_STATE_FILE:-.specify/.spex-state}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROGRESS_FILE="${SPEX_PROGRESS_FILE:-$(dirname "$STATE_FILE")/.spex-progress.jsonl}"
+
+emit_progress() {
+  local kind="$1" status="$2" message="$3" stage="${4:-flow}"
+  python3 "$SCRIPT_DIR/spex-ship-state.py" progress-emit \
+    --state-file "$STATE_FILE" --event-log "$PROGRESS_FILE" \
+    --kind "$kind" --status "$status" --message "$message" --stage "$stage" \
+    >/dev/null || echo "progress unavailable after persisted flow transition" >&2
+}
 
 is_flow() {
   [ -f "$STATE_FILE" ] && jq -e '.mode == "flow"' "$STATE_FILE" >/dev/null 2>&1
@@ -62,7 +72,9 @@ do_create() {
 
   mkdir -p "$(dirname "$STATE_FILE")"
 
+  local existing_flow=false
   if is_flow; then
+    existing_flow=true
     # Merge: preserve gate fields, update branch and spec_dir
     local tmp
     tmp=$(mktemp)
@@ -103,23 +115,32 @@ EOF
 EOF
     fi
   fi
+  if [ "$existing_flow" = true ]; then
+    emit_progress normal updated "Flow context updated" specify
+  else
+    emit_progress normal started "Flow started" specify
+  fi
 }
 
 do_running() {
   local phase="${1:-}"
   if [ "$phase" = "done" ]; then
     update_state '.running = ""'
+    emit_progress normal succeeded "Flow phase completed" flow
   elif [ -n "$phase" ]; then
     update_state "$(printf '.running = "%s"' "$phase")"
+    emit_progress normal updated "Flow phase started: $phase" "$phase"
   fi
 }
 
 do_clarified() {
   update_state '.clarified = true | .running = ""'
+  emit_progress normal succeeded "Clarification completed" clarify
 }
 
 do_implemented() {
   update_state '.implemented = true | .running = ""'
+  emit_progress delegated succeeded "Implementation completed" implement
 }
 
 do_gate() {
@@ -136,6 +157,7 @@ do_gate() {
   ensure_flow
   if is_flow; then
     update_state "$(printf '."%s" = true | .running = ""' "$field")"
+    emit_progress normal succeeded "$gate gate passed" "$gate"
     echo "$gate gate: updated"
   elif [ -f "$STATE_FILE" ]; then
     echo "$gate gate: skipped (mode=$(jq -r '.mode // "unknown"' "$STATE_FILE" 2>/dev/null))" >&2
@@ -143,6 +165,9 @@ do_gate() {
 }
 
 do_cleanup() {
+  if is_flow; then
+    emit_progress complete succeeded "Flow completed" flow
+  fi
   rm -f "$STATE_FILE"
 }
 

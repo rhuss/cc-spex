@@ -32,6 +32,14 @@ STATUSES = {
 }
 BRANCH_PATTERN = re.compile(r"^[0-9]{3}-[a-z0-9-]+$")
 OID_PATTERN = re.compile(r"^[0-9a-f]{40,64}$")
+PROGRESS_SCHEMA_VERSION = "1.0.0"
+PROGRESS_FIELDS = {
+    "schema_version", "workflow_id", "sequence", "timestamp", "stage",
+    "kind", "status", "message", "objective", "attempt",
+}
+REQUIRED_PROGRESS_FIELDS = PROGRESS_FIELDS - {"objective", "attempt"}
+PROGRESS_KINDS = {"normal", "delegated", "recovery", "pause", "complete"}
+PROGRESS_STATUSES = {"started", "updated", "succeeded", "failed", "paused"}
 
 
 class StateError(Exception):
@@ -149,6 +157,160 @@ def validate_workflow_state(state):
     _timestamp(state["created_at"], "created_at")
     _timestamp(state["updated_at"], "updated_at")
     return state
+
+
+def validate_progress_event(event):
+    _require(isinstance(event, dict), "progress event must be an object")
+    fields = set(event)
+    _require(not (REQUIRED_PROGRESS_FIELDS - fields),
+             "progress event is missing required fields: {}".format(
+                 ", ".join(sorted(REQUIRED_PROGRESS_FIELDS - fields))))
+    _require(not (fields - PROGRESS_FIELDS),
+             "progress event contains unknown fields: {}".format(
+                 ", ".join(sorted(fields - PROGRESS_FIELDS))))
+    _require(event["schema_version"] == PROGRESS_SCHEMA_VERSION,
+             "progress schema_version must be {}".format(PROGRESS_SCHEMA_VERSION))
+    _require(isinstance(event["workflow_id"], str) and len(event["workflow_id"]) >= 8,
+             "progress workflow_id must contain at least eight characters")
+    _require(isinstance(event["sequence"], int) and not isinstance(event["sequence"], bool)
+             and event["sequence"] >= 1, "progress sequence must be a positive integer")
+    _timestamp(event["timestamp"], "progress timestamp")
+    _require(isinstance(event["stage"], str) and event["stage"].strip(),
+             "progress stage must be nonempty")
+    _require(event["kind"] in PROGRESS_KINDS, "progress kind is invalid")
+    _require(event["status"] in PROGRESS_STATUSES, "progress status is invalid")
+    _require(isinstance(event["message"], str) and event["message"].strip(),
+             "progress message must be nonempty")
+    if "objective" in event:
+        _require(event["objective"] is None or isinstance(event["objective"], str),
+                 "progress objective must be a string or null")
+    if "attempt" in event:
+        _require(event["attempt"] is None or (
+            isinstance(event["attempt"], int) and not isinstance(event["attempt"], bool)
+            and event["attempt"] >= 1), "progress attempt must be a positive integer or null")
+    _require(event["kind"] != "pause" or event["status"] == "paused",
+             "pause progress events must have paused status")
+    _require(event["kind"] != "complete" or event["status"] == "succeeded",
+             "complete progress events must have succeeded status")
+    return event
+
+
+def _decode_progress_events(raw, path):
+    events = []
+    for line_number, line in enumerate(raw.splitlines(), 1):
+        if not line.strip():
+            raise StateError("blank line in progress event log {} at line {}".format(path, line_number))
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise StateError("invalid progress event log {} at line {}: {}".format(
+                path, line_number, error)) from error
+        validate_progress_event(event)
+        _require(event["sequence"] == line_number,
+                 "progress event sequence is not contiguous at line {}".format(line_number))
+        if events:
+            _require(event["workflow_id"] == events[0]["workflow_id"],
+                     "progress event log contains multiple workflow IDs")
+        events.append(event)
+    return events
+
+
+def read_progress_events(path):
+    source = Path(path)
+    if not source.exists():
+        return []
+    try:
+        raw = source.read_text(encoding="utf-8")
+    except OSError as error:
+        raise StateError("cannot read progress event log {}: {}".format(source, error)) from error
+    return _decode_progress_events(raw, source)
+
+
+def emit_progress_event(state_path, event_log_path, kind, status, message, timestamp,
+                        objective=None, attempt=None):
+    state = read_workflow_state(state_path)
+    template = {
+        "schema_version": PROGRESS_SCHEMA_VERSION,
+        "workflow_id": state["workflow_id"],
+        "sequence": 1,
+        "timestamp": timestamp,
+        "stage": state["stage"],
+        "kind": kind,
+        "status": status,
+        "message": message,
+    }
+    if objective is not None:
+        template["objective"] = objective
+    if attempt is not None:
+        template["attempt"] = attempt
+    validate_progress_event(template)
+
+    return _append_progress_event(event_log_path, template)
+
+
+def _append_progress_event(event_log_path, template):
+    validate_progress_event(template)
+    destination = Path(event_log_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(destination, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        with os.fdopen(descriptor, "r+", encoding="utf-8", closefd=False) as handle:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            raw = handle.read()
+            events = _decode_progress_events(raw, destination)
+            if events:
+                _require(events[0]["workflow_id"] == template["workflow_id"],
+                         "progress event log belongs to another workflow")
+            event = dict(template)
+            event["sequence"] = len(events) + 1
+            validate_progress_event(event)
+            handle.seek(0, os.SEEK_END)
+            handle.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+            handle.flush()
+            os.fsync(descriptor)
+            return event
+    finally:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.close(descriptor)
+
+
+def progress_transcript(event):
+    validate_progress_event(event)
+    message = " ".join(event["message"].split())
+    suffix = []
+    if event.get("objective"):
+        suffix.append("objective={}".format(" ".join(event["objective"].split())))
+    if event.get("attempt") is not None:
+        suffix.append("attempt {}".format(event["attempt"]))
+    details = " ({})".format(", ".join(suffix)) if suffix else ""
+    return "[{}] {} {}/{}: {}{}".format(
+        event["sequence"], event["stage"], event["kind"], event["status"], message, details)
+
+
+def _transition_progress(previous, current):
+    recovery = current.get("recovery")
+    if current["status"] == "paused_authority":
+        return "pause", "paused", "Workflow paused for authority", None, None
+    if current["status"] == "completed":
+        return "complete", "succeeded", "Workflow completed", None, None
+    if current["status"].startswith("failed_"):
+        objective = recovery.get("objective") if recovery else None
+        return ("recovery" if recovery else "normal", "failed",
+                "Workflow transition failed: {}".format(current["status"]), objective,
+                len(recovery.get("attempts", [])) if recovery and recovery.get("attempts") else None)
+    if current["status"] == "recovering":
+        objective = recovery.get("objective") if recovery else None
+        attempts = recovery.get("attempts", []) if recovery else []
+        if previous.get("status") != "recovering":
+            return "recovery", "started", "Recovery started", objective, None
+        return "recovery", "updated", "Recovery progress persisted", objective, len(attempts) or None
+    if previous.get("stage") != current["stage"]:
+        return ("normal", "succeeded", "Advanced from {} to {}".format(
+            previous.get("stage"), current["stage"]), None, None)
+    return "normal", "updated", "Workflow state updated", None, None
 
 
 def _canonical_text(value):
@@ -408,10 +570,12 @@ def write_workflow_state(path, state, *, expected_revision):
     directory.mkdir(parents=True, exist_ok=True)
     directory_fd = os.open(directory, os.O_RDONLY)
     temporary = None
+    previous = None
     try:
         fcntl.flock(directory_fd, fcntl.LOCK_EX)
         if destination.is_file():
-            current_revision = read_workflow_state(destination)["revision"]
+            previous = read_workflow_state(destination)
+            current_revision = previous["revision"]
         else:
             current_revision = 0
         _require(current_revision == expected_revision,
@@ -429,6 +593,19 @@ def write_workflow_state(path, state, *, expected_revision):
             os.replace(temporary, destination)
             temporary = None
             os.fsync(directory_fd)
+            # Keep the state-directory lock through projection so concurrent
+            # revisions cannot append their events out of transition order.
+            if previous is not None:
+                kind, status, message, objective, attempt = _transition_progress(previous, state)
+                try:
+                    emit_progress_event(
+                        destination, destination.with_name(".spex-progress.jsonl"),
+                        kind, status, message, state["updated_at"],
+                        objective=objective, attempt=attempt,
+                    )
+                except (OSError, StateError) as error:
+                    print("progress unavailable after persisted revision {}: {}".format(
+                        state["revision"], error), file=sys.stderr)
         except Exception:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
@@ -885,6 +1062,41 @@ def do_resume(args):
     emit_json(state)
 
 
+def do_progress_emit(args):
+    if "--help" in args:
+        print("Usage: spex-ship-state.py progress-emit --state-file <path> --event-log <path> --kind <kind> --status <status> --message <message> [--stage <stage>]")
+        return
+    state_path = Path(_option(args, "--state-file", required=True))
+    event_log = _option(args, "--event-log", required=True)
+    kind = _option(args, "--kind", required=True)
+    status = _option(args, "--status", required=True)
+    message = _option(args, "--message", required=True)
+    stage = _option(args, "--stage")
+    try:
+        with state_path.open(encoding="utf-8") as handle:
+            state = json.load(handle)
+    except (OSError, json.JSONDecodeError) as error:
+        raise StateError("cannot read flow state {}: {}".format(state_path, error)) from error
+    _require(isinstance(state, dict) and state.get("mode") == "flow",
+             "progress-emit requires persisted flow state")
+    branch = state.get("feature_branch")
+    _require(isinstance(branch, str) and branch, "flow state feature_branch is required")
+    identity = "{}:{}".format(state_path.resolve(), branch)
+    workflow_id = "flow-{}".format(hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16])
+    event = {
+        "schema_version": PROGRESS_SCHEMA_VERSION,
+        "workflow_id": workflow_id,
+        "sequence": 1,
+        "timestamp": now_iso(),
+        "stage": stage or state.get("running") or "flow",
+        "kind": kind,
+        "status": status,
+        "message": message,
+    }
+    persisted = _append_progress_event(event_log, event)
+    print(progress_transcript(persisted))
+
+
 COMMANDS = {
     "create": lambda a: do_create(a),
     "advance": lambda a: do_advance(),
@@ -899,6 +1111,7 @@ COMMANDS = {
     "resolve": do_resolve,
     "validate": do_validate,
     "resume": do_resume,
+    "progress-emit": do_progress_emit,
 }
 
 if __name__ == "__main__":
