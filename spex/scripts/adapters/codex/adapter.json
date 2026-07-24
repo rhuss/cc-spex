@@ -13,7 +13,14 @@
     "interaction": { "status": "native" },
     "hooks": { "status": "adapted" },
     "permissions": { "status": "adapted" },
-    "progress": { "status": "adapted" },
+    "progress": {
+      "status": "adapted"
+    },
+    "status_line": {
+      "status": "unavailable",
+      "reason": "The Claude custom status line is not a Codex surface.",
+      "fallback": "Use native task progress or ordered transcript updates."
+    },
     "context_lifecycle": { "status": "adapted" },
     "worktrees": { "status": "adapted" },
     "subagents": { "status": "native" }
