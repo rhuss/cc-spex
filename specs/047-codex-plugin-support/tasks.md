@@ -216,10 +216,10 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 - [X] T072 [P] Update cross-references for specialized Codex ship and init surfaces in `spex/extensions/spex/commands/speckit.spex.ship.md`, `spex/skills/init/SKILL.md`, and `README.md`
 - [X] T073 [P] Add migration guidance from legacy Claude-only setup and old `standard|yolo|none` inputs in `docs/codex-plugin-migration.md`
-- [ ] T074 Run all scenarios from `specs/047-codex-plugin-support/quickstart.md` and record evidence in `specs/047-codex-plugin-support/validation.md`
+- [X] T074 Run all scenarios from `specs/047-codex-plugin-support/quickstart.md` and record evidence in `specs/047-codex-plugin-support/validation.md`
 - [X] T075 Run `make sync-scripts`, verify `make sync-scripts-check`, and inspect the resulting canonical-to-extension diff in `spex/extensions/`
-- [ ] T076 Run the aggregate unit, lifecycle, recovery, materialization, and three installation suites through `make test` and document any intentional platform skips in `TESTING.md`
-- [ ] T077 Run the full pre-release validation path without tagging through the release-check target in `Makefile`
+- [X] T076 Run the aggregate unit, lifecycle, recovery, materialization, and three installation suites through `make test` and document any intentional platform skips in `TESTING.md`
+- [X] T077 Run the full pre-release validation path without tagging through the release-check target in `Makefile`
 - [ ] T078 Run a controlled SC-001 usability acceptance with at least 20 representative Codex users, require at least 19 successful install/init/first-workflow completions without manual editing, and record anonymized results in `specs/047-codex-plugin-support/validation.md`
 - [X] T079 Define the supported Codex client matrix and assert each client reports every stage transition within the immediately following ProgressEvent in `TESTING.md` and `tests/integration/test_codex_progress.sh`
 - [X] T080 Add macOS and Linux CI jobs for Claude-only, Codex-only, and combined installation suites in `.github/workflows/test.yml`

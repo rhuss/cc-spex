@@ -21,6 +21,10 @@ pause, and completion transitions through both client modes and requires each
 transition to appear in the output produced for that immediately following
 ProgressEvent. Durable WorkflowState remains authoritative after interruption.
 
+The 2026-07-24 aggregate validation on macOS completed with no intentional
+platform skips: unit, lifecycle (100 runs), recovery, progress, Teams,
+Claude-only, Codex-only, and combined installation suites all passed.
+
 This document provides a comprehensive testing plan to validate that the cc-spex plugin works as intended.
 
 ## Prerequisites

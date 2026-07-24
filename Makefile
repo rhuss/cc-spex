@@ -1,4 +1,4 @@
-.PHONY: validate validate-contracts check-contract-deps materialize materialize-codex validate-materialized test-unit test-install-claude test-install-codex test-install-combined test-lifecycle test-recovery test-progress test-teams test release-check install install-codex-local uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
+.PHONY: validate validate-contracts check-contract-deps materialize materialize-codex validate-materialized test-unit test-install-claude test-install-codex test-install-combined test-lifecycle test-worktree-lifecycle test-recovery test-progress test-teams test release-check install install-codex-local uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -96,6 +96,8 @@ test-install-combined:
 
 test-lifecycle:
 	@tests/integration/test_worktree_lifecycle.sh
+
+test-worktree-lifecycle: test-lifecycle
 
 test-recovery:
 	@tests/integration/test_ship_recovery.sh

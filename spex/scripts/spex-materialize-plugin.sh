@@ -141,6 +141,10 @@ if [[ -d "$DESCRIPTOR_DIR" ]]; then
   cp -R "$DESCRIPTOR_DIR/." "$STAGE/"
 fi
 
+# Developer-local configuration is never distributable, even for the harness
+# that owns the surrounding configuration root.
+rm -f -- "$STAGE/.claude/settings.local.json" "$STAGE/.codex/config.toml"
+
 # Remove manifest and project-configuration roots owned by other harnesses.
 # These can exist in the canonical compatibility tree but are never shared
 # distribution content.
@@ -177,6 +181,18 @@ awk -v selected="$HARNESS" '
   !skip { print }
 ' "$STAGE/setup.yml" > "$STAGE/setup.yml.selected"
 mv -- "$STAGE/setup.yml.selected" "$STAGE/setup.yml"
+
+if [[ -f "$STAGE/bundle.yml" ]]; then
+  awk -v selected="$HARNESS" '
+    /^  distributions:$/ { in_dist = 1; print; next }
+    in_dist && /^    - id: / {
+      name = $3
+      skip = (name != selected)
+    }
+    !skip { print }
+  ' "$STAGE/bundle.yml" > "$STAGE/bundle.yml.selected"
+  mv -- "$STAGE/bundle.yml.selected" "$STAGE/bundle.yml"
+fi
 
 # Runtime help describes the active distribution only. The canonical source
 # retains the cross-harness maintainer documentation.

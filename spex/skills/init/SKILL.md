@@ -7,7 +7,7 @@ description: Initialize or refresh Spex with harness-neutral extension and secur
 
 After initialization, use `speckit.spex.ship` for the continuous validated
 workflow. Codex receives native hooks and project security configuration here;
-Claude status-line support is not installed for Codex.
+foreign presentation integrations are not installed for Codex.
 
 Complete the workflow through its final report. A successful bootstrap alone is
 not completion.
