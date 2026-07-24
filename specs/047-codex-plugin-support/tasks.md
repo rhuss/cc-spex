@@ -100,13 +100,14 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Upgrade WorkflowState serialization, validation, revisions, FeatureContext, diagnostics, and machine-readable commands in `spex/scripts/spex-ship-state.py`
-- [ ] T032 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
-- [ ] T033 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
-- [ ] T034 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
-- [ ] T035 [US2] Require ship resume, spec discovery, stage advancement, and post-delegation continuation to consume validated FeatureContext in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T036 [US2] Resolve Codex hook state and project paths from validated workflow context and Git root in `spex/scripts/adapters/codex/context-hook.py` and `spex/scripts/adapters/codex/pretool-gate.py`
-- [ ] T037 [US2] Sync canonical state/worktree scripts into owning extensions and update the inventory in `Makefile`
+- [ ] T031 [US2] Implement WorkflowState v2 serialization, legacy migration, schema validation, optimistic revisions, and atomic persistence in `spex/scripts/spex-ship-state.py`
+- [ ] T032 [US2] Implement FeatureContext identity validation, candidate conflict diagnostics, and JSON-returning state command handlers in `spex/scripts/spex-ship-state.py`
+- [ ] T033 [US2] Expose `create`, `validate`, `resolve`, `transfer`, and `resume` state operations through `spex/scripts/spex-ship-state.sh`
+- [ ] T034 [US2] Return and validate machine-readable WorktreeIdentity during creation and implement two-phase state transfer in `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md`
+- [ ] T035 [US2] Replace environment/CWD authority with resolver output while retaining it only as a convenience optimization in `spex/scripts/spex-worktree-cwd.sh`
+- [ ] T036 [US2] Require ship resume, spec discovery, stage advancement, and post-delegation continuation to consume validated FeatureContext in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T037 [US2] Resolve Codex hook state and project paths from validated workflow context and Git root in `spex/scripts/adapters/codex/context-hook.py` and `spex/scripts/adapters/codex/pretool-gate.py`
+- [ ] T038 [US2] Sync canonical state/worktree scripts into owning extensions and update the inventory in `Makefile`
 
 **Checkpoint**: User Story 2 passes all transfer, conflict, resume, and 100-run isolation scenarios independently.
 
@@ -120,18 +121,18 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] Add RecoveryEpisode attempt/deadline transition and restart persistence tests in `tests/unit/test_ship_recovery.py`
-- [ ] T039 [P] [US3] Add repeated-finding, equivalent-remedy, artifact-hash, and A→B→A oscillation tests in `tests/unit/test_recovery_convergence.py`
-- [ ] T040 [P] [US3] Add downstream invalidation, earliest-stage rewind, authority pause, and terminal resume-report fixtures in `tests/integration/test_ship_recovery.sh`
+- [ ] T039 [P] [US3] Add RecoveryEpisode attempt/deadline transition and restart persistence tests in `tests/unit/test_ship_recovery.py`
+- [ ] T040 [P] [US3] Add repeated-finding, equivalent-remedy, artifact-hash, and A→B→A oscillation tests in `tests/unit/test_recovery_convergence.py`
+- [ ] T041 [P] [US3] Add downstream invalidation, earliest-stage rewind, authority pause, and terminal resume-report fixtures in `tests/integration/test_ship_recovery.sh`
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Implement RecoveryEpisode lifecycle, three-attempt/1,800-second defaults, UTC deadlines, attempt evidence, and terminal states in `spex/scripts/spex-ship-state.py`
-- [ ] T042 [US3] Implement normalized finding, remedy, artifact-input, and result fingerprints with repeat/oscillation refusal in `spex/scripts/spex-ship-state.py`
-- [ ] T043 [US3] Replace retry-exhaustion pauses with bounded research, feasibility, revision, alternative, or decomposition recovery routing in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T044 [US3] Implement affected-artifact/gate invalidation and earliest-stage rewind after accepted recovery in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T045 [US3] Add focused authority-boundary pauses and terminal evidence/residual-risk/resume reporting in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T046 [US3] Prevent stage completion, subagent return, context compression, and recoverable findings from ending ship in `spex/scripts/hooks/shared/stage-gate.sh` and `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T042 [US3] Implement RecoveryEpisode lifecycle, three-attempt/1,800-second defaults, UTC deadlines, attempt evidence, and terminal states in `spex/scripts/spex-ship-state.py`
+- [ ] T043 [US3] Implement normalized finding, remedy, artifact-input, and result fingerprints with repeat/oscillation refusal in `spex/scripts/spex-ship-state.py`
+- [ ] T044 [US3] Replace retry-exhaustion pauses with bounded research, feasibility, revision, alternative, or decomposition recovery routing in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T045 [US3] Implement affected-artifact/gate invalidation and earliest-stage rewind after accepted recovery in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T046 [US3] Add focused authority-boundary pauses and terminal evidence/residual-risk/resume reporting in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T047 [US3] Prevent stage completion, subagent return, context compression, and recoverable findings from ending ship in `spex/scripts/hooks/shared/stage-gate.sh` and `spex/extensions/spex/commands/speckit.spex.ship.md`
 
 **Checkpoint**: User Story 3 independently demonstrates continuous bounded recovery and deterministic terminal behavior.
 
@@ -145,15 +146,15 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 4
 
-- [ ] T047 [P] [US4] Add ordered ProgressEvent schema, sequence, transition-kind, and fallback tests in `tests/unit/test_progress_events.py`
-- [ ] T048 [P] [US4] Add Codex transcript/native presentation and no-Claude-statusline initialization scenarios in `tests/integration/test_codex_progress.sh`
+- [ ] T048 [P] [US4] Add ordered ProgressEvent schema, sequence, transition-kind, and fallback tests in `tests/unit/test_progress_events.py`
+- [ ] T049 [P] [US4] Add Codex transcript/native presentation and no-Claude-statusline initialization scenarios in `tests/integration/test_codex_progress.sh`
 
 ### Implementation for User Story 4
 
-- [ ] T049 [US4] Emit ProgressEvent records from every workflow and recovery state transition in `spex/scripts/spex-ship-state.py` and `spex/scripts/spex-flow-state.sh`
-- [ ] T050 [US4] Implement Codex native task-progress presentation with concise transcript fallback in `spex/scripts/adapters/codex/progress.py`
-- [ ] T051 [US4] Report and reconcile visible-progress/state disagreement during resume in `spex/extensions/spex/commands/speckit.spex.ship.md`
-- [ ] T052 [US4] Preserve Claude status-line behavior as an adapter specialization and exclude it from Codex materialization in `spex/scripts/adapters/claude/adapter.json` and `spex/scripts/adapters/codex/adapter.json`
+- [ ] T050 [US4] Emit ProgressEvent records from every workflow and recovery state transition in `spex/scripts/spex-ship-state.py` and `spex/scripts/spex-flow-state.sh`
+- [ ] T051 [US4] Implement Codex native task-progress presentation with concise transcript fallback in `spex/scripts/adapters/codex/progress.py`
+- [ ] T052 [US4] Report and reconcile visible-progress/state disagreement during resume in `spex/extensions/spex/commands/speckit.spex.ship.md`
+- [ ] T053 [US4] Preserve Claude status-line behavior as an adapter specialization and exclude it from Codex materialization in `spex/scripts/adapters/claude/adapter.json` and `spex/scripts/adapters/codex/adapter.json`
 
 **Checkpoint**: User Story 4 independently exposes accurate Codex progress and state-authoritative resume.
 
@@ -167,17 +168,17 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 5
 
-- [ ] T053 [P] [US5] Add assignment validation, dependency/file-conflict analysis, and minimum-context tests in `tests/unit/test_subagent_assignments.py`
-- [ ] T054 [P] [US5] Add isolated writer-worktree lifecycle, partial failure, reconciliation, and cleanup tests in `tests/integration/test_codex_teams.sh`
-- [ ] T055 [P] [US5] Add unavailable/unsafe/not-beneficial sequential fallback scenarios in `tests/integration/test_codex_teams_fallback.sh`
+- [ ] T054 [P] [US5] Add assignment validation, dependency/file-conflict analysis, and minimum-context tests in `tests/unit/test_subagent_assignments.py`
+- [ ] T055 [P] [US5] Add isolated writer-worktree lifecycle, partial failure, reconciliation, and cleanup tests in `tests/integration/test_codex_teams.sh`
+- [ ] T056 [P] [US5] Add unavailable/unsafe/not-beneficial sequential fallback scenarios in `tests/integration/test_codex_teams_fallback.sh`
 
 ### Implementation for User Story 5
 
-- [ ] T056 [US5] Generate bounded SubagentAssignment records with explicit workdirs, effective security, dependencies, allowed files, and evidence in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
-- [ ] T057 [US5] Implement dependency and file/contract conflict analysis before Codex dispatch in `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
-- [ ] T058 [US5] Allow shared read views for research and create isolated Git worktrees for concurrent writers in `spex/extensions/spex-teams/commands/speckit.spex-teams.research.md` and `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
-- [ ] T059 [US5] Require orchestrator wait, specification review, reconciliation, dependent release, and partial-work preservation in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
-- [ ] T060 [US5] Implement sequential fallback as a successful execution mode when capability or safety checks fail in `spex/scripts/adapters/codex/command-map.json`
+- [ ] T057 [US5] Generate bounded SubagentAssignment records with explicit workdirs, effective security, dependencies, allowed files, and evidence in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
+- [ ] T058 [US5] Implement dependency and file/contract conflict analysis before Codex dispatch in `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
+- [ ] T059 [US5] Allow shared read views for research and create isolated Git worktrees for concurrent writers in `spex/extensions/spex-teams/commands/speckit.spex-teams.research.md` and `spex/extensions/spex-teams/commands/speckit.spex-teams.implement.md`
+- [ ] T060 [US5] Require orchestrator wait, specification review, reconciliation, dependent release, and partial-work preservation in `spex/extensions/spex-teams/commands/speckit.spex-teams.orchestrate.md`
+- [ ] T061 [US5] Implement sequential fallback as a successful execution mode when capability or safety checks fail in `spex/scripts/adapters/codex/command-map.json`
 
 **Checkpoint**: User Story 5 independently proves safe parallel writers and lossless sequential fallback.
 
@@ -191,19 +192,19 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 ### Tests for User Story 6
 
-- [ ] T061 [P] [US6] Refactor existing Claude marketplace coverage into a harness-specific suite in `tests/integration/test_install_claude.sh`
-- [ ] T062 [P] [US6] Add combined manifest, cache, hook, generated-artifact, and project-config collision tests in `tests/integration/test_install_combined.sh`
-- [ ] T063 [P] [US6] Add OpenCode minimal-adapter reuse and explicit degradation tests in `tests/unit/test_opencode_adapter_fixture.sh`
-- [ ] T064 [P] [US6] Add released-artifact unresolved-marker and reciprocal foreign-reference scans in `tests/unit/test_harness_leakage.sh`
+- [ ] T062 [P] [US6] Refactor existing Claude marketplace coverage into a harness-specific suite in `tests/integration/test_install_claude.sh`
+- [ ] T063 [P] [US6] Add combined manifest, cache, hook, generated-artifact, and project-config collision tests in `tests/integration/test_install_combined.sh`
+- [ ] T064 [P] [US6] Add OpenCode minimal-adapter reuse and explicit degradation tests in `tests/unit/test_opencode_adapter_fixture.sh`
+- [ ] T065 [P] [US6] Add released-artifact unresolved-marker and reciprocal foreign-reference scans in `tests/unit/test_harness_leakage.sh`
 
 ### Implementation for User Story 6
 
-- [ ] T065 [P] [US6] Create the thin Claude distribution descriptor while preserving current marketplace compatibility in `plugins/claude/adapter.json`
-- [ ] T066 [P] [US6] Publish capability and degradation summaries for Claude, Codex, and OpenCode in `spex/scripts/adapters/claude/capabilities.json`, `spex/scripts/adapters/codex/capabilities.json`, and `spex/scripts/adapters/opencode/capabilities.json`
-- [ ] T067 [US6] Make unresolved markers, unavailable commands, foreign paths, and identity collisions fatal during release in `spex/scripts/spex-validate-materialized.sh`
-- [ ] T068 [US6] Extend version synchronization and package inventories across both distributions in `Makefile`, `VERSION`, `spex/VERSION`, `spex/setup.yml`, and `spex/bundle.yml`
-- [ ] T069 [US6] Add `test-install-claude`, `test-install-codex`, `test-install-combined`, aggregate `test`, and pre-tag cross-harness gates to `Makefile`
-- [ ] T070 [US6] Update marketplace installation, adapter architecture, capability degradation, and coexistence documentation in `README.md`, `spex/docs/help.md`, `docs/design.md`, and `TESTING.md`
+- [ ] T066 [P] [US6] Create the thin Claude distribution descriptor while preserving current marketplace compatibility in `plugins/claude/adapter.json`
+- [ ] T067 [P] [US6] Publish capability and degradation summaries for Claude, Codex, and OpenCode in `spex/scripts/adapters/claude/capabilities.json`, `spex/scripts/adapters/codex/capabilities.json`, and `spex/scripts/adapters/opencode/capabilities.json`
+- [ ] T068 [US6] Make unresolved markers, unavailable commands, foreign paths, and identity collisions fatal during release in `spex/scripts/spex-validate-materialized.sh`
+- [ ] T069 [US6] Extend version synchronization and package inventories across both distributions in `Makefile`, `VERSION`, `spex/VERSION`, `spex/setup.yml`, and `spex/bundle.yml`
+- [ ] T070 [US6] Add `test-install-claude`, `test-install-codex`, `test-install-combined`, aggregate `test`, and pre-tag cross-harness gates to `Makefile`
+- [ ] T071 [US6] Update marketplace installation, adapter architecture, capability degradation, and coexistence documentation in `README.md`, `spex/docs/help.md`, `docs/design.md`, and `TESTING.md`
 
 **Checkpoint**: User Story 6 independently proves shared-core maintenance, coexistence, and future-adapter extensibility.
 
@@ -213,12 +214,16 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 
 **Purpose**: Complete release-quality checks spanning all delivered stories.
 
-- [ ] T071 [P] Update cross-references for specialized Codex ship and init surfaces in `spex/extensions/spex/commands/speckit.spex.ship.md`, `spex/skills/init/SKILL.md`, and `README.md`
-- [ ] T072 [P] Add migration guidance from legacy Claude-only setup and old `standard|yolo|none` inputs in `docs/codex-plugin-migration.md`
-- [ ] T073 Run all scenarios from `specs/047-codex-plugin-support/quickstart.md` and record evidence in `specs/047-codex-plugin-support/validation.md`
-- [ ] T074 Run `make sync-scripts`, verify `make sync-scripts-check`, and inspect the resulting canonical-to-extension diff in `spex/extensions/`
-- [ ] T075 Run the aggregate unit, lifecycle, recovery, materialization, and three installation suites through `make test` and document any intentional platform skips in `TESTING.md`
-- [ ] T076 Run the full pre-release validation path without tagging through the release-check target in `Makefile`
+- [ ] T072 [P] Update cross-references for specialized Codex ship and init surfaces in `spex/extensions/spex/commands/speckit.spex.ship.md`, `spex/skills/init/SKILL.md`, and `README.md`
+- [ ] T073 [P] Add migration guidance from legacy Claude-only setup and old `standard|yolo|none` inputs in `docs/codex-plugin-migration.md`
+- [ ] T074 Run all scenarios from `specs/047-codex-plugin-support/quickstart.md` and record evidence in `specs/047-codex-plugin-support/validation.md`
+- [ ] T075 Run `make sync-scripts`, verify `make sync-scripts-check`, and inspect the resulting canonical-to-extension diff in `spex/extensions/`
+- [ ] T076 Run the aggregate unit, lifecycle, recovery, materialization, and three installation suites through `make test` and document any intentional platform skips in `TESTING.md`
+- [ ] T077 Run the full pre-release validation path without tagging through the release-check target in `Makefile`
+- [ ] T078 Run a controlled SC-001 usability acceptance with at least 20 representative Codex users, require at least 19 successful install/init/first-workflow completions without manual editing, and record anonymized results in `specs/047-codex-plugin-support/validation.md`
+- [ ] T079 Define the supported Codex client matrix and assert each client reports every stage transition within the immediately following ProgressEvent in `TESTING.md` and `tests/integration/test_codex_progress.sh`
+- [ ] T080 Add macOS and Linux CI jobs for Claude-only, Codex-only, and combined installation suites in `.github/workflows/test.yml`
+- [ ] T081 Capture the pre-feature Claude acceptance pass rate and fail validation when the post-feature rate is lower in `tests/integration/test_install_claude.sh` and `specs/047-codex-plugin-support/validation.md`
 
 ---
 
@@ -230,7 +235,7 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 - **Phase 2 Foundational**: Depends on Phase 1 and blocks all stories.
 - **US1 (Phase 3)**: Depends only on Phase 2; recommended MVP.
 - **US2 (Phase 4)**: Depends only on Phase 2, though US1 is needed for the complete installed Codex demonstration.
-- **US3 (Phase 5)**: Depends on US2's versioned state and resolver tasks T031–T035.
+- **US3 (Phase 5)**: Depends on US2's versioned state and resolver tasks T031–T036.
 - **US4 (Phase 6)**: Depends on US2 state transitions and US3 recovery transitions.
 - **US5 (Phase 7)**: Depends on US1 effective security profiles and US2 explicit worktree context.
 - **US6 (Phase 8)**: Depends on US1 distribution output; it can begin in parallel with US2–US5 after the US1 manifest/materializer integration is stable.
@@ -256,10 +261,11 @@ Setup → Foundation → US1 ───────────────┐
 - T002 and T003 can run beside T001; T006 and T007 can run together.
 - US1 test tasks T014–T017 are independent; manifest tasks T018–T019 can run together.
 - US2 test tasks T027–T030 are independent before state implementation begins.
-- US3 tests T038–T040 can run in parallel; T041–T042 share a file and must be sequential.
-- US4 tests T047–T048 can run in parallel.
-- US5 tests T053–T055 can run in parallel.
-- US6 tests T061–T064 and adapter declarations T065–T066 can run in parallel.
+- US3 tests T039–T041 can run in parallel; T042–T043 share a file and must be sequential.
+- US4 tests T048–T049 can run in parallel.
+- US5 tests T054–T056 can run in parallel.
+- US6 tests T062–T065 and adapter declarations T066–T067 can run in parallel.
+- T078–T081 are independent acceptance measurements and can run in parallel after their corresponding story suites exist.
 - Once US1 is stable, US2 and the early US6 coexistence work can proceed concurrently; US3/US4 and US5 follow the graph above.
 
 ## Parallel Execution Examples
@@ -285,33 +291,33 @@ T030: Build 100-run lifecycle suite in tests/integration/test_worktree_lifecycle
 ### User Story 3
 
 ```text
-T038: Test recovery budgets in tests/unit/test_ship_recovery.py
-T039: Test convergence fingerprints in tests/unit/test_recovery_convergence.py
-T040: Test recovery integration in tests/integration/test_ship_recovery.sh
+T039: Test recovery budgets in tests/unit/test_ship_recovery.py
+T040: Test convergence fingerprints in tests/unit/test_recovery_convergence.py
+T041: Test recovery integration in tests/integration/test_ship_recovery.sh
 ```
 
 ### User Story 4
 
 ```text
-T047: Test semantic progress events in tests/unit/test_progress_events.py
-T048: Test Codex presentation in tests/integration/test_codex_progress.sh
+T048: Test semantic progress events in tests/unit/test_progress_events.py
+T049: Test Codex presentation in tests/integration/test_codex_progress.sh
 ```
 
 ### User Story 5
 
 ```text
-T053: Test assignments and conflicts in tests/unit/test_subagent_assignments.py
-T054: Test isolated writers in tests/integration/test_codex_teams.sh
-T055: Test fallback in tests/integration/test_codex_teams_fallback.sh
+T054: Test assignments and conflicts in tests/unit/test_subagent_assignments.py
+T055: Test isolated writers in tests/integration/test_codex_teams.sh
+T056: Test fallback in tests/integration/test_codex_teams_fallback.sh
 ```
 
 ### User Story 6
 
 ```text
-T061: Build Claude install regression suite in tests/integration/test_install_claude.sh
-T062: Build combined install suite in tests/integration/test_install_combined.sh
-T063: Validate OpenCode proof adapter in tests/unit/test_opencode_adapter_fixture.sh
-T064: Scan harness leakage in tests/unit/test_harness_leakage.sh
+T062: Build Claude install regression suite in tests/integration/test_install_claude.sh
+T063: Build combined install suite in tests/integration/test_install_combined.sh
+T064: Validate OpenCode proof adapter in tests/unit/test_opencode_adapter_fixture.sh
+T065: Scan harness leakage in tests/unit/test_harness_leakage.sh
 ```
 
 ## Implementation Strategy

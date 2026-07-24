@@ -117,6 +117,38 @@ tests/
 
 **Structure Decision**: Keep `spex/` as the canonical workflow core and introduce thin, explicit distribution descriptors under `plugins/`. Materialization copies canonical content to a temporary staging directory, applies one adapter, validates it, and emits a distribution without mutating canonical sources. Existing Claude paths remain compatible during migration.
 
+### File Responsibility Map
+
+| Path | Responsibility |
+|---|---|
+| `.codex-plugin/marketplace.json` | Personal marketplace inventory and collision-free Codex plugin source. |
+| `plugins/codex/.codex-plugin/plugin.json` | Native Codex plugin identity, skills, and hook manifest. |
+| `plugins/codex/hooks/hooks.json` | Plugin-bundled Codex lifecycle hook declarations. |
+| `plugins/claude/adapter.json` | Thin Claude distribution descriptor preserving current marketplace compatibility. |
+| `spex/setup.yml` | Canonical interactive setup flow, extension choices, and profile orchestration. |
+| `spex/skills/init/SKILL.md` | Harness-neutral `spex:init` interaction and refresh contract. |
+| `spex/scripts/spex-init.sh` | Compatibility bootstrap that delegates to canonical setup. |
+| `spex/scripts/spex-init-profile.py` | InitializationProfile proposal, validation, revisioning, and atomic persistence. |
+| `spex/scripts/spex-materialize-plugin.sh` | Deterministic staging and adapter application without canonical-source mutation. |
+| `spex/scripts/spex-validate-materialized.sh` | Fail-closed schema, identity, inventory, marker, path, and foreign-reference validation. |
+| `spex/scripts/adapters/{claude,codex,opencode}/adapter.json` | Harness identity, capability, permission, hook, progress, and subagent mappings. |
+| `spex/scripts/adapters/{claude,codex,opencode}/capabilities.json` | Published native/adapted/degraded/unavailable capability reports. |
+| `spex/scripts/adapters/codex/configure-project.py` | Atomic Codex project config and sentinel-managed `AGENTS.md` updates. |
+| `spex/scripts/adapters/codex/{context-hook.py,pretool-gate.py}` | Codex hook I/O translation over shared enforcement and validated FeatureContext. |
+| `spex/scripts/adapters/codex/progress.py` | ProgressEvent-to-Codex native/transcript presentation. |
+| `spex/scripts/spex-ship-state.py` | WorkflowState v2 persistence, identity resolution, recovery transitions, and progress emission. |
+| `spex/scripts/spex-ship-state.sh` | Stable shell CLI for state operations and JSON results. |
+| `spex/scripts/spex-worktree-cwd.sh` | Convenience CWD recovery client; never the authority source. |
+| `spex/scripts/spex-flow-state.sh` | Flow-mode transitions and shared progress emission. |
+| `spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md` | Worktree creation, machine identity, and two-phase state transfer orchestration. |
+| `spex/extensions/spex/commands/speckit.spex.ship.md` | Continuous pipeline, recovery routing, cascade rewind, pause, and resume orchestration. |
+| `spex/extensions/spex-teams/commands/` | Assignment generation, independence checks, isolated dispatch, reconciliation, and fallback. |
+| `tests/fixtures/contracts/` | Valid and invalid examples for every design contract. |
+| `tests/unit/` | Contract, materialization, profile, state, recovery, progress, assignment, and leakage tests. |
+| `tests/integration/` | Harness installs, lifecycle fault injection, recovery, progress, Teams, and coexistence tests. |
+| `.github/workflows/test.yml` | macOS/Linux release-platform and harness-install matrix. |
+| `README.md`, `spex/docs/help.md`, `docs/design.md`, `TESTING.md` | User, architecture, capability, migration, and validation documentation. |
+
 ## Implementation Strategy
 
 ### Phase A — Distribution and initialization foundation
@@ -147,6 +179,30 @@ tests/
 3. Make sequential fallback normative when capability, independence, or isolation checks fail.
 4. Add Claude-only, Codex-only, combined-install, OpenCode-proof, leakage, idempotence, fault-injection, and 100-run lifecycle suites.
 5. Update Makefile/release/versioning/documentation so all distributions validate before tagging.
+
+### Recommended PR Slices
+
+1. **Distribution and initialization**: Foundation plus US1 (T001–T026).
+2. **State and autonomous recovery**: US2 and US3 (T027–T047).
+3. **Codex progress and Teams**: US4 and US5 (T048–T061).
+4. **Cross-harness release hardening**: US6, polish, and acceptance measurements (T062–T081).
+
+Each slice produces independently testable behavior, and later slices depend only on the stable contracts and explicit task ranges listed above.
+
+## Success-Criteria Measurement Matrix
+
+| Criterion | Measurement |
+|---|---|
+| SC-001 | Controlled acceptance with at least 20 representative Codex users; at least 19 must install, initialize recommended Safe settings, and invoke a first workflow without manual editing. |
+| SC-002 | `test_worktree_lifecycle.sh` executes 100 fault-injected runs and permits zero wrong-checkout mutations or advances. |
+| SC-003–005 | Recovery suites exercise every recoverable, terminal, budget, and oscillation fixture; no episode may exceed 3 attempts or 1,800 seconds by default. |
+| SC-006 | `TESTING.md` defines the supported Codex CLI, desktop-app, and IDE-extension matrix; each transition must appear in the immediately following ProgressEvent/presentation update. |
+| SC-007 | Materialized-artifact scanner permits zero unresolved markers or known foreign harness references. |
+| SC-008 | CI runs Claude-only, Codex-only, and combined installation suites on every supported platform: macOS and Linux. |
+| SC-009–010 | Teams suites require distinct writer worktrees, block dependents until acceptance, and complete every disabled/unavailable scenario sequentially. |
+| SC-011 | OpenCode fixture validates against the adapter contract while referencing the canonical workflow inventory rather than copying it. |
+| SC-012 | Record the pre-feature Claude acceptance pass rate and fail when the same post-feature suite reports a lower rate. |
+| SC-013 | Golden profile tests assert Safe, Autonomous, and YOLO permissions plus every retained approval boundary. |
 
 ## Risk Management
 
