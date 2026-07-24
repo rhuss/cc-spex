@@ -1,62 +1,80 @@
 #!/usr/bin/env bash
-# Recover CWD to the correct worktree directory.
-#
-# After subagents return in Claude Code, the shell CWD may be reset to
-# the main repo directory instead of the worktree. This script detects
-# the mismatch and outputs the correct path to cd into.
-#
-# With the default worktree location (.claude/worktrees/ inside the
-# project), CWD resets should not occur because the worktree is within
-# Claude Code's project boundary. This script serves as a safety net
-# for edge cases and for projects using external worktrees (base_path
-# set to ".." or another directory outside the project).
+# Print the validated active worktree when the caller's CWD needs recovery.
 #
 # Usage:
 #   WORKTREE_DIR=$(spex-worktree-cwd.sh)
 #   [ -n "$WORKTREE_DIR" ] && cd "$WORKTREE_DIR"
 #
-# Uses SHIP_STATE_FILE (absolute path set during pipeline init) to find
-# the worktree root. Falls back to git worktree detection if the env
-# var is not set.
-#
-# Output:
-#   - Prints the worktree path if CWD needs to change
-#   - Prints nothing if CWD is already correct or not in a worktree
-#   - Exit 0 always (safe to call unconditionally)
+# The workflow-state resolver is the sole authority. SHIP_STATE_FILE and the
+# caller's CWD may help that resolver discover candidates, but neither is
+# trusted as a destination until the resolver validates the full identity.
 set -euo pipefail
 
-# Strategy 1: Use SHIP_STATE_FILE absolute path
-if [ -n "${SHIP_STATE_FILE:-}" ] && [ -f "$SHIP_STATE_FILE" ]; then
-  TARGET=$(cd "$(dirname "$SHIP_STATE_FILE")/.." && pwd -P)
-  CURRENT=$(pwd -P)
-  if [ "$TARGET" != "$CURRENT" ]; then
-    echo "$TARGET"
-  fi
-  exit 0
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+STATE_TOOL="$SCRIPT_DIR/spex-ship-state.sh"
+
+refuse() {
+  local reason=$1
+  jq -cn --arg reason "$reason" \
+    '{status:"failed_validation",diagnostics:[{candidate:"spex-worktree-cwd",accepted:false,reasons:[$reason]}]}' >&2
+  exit 1
+}
+
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' '{"status":"failed_validation","diagnostics":[{"candidate":"spex-worktree-cwd","accepted":false,"reasons":["jq is required to validate resolver output"]}]}' >&2
+  exit 1
 fi
 
-# Strategy 2: Detect worktree from git
-GIT_DIR=$(git rev-parse --git-dir 2>/dev/null || echo "")
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-
-if [ -z "$GIT_DIR" ] || [ -z "$REPO_ROOT" ]; then
-  exit 0
+if [ ! -x "$STATE_TOOL" ]; then
+  refuse "workflow-state resolver is unavailable: $STATE_TOOL"
 fi
 
-# Check if we're supposed to be in a worktree
-if [ "$GIT_DIR" = "$REPO_ROOT/.git" ] || [ "$GIT_DIR" = ".git" ]; then
-  # Not in a worktree, or already at main repo. Check if a feature
-  # branch worktree exists that we should be in.
-  BRANCH=$(git branch --show-current 2>/dev/null || echo "")
-  if [ -z "$BRANCH" ] || ! echo "$BRANCH" | grep -qE '^[0-9]{3}-'; then
-    exit 0
-  fi
+ERROR_FILE=$(mktemp "${TMPDIR:-/tmp}/spex-worktree-cwd.XXXXXX")
+trap 'rm -f "$ERROR_FILE"' EXIT
 
-  # Feature branch but not in a worktree — check if a worktree exists for this branch
-  WORKTREE_PATH=$(git worktree list --porcelain 2>/dev/null | grep -B1 "branch refs/heads/$BRANCH" | head -1 | sed 's/^worktree //' || true)
-  if [ -n "$WORKTREE_PATH" ] && [ "$WORKTREE_PATH" != "$REPO_ROOT" ]; then
-    echo "$WORKTREE_PATH"
+set +e
+RESOLUTION=$("$STATE_TOOL" resolve 2>"$ERROR_FILE")
+RESOLVE_STATUS=$?
+set -e
+
+if [ "$RESOLVE_STATUS" -ne 0 ]; then
+  if printf '%s\n' "$RESOLUTION" | jq -e '.status == "failed_validation" and (.diagnostics | type == "array")' >/dev/null 2>&1; then
+    printf '%s\n' "$RESOLUTION" | jq -c . >&2
+  else
+    DETAIL=$(tr '\n' ' ' <"$ERROR_FILE")
+    refuse "workflow-state resolution failed${DETAIL:+: $DETAIL}"
   fi
+  exit "$RESOLVE_STATUS"
 fi
 
-exit 0
+if ! printf '%s\n' "$RESOLUTION" | jq -e \
+  '.context.active_worktree | type == "string" and startswith("/")' >/dev/null 2>&1; then
+  refuse "workflow-state resolver returned no absolute active_worktree"
+fi
+
+TARGET=$(printf '%s\n' "$RESOLUTION" | jq -r '.context.active_worktree')
+STATE_FILE=$(printf '%s\n' "$RESOLUTION" | jq -r '.context.state_file // empty')
+FEATURE_BRANCH=$(printf '%s\n' "$RESOLUTION" | jq -r '.context.feature_branch // empty')
+
+if [ ! -d "$TARGET" ]; then
+  refuse "resolved active_worktree is not a directory: $TARGET"
+fi
+
+CANONICAL_TARGET=$(cd "$TARGET" && pwd -P)
+if [ "$TARGET" != "$CANONICAL_TARGET" ]; then
+  refuse "resolved active_worktree is not canonical: $TARGET"
+fi
+if [ "$STATE_FILE" != "$CANONICAL_TARGET/.specify/.spex-state" ]; then
+  refuse "resolved state_file does not belong to active_worktree"
+fi
+
+GIT_ROOT=$(git -C "$CANONICAL_TARGET" rev-parse --show-toplevel 2>/dev/null || true)
+GIT_BRANCH=$(git -C "$CANONICAL_TARGET" branch --show-current 2>/dev/null || true)
+if [ "$GIT_ROOT" != "$CANONICAL_TARGET" ] || [ -z "$FEATURE_BRANCH" ] || [ "$GIT_BRANCH" != "$FEATURE_BRANCH" ]; then
+  refuse "resolved active_worktree no longer matches its validated git identity"
+fi
+
+CURRENT=$(pwd -P)
+if [ "$CANONICAL_TARGET" != "$CURRENT" ]; then
+  printf '%s\n' "$CANONICAL_TARGET"
+fi
