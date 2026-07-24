@@ -164,43 +164,107 @@ for candidate in "$STAGE/scripts/adapters"/*; do
   [[ "$(basename "$candidate")" == "$HARNESS" ]] || rm -rf -- "$candidate"
 done
 
-# Strip build-time and foreign-harness assets from the Codex runtime package.
-# The setup workflow is specialized to its Codex switch branch so installing
-# the package cannot expose Claude hooks or overwrite Codex guidance with a
-# foreign harness template.
+# Specialize setup to the selected harness. Shipping all switch branches leaks
+# foreign configuration paths even though only one branch can execute.
+awk -v selected="$HARNESS" '
+  /^  - id: adapt-harness$/ { in_adapt = 1 }
+  /^  - id: configure-security$/ { in_adapt = 0; skip = 0 }
+  in_adapt && /^      (claude|codex|opencode):$/ {
+    name = $1; sub(/:$/, "", name)
+    skip = (name != selected)
+    if (skip) next
+  }
+  !skip { print }
+' "$STAGE/setup.yml" > "$STAGE/setup.yml.selected"
+mv -- "$STAGE/setup.yml.selected" "$STAGE/setup.yml"
+
+# Runtime help describes the active distribution only. The canonical source
+# retains the cross-harness maintainer documentation.
+for help_file in "$STAGE/docs/help.md" "$STAGE/extensions/spex/docs/help.md"; do
+  [[ -f "$help_file" ]] || continue
+  awk -v selected="$HARNESS" '
+    /^MULTI-AGENT SUPPORT$/ {
+      print "HARNESS SUPPORT"
+      print ""
+      print "  This distribution is specialized for " selected "."
+      print "  Shared workflows are adapted and validated during materialization."
+      skip = 1
+      next
+    }
+    skip && /^BACKPRESSURE CONFIGURATION/ { skip = 0 }
+    !skip { print }
+  ' "$help_file" > "$help_file.selected"
+  mv -- "$help_file.selected" "$help_file"
+done
+
+# Strip foreign-harness runtime assets.
 if [[ "$HARNESS" == "codex" ]]; then
   rm -f -- \
     "$STAGE/hooks.json" \
     "$STAGE/scripts/spex-ship-statusline.sh" \
     "$STAGE/extensions/spex/scripts/spex-ship-statusline.sh" \
-    "$STAGE/scripts/spex-materialize-plugin.sh" \
-    "$STAGE/scripts/spex-validate-materialized.sh" \
     "$STAGE/templates/agents-md/claude.md" \
     "$STAGE/templates/agents-md/opencode.md" \
     "$STAGE/templates/skill-preamble/opencode-preamble.md"
-
-  awk '
-    /^  - id: adapt-harness$/ { in_adapt = 1 }
-    /^  - id: configure-security$/ { in_adapt = 0; skip = 0 }
-    in_adapt && /^      claude:$/ { skip = 1; next }
-    in_adapt && skip && /^      codex:$/ { skip = 0 }
-    in_adapt && /^      opencode:$/ { skip = 1; next }
-    !skip { print }
-  ' "$STAGE/setup.yml" > "$STAGE/setup.yml.codex"
-  mv -- "$STAGE/setup.yml.codex" "$STAGE/setup.yml"
 
   sed -i.bak 's/no AskUserQuestion, uses inline prompts/uses inline prompts/' \
     "$STAGE/scripts/adapters/codex/context-hook.py"
   sed -i.bak \
     's/Codex does NOT have the AskUserQuestion tool\. When presenting choices,/When presenting choices in Codex,/' \
     "$STAGE/templates/agents-md/codex.md"
+  sed -i.bak 's/Codex does NOT have the EnterWorktree tool\./Use Git commands to manage isolated workspaces./' \
+    "$STAGE/templates/agents-md/codex.md"
   rm -f -- \
     "$STAGE/scripts/adapters/codex/context-hook.py.bak" \
     "$STAGE/templates/agents-md/codex.md.bak"
+  rm -f -- "$STAGE/extensions/spex-teams/config-template.yml"
+  sed -i.bak 's#\.claude/skills/speckit-\*`, `\.claude/settings\.\*`, ##' \
+    "$STAGE/extensions/spex/commands/speckit.spex.ship.md"
+  rm -f -- "$STAGE/extensions/spex/commands/speckit.spex.ship.md.bak"
+elif [[ "$HARNESS" == "claude" ]]; then
+  rm -f -- \
+    "$STAGE/templates/agents-md/codex.md" \
+    "$STAGE/templates/agents-md/opencode.md" \
+    "$STAGE/templates/skill-preamble/opencode-preamble.md"
+elif [[ "$HARNESS" == "opencode" ]]; then
+  mkdir -p "$STAGE/.opencode/plugins"
+  cp "$STAGE/scripts/adapters/opencode/spex-plugin.ts" \
+    "$STAGE/.opencode/plugins/spex-plugin.ts"
+  rm -f -- \
+    "$STAGE/hooks.json" \
+    "$STAGE/scripts/spex-ship-statusline.sh" \
+    "$STAGE/extensions/spex/scripts/spex-ship-statusline.sh" \
+    "$STAGE/extensions/spex-teams/config-template.yml" \
+    "$STAGE/templates/agents-md/claude.md" \
+    "$STAGE/templates/agents-md/codex.md"
+  sed -i.bak 's#\.claude/skills/speckit-\*`, `\.claude/settings\.\*`, ##' \
+    "$STAGE/extensions/spex/commands/speckit.spex.ship.md"
+  sed -i.bak \
+    -e 's/Do NOT use AskUserQuestion (it does not exist on OpenCode)\./Use the native question interface./' \
+    -e 's/OpenCode does NOT have the EnterWorktree tool\./Use Git commands to manage isolated workspaces./' \
+    "$STAGE/templates/agents-md/opencode.md"
+  sed -i.bak 's/Use the \*\*question\*\* tool (NOT AskUserQuestion, which does not exist on OpenCode)/Use the **question** tool/' \
+    "$STAGE/templates/skill-preamble/opencode-preamble.md"
+  rm -f -- \
+    "$STAGE/extensions/spex/commands/speckit.spex.ship.md.bak" \
+    "$STAGE/templates/agents-md/opencode.md.bak" \
+    "$STAGE/templates/skill-preamble/opencode-preamble.md.bak"
+fi
+
+if [[ "$HARNESS" != "claude" ]]; then
+  sed -i.bak 's/Only applies to Agent tool/Only applies to the configured delegation tool/' \
+    "$STAGE/scripts/hooks/shared/teams-gate.sh"
+  rm -f -- "$STAGE/scripts/hooks/shared/teams-gate.sh.bak"
 fi
 
 "$STAGE/scripts/spex-adapt-commands.sh" \
   "$HARNESS" "$STAGE/extensions" "$STAGE/scripts/adapters"
+
+# Build-time tools are not part of any released runtime inventory.
+rm -f -- \
+  "$STAGE/scripts/spex-materialize-plugin.sh" \
+  "$STAGE/scripts/spex-validate-materialized.sh" \
+  "$STAGE/scripts/spex-adapt-commands.sh"
 
 SOURCE_DIGEST_AFTER="$(tree_digest "$SOURCE_ROOT")"
 [[ "$SOURCE_DIGEST_BEFORE" == "$SOURCE_DIGEST_AFTER" ]] ||
