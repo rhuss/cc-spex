@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "harness": "codex",
+  "adapter_version": "2.0.0",
+  "capabilities": {
+    "installation": {
+      "status": "native"
+    },
+    "interaction": {
+      "status": "native"
+    },
+    "hooks": {
+      "status": "adapted"
+    },
+    "permissions": {
+      "status": "adapted"
+    },
+    "progress": {
+      "status": "adapted"
+    },
+    "status_line": {
+      "status": "unavailable",
+      "reason": "The Claude custom status line is not a Codex surface.",
+      "fallback": "Use native task progress or ordered transcript updates."
+    },
+    "context_lifecycle": {
+      "status": "adapted"
+    },
+    "worktrees": {
+      "status": "adapted"
+    },
+    "subagents": {
+      "status": "native"
+    }
+  }
+}
