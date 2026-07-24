@@ -1,7 +1,10 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
+.PHONY: validate validate-contracts check-contract-deps install uninstall reinstall check-upstream test-hook test-install test-install-remote release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
+
+CONTRACT_SCHEMAS := $(sort $(wildcard specs/047-codex-plugin-support/contracts/*.schema.json))
+JSON_SCHEMA_VALIDATOR ?= check-jsonschema
 
 # Legacy names (pre-3.0.0)
 OLD_MARKETPLACE := sdd-plugin-development
@@ -10,6 +13,17 @@ OLD_PLUGIN := sdd@$(OLD_MARKETPLACE)
 validate:
 	claude plugin validate ./
 	claude plugin validate ./spex/
+
+check-contract-deps:
+	@command -v "$(JSON_SCHEMA_VALIDATOR)" >/dev/null 2>&1 || { \
+		echo "Error: $(JSON_SCHEMA_VALIDATOR) is required for JSON Schema validation." >&2; \
+		echo "Install it with: python3 -m pip install check-jsonschema" >&2; \
+		exit 1; \
+	}
+
+validate-contracts: check-contract-deps
+	@test -n "$(CONTRACT_SCHEMAS)" || { echo "Error: no contract schemas found" >&2; exit 1; }
+	$(JSON_SCHEMA_VALIDATOR) --check-metaschema $(CONTRACT_SCHEMAS)
 
 migrate:
 	@# Remove old sdd plugin and marketplace from pre-3.0.0 installations
@@ -195,6 +209,7 @@ check-upstream:
 help:
 	@echo "Available targets:"
 	@echo "  validate            - Validate plugin manifests"
+	@echo "  validate-contracts  - Validate feature contracts against their JSON metaschema"
 	@echo "  install             - Install plugin (adds marketplace, installs/updates plugin)"
 	@echo "  uninstall           - Remove plugin and marketplace"
 	@echo "  reinstall           - Full uninstall and reinstall"
