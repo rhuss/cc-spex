@@ -17,10 +17,44 @@
     "teams-spawn": "Use subagents to spawn teammates in isolated worktrees",
     "teams-research-spawn": "Use subagents for parallel research. Each agent explores in its own context",
     "parallel-dispatch": "Dispatch review agents as subagents when explicitly requested.\nEach agent runs in its own context.\nIf subagents are not available, execute all review perspectives sequentially.",
-    "agent-teams": "Verify that subagent support is available for parallel execution.\nIf not available, fall back to sequential execution.",
+    "agent-teams": "Verify that subagent support is available for parallel execution.\nIf parallel execution is disabled, unavailable, unsafe, or not beneficial, continue sequentially. Sequential fallback is a successful execution mode: preserve accepted work and execute all remaining work in dependency then assignment order.",
     "agent-teams-dispatch": "**Codex**: Use subagents when explicitly requested. Each subagent handles an independent task group.\n\n**Fallback (no parallel mechanism)**: Execute tasks sequentially in the current session.",
     "agent-teams-research-dispatch": "**Codex**: Use subagents for parallel research when available.\n\n**Fallback (no parallel mechanism)**: Research all topics sequentially in the current session.",
     "worktree-isolation": "Spex worktrees are managed via `git worktree add` and `git worktree remove` commands.\nAlways use git commands directly for worktree operations."
+  },
+  "teams_fallback": {
+    "mode": "sequential",
+    "outcome": "success",
+    "preserve_completed_work": true,
+    "continue_remaining_work": true,
+    "order": "dependency_then_assignment",
+    "reasons": {
+      "disabled": {
+        "mode": "sequential",
+        "outcome": "success",
+        "message": "Teams is disabled; execute all work sequentially."
+      },
+      "unavailable": {
+        "mode": "sequential",
+        "outcome": "success",
+        "message": "Parallel subagents are unavailable; execute all work sequentially."
+      },
+      "conflict": {
+        "mode": "sequential",
+        "outcome": "success",
+        "message": "File, contract, or dependency conflicts make parallel dispatch unsafe; execute the conflicting work sequentially."
+      },
+      "single_group": {
+        "mode": "sequential",
+        "outcome": "success",
+        "message": "Only one independent work group exists; execute it sequentially without team overhead."
+      },
+      "isolation_unavailable": {
+        "mode": "sequential",
+        "outcome": "success",
+        "message": "Writer isolation cannot be established; execute all work sequentially in the validated active worktree."
+      }
+    }
   },
   "fallback_note": "> **Note:** This capability is not available on Codex. {fallback_text}"
 }
