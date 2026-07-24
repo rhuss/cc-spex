@@ -1,0 +1,6 @@
+{
+  "name": "spex-codex",
+  "version": "6.0.0-dev",
+  "description": "Specification-driven development workflows and quality gates for Codex",
+  "skills": "./skills/"
+}
