@@ -30,7 +30,7 @@ Tasks that produce or consume shared behavior use these stable interfaces:
 **Purpose**: Establish directories, fixtures, and shared validation entry points used by all stories.
 
 - [X] T001 Create thin distribution descriptor directories and placeholder inventories in `plugins/claude/README.md` and `plugins/codex/README.md`
-- [ ] T002 [P] Create unit and integration test directory conventions in `tests/unit/README.md` and `tests/integration/README.md`
+- [X] T002 [P] Create unit and integration test directory conventions in `tests/unit/README.md` and `tests/integration/README.md`
 - [X] T003 [P] Add representative OpenCode adapter fixture metadata in `tests/fixtures/adapters/opencode-minimal/adapter.json`
 - [X] T004 Add JSON Schema validation target and dependencies to `Makefile`
 - [X] T005 Add shared shell test helpers for disposable homes, repositories, and worktrees in `tests/lib/test_helpers.sh`
