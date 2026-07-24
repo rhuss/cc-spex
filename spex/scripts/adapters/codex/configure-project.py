@@ -24,6 +24,8 @@ from typing import Any
 BEGIN_MARKER = "# >>> spex managed Codex security >>>"
 END_MARKER = "# <<< spex managed Codex security <<<"
 CONTROLLED_KEYS = {"approval_policy", "sandbox_mode", "sandbox_workspace_write"}
+GUIDANCE_BEGIN_MARKER = "<!-- >>> spex managed Codex guidance >>>"
+GUIDANCE_END_MARKER = "<!-- <<< spex managed Codex guidance <<< -->"
 
 
 class ConfigurationError(Exception):
@@ -192,6 +194,63 @@ def atomic_write(path: Path, content: str) -> None:
             Path(temporary).unlink(missing_ok=True)
 
 
+def load_guidance_template() -> str:
+    template_path = (
+        Path(__file__).resolve().parents[3] / "templates" / "agents-md" / "codex.md"
+    )
+    try:
+        content = template_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ConfigurationError(f"Codex AGENTS.md template is unavailable: {exc}") from exc
+    if (
+        content.count(GUIDANCE_BEGIN_MARKER) != 1
+        or content.count(GUIDANCE_END_MARKER) != 1
+        or content.index(GUIDANCE_BEGIN_MARKER) > content.index(GUIDANCE_END_MARKER)
+    ):
+        raise ConfigurationError("Codex AGENTS.md template has malformed ownership markers")
+    return content.rstrip("\n")
+
+
+def desired_guidance(existing: str, template: str) -> str:
+    begin_count = existing.count(GUIDANCE_BEGIN_MARKER)
+    end_count = existing.count(GUIDANCE_END_MARKER)
+    if begin_count != end_count or begin_count > 1:
+        raise ConfigurationError("malformed Spex-managed block in AGENTS.md")
+    if begin_count == 0:
+        if not existing:
+            return f"{template}\n"
+        separator = "\n" if existing.endswith("\n") else "\n\n"
+        return f"{existing}{separator}{template}\n"
+    if existing.index(GUIDANCE_BEGIN_MARKER) > existing.index(GUIDANCE_END_MARKER):
+        raise ConfigurationError("malformed Spex-managed block in AGENTS.md")
+    pattern = re.compile(
+        rf"{re.escape(GUIDANCE_BEGIN_MARKER)}.*?{re.escape(GUIDANCE_END_MARKER)}",
+        re.DOTALL,
+    )
+    updated, count = pattern.subn(template, existing)
+    if count != 1:
+        raise ConfigurationError("could not isolate Spex-managed guidance in AGENTS.md")
+    return updated
+
+
+def atomic_commit(changes: list[tuple[Path, str]]) -> None:
+    """Commit complete-file replacements and roll back earlier writes on failure."""
+    originals: list[tuple[Path, bool, str]] = []
+    try:
+        for path, content in changes:
+            existed = path.exists()
+            previous = path.read_text(encoding="utf-8") if existed else ""
+            originals.append((path, existed, previous))
+            atomic_write(path, content)
+    except OSError:
+        for path, existed, previous in reversed(originals):
+            if existed:
+                atomic_write(path, previous)
+            else:
+                path.unlink(missing_ok=True)
+        raise
+
+
 def supported_yolo(observed: dict[str, Any]) -> bool:
     return all(
         observed.get(key) is True
@@ -237,10 +296,18 @@ def configure(args: argparse.Namespace) -> int:
         )
         return 3
 
+    agents_path = args.root / "AGENTS.md"
+    existing_guidance = agents_path.read_text(encoding="utf-8") if agents_path.exists() else ""
     updated = desired_content(existing, effective)
+    updated_guidance = desired_guidance(existing_guidance, load_guidance_template())
     changed = updated != existing
+    guidance_changed = updated_guidance != existing_guidance
+    changes = []
     if changed:
-        atomic_write(config_path, updated)
+        changes.append((config_path, updated))
+    if guidance_changed:
+        changes.append((agents_path, updated_guidance))
+    atomic_commit(changes)
     emit(
         {
             "status": "configured",
@@ -250,6 +317,8 @@ def configure(args: argparse.Namespace) -> int:
             "reason": fallback_reason,
             "config_changed": changed,
             "config_path": str(config_path),
+            "guidance_changed": guidance_changed,
+            "guidance_path": str(agents_path),
             "trusted_project_required": True,
             "capabilities": observed,
         }

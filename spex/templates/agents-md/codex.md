@@ -1,3 +1,7 @@
+<!-- >>> spex managed Codex guidance >>>
+This block is managed by spex:init. Edit guidance outside the sentinels.
+-->
+
 # spex: Spec-Driven Development Plugin
 
 ## Workflow
@@ -50,3 +54,5 @@ git worktree remove ../<feature-name>
 - `/speckit-plan` - Create implementation plan
 - `/speckit-tasks` - Generate task breakdown
 - `/speckit-implement` - Execute implementation
+
+<!-- <<< spex managed Codex guidance <<< -->
