@@ -503,15 +503,6 @@ steps:
               }' > .codex/hooks.json
             fi
             echo "Codex adapter hooks installed" >&2
-        - id: codex-agents-md
-          type: shell
-          run: |
-            SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
-            TEMPLATE="$SOURCE/templates/agents-md/codex.md"
-            if [ -f "$TEMPLATE" ]; then
-              cp "$TEMPLATE" AGENTS.md
-              echo "AGENTS.md generated for Codex" >&2
-            fi
       opencode:
         - id: opencode-plugin
           type: shell

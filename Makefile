@@ -39,8 +39,7 @@ materialize-codex:
 	@test -d "$(CODEX_MARKETPLACE_ROOT)" || { echo "Error: CODEX_MARKETPLACE_ROOT must already exist" >&2; exit 2; }
 	@root=$$(cd "$(CODEX_MARKETPLACE_ROOT)" && pwd -P); repo=$$(pwd -P); \
 	case "$$root/" in "$$repo/"*) echo "Error: CODEX_MARKETPLACE_ROOT must be outside the repository" >&2; exit 2;; esac; \
-	mkdir -p "$$root/.codex-plugin" "$$root/.agents/plugins" "$$root/plugins"; \
-	cp .codex-plugin/marketplace.json "$$root/.codex-plugin/marketplace.json"; \
+	mkdir -p "$$root/.agents/plugins" "$$root/plugins"; \
 	cp .codex-plugin/marketplace.json "$$root/.agents/plugins/marketplace.json"; \
 	./spex/scripts/spex-materialize-plugin.sh --harness codex --output "$$root/plugins/codex"
 

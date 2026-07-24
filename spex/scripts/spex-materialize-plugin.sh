@@ -164,6 +164,41 @@ for candidate in "$STAGE/scripts/adapters"/*; do
   [[ "$(basename "$candidate")" == "$HARNESS" ]] || rm -rf -- "$candidate"
 done
 
+# Strip build-time and foreign-harness assets from the Codex runtime package.
+# The setup workflow is specialized to its Codex switch branch so installing
+# the package cannot expose Claude hooks or overwrite Codex guidance with a
+# foreign harness template.
+if [[ "$HARNESS" == "codex" ]]; then
+  rm -f -- \
+    "$STAGE/hooks.json" \
+    "$STAGE/scripts/spex-ship-statusline.sh" \
+    "$STAGE/extensions/spex/scripts/spex-ship-statusline.sh" \
+    "$STAGE/scripts/spex-materialize-plugin.sh" \
+    "$STAGE/scripts/spex-validate-materialized.sh" \
+    "$STAGE/templates/agents-md/claude.md" \
+    "$STAGE/templates/agents-md/opencode.md" \
+    "$STAGE/templates/skill-preamble/opencode-preamble.md"
+
+  awk '
+    /^  - id: adapt-harness$/ { in_adapt = 1 }
+    /^  - id: configure-security$/ { in_adapt = 0; skip = 0 }
+    in_adapt && /^      claude:$/ { skip = 1; next }
+    in_adapt && skip && /^      codex:$/ { skip = 0 }
+    in_adapt && /^      opencode:$/ { skip = 1; next }
+    !skip { print }
+  ' "$STAGE/setup.yml" > "$STAGE/setup.yml.codex"
+  mv -- "$STAGE/setup.yml.codex" "$STAGE/setup.yml"
+
+  sed -i.bak 's/no AskUserQuestion, uses inline prompts/uses inline prompts/' \
+    "$STAGE/scripts/adapters/codex/context-hook.py"
+  sed -i.bak \
+    's/Codex does NOT have the AskUserQuestion tool\. When presenting choices,/When presenting choices in Codex,/' \
+    "$STAGE/templates/agents-md/codex.md"
+  rm -f -- \
+    "$STAGE/scripts/adapters/codex/context-hook.py.bak" \
+    "$STAGE/templates/agents-md/codex.md.bak"
+fi
+
 "$STAGE/scripts/spex-adapt-commands.sh" \
   "$HARNESS" "$STAGE/extensions" "$STAGE/scripts/adapters"
 

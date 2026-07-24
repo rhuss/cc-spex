@@ -109,8 +109,9 @@ mkdir -p "$TMPDIR"
 
 MARKETPLACE_ROOT="$TEST_ROOT/marketplace"
 PLUGIN_OUTPUT="$MARKETPLACE_ROOT/plugins/codex"
-mkdir -p "$MARKETPLACE_ROOT/.codex-plugin" "$MARKETPLACE_ROOT/plugins"
-cp "$CODEX_MARKETPLACE" "$MARKETPLACE_ROOT/.codex-plugin/marketplace.json"
+mkdir -p "$MARKETPLACE_ROOT/.agents/plugins" "$MARKETPLACE_ROOT/plugins"
+cp "$CODEX_MARKETPLACE" "$MARKETPLACE_ROOT/.agents/plugins/marketplace.json"
+PLUGIN_OUTPUT="$(cd "$MARKETPLACE_ROOT/plugins" && pwd -P)/codex"
 
 echo "=== Local materialization and personal marketplace install ==="
 materialized="$($MATERIALIZE --harness codex --output "$PLUGIN_OUTPUT")"
@@ -123,7 +124,7 @@ else
 fi
 
 plugin_name="$(jq -r .name "$PLUGIN_OUTPUT/.codex-plugin/plugin.json")"
-marketplace_name="$(jq -r .name "$MARKETPLACE_ROOT/.codex-plugin/marketplace.json")"
+marketplace_name="$(jq -r .name "$MARKETPLACE_ROOT/.agents/plugins/marketplace.json")"
 
 marketplace_result="$(codex plugin marketplace add "$MARKETPLACE_ROOT" --json 2>&1)"
 marketplace_status=$?
@@ -189,8 +190,8 @@ PROFILE="$TEST_REPO/.specify/spex-profile.yml"
 if [[ -f "$PROFILE" ]] && yq -e \
     '.active_harness == "codex" and .requested_security == "safe" and
      .effective_security == "safe" and
-     (.enabled_extensions | contains(["spex", "spex-gates", "spex-deep-review", "spex-worktrees"])) and
-     ((.enabled_extensions | index("spex-teams")) == null)' "$PROFILE" >/dev/null 2>&1; then
+     (.enabled_extensions | contains(["spex", "spex-deep-review", "spex-gates", "spex-worktrees"])) and
+    (.enabled_extensions | contains(["spex-teams"]) == false)' "$PROFILE" >/dev/null 2>&1; then
   pass "initialization persists the recommended Codex Safe profile"
 else
   fail "initialization did not persist the recommended Codex Safe profile"
