@@ -35,6 +35,85 @@ Evaluate whether teams add value:
 - **If 0-1 independent task groups exist** (everything is sequential): Skip team creation, execute tasks sequentially in the current session. Report: "Tasks are sequential, no parallelism benefit. Executing directly."
 - **If 2+ independent task groups exist**: Proceed with team spawning.
 
+## Bounded SubagentAssignment Generation
+
+Before creating any teammate, generate one JSON `SubagentAssignment` record for
+each independent work group. The record is the complete dispatch boundary: do
+not supplement it with the whole conversation, the full specification, or
+unrelated repository context.
+
+Populate every record as follows:
+
+- `schema_version`: exactly `"1.0.0"`.
+- `assignment_id`: a unique, stable ID for this dispatch.
+- `kind`: `"read"` for research or `"write"` for implementation.
+- `workdir`: an explicit absolute path. Resolve and verify it before dispatch;
+  never rely on the lead's current working directory.
+- `objective`: one concrete outcome, bounded to the assigned work group.
+- `spec_context`: only the minimum relevant spec sections and artifact paths
+  needed to decide correctness. Never include unrelated context.
+- `task_ids`: the exact task IDs assigned to this work group.
+- `security_profile`: inherit the same effective parent security profile
+  (`safe`, `autonomous`, or `yolo`). An assignment must not escalate to a
+  broader or weaker security boundary.
+- `dependencies`: assignment/task IDs whose accepted results are prerequisites;
+  use an empty array only when the group is immediately runnable.
+- `allowed_files`: the complete file scope, including any schema, contract, or
+  shared-interface paths the assignment may change. Files not listed are
+  read-only.
+- `required_evidence`: concrete evidence the lead can review, including a
+  changed-file inventory, relevant test/check results, and contract or spec
+  compliance evidence.
+- `isolated_worktree`: `true` for every concurrent writer/write assignment.
+  Read assignments may use `false` and share a read-only view.
+
+Use this shape (replace every placeholder with resolved values):
+
+```json
+{
+  "schema_version": "1.0.0",
+  "assignment_id": "assignment-T057-writer-1",
+  "kind": "write",
+  "workdir": "/absolute/repository/worktrees/feature-writer-1",
+  "objective": "Implement the assigned bounded work group",
+  "spec_context": ["specs/feature/spec.md#relevant-requirement"],
+  "task_ids": ["T057"],
+  "security_profile": "autonomous",
+  "dependencies": [],
+  "allowed_files": [
+    "path/to/assigned-file.md",
+    "specs/feature/contracts/relevant.schema.json"
+  ],
+  "required_evidence": [
+    "Changed-file inventory is within allowed_files",
+    "Relevant tests and contract checks pass"
+  ],
+  "isolated_worktree": true
+}
+```
+
+### Validation Before Dispatch
+
+Validate each generated object against
+`specs/047-codex-plugin-support/contracts/subagent-assignment.schema.json`
+before calling the harness dispatch mechanism. Then perform these semantic
+checks, which are stricter than shape validation:
+
+1. The absolute `workdir` exists and is the intended registered worktree/read
+   view; every concurrent write assignment has a distinct workdir and
+   `isolated_worktree=true`.
+2. `security_profile` exactly equals the lead's persisted effective security
+   profile. Refuse any missing, unknown, or escalated profile.
+3. `spec_context`, `task_ids`, `allowed_files`, and `required_evidence` are
+   nonempty and contain only context necessary for the objective.
+4. Every dependency exists, is acyclic, and has been accepted before the
+   assignment is released.
+5. The assigned file and contract scope matches the independence analysis and
+   does not overlap another concurrent writer.
+
+Do not dispatch an invalid assignment. Report the validation reasons and use
+the sequential fallback without weakening the assignment or security contract.
+
 ## Teammate Spawning
 
 ### Spawn Rules
@@ -43,15 +122,25 @@ Evaluate whether teams add value:
 - **Maximum 5 teammates** (best practice for coordination overhead)
 - If more than 5 independent groups, batch them: assign multiple groups to the same teammate sequentially
 - **Never spawn more teammates than independent groups**
-- Each teammate gets its own git worktree for clean file isolation
+- Each writer gets its own git worktree for clean file isolation
+- Pass exactly one validated `SubagentAssignment` JSON object to each teammate
 
 ### Spawn Prompt Template
 
-Each teammate receives this context in its spawn prompt:
+Each teammate receives its validated assignment fields in this prompt; include
+only the paths/sections listed in `spec_context` and no ambient conversation:
 
 ```
 You are implementing tasks for the [feature-name] feature.
-You are working in an isolated git worktree.
+Assignment ID: [assignment_id]
+Kind: [kind]
+Absolute workdir: [workdir]
+Effective security profile: [security_profile]
+Dependencies: [dependencies]
+Allowed files and contracts: [allowed_files]
+Required evidence: [required_evidence]
+
+You are working in the workdir declared by the assignment.
 Your work will be reviewed against spec.md before merging.
 
 ## Your Assigned Tasks
@@ -60,7 +149,7 @@ Your work will be reviewed against spec.md before merging.
 
 ## Spec Context
 
-[Contents of spec.md for this feature]
+[Only the bounded sections and paths listed in spec_context]
 
 ## Working Rules
 
