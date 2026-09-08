@@ -10,6 +10,9 @@ extension:
 
 requires:
   speckit_version: ">=0.5.2"
+  extensions:
+    - name: git
+      required: true
   tools:
     - name: git
       required: true

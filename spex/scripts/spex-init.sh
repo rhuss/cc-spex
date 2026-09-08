@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-# --- Check specify CLI version (require >= 0.12.16 for workflow_dir) ---
+# --- Check specify CLI version (require >= 1.0.0) ---
 check_version() {
   local version_output
   version_output=$(specify version 2>/dev/null) || return 1
@@ -24,20 +24,14 @@ check_version() {
   version=$(echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
   [ -n "$version" ] || return 1
 
-  local major minor patch
+  local major
   major=$(echo "$version" | cut -d. -f1)
-  minor=$(echo "$version" | cut -d. -f2)
-  patch=$(echo "$version" | cut -d. -f3)
 
-  if [ "$major" -gt 0 ] 2>/dev/null; then
-    return 0
-  elif [ "$major" -eq 0 ] && [ "$minor" -gt 12 ] 2>/dev/null; then
-    return 0
-  elif [ "$major" -eq 0 ] && [ "$minor" -eq 12 ] && [ "$patch" -ge 16 ] 2>/dev/null; then
+  if [ "$major" -ge 1 ] 2>/dev/null; then
     return 0
   fi
 
-  echo "ERROR: spec-kit version $version is too old (requires >= 0.12.16)."
+  echo "ERROR: spec-kit version $version is too old (requires >= 1.0.0)."
   echo ""
   echo "Upgrade with:"
   echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git"
@@ -246,6 +240,21 @@ migrate_old_commands() {
     rm "$f"
   done
   echo "Migration complete."
+}
+
+# --- Run detach enable if extension is installed ---
+run_detach_enable() {
+  local detach_script=".specify/extensions/spex-detach/scripts/spex-detach.sh"
+  [ -x "$detach_script" ] || return 0
+
+  # Check if extension is enabled in registry
+  local enabled
+  enabled=$(jq -r '.extensions["spex-detach"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+  [ "$enabled" = "true" ] || return 0
+
+  if "$detach_script" enable >/dev/null 2>&1; then
+    echo "  Detach stealth mode: exclude entries written to .git/info/exclude"
+  fi
 }
 
 # --- Ensure .gitignore covers spex-generated files ---
@@ -458,6 +467,19 @@ install_extensions() {
   done
 
   echo "  Extensions: $installed installed, $failed failed"
+
+  # Enforce git extension dependency: worktrees needs git for branch creation
+  if [ -d ".specify/extensions/spex-worktrees" ]; then
+    local git_enabled
+    git_enabled=$(jq -r '.extensions.git.enabled // false' .specify/extensions/.registry 2>/dev/null)
+    if [ "$git_enabled" != "true" ]; then
+      if specify extension enable git 2>/dev/null; then
+        echo "  Enabled git extension (required by spex-worktrees)"
+      else
+        echo "  WARNING: git extension not available (required by spex-worktrees for branch creation)" >&2
+      fi
+    fi
+  fi
 }
 
 # --- Migrate legacy constitution symlink setup ---
@@ -533,6 +555,7 @@ do_init() {
     install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
+    run_detach_enable
     echo ""
     echo "RESTART_REQUIRED"
     echo ""
@@ -557,6 +580,7 @@ do_init() {
     install_agent_adapter "$(detect_agent)"
     configure_statusline
     configure_gitignore
+    run_detach_enable
     check_update 2>/dev/null || true
     echo ""
     echo "READY"
@@ -670,6 +694,7 @@ case "${1:-}" in
       ensure_extension_skills 2>/dev/null || true
       configure_statusline 2>/dev/null || true
       configure_gitignore 2>/dev/null || true
+      run_detach_enable 2>/dev/null || true
       check_update 2>/dev/null || true
       echo "READY"
       exit 0

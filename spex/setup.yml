@@ -37,21 +37,11 @@ steps:
       version=$(echo "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
       [ -n "$version" ] || { echo "ERROR: Cannot parse specify version" >&2; exit 1; }
       major=$(echo "$version" | cut -d. -f1)
-      minor=$(echo "$version" | cut -d. -f2)
-      patch=$(echo "$version" | cut -d. -f3)
-      if [ "$major" -gt 0 ] 2>/dev/null; then
+      if [ "$major" -ge 1 ] 2>/dev/null; then
         printf "%s" "$version"
         exit 0
       fi
-      if [ "$major" -eq 0 ] && [ "$minor" -gt 12 ] 2>/dev/null; then
-        printf "%s" "$version"
-        exit 0
-      fi
-      if [ "$major" -eq 0 ] && [ "$minor" -eq 12 ] && [ "$patch" -ge 16 ] 2>/dev/null; then
-        printf "%s" "$version"
-        exit 0
-      fi
-      echo "ERROR: spec-kit $version too old (requires >= 0.12.16 for workflow_dir). Upgrade:" >&2
+      echo "ERROR: spec-kit $version too old (requires >= 1.0.0). Upgrade:" >&2
       echo "  uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git" >&2
       exit 1
 
@@ -379,6 +369,22 @@ steps:
       "$SOURCE/scripts/spex-setup-profile.py" resolve --root "$(pwd)" \
         --extensions "spex,$SELECTION" | jq -r '.extensions | join(",")'
 
+  - id: enforce-git-extension
+    type: shell
+    run: |
+      SELECTED="{{ steps.selected-extensions.output.stdout }}"
+      case ",$SELECTED," in
+        *,spex-worktrees,*)
+          if specify extension enable git 2>/dev/null; then
+            echo "Enabled git extension (required by spex-worktrees for branch creation)" >&2
+          elif ! specify extension list 2>/dev/null | grep -q "^.*git.*Enabled"; then
+            echo "WARNING: git extension not available. spex-worktrees requires it for branch creation." >&2
+            echo "Worktree creation will fail until the git extension is installed." >&2
+          fi
+          ;;
+      esac
+      printf "ok"
+
   - id: security-mode
     type: shell
     run: |
@@ -541,7 +547,7 @@ steps:
 
   - id: configure-permissions
     type: if
-    condition: "{{ steps.selected-security.output.stdout }} != 'safe'"
+    condition: "{{ steps.selected-security.output.stdout != 'safe' }}"
     then:
       - id: permissions-dispatch
         type: switch
