@@ -18,13 +18,17 @@ This command manages git worktrees to isolate feature development. It supports f
 
 ## Action Routing
 
-Determine the action from the argument:
+Determine the action from the argument, and when there is no argument, from who invoked the command:
 
-- If invoked with argument `create` (from the `after_specify` hook): the action is **create**. Execute immediately, no confirmation needed.
-- If invoked with argument `ensure` (from the `before_implement` hook): the action is **ensure**. See Action: Ensure below.
+- If invoked with argument `create`: the action is **create**. Execute immediately, no confirmation needed.
+- If invoked with argument `ensure`: the action is **ensure**. See Action: Ensure below.
 - If invoked with argument `finish`: the action is **finish**.
 - If invoked with argument `cleanup`: the action is **cleanup**.
-- Otherwise (no args, `list`, or invoked directly): the action is **list**.
+- If invoked with **no argument as the `after_specify` hook** (that is, `speckit-specify` just ran and is executing its post-execution hooks): the action is **create**. Execute immediately, no confirmation needed.
+- If invoked with **no argument as the `before_implement` hook**: the action is **ensure**.
+- Otherwise (argument `list`, or invoked directly by the user with no argument): the action is **list**.
+
+> The two hook rules matter because the `args` declared in `extension.yml` are dropped when the `specify` CLI generates `.specify/extensions.yml`. A hook therefore reaches this command with no argument at all, and must not silently fall through to **list**. Never infer `create` from repository state alone: a bare invocation typed by the user is always **list**.
 
 ## Prerequisites
 
@@ -270,7 +274,42 @@ if [ -n "$FEATURE_DIR" ] && [ -d "$FEATURE_DIR" ] && [ ! -d "$WORKTREE_PATH/$FEA
 fi
 ```
 
+Some projects do not keep their skills or config directly under `.claude/`, but link to a directory elsewhere in the repo (for example `.claude/skills -> ../.agents/skills/`, a layout shared by projects that support several coding agents). `rsync -a` copies the symlink itself, not what it points at, and the target directory is usually gitignored, so it is absent from a fresh worktree and the link dangles. Copy any such target:
+
+```bash
+# Follow symlinks under .claude/ and .specify/ that point elsewhere inside the
+# repo, and copy their targets. Without this, a link like
+# .claude/skills -> ../.agents/skills/ dangles in the worktree and every skill
+# disappears, because .agents/ is gitignored and nothing else copies it.
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+find .claude .specify -path '.claude/worktrees' -prune -o -type l -print 2>/dev/null | while read -r LINK; do
+  TARGET=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$LINK" 2>/dev/null)
+  [ -d "$TARGET" ] || continue
+
+  # Only targets inside the repo matter. A link to ~/.claude/... resolves the
+  # same way from the worktree, so leave it alone.
+  case "$TARGET" in
+    "$REPO_ROOT"/*) REL="${TARGET#"$REPO_ROOT"/}" ;;
+    *) continue ;;
+  esac
+
+  # Skip what the two rsync calls above already copied.
+  case "$REL" in
+    .claude/*|.specify/*) continue ;;
+  esac
+
+  # Skip anything the checkout already provided (target is tracked).
+  if [ -e "$WORKTREE_PATH/$REL" ]; then continue; fi
+
+  mkdir -p "$WORKTREE_PATH/$(dirname "$REL")"
+  rsync -a "$TARGET/" "$WORKTREE_PATH/$REL/"
+done
+```
+
 This ensures the worktree has the same extensions, hooks, permissions, skills, and spec files as the main repo. No `/spex:init` needed in the worktree.
+
+Do NOT write spex-detach exclude entries here. Git's `.git/info/exclude` is shared across all worktrees via `git-common-dir`, so the worktree already sees exactly the stealth mode state of the main checkout. Running `spex-detach.sh enable` from this command would turn stealth mode on behind the user's back (the `.specify/extensions/spex-detach/` directory exists even when the extension is disabled, and a user who ran `disable` would get the entries back on every new worktree). Stealth mode is toggled only through `/speckit-spex-detach-detach`.
 
 ### Step 8b: Update feature.json and flow state for the Worktree Branch
 

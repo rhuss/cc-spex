@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Init no longer writes ignore rules to the tracked `.gitignore`. Both setup paths (`setup.yml`, `spex-init.sh`) now write to `.git/info/exclude`, which is local to the clone and shared across worktrees. The old behaviour committed spex scaffolding rules into repositories that never opted into spex, and could ignore a directory the project uses itself (`.agents/`, for instance, is a contributor-workflow directory in some repos). An existing spex block in `.gitignore` is reported with instructions to delete it; init never edits a tracked file itself.
+- Worktree creation now copies symlinked config targets. Projects that link `.claude/skills` to a gitignored directory elsewhere in the repo (for example `.claude/skills -> ../.agents/skills/`) ended up with a dangling symlink in the new worktree and lost every skill, because `rsync -a` copies the link and nothing copied its target.
+- The `after_specify` / `before_implement` worktree hooks no longer fall through to the `list` action. The `args` declared in `extension.yml` are dropped when the `specify` CLI generates `.specify/extensions.yml`, so the hooks arrived with no argument; the command now derives `create` / `ensure` from the invoking hook.
 
 ## [5.8.0] - 2026-06-25
 

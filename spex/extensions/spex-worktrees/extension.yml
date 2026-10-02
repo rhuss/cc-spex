@@ -23,17 +23,21 @@ provides:
       file: commands/speckit.spex-worktrees.manage.md
       description: "Manage git worktrees for isolated feature development"
 
+# The `args` below are dropped when the specify CLI generates
+# .specify/extensions.yml, so the command also derives the action from the hook
+# it was invoked as. The action is named in `description` (which does survive)
+# to keep it visible at the call site.
 hooks:
   after_specify:
     command: speckit.spex-worktrees.manage
     args: "create"
     optional: false
-    description: "Create git worktree after specification"
+    description: "Run action 'create': create git worktree after specification"
   before_implement:
     command: speckit.spex-worktrees.manage
     args: "ensure"
     optional: false
-    description: "Verify worktree isolation before implementation"
+    description: "Run action 'ensure': verify worktree isolation before implementation"
 
 tags:
   - "spex"
