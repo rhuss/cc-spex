@@ -257,46 +257,60 @@ run_detach_enable() {
   fi
 }
 
-# --- Ensure .gitignore covers spex-generated files ---
-configure_gitignore() {
-  local gitignore=".gitignore"
-  local sentinel="# spex: generated/local files"
+# --- Ensure spex-generated files are ignored locally ---
+#
+# These patterns go to .git/info/exclude, never to the tracked .gitignore.
+# Committing them pushes spex's local scaffolding into a repository that never
+# opted into spex, and the rules can be actively wrong there: OpenShell, for
+# one, uses .agents/ for its own contributor workflows.
+#
+# .git/info/exclude is per-clone and shared across worktrees (git-common-dir),
+# which is the same mechanism spex-detach uses for stealth mode.
+SPEX_EXCLUDE_SENTINEL="# spex: generated/local files (only constitution is committed)"
+SPEX_EXCLUDE_PATTERNS='**/.claude/
+**/.agents/
+**/.codex/
+**/.specify/**
+!**/.specify/spex.json
+!**/.specify/memory/
+!**/.specify/memory/constitution.md'
 
-  # Migrate old patterns if present
-  if [ -f "$gitignore" ]; then
-    if grep -qF ".claude/commands/speckit." "$gitignore"; then
-      sed -i '' 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$gitignore" 2>/dev/null || \
-        sed -i 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$gitignore" 2>/dev/null || true
-      echo "  Migrated .gitignore pattern from commands to skills"
-    elif grep -qF ".claude/skills/speckit-*" "$gitignore"; then
-      sed -i '' 's|\.claude/skills/speckit-\*|.claude/skills/|' "$gitignore" 2>/dev/null || \
-        sed -i 's|\.claude/skills/speckit-\*|.claude/skills/|' "$gitignore" 2>/dev/null || true
-      echo "  Migrated .gitignore pattern from speckit-* to skills/"
-    fi
-    # Migrate old per-file .specify ignores to blanket ignore with constitution whitelist
-    if grep -qF ".specify/.spex-phase" "$gitignore"; then
-      sed -i '' '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$gitignore" 2>/dev/null || \
-        sed -i '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$gitignore" 2>/dev/null || true
-      # Replace old sentinel with new block
-      sed -i '' "s|$sentinel|$sentinel (only constitution is committed)\n**/.claude/\n**/.specify/**\n!**/.specify/memory/\n!**/.specify/memory/constitution.md|" "$gitignore" 2>/dev/null || \
-        sed -i "s|$sentinel|$sentinel (only constitution is committed)\n**/.claude/\n**/.specify/**\n!**/.specify/memory/\n!**/.specify/memory/constitution.md|" "$gitignore" 2>/dev/null || true
-      echo "  Migrated .gitignore to blanket .specify/ ignore with constitution whitelist"
-      return 0
-    fi
+configure_git_exclude() {
+  local git_common_dir exclude_file pattern
+
+  git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+  [ -n "$git_common_dir" ] || return 0
+
+  exclude_file="$git_common_dir/info/exclude"
+  mkdir -p "$git_common_dir/info"
+  [ -f "$exclude_file" ] || : > "$exclude_file"
+
+  if ! grep -qF "$SPEX_EXCLUDE_SENTINEL" "$exclude_file" 2>/dev/null; then
+    printf '\n%s\n' "$SPEX_EXCLUDE_SENTINEL" >> "$exclude_file"
   fi
 
-  # Skip if already configured (new or old sentinel)
-  [ -f "$gitignore" ] && grep -qF "$sentinel" "$gitignore" && return 0
+  printf '%s\n' "$SPEX_EXCLUDE_PATTERNS" | while IFS= read -r pattern; do
+    [ -n "$pattern" ] || continue
+    grep -qxF -- "$pattern" "$exclude_file" 2>/dev/null || printf '%s\n' "$pattern" >> "$exclude_file"
+  done
 
-  cat >> "$gitignore" <<'EOF'
+  echo "  Updated .git/info/exclude with spex patterns"
+  warn_gitignore_leftovers
+}
 
-# spex: generated/local files (only constitution is committed)
-**/.claude/
-**/.specify/**
-!**/.specify/memory/
-!**/.specify/memory/constitution.md
-EOF
-  echo "  Updated .gitignore with spex patterns"
+# Older spex versions appended their patterns to the tracked .gitignore, where
+# they get committed and show up in review. Report the leftover block, but never
+# edit a tracked file on the user's behalf.
+warn_gitignore_leftovers() {
+  [ -f ".gitignore" ] || return 0
+  grep -qF "# spex: generated/local files" ".gitignore" 2>/dev/null || return 0
+
+  echo ""
+  echo "  WARNING: .gitignore still holds a spex block from an earlier version."
+  echo "  Those patterns now live in .git/info/exclude and are no longer needed here."
+  echo "  Remove the block below from .gitignore so it stays out of your commits:"
+  grep -n -A7 -F "# spex: generated/local files" ".gitignore" | sed 's/^/    /'
+  echo ""
 }
 
 # --- Detect active agent ---
@@ -554,7 +568,7 @@ do_init() {
     install_extensions
     install_agent_adapter "$(detect_agent)"
     configure_statusline
-    configure_gitignore
+    configure_git_exclude
     run_detach_enable
     echo ""
     echo "RESTART_REQUIRED"
@@ -579,7 +593,7 @@ do_init() {
     install_extensions
     install_agent_adapter "$(detect_agent)"
     configure_statusline
-    configure_gitignore
+    configure_git_exclude
     run_detach_enable
     check_update 2>/dev/null || true
     echo ""
@@ -693,7 +707,7 @@ case "${1:-}" in
       install_extensions >/dev/null 2>&1 || true
       ensure_extension_skills 2>/dev/null || true
       configure_statusline 2>/dev/null || true
-      configure_gitignore 2>/dev/null || true
+      configure_git_exclude 2>/dev/null || true
       run_detach_enable 2>/dev/null || true
       check_update 2>/dev/null || true
       echo "READY"

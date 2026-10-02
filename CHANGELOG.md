@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Init no longer writes ignore rules to the tracked `.gitignore`. Both setup paths (`setup.yml`, `spex-init.sh`) now write to `.git/info/exclude`, which is local to the clone and shared across worktrees. The old behaviour committed spex scaffolding rules into repositories that never opted into spex, and could ignore a directory the project uses itself (`.agents/`, for instance, is a contributor-workflow directory in some repos). An existing spex block in `.gitignore` is reported with instructions to delete it; init never edits a tracked file itself.
+
 ## [5.8.0] - 2026-06-25
 
 ### Added

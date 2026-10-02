@@ -601,41 +601,44 @@ steps:
               run: |
                 echo "OpenCode permissions are managed via the spex-plugin.ts (configured in adapt-harness step)" >&2
 
-  - id: configure-gitignore
+  # Ignore rules go to .git/info/exclude, never to the tracked .gitignore.
+  # Committing them pushes spex's local scaffolding into a repository that never
+  # opted into spex, and the rules can be actively wrong there: OpenShell, for
+  # one, uses .agents/ for its own contributor workflows.
+  #
+  # .git/info/exclude is per-clone and shared across worktrees (git-common-dir),
+  # the same mechanism spex-detach uses for stealth mode.
+  - id: configure-git-exclude
     type: shell
     run: |
-      GITIGNORE=".gitignore"
-      SENTINEL="# spex: generated/local files"
-      if [ -f "$GITIGNORE" ]; then
-        if grep -qF ".claude/commands/speckit." "$GITIGNORE" 2>/dev/null; then
-          sed -i.bak 's|\.claude/commands/speckit\.\*|.claude/skills/|' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
-        elif grep -qF ".claude/skills/speckit-*" "$GITIGNORE" 2>/dev/null; then
-          sed -i.bak 's|\.claude/skills/speckit-\*|.claude/skills/|' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
-        fi
-        if grep -qF ".specify/.spex-phase" "$GITIGNORE" 2>/dev/null; then
-          sed -i.bak '/.specify\/.spex-phase/d;/.specify\/.spex-state/d;/.claude\/skills\//d;/.claude\/settings\.local\.json/d' "$GITIGNORE" && rm -f "$GITIGNORE.bak"
-        fi
-      fi
-      if [ -f "$GITIGNORE" ] && grep -qF "$SENTINEL" "$GITIGNORE" 2>/dev/null; then
-        for pattern in '**/.claude/' '**/.agents/' '**/.codex/' '**/.specify/**' \
-          '!**/.specify/spex.json' '!**/.specify/memory/' \
-          '!**/.specify/memory/constitution.md'; do
-          grep -qxF -- "$pattern" "$GITIGNORE" 2>/dev/null || printf '%s\n' "$pattern" >> "$GITIGNORE"
-        done
-        exit 0
-      fi
-      cat >> "$GITIGNORE" << 'GIEOF'
+      GIT_COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
+      [ -n "$GIT_COMMON_DIR" ] || exit 0
+      EXCLUDE_FILE="$GIT_COMMON_DIR/info/exclude"
+      SENTINEL="# spex: generated/local files (only constitution is committed)"
 
-      # spex: generated/local files (only constitution is committed)
-      **/.claude/
-      **/.agents/
-      **/.codex/
-      **/.specify/**
-      !**/.specify/spex.json
-      !**/.specify/memory/
-      !**/.specify/memory/constitution.md
-      GIEOF
-      echo "Updated .gitignore with spex patterns" >&2
+      mkdir -p "$GIT_COMMON_DIR/info"
+      [ -f "$EXCLUDE_FILE" ] || : > "$EXCLUDE_FILE"
+
+      grep -qF "$SENTINEL" "$EXCLUDE_FILE" 2>/dev/null || printf '\n%s\n' "$SENTINEL" >> "$EXCLUDE_FILE"
+
+      for pattern in '**/.claude/' '**/.agents/' '**/.codex/' '**/.specify/**' \
+        '!**/.specify/spex.json' '!**/.specify/memory/' \
+        '!**/.specify/memory/constitution.md'; do
+        grep -qxF -- "$pattern" "$EXCLUDE_FILE" 2>/dev/null || printf '%s\n' "$pattern" >> "$EXCLUDE_FILE"
+      done
+      echo "Updated .git/info/exclude with spex patterns" >&2
+
+      # Older spex versions appended these patterns to the tracked .gitignore,
+      # where they get committed and show up in review. Report the leftovers,
+      # but never edit a tracked file on the user's behalf.
+      if [ -f ".gitignore" ] && grep -qF "# spex: generated/local files" ".gitignore" 2>/dev/null; then
+        echo "" >&2
+        echo "WARNING: .gitignore still holds a spex block from an earlier version." >&2
+        echo "Those patterns now live in .git/info/exclude and are no longer needed here." >&2
+        echo "Remove the block below from .gitignore so it stays out of your commits:" >&2
+        grep -n -A7 -F "# spex: generated/local files" ".gitignore" | sed 's/^/  /' >&2
+        echo "" >&2
+      fi
 
   - id: fix-constitution
     type: shell
