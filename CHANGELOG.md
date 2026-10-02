@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Worktree creation now copies symlinked config targets. Projects that link `.claude/skills` to a gitignored directory elsewhere in the repo (for example `.claude/skills -> ../.agents/skills/`) ended up with a dangling symlink in the new worktree and lost every skill, because `rsync -a` copies the link and nothing copied its target.
 - The `after_specify` / `before_implement` worktree hooks no longer fall through to the `list` action. The `args` declared in `extension.yml` are dropped when the `specify` CLI generates `.specify/extensions.yml`, so the hooks arrived with no argument; the command now derives `create` / `ensure` from the invoking hook.
 
+### Changed
+- Synced with superpowers@b36e082 (Superpowers 6.3.0, 2026-08-12)
+  - `writing-plans`: Spec: field validation added to `review-plan` quality gate (plan-spec traceability)
+  - `verification-before-completion`: removed persuasion sections (aligned with upstream)
+  - `brainstorming`: evaluated three-path router (Spike/Bounded/Architectural), no changes (diverged model)
+  - All spex spec-compliance enhancements preserved
+- Updated `.superpowers-sync` paths to match extension migration
+
 ## [5.8.0] - 2026-06-25
 
 ### Added

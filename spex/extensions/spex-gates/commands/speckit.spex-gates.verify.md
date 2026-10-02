@@ -28,8 +28,6 @@ In autonomous mode: do NOT output a completion summary, do NOT ask "Shall I proc
 
 ## Overview
 
-Claiming work is complete without verification is dishonesty, not efficiency.
-
 **Core principle:** Evidence before claims, always.
 
 Verify implementation is complete by running tests AND validating spec compliance.
@@ -517,27 +515,3 @@ These gates exist to prevent:
 - Spec/code divergence
 - False claims of completion
 
-## Remember
-
-**Verification is not optional.**
-
-- Don't skip verification "just this once"
-- Don't claim completion without verification
-- Don't ignore failing gates
-
-**Verification failures are information.**
-
-- Tests failing? Code has bugs
-- Spec compliance failing? Missing features
-- Drift detected? Synchronization problem
-- Criteria not met? Work incomplete
-
-**No shortcuts for verification.**
-
-Run the command. Read the output. Check the spec. THEN claim the result.
-
-**Fix issues, don't rationalize past them.**
-
-**Evidence before assertions. Always.**
-
-This is non-negotiable.

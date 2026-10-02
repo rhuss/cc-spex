@@ -72,6 +72,7 @@ Also check:
 - No tasks duplicate work already covered by other tasks
 - Tasks that consume outputs from earlier tasks declare explicit **Interfaces** (function names, parameter types, return types). A task's implementer sees only their own task; the Interfaces block is how they learn the names and types neighboring tasks use.
 - If the spec has project-wide requirements (version floors, dependency limits, naming rules, platform requirements), the plan includes a **Global Constraints** section with those values copied verbatim from the spec. Every task implicitly inherits this section.
+- The plan header includes a **Spec:** field pointing to the spec file it implements. The plan argues from the spec, so the spec path travels with it; executors read both.
 
 Verify the plan includes a file structure mapping:
 - Files to be created or modified are listed with their responsibilities
