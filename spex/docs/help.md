@@ -134,9 +134,9 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     Stealth mode: hides spec artifacts from git via .git/info/exclude.
     Spec files stay on disk for normal workflows but never appear in
     commits, PRs, or git status. Archives to sibling repo at finish time.
-    /speckit-spex-detach-detach  → enable stealth mode, archive specs,
+    /speckit-spex-detach-detach  → enable/disable stealth mode, archive specs,
                                    or check detach status
-                                   Subcommands: enable, archive, is-enabled
+                                   Subcommands: enable, disable, archive, is-enabled
     /speckit-spex-brainstorm     → when enabled + archive.path configured,
                                    writes brainstorm docs to project-specs repo.
                                    Scans sibling repo brainstorm/ for revisit

@@ -135,6 +135,43 @@ def cmd_enable(args):
     print(json.dumps(result))
 
 
+def cmd_disable(args):
+    git_common_dir = git("rev-parse", "--git-common-dir")
+    if not git_common_dir:
+        print("ERROR: Not a git repository", file=sys.stderr)
+        sys.exit(1)
+
+    exclude_file = os.path.join(git_common_dir, "info", "exclude")
+    if not os.path.isfile(exclude_file):
+        print(json.dumps({"paths_removed": [], "already_clean": True}))
+        return
+
+    with open(exclude_file, "r") as f:
+        lines = f.readlines()
+
+    exclude_paths = set(read_exclude_paths())
+    marker = "# spex-detach:"
+
+    kept = []
+    removed = []
+    for line in lines:
+        stripped = line.rstrip("\n")
+        if stripped in exclude_paths or stripped.startswith(marker):
+            removed.append(stripped)
+        else:
+            kept.append(line)
+
+    if removed:
+        with open(exclude_file, "w") as f:
+            f.writelines(kept)
+
+    print(json.dumps({
+        "exclude_file": exclude_file,
+        "paths_removed": removed,
+        "already_clean": len(removed) == 0,
+    }))
+
+
 def cmd_archive(args):
     target = ""
     project = ""
@@ -213,12 +250,13 @@ def cmd_archive(args):
 
 COMMANDS = {
     "enable": cmd_enable,
+    "disable": cmd_disable,
     "archive": cmd_archive,
     "is-enabled": lambda a: cmd_is_enabled(),
 }
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print("Usage: spex-detach.py <enable|archive|is-enabled> [options]", file=sys.stderr)
+        print("Usage: spex-detach.py <enable|disable|archive|is-enabled> [options]", file=sys.stderr)
         sys.exit(1)
     COMMANDS[sys.argv[1]](sys.argv[2:])

@@ -1,6 +1,6 @@
 ---
-description: "Enable stealth mode (exclude spec files from git) or archive specs to sibling repo"
-argument-hint: "[enable|archive]"
+description: "Enable or disable stealth mode (exclude spec files from git) or archive specs to sibling repo"
+argument-hint: "[enable|disable|archive]"
 ---
 
 # Spex Detach
@@ -10,6 +10,7 @@ Manage spec artifact visibility for upstream contributions. Stealth mode uses .g
 ## Subcommands
 
 - **enable** (default): Write .git/info/exclude entries to hide spec artifacts from git
+- **disable**: Remove .git/info/exclude entries to make spec artifacts visible to git again
 - **archive**: Copy spec artifacts to the configured project-specs sibling repo
 - **is-enabled**: Check if the detach extension is active (exit 0 = yes, exit 1 = no)
 
@@ -45,6 +46,29 @@ if [ "$EXIT_CODE" -eq 0 ]; then
   fi
 else
   echo "ERROR: Enable failed"
+  echo "$RESULT"
+fi
+```
+
+### Subcommand: disable
+
+Remove spex-detach exclude entries from .git/info/exclude, restoring spec artifact visibility to git.
+
+```bash
+RESULT=$("$DETACH_SCRIPT" disable)
+EXIT_CODE=$?
+
+if [ "$EXIT_CODE" -eq 0 ]; then
+  CLEAN=$(echo "$RESULT" | jq -r '.already_clean')
+  if [ "$CLEAN" = "true" ]; then
+    echo "No spex-detach entries found in .git/info/exclude (already clean)"
+  else
+    REMOVED=$(echo "$RESULT" | jq -r '.paths_removed | length')
+    echo "Stealth mode disabled: removed $REMOVED entries from .git/info/exclude"
+    echo "Spec artifacts are now visible to git again."
+  fi
+else
+  echo "ERROR: Disable failed"
   echo "$RESULT"
 fi
 ```
