@@ -210,7 +210,7 @@ specify workflow run spex/setup.yml -i "security=autonomous"
 specify workflow run spex/setup.yml -i "integration=codex"
 ```
 
-The workflow uses spec-kit's `SPECKIT_WORKFLOW_DIR` to locate its sibling scripts and extensions from the YAML file path, so it must be run from a local checkout (not a bare URL). It auto-detects the agent harness, installs extensions, and applies per-agent configuration (including command adaptation, see below). Prerequisites: `specify` CLI (>= 0.12.16), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
+The workflow uses spec-kit's `SPECKIT_WORKFLOW_DIR` to locate its sibling scripts and extensions from the YAML file path, so it must be run from a local checkout (not a bare URL). It auto-detects the agent harness, installs extensions, and applies per-agent configuration (including command adaptation, see below). Prerequisites: `specify` CLI (>= 1.0.0), `git`, and `jq`. The existing Claude Code plugin will delegate to this workflow when available, falling back to direct init otherwise.
 
 The first successful setup records requested project intent in
 `.specify/spex.json`. Commit this file so teammates and later refreshes use the
