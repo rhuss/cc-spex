@@ -1,6 +1,6 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-6.0.0--dev-blue)
+![Version](https://img.shields.io/badge/version-6.0.0-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -8,8 +8,8 @@
 
 > Extend Spec-Kit with composable extensions and workflow commands for Claude Code.
 
-> [!CAUTION]
-> The `main` branch is tracking **v6.0.0 development**, which introduces agent-harness-agnostic spex. Version 6 works with Claude Code, Codex, OpenCode, and any platform that spec-kit supports. This is a work in progress and not yet stable. For the latest stable release, use the [`5.9.x`](https://github.com/rhuss/cc-spex/tree/5.9.x) branch. See [Migrating from v5.x to v6.x](#migrating-from-v5x-to-v6x) for upgrade guidance.
+> [!NOTE]
+> **Version 6** makes spex agent-harness-agnostic: the same spec-driven workflow runs on Claude Code, Codex, OpenCode, and any platform that spec-kit supports. Upgrading from v5.x? See [Migrating from v5.x to v6.x](#migrating-from-v5x-to-v6x). The previous stable line remains on the [`5.9.x`](https://github.com/rhuss/cc-spex/tree/5.9.x) branch.
 
 ## Why cc-spex?
 

@@ -7,24 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- Init no longer writes ignore rules to the tracked `.gitignore`. Both setup paths (`setup.yml`, `spex-init.sh`) now write to `.git/info/exclude`, which is local to the clone and shared across worktrees. The old behaviour committed spex scaffolding rules into repositories that never opted into spex, and could ignore a directory the project uses itself (`.agents/`, for instance, is a contributor-workflow directory in some repos). An existing spex block in `.gitignore` is reported with instructions to delete it; init never edits a tracked file itself.
-- Worktree creation now copies symlinked config targets. Projects that link `.claude/skills` to a gitignored directory elsewhere in the repo (for example `.claude/skills -> ../.agents/skills/`) ended up with a dangling symlink in the new worktree and lost every skill, because `rsync -a` copies the link and nothing copied its target.
-- The `after_specify` / `before_implement` worktree hooks no longer fall through to the `list` action. The `args` declared in `extension.yml` are dropped when the `specify` CLI generates `.specify/extensions.yml`, so the hooks arrived with no argument; the command now derives `create` / `ensure` from the invoking hook.
-- `spex-detach is-enabled` and the archive step in `finish` now read the `enabled` flag in `.specify/extensions/.registry`. They used to check only whether `.specify/extensions/spex-detach/` existed, which stays on disk when the extension is disabled, so `brainstorm` and `finish` treated a disabled spex-detach as active.
+## [6.0.0] - 2026-10-09
+
+Version 6 makes spex agent-harness-agnostic. Setup moves from Claude Code plugin initialization to spec-kit's workflow system, so the same spec-driven workflow runs on Claude Code, Codex, and OpenCode. See [Migrating from v5.x to v6.x](README.md#migrating-from-v5x-to-v6x) for upgrade guidance.
+
+### Breaking
+
+- **Workflow-based setup replaces plugin-based initialization.** `/spex:init` now drives spec-kit's workflow engine instead of Claude Code plugin init. Extension command files are authored in harness-neutral vocabulary and adapted per harness at setup time. Projects initialized under v5.x should re-run `/spex:init`; a leftover `.specify/spex-traits.json` is detected and reported (the old config is no longer used).
+- **Extensions now carry their own scripts.** Scripts live inside each extension bundle rather than in a shared location, so extensions are self-contained.
+
+### Added
+
+- **Multi-harness support.** Neutral command vocabulary with per-harness adaptation (`spex-adapt-commands.sh` + `command-map.json` per harness), a Codex hook contract, and native Codex project configuration. spex now works on Claude Code, Codex, and OpenCode.
+- **spex-detach extension.** Stealth mode that hides spec artifacts (`.specify/`, `specs/`, `brainstorm/`) from git via `.git/info/exclude` for contributing to repos that don't use SDD, with a `disable` subcommand, registry-aware `is-enabled`, and sibling-repo archiving at finish time.
+- **Guided-demo smoke test.** The smoke test is rewritten to synthesize user-observable flows from spec FRs, triage infrastructure, and present evidence for human review.
+- **Smart phase splitting** in spex-collab, driven by file-count thresholds.
+- **`context_boundary` hook property** for post-implement review gates.
+- Goal-alignment agent, early Codecov detection, and `finish --auto`.
+- Spec-declared constants drift check in `review-code`.
+- Status line shown from specify start in step-by-step mode.
+- Review and PR-comment triage can be delegated to the standalone [cc-review](https://github.com/rhuss/cc-review) plugin.
 
 ### Changed
-- Synced with superpowers@8ca22db (Superpowers 6.4.2, 2026-09-25)
-  - `writing-plans`: adapted the "leaner plans" philosophy into the `review-plan` quality gate. The gate now flags over-specification (function bodies the signature and tests already determine, repeated code that should reference a task's Interfaces block) alongside the existing placeholder checks, and adds a **Review Focus** check (uncovered failure modes the spec implies, with tests added to owning tasks) and a **Proportion** check (a plan must not transcribe the code it plans).
-  - `brainstorm`: absorbed "Establish Shared Understanding" from upstream brainstorming. The brainstorm command now writes back its understanding (separating what the user stated from assumptions, inviting correction) before exploring approaches. The three-path HARD-GATE was evaluated and skipped (does not fit the brainstorm→specify pipeline).
-  - `verification-before-completion`, `review-code`: no upstream changes since last sync.
-  - All spex spec-compliance enhancements preserved.
-- Synced with superpowers@b36e082 (Superpowers 6.3.0, 2026-08-12)
-  - `writing-plans`: Spec: field validation added to `review-plan` quality gate (plan-spec traceability)
-  - `verification-before-completion`: removed persuasion sections (aligned with upstream)
-  - `brainstorming`: evaluated three-path router (Spike/Bounded/Architectural), no changes (diverged model)
-  - All spex spec-compliance enhancements preserved
-- Updated `.superpowers-sync` paths to match extension migration
+
+- Rewrote `spex-ship-state` and `spex-detach` scripts in Python for reliability.
+- Init writes ignore rules to `.git/info/exclude` (local to the clone, shared across worktrees) instead of the tracked `.gitignore`. An existing spex block in `.gitignore` is reported with removal instructions; init never edits a tracked file itself.
+- Synced with Superpowers 6.4.2 (@8ca22db): adapted the "leaner plans" philosophy into the `review-plan` gate (flags over-specification alongside placeholders; adds **Review Focus** and **Proportion** checks), and absorbed "Establish Shared Understanding" into `brainstorm` (write back understanding, separating stated facts from assumptions, before exploring approaches).
+- Synced with Superpowers 6.3.0 (@b36e082): `Spec:` field validation in the `review-plan` gate; removed persuasion sections from `verification-before-completion`.
+
+### Fixed
+
+- Resolved multiple open bugs (#14, #19, #21, #22, #23, #24).
+- Worktrees: read the spec directory from `feature.json` instead of the branch name; auto-enable the git extension when worktrees is selected; copy symlinked config targets so linked skills survive worktree creation; route bare `after_specify` / `before_implement` hook calls to `create` / `ensure`; remove stale `.spex-state` from the main repo after worktree creation.
+- Robust agent detection when multiple agent directories coexist.
+- Generate missing extension command skills during init.
+- `spex-detach is-enabled` and the `finish` archive step read the `enabled` flag in `.specify/extensions/.registry` rather than mere directory presence.
+- Root `hooks.json` uses `python-resolve.sh` with correct interpreter ordering (#17).
 
 ## [5.8.0] - 2026-06-25
 
