@@ -87,6 +87,7 @@ build/
 **/.beads/
 **/.style/
 **/.specify/**
+!**/.specify/spex.json
 !**/.specify/memory/
 !**/.specify/memory/**
 .playwright-mcp/
