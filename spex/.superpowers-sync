@@ -1,15 +1,15 @@
 {
   "upstream_repo": "https://github.com/obra/superpowers",
-  "last_sync_commit": "b36e0829c6d0140e93cfef2ca599b1b07d4a7797",
-  "last_sync_date": "2026-09-04",
-  "note": "Synced via /update-superpowers (Superpowers 6.3.0)",
+  "last_sync_commit": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+  "last_sync_date": "2026-10-08",
+  "note": "Synced via /update-superpowers (Superpowers 6.4.2)",
   "modified_skills": {
     "writing-plans": {
       "upstream_file": "skills/writing-plans/SKILL.md",
       "local_file": null,
       "sync_mode": "reference-only",
       "feeds_into": "extensions/spex-gates/commands/speckit.spex-gates.review-plan.md",
-      "modification_summary": "No local copy. Upstream changes evaluated and adapted into review-plan quality gate. Spec: field validation added to plan header checks.",
+      "modification_summary": "No local copy. Upstream changes evaluated and adapted into review-plan quality gate. Spec: field validation added to plan header checks. [6.4.2] Adapted leaner-plans philosophy: review-plan gate now catches over-specification (transcripts) alongside placeholders, adds Review Focus and Proportion checks.",
       "patterns_absorbed": [
         "Coverage Matrix (requirement -> task -> test mapping)",
         "Red Flag Scanning (vague language detection, expanded placeholder patterns)",
@@ -22,7 +22,11 @@
         "Type and Name Consistency (cross-task consistency validation)",
         "No Placeholders (explicit plan failure patterns)",
         "Self-Review replacing subagent dispatch (inline checklist)",
-        "Spec: field in plan header (plan-spec traceability)"
+        "Spec: field in plan header (plan-spec traceability)",
+        "Review Focus (uncovered failure modes the spec implies, tests added to owning tasks)",
+        "Proportion check (plan must not transcribe code; flag plans several times longer than spec)",
+        "Leaner plans model (code steps carry signature + file + spec values, not full bodies)",
+        "Interfaces-block referencing supersedes repeat-the-code guidance"
       ]
     },
     "review-code": {
@@ -84,7 +88,7 @@
     "brainstorm": {
       "upstream_file": "skills/brainstorming/SKILL.md",
       "local_file": "extensions/spex/commands/speckit.spex.brainstorm.md",
-      "modification_summary": "Diverged significantly from upstream. Spex brainstorm produces structured brainstorm documents (not specs), with idea inbox, revisit detection, sync archiving, and issue creation. Upstream v6.3.0 added three-path router (Spike/Bounded/Architectural) which doesn't map to spex's brainstorm->specify->plan pipeline. YAGNI principle already present. Three-path routing noted as potential future feature.",
+      "modification_summary": "Diverged significantly from upstream. Spex brainstorm produces structured brainstorm documents (not specs), with idea inbox, revisit detection, sync archiving, and issue creation. Upstream v6.3.0 added three-path router (Spike/Bounded/Architectural) which doesn't map to spex's brainstorm->specify->plan pipeline. YAGNI principle already present. Three-path routing noted as potential future feature. [6.4.1] Absorbed Establish Shared Understanding: write back understanding (separate stated from assumed, invite correction) before exploring approaches. Skipped three-path HARD-GATE (does not fit brainstorm->specify pipeline).",
       "key_sections_modified": [
         "Overview: Output is brainstorm document not spec",
         "Checklist: 10-step brainstorm workflow with idea inbox",

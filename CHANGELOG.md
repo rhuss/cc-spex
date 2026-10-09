@@ -11,8 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Init no longer writes ignore rules to the tracked `.gitignore`. Both setup paths (`setup.yml`, `spex-init.sh`) now write to `.git/info/exclude`, which is local to the clone and shared across worktrees. The old behaviour committed spex scaffolding rules into repositories that never opted into spex, and could ignore a directory the project uses itself (`.agents/`, for instance, is a contributor-workflow directory in some repos). An existing spex block in `.gitignore` is reported with instructions to delete it; init never edits a tracked file itself.
 - Worktree creation now copies symlinked config targets. Projects that link `.claude/skills` to a gitignored directory elsewhere in the repo (for example `.claude/skills -> ../.agents/skills/`) ended up with a dangling symlink in the new worktree and lost every skill, because `rsync -a` copies the link and nothing copied its target.
 - The `after_specify` / `before_implement` worktree hooks no longer fall through to the `list` action. The `args` declared in `extension.yml` are dropped when the `specify` CLI generates `.specify/extensions.yml`, so the hooks arrived with no argument; the command now derives `create` / `ensure` from the invoking hook.
+- `spex-detach is-enabled` and the archive step in `finish` now read the `enabled` flag in `.specify/extensions/.registry`. They used to check only whether `.specify/extensions/spex-detach/` existed, which stays on disk when the extension is disabled, so `brainstorm` and `finish` treated a disabled spex-detach as active.
 
 ### Changed
+- Synced with superpowers@8ca22db (Superpowers 6.4.2, 2026-09-25)
+  - `writing-plans`: adapted the "leaner plans" philosophy into the `review-plan` quality gate. The gate now flags over-specification (function bodies the signature and tests already determine, repeated code that should reference a task's Interfaces block) alongside the existing placeholder checks, and adds a **Review Focus** check (uncovered failure modes the spec implies, with tests added to owning tasks) and a **Proportion** check (a plan must not transcribe the code it plans).
+  - `brainstorm`: absorbed "Establish Shared Understanding" from upstream brainstorming. The brainstorm command now writes back its understanding (separating what the user stated from assumptions, inviting correction) before exploring approaches. The three-path HARD-GATE was evaluated and skipped (does not fit the brainstorm→specify pipeline).
+  - `verification-before-completion`, `review-code`: no upstream changes since last sync.
+  - All spex spec-compliance enhancements preserved.
 - Synced with superpowers@b36e082 (Superpowers 6.3.0, 2026-08-12)
   - `writing-plans`: Spec: field validation added to `review-plan` quality gate (plan-spec traceability)
   - `verification-before-completion`: removed persuasion sections (aligned with upstream)

@@ -154,17 +154,37 @@ assert_contains "git add -f stages excluded file" ".specify/forced.md" "$STAGED"
 git reset HEAD .specify/forced.md -q
 cleanup
 
-# ─── Test: is-enabled returns 0 when extension dir exists ───
-echo "=== Test: is-enabled returns exit 0 when extension dir exists ==="
+# ─── Test: is-enabled returns 0 when enabled in registry ───
+echo "=== Test: is-enabled returns exit 0 when enabled in registry ==="
 setup_test_repo
+echo '{"extensions":{"spex-detach":{"enabled":true}}}' > .specify/extensions/.registry
 EXIT_CODE=0
 python3 "$DETACH_SCRIPT" is-enabled 2>/dev/null || EXIT_CODE=$?
 assert_eq "is-enabled returns 0" "0" "$EXIT_CODE"
 cleanup
 
+# ─── Test: is-enabled returns 1 when installed but disabled ───
+# The extension directory stays on disk when the extension is disabled.
+echo "=== Test: is-enabled returns exit 1 when disabled in registry ==="
+setup_test_repo
+echo '{"extensions":{"spex-detach":{"enabled":false}}}' > .specify/extensions/.registry
+EXIT_CODE=0
+python3 "$DETACH_SCRIPT" is-enabled 2>/dev/null || EXIT_CODE=$?
+assert_eq "is-enabled returns 1 when disabled" "1" "$EXIT_CODE"
+cleanup
+
+# ─── Test: is-enabled returns 1 without registry ───
+echo "=== Test: is-enabled returns exit 1 without registry ==="
+setup_test_repo
+EXIT_CODE=0
+python3 "$DETACH_SCRIPT" is-enabled 2>/dev/null || EXIT_CODE=$?
+assert_eq "is-enabled returns 1 without registry" "1" "$EXIT_CODE"
+cleanup
+
 # ─── Test: is-enabled returns 1 when extension dir missing ───
 echo "=== Test: is-enabled returns exit 1 when extension dir missing ==="
 setup_test_repo
+echo '{"extensions":{"spex-detach":{"enabled":true}}}' > .specify/extensions/.registry
 rm -rf .specify/extensions/spex-detach
 EXIT_CODE=0
 python3 "$DETACH_SCRIPT" is-enabled 2>/dev/null || EXIT_CODE=$?

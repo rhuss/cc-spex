@@ -102,6 +102,12 @@ Also verify:
 - Every edge case from the spec is addressed
 - Success criteria have verification approaches
 
+### Review Focus (uncovered failure modes)
+
+The coverage matrix proves every *stated* requirement has a task. This check looks past the stated list. A spec is a vision document: it says what the software must do, not every input it will meet, and its silence on an input is not permission for that input to break the program.
+
+Scan for the input classes or failure modes the spec *implies* but no task's tests exercise. Name the ones most likely to bite a real user (empty input, malformed data, concurrent access, missing dependency, boundary values, and the like). For each, there should be a task whose tests pin that behavior. If the plan has a **Review Focus** section listing these, verify each listed item has its test added to the owning task. If the plan has no such section, flag the most likely uncovered modes as gaps and suggest adding tests to the owning tasks. Finding none is a valid outcome, but only after the check was actually run.
+
 ## 3. Red Flag Scanning
 
 Search plan.md and tasks.md for vague or incomplete language:
@@ -111,15 +117,22 @@ SPEC_DIR="specs/[feature-name]"
 rg -i "figure out|tbd|todo|implement later|somehow|somewhere|not sure|maybe|probably|add appropriate|add validation|handle edge cases|similar to task" "$SPEC_DIR/plan.md" "$SPEC_DIR/tasks.md" || echo "No red flags found"
 ```
 
-Review any matches:
+A plan carries the decisions the implementer cannot make alone: which files, which names and signatures, which values from the spec, which tests prove each task. It is not a transcript of the code. Both under-specification (a step that decides nothing) and over-specification (a function body the signature and tests already determine) are failures. Scan for both.
+
+**Under-specification** (the step leaves a decision unmade):
 - "Figure out..." = missing research, needs concrete approach
 - "TBD" / "TODO" = incomplete planning, must be resolved
 - "Implement later" = deferred work, scope explicitly
-- "Add appropriate error handling" / "add validation" / "handle edge cases" = vague placeholders, must show actual code
-- "Write tests for the above" (without actual test code) = test code must be included
-- "Similar to Task N" = repeat the code, the engineer may read tasks out of order
-- Steps that describe what to do without showing how = code blocks required for code steps
+- "Add appropriate error handling" / "add validation" / "handle edge cases" = vague placeholder; name the behavior and the test that pins it
+- "Write tests for the above" without the test's name and assertions = test steps must carry the assertions, as code, with the spec's exact values
+- A type, function, or method referenced by no task's Interfaces block = undefined dependency
 - Missing file paths = tasks are not actionable
+
+**Over-specification** (the step transcribes code the implementer would write anyway):
+- A full function body where the exact signature (name, parameters, return type), its file, and the task's tests already determine the implementation. A code step should carry the signature + file + spec-pinned values; a body appears only for an algorithm those do not determine, or for exact copy the spec fixes.
+- "Similar to Task N" followed by repeated code = reference that task's **Interfaces** block instead; the plan does not repeat another task's code. (This supersedes the old "repeat the code" guidance: spex plans carry Interfaces blocks precisely so code need not be duplicated across tasks read out of order.)
+
+**Proportion check:** Compare the plan's length to the spec's. A plan several times longer than the spec it implements, or one where code blocks are most of the document, has written the code instead of planning it. When this happens, flag it and suggest replacing function bodies with signatures, test names, and assertions, then confirming each step still lets the implementer write exactly one reasonable thing.
 
 ## 4. Type and Name Consistency
 
@@ -159,8 +172,10 @@ Findings:
   1. [BLOCKING] Task T003 is not actionable: "figure out auth approach"
   2. [advisory] Plan may benefit from splitting (2 independent subsystems)
   3. [gap] FR-007 has no implementing task in the coverage matrix
-  4. [red-flag] tasks.md line 42: "TBD" placeholder
-  5. [nfr] NFR-002 "response time < 200ms" has no measurement method
+  4. [review-focus] Empty-token input implied by FR-003 has no task exercising it
+  5. [red-flag] tasks.md line 42: "TBD" placeholder
+  6. [proportion] Task T005 transcribes a full function body its signature and tests already determine
+  7. [nfr] NFR-002 "response time < 200ms" has no measurement method
 ```
 
 Then ask the user how to proceed (skip in autonomous mode, default to "Fix all"):

@@ -179,8 +179,11 @@ fi
 Detect whether spex-detach is enabled:
 
 ```bash
+# is-enabled checks the extension registry; the extension directory alone
+# is not enough, since it stays on disk when the extension is disabled.
 DETACH_ENABLED=false
-if [ -d ".specify/extensions/spex-detach" ]; then
+DETACH_SCRIPT=".specify/extensions/spex-detach/scripts/spex-detach.sh"
+if [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
   DETACH_ENABLED=true
 fi
 ```

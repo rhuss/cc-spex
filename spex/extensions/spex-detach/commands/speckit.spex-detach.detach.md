@@ -12,7 +12,7 @@ Manage spec artifact visibility for upstream contributions. Stealth mode uses .g
 - **enable** (default): Write .git/info/exclude entries to hide spec artifacts from git
 - **disable**: Remove .git/info/exclude entries to make spec artifacts visible to git again
 - **archive**: Copy spec artifacts to the configured project-specs sibling repo
-- **is-enabled**: Check if the detach extension is active (exit 0 = yes, exit 1 = no)
+- **is-enabled**: Check if the detach extension is enabled in `.specify/extensions/.registry` (exit 0 = yes, exit 1 = no)
 
 ## Execution
 

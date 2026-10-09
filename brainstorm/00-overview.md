@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-08-04
+Last updated: 2026-10-04
 
 ## Sessions
 
@@ -20,6 +20,7 @@ Last updated: 2026-08-04
 | 43 | 2026-07-31 | guided-demo (smoke test v4) | ready for spec | - | - |
 | 44 | 2026-08-02 | extract-cc-review | active | - | [#50](https://github.com/rhuss/cc-spex/issues/50) |
 | 45 | 2026-08-02 | data-pipeline-hygiene | active | - | [#49](https://github.com/rhuss/cc-spex/issues/49) |
+| 46 | 2026-10-04 | mechanical-compliance-gate | idea | - | - |
 
 ## Open Threads
 
@@ -73,6 +74,10 @@ Last updated: 2026-08-04
 - What format should the spec use to declare constants? (from #45)
 - Should the extension command live in spex-gates or a new spex-data extension? (from #45)
 - Migration path when upstream presets land (deprecation notice, automatic fallback) (from #45)
+- Matrix format for the compliance gate: markdown `Status:` lines or fenced JSON/YAML? (from #46)
+- How to stop the agent from touching the verification marker directly? (from #46)
+- Compliance gate fail-open or strict by default? (from #46)
+- Fallback for specs without numbered FR IDs (from #46)
 
 ## Parked Ideas
 

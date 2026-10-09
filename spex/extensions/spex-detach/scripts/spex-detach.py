@@ -78,8 +78,18 @@ def require_arg(flag, remaining):
         sys.exit(1)
 
 
+REGISTRY_FILE = ".specify/extensions/.registry"
+
+
 def cmd_is_enabled():
-    sys.exit(0 if os.path.isdir(".specify/extensions/spex-detach") else 1)
+    # The extension directory stays on disk when the extension is disabled,
+    # so the registry flag decides.
+    try:
+        with open(REGISTRY_FILE, "r") as f:
+            enabled = json.load(f)["extensions"]["spex-detach"]["enabled"] is True
+    except (OSError, ValueError, KeyError, TypeError):
+        enabled = False
+    sys.exit(0 if enabled and os.path.isdir(".specify/extensions/spex-detach") else 1)
 
 
 def cmd_enable(args):

@@ -124,6 +124,10 @@ After exploring project context, check if `brainstorm/idea-inbox.md` exists and 
 - Prefer multiple choice when possible, but open-ended is fine too
 - Focus on: purpose, constraints, success criteria, edge cases
 - Identify dependencies and integrations
+- Knowing the kind of thing being built does not tell you why the user wants it. When purpose or intended use is missing, ask about that before proposing features or approaches.
+
+**Write back your understanding:**
+Once you have enough to frame the problem, summarize the intended outcome, constraints, and success criteria in a short note the user can assess. Separate what they stated from what you are assuming, and invite correction. Incorporate their answer before treating this as the design brief. When the request already supplies purpose and constraints, reflect that understanding instead of asking the same questions again. This happens before exploring approaches, not after.
 
 **Remember:** You're exploring WHAT needs to happen, not HOW it will be implemented.
 
