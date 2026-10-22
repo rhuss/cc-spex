@@ -194,13 +194,18 @@ configure_statusline() {
     if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
       local current_cmd
       current_cmd="$(jq -r '.statusLine.command // empty' "$settings_file")"
-      if [ -n "$current_cmd" ] && [ -f "$current_cmd" ]; then
+      if [ -n "$current_cmd" ]; then
         # Already pointing to our script, nothing to do
         case "$current_cmd" in
-          *spex-ship-statusline.sh) return 0 ;;
+          *spex-ship-statusline.sh*) return 0 ;;
         esac
-        # Different statusline exists, save it for chaining
-        echo "$current_cmd" > "$chain_file"
+        # Different statusline exists: save the whole command line for chaining (a bare path
+        # or `bash script.sh --args`). If it cannot be saved, leave the user's line alone
+        # rather than replace it with nothing to fall back to.
+        if ! printf '%s\n' "$current_cmd" > "$chain_file" 2>/dev/null; then
+          echo "  WARNING: could not save the existing status line to $chain_file; leaving it unchanged" >&2
+          return 0
+        fi
       fi
     fi
     # Merge or update statusLine

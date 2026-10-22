@@ -439,11 +439,16 @@ steps:
             if [ -f "$SETTINGS" ]; then
               if command -v jq >/dev/null 2>&1 && jq -e '.statusLine' "$SETTINGS" >/dev/null 2>&1; then
                 CURRENT_CMD="$(jq -r '.statusLine.command // empty' "$SETTINGS")"
-                if [ -n "$CURRENT_CMD" ] && [ -f "$CURRENT_CMD" ]; then
+                if [ -n "$CURRENT_CMD" ]; then
                   case "$CURRENT_CMD" in
-                    *spex-ship-statusline.sh) exit 0 ;;
+                    *spex-ship-statusline.sh*) exit 0 ;;
                   esac
-                  echo "$CURRENT_CMD" > "$CHAIN_FILE"
+                  # Save the whole command line (bare path or `bash script.sh --args`); if that
+                  # fails, keep the user's status line rather than replace it.
+                  if ! printf '%s\n' "$CURRENT_CMD" > "$CHAIN_FILE" 2>/dev/null; then
+                    echo "WARNING: could not save the existing status line; leaving it unchanged" >&2
+                    exit 0
+                  fi
                 fi
               fi
               TMP=$(mktemp)

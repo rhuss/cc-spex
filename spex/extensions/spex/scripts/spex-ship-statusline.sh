@@ -51,12 +51,18 @@ get_chain_output() {
   if [ -n "$CHAIN_FILE" ]; then
     local prev_cmd
     prev_cmd=$(cat "$CHAIN_FILE" 2>/dev/null)
-    if [ -n "$prev_cmd" ] && [ -f "$prev_cmd" ]; then
-      if [ -n "$STDIN_JSON" ]; then
-        echo "$STDIN_JSON" | "$prev_cmd" 2>/dev/null || true
-      else
-        "$prev_cmd" 2>/dev/null || true
-      fi
+    [ -n "$prev_cmd" ] || return 0
+    # A bare script path (possibly with spaces) runs directly, as before. Anything else is a
+    # command line such as `bash ~/.claude/statusline.sh --compact`, run through a shell the
+    # way Claude Code runs statusLine.command itself.
+    local runner=()
+    if [ ! -f "$prev_cmd" ]; then
+      runner=(bash -c)
+    fi
+    if [ -n "$STDIN_JSON" ]; then
+      echo "$STDIN_JSON" | ${runner[@]+"${runner[@]}"} "$prev_cmd" 2>/dev/null || true
+    else
+      ${runner[@]+"${runner[@]}"} "$prev_cmd" 2>/dev/null || true
     fi
   fi
 }
