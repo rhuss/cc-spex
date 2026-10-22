@@ -219,7 +219,11 @@ REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
 
 # Read label config
 COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
-LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+if [ -f "$COLLAB_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found, so $COLLAB_CONFIG cannot be read; using defaults" >&2
+fi
+LABELS_ENABLED=$(yq -r '.labels.enabled' "$COLLAB_CONFIG" 2>/dev/null)
+case "$LABELS_ENABLED" in true|false) ;; *) LABELS_ENABLED=true ;; esac
 SPEC_LABEL=$(yq -r '.labels.spec // "spex/spec"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec")
 SPEC_APPROVED_LABEL=$(yq -r '.labels.spec_approved // "spex/spec-approved"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec-approved")
 IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
@@ -449,7 +453,11 @@ fi
 gh pr edit "$PR_NUM" --title "$NEW_TITLE"
 
 # Update labels
-LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+if [ -f "$COLLAB_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found, so $COLLAB_CONFIG cannot be read; using defaults" >&2
+fi
+LABELS_ENABLED=$(yq -r '.labels.enabled' "$COLLAB_CONFIG" 2>/dev/null)
+case "$LABELS_ENABLED" in true|false) ;; *) LABELS_ENABLED=true ;; esac
 if [ "$LABELS_ENABLED" = "true" ]; then
   SPEC_LABEL=$(yq -r '.labels.spec // "spex/spec"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec")
   SPEC_APPROVED_LABEL=$(yq -r '.labels.spec_approved // "spex/spec-approved"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/spec-approved")

@@ -356,10 +356,13 @@ Flags are consumed and removed from the argument string. The remaining text (if 
 ```bash
 # 1. Read defaults from deep-review extension config (all default to true if key is missing)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found, so $DEEP_REVIEW_CONFIG cannot be read; using defaults" >&2
+fi
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+case "$DEFAULT_CODERABBIT" in true|false) ;; *) DEFAULT_CODERABBIT=true ;; esac
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+case "$DEFAULT_COPILOT" in true|false) ;; *) DEFAULT_COPILOT=true ;; esac
 
 # 2. If config file is missing, default all tools to true
 ```

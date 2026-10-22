@@ -41,12 +41,15 @@ This prevents callers (e.g., ship pipeline subagent prompts) from accidentally d
 ```bash
 # ALWAYS read config defaults (never skip this step, never trust caller values)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
-DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODEX=${DEFAULT_CODEX:-true}
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found, so $DEEP_REVIEW_CONFIG cannot be read; using defaults" >&2
+fi
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+case "$DEFAULT_CODERABBIT" in true|false) ;; *) DEFAULT_CODERABBIT=true ;; esac
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+case "$DEFAULT_COPILOT" in true|false) ;; *) DEFAULT_COPILOT=true ;; esac
+DEFAULT_CODEX=$(yq -r '.external_tools.codex' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+case "$DEFAULT_CODEX" in true|false) ;; *) DEFAULT_CODEX=true ;; esac
 ```
 
 ```

@@ -148,12 +148,15 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
 1. Read config defaults from deep-review extension config:
    ```bash
    DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-   DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-   DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
-   DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_CODEX=${DEFAULT_CODEX:-true}
+   if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+     echo "spex: yq not found, so $DEEP_REVIEW_CONFIG cannot be read; using defaults" >&2
+   fi
+   DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   case "$DEFAULT_CODERABBIT" in true|false) ;; *) DEFAULT_CODERABBIT=true ;; esac
+   DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   case "$DEFAULT_COPILOT" in true|false) ;; *) DEFAULT_COPILOT=true ;; esac
+   DEFAULT_CODEX=$(yq -r '.external_tools.codex' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
+   case "$DEFAULT_CODEX" in true|false) ;; *) DEFAULT_CODEX=true ;; esac
    ```
 
 2. Start with config defaults:
@@ -642,8 +645,11 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Before spawning the subagent, check if per-task test checkpoints are enabled:
    ```bash
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
-   TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks // true' "$SPEX_CONFIG" 2>/dev/null)
-   TEST_BETWEEN_TASKS=${TEST_BETWEEN_TASKS:-true}
+   if [ -f "$SPEX_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+     echo "spex: yq not found, so $SPEX_CONFIG cannot be read; using defaults" >&2
+   fi
+   TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks' "$SPEX_CONFIG" 2>/dev/null)
+   case "$TEST_BETWEEN_TASKS" in true|false) ;; *) TEST_BETWEEN_TASKS=true ;; esac
    ```
 
    Build the test checkpoint instruction block (only when `TEST_BETWEEN_TASKS` is `true`):
@@ -679,8 +685,11 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    ```bash
    DEEP_REVIEW_ENABLED=$(jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null)
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
-   REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints // true' "$SPEX_CONFIG" 2>/dev/null)
-   REVIEW_CHECKPOINTS=${REVIEW_CHECKPOINTS:-true}
+   if [ -f "$SPEX_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+     echo "spex: yq not found, so $SPEX_CONFIG cannot be read; using defaults" >&2
+   fi
+   REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints' "$SPEX_CONFIG" 2>/dev/null)
+   case "$REVIEW_CHECKPOINTS" in true|false) ;; *) REVIEW_CHECKPOINTS=true ;; esac
    TOTAL_TASKS=$(grep -c '^\- \[.\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
    ```
 

@@ -374,8 +374,12 @@ Check the git extension's auto-commit config. Only commit if the user has enable
 
 ```bash
 GIT_CONFIG=".specify/extensions/git/git-config.yml"
-AUTO_COMMIT=$(yq -r '.auto_commit.after_specify.enabled // .auto_commit.default // false' "$GIT_CONFIG" 2>/dev/null)
-AUTO_COMMIT=${AUTO_COMMIT:-false}
+if [ -f "$GIT_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found, so $GIT_CONFIG cannot be read; using defaults" >&2
+fi
+AUTO_COMMIT=$(yq -r '.auto_commit.after_specify.enabled' "$GIT_CONFIG" 2>/dev/null)
+case "$AUTO_COMMIT" in true|false) ;; *) AUTO_COMMIT=$(yq -r '.auto_commit.default' "$GIT_CONFIG" 2>/dev/null) ;; esac
+case "$AUTO_COMMIT" in true|false) ;; *) AUTO_COMMIT=false ;; esac
 ```
 
 If `AUTO_COMMIT` is `true` and there are uncommitted changes:
