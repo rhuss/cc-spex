@@ -17,7 +17,14 @@ while keeping the working directory at the project root where the user
 invoked `$cc-spex-init`. Never
 `cd` into the skill or plugin directory, and never clone the cc-spex
 repository or download Spex yourself. Pass through any arguments supplied
-after `$cc-spex-init`.
+after `$cc-spex-init`, with one exception below.
+
+In Codex every `$cc-spex-init` run re-runs the full setup workflow from the
+bundled source, so each run is already a refresh. There is no refresh mode and
+`bootstrap.sh` does not accept `--refresh` or `--update` (those are Claude Code
+flags). If the user passes `--refresh` or `--update`, drop that flag before
+calling `bootstrap.sh`, run the rest as usual, and mention in your report that
+the flag is unnecessary in Codex because every run refreshes from source.
 
 The bootstrap picks the Spex source in this order:
 
