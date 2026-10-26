@@ -69,6 +69,42 @@ except `spex-detach`, which is enabled only when named explicitly.
 Before running a non-default selection, summarize the selected values in one
 line. Do not conduct a survey or ask about options the user already supplied.
 
+## Codex progress display
+
+Run this step only after the bootstrap succeeded, and only when the effective
+integration is `codex` (the default, `--integration codex`, or
+`--integration auto` when it resolved to Codex, which it does when run from
+Codex). Skip it when the bootstrap failed or the user passed another
+integration. There is no flag for it; the question is asked at most once per
+project.
+
+1. Resolve `scripts/codex-progress.sh` from this skill directory as for the
+   bootstrap, keep the working directory at the project root, and run
+   `sh <absolute path>/scripts/codex-progress.sh check --root "<project root>"`.
+2. On `CONFIGURED` or `DECLINED`, say nothing about it and continue with the
+   report.
+3. On `UNSUPPORTED` (no TOML parser: Python 3.11 or newer is needed), on a
+   non-zero exit, or on any other output, do not ask. Mention the error line in
+   the report together with a hint that "task progress" can be added by hand
+   through the Codex status line and title settings. Then continue with the
+   report.
+4. On `ASK`, ask the user one yes/no question: "Add spex ship progress (task
+   progress) to your Codex status line and terminal title? This edits
+   <config path>." The config path is `$CODEX_HOME/config.toml` when
+   `CODEX_HOME` is set, otherwise `~/.codex/config.toml`.
+5. On yes, run `sh <absolute path>/scripts/codex-progress.sh apply` and request
+   escalation for it, because the file is outside the workspace. On exit 0,
+   tell the user the change takes effect in a new Codex session. On exit 3 or
+   4, show the user the standard output of `apply` (it already contains the
+   lines to add and how to add task progress by hand) and continue. When the
+   escalation is denied, or the wrapper exits 1 without that output, show the
+   output of `sh <absolute path>/scripts/codex-progress.sh snippet` instead and
+   continue.
+6. On no, run `sh <absolute path>/scripts/codex-progress.sh decline --root "<project root>"`
+   and show the hint it prints, even when it exits non-zero.
+
+Never edit the Codex configuration yourself; always go through the script.
+
 ## Report
 
 After success, report the effective command prefix as `$`, remind the user to

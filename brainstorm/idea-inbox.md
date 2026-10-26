@@ -246,3 +246,39 @@ _Review-related ideas (goal-alignment-skip-behavior, spec-completeness, platform
 - **Summary**: setup.yml runs some scripts directly and depends on executable bits surviving plugin cache copies.
 
 > Calling them through `python3`/`sh` removes that dependency at no cost.
+
+### shared-harness-token-fragments
+
+- **Source**: deep-review
+- **Date**: 2026-10-26
+- **Reference**: 058-codex-ship-progress
+- **Summary**: The OpenCode ship-progress token repeats most of the Codex token because command maps cannot share text.
+
+> The two JSON strings will drift; a `progress --banner-only` flag or shared token fragments in the adapter would keep them in step.
+
+### per-user-codex-progress-decline
+
+- **Source**: deep-review
+- **Date**: 2026-10-26
+- **Reference**: 058-codex-ship-progress
+- **Summary**: The Codex footer decline is a personal choice but lives in the team-owned `.specify/spex.json`, so one teammate's "no" applies to everyone who clones.
+
+> Document the team-wide effect, or move the decline to an untracked per-user file later.
+
+### aggregate-test-target-in-ci
+
+- **Source**: deep-review
+- **Date**: 2026-10-26
+- **Reference**: 058-codex-ship-progress
+- **Summary**: No aggregate `make test` target; release and CI do not run the per-area suites, including the Claude non-regression golden tests.
+
+> The P1 "Claude unchanged" guarantee only holds when someone runs these tests by hand.
+
+### claude-statusline-arithmetic-hardening
+
+- **Source**: deep-review
+- **Date**: 2026-10-26
+- **Reference**: 058-codex-ship-progress
+- **Summary**: The Claude status line still evaluates `stage_index` and `total_stages` in bash arithmetic, which can run `a[$(cmd)]` from a tampered state file (pre-existing).
+
+> A digits-only check would leave output for valid states byte-identical and close the hole; it was kept out of this feature because of the byte-identical requirement.

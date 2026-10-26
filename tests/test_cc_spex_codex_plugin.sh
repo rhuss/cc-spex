@@ -313,6 +313,28 @@ assert_not_contains "SKILL.md does not clone" "git clone" "$(cat "$SKILL/SKILL.m
 assert_not_contains "bootstrap does not clone" "git clone" "$(grep -v '^#' "$BOOTSTRAP")"
 assert_not_contains "bootstrap creates no temporary directory" "mktemp" "$(grep -v '^#' "$BOOTSTRAP")"
 
+echo "Test: Codex progress display (footer and terminal title setup)"
+PROGRESS="$SKILL/scripts/codex-progress.sh"
+assert_eq "codex-progress.sh is executable" "yes" "$([ -x "$PROGRESS" ] && echo yes || echo no)"
+assert_not_contains "codex-progress.sh does not clone" "git clone" "$(grep -v '^#' "$PROGRESS")"
+assert_not_contains "codex-progress.sh creates no temporary directory" "mktemp" "$(grep -v '^#' "$PROGRESS")"
+skill_md="$(cat "$SKILL/SKILL.md")"
+assert_contains "SKILL.md has the Codex progress display section" "## Codex progress display" "$skill_md"
+assert_contains "SKILL.md runs the check" "codex-progress.sh check --root" "$skill_md"
+assert_contains "SKILL.md records a decline" "codex-progress.sh decline --root" "$skill_md"
+assert_contains "SKILL.md asks only for the codex integration" "only when the effective" "$skill_md"
+section_order="$(grep -n -e '^## Defaults and overrides' -e '^## Codex progress display' -e '^## Report' "$SKILL/SKILL.md" | cut -d: -f2 | tr '\n' '|')"
+assert_eq "progress section sits between defaults and report" "## Defaults and overrides|## Codex progress display|## Report|" "$section_order"
+# The wrapper resolves the bundled source from its own location (no ./spex in
+# the project) and runs the check against an empty Codex home.
+mkdir -p "$TMP/progress-proj" "$TMP/progress-home"
+progress_out="$(cd "$TMP/progress-proj" && env -u SPEX_SOURCE CODEX_HOME="$TMP/progress-home" sh "$PROGRESS" check --root "$TMP/progress-proj" 2>&1)" || true
+assert_eq "wrapper check from the bundled source asks" "ASK" "$progress_out"
+assert_contains "SKILL.md handles an UNSUPPORTED check" "UNSUPPORTED" "$skill_md"
+# FR-019: Claude init and the shared setup workflow never run the Codex setup.
+claude_refs="$(grep -rlE "codex-progress|spex-codex-progress" "$PLUGIN/skills" "$PLUGIN/setup.yml" "$PLUGIN/scripts/spex-init.sh" 2>/dev/null || true)"
+assert_eq "Claude init and setup.yml do not reference the Codex progress setup" "" "$claude_refs"
+
 echo "Test: FR-019 guidance never says to disable spex-worktrees by hand"
 manual_disable="$(grep -rlF "extension disable spex-worktrees" "$PLUGIN" 2>/dev/null || true)"
 assert_eq "no 'extension disable spex-worktrees' anywhere in spex/" "" "$manual_disable"

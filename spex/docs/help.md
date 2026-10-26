@@ -189,6 +189,10 @@ spex COMMANDS (helpers and configuration)
                                 --integration codex|claude|opencode|auto (default codex)
                                 Defaults (recommended, safe) apply only without
                                 .specify/spex.json; otherwise the stored choice is reused
+                                After setup, asks once per project whether to add
+                                "task progress" to the Codex footer and terminal title
+                                (edits ~/.codex/config.toml or $CODEX_HOME/config.toml;
+                                a "no" is stored as codex_progress in .specify/spex.json)
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
                                 Checks brainstorm/idea-inbox.md for review seeds
@@ -331,6 +335,16 @@ MULTI-AGENT SUPPORT
     Claude Code  Statusline, permissions in .claude/settings.json
     Codex CLI    Python hooks in .codex/hooks.json + AGENTS.md
     OpenCode     TypeScript plugin in .opencode/plugins/ + AGENTS.md
+
+  Ship progress outside Claude Code (no spex status line):
+    Codex        Banner line after every stage change, pause, failure,
+                 resume and completion, e.g.
+                 🧬 ship 🔨 implement ▓▓▓▓▓▓▓░░ 7/8 🧠
+                 plus an eight-stage checklist (update_plan). With the
+                 opt-in from $cc-spex-init, footer and title show Tasks n/8.
+                 Manual: run /statusline and /title, add "task progress".
+    OpenCode     Banner line only.
+    Source:      spex-ship-state.sh progress (BANNER and PLAN lines)
 
   Command adaptation (spex-adapt-commands.sh):
     Extension commands use harness-neutral vocabulary by default.

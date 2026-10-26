@@ -416,5 +416,102 @@ class InitSkillDeclarationTests(unittest.TestCase):
             )
 
 
+class CodexProgressFieldTests(unittest.TestCase):
+    """The optional codex_progress field (FR-024) survives every setup run."""
+
+    def run_tool(self, *args: str, root: Path, input_value=None):
+        payload = None if input_value is None else json.dumps(input_value)
+        return subprocess.run(
+            ["python3", str(TOOL), *args, "--root", str(root)], cwd=root, input=payload,
+            capture_output=True, text=True, check=False,
+        )
+
+    def declaration(self, **extra) -> dict:
+        return {**json.loads((FIXTURES / "valid.json").read_text()), **extra}
+
+    def test_validate_accepts_declined(self):
+        with tempfile.TemporaryDirectory() as raw:
+            result = self.run_tool("validate", root=Path(raw),
+                                   input_value=self.declaration(codex_progress="declined"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["codex_progress"], "declined")
+
+    def test_validate_rejects_other_values(self):
+        # Unhashable values (list, object) must give the validation error too,
+        # not a traceback.
+        for value in ("accepted", "", True, None, [], ["declined"], {"a": 1}):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as raw:
+                result = self.run_tool("validate", root=Path(raw),
+                                       input_value=self.declaration(codex_progress=value))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ERROR: codex_progress", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_validate_rejects_unhashable_harness_and_security(self):
+        for field in ("harness", "security"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as raw:
+                result = self.run_tool("validate", root=Path(raw),
+                                       input_value=self.declaration(**{field: []}))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"ERROR: {field}", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_validate_omits_field_when_absent(self):
+        with tempfile.TemporaryDirectory() as raw:
+            result = self.run_tool("validate", root=Path(raw), input_value=self.declaration())
+        self.assertNotIn("codex_progress", json.loads(result.stdout))
+
+    def test_resolve_and_persist_keep_the_decline(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            stored = self.declaration(codex_progress="declined")
+            persisted = self.run_tool("persist", root=root, input_value=stored)
+            self.assertEqual(persisted.returncode, 0, persisted.stderr)
+            self.assertEqual(json.loads((root / ".specify/spex.json").read_text()), stored)
+            # A refresh with explicit inputs (as setup.yml runs it) keeps the field.
+            resolved = subprocess.run(
+                ["python3", str(TOOL), "resolve", "--root", raw, "--harness", "codex",
+                 "--extensions", "spex,spex-gates", "--security", "safe"],
+                capture_output=True, text=True, check=True,
+            ).stdout
+            self.assertEqual(json.loads(resolved)["codex_progress"], "declined")
+            again = subprocess.run(
+                ["python3", str(TOOL), "persist", "--root", raw],
+                input=resolved, capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(again.stdout)["codex_progress"], "declined")
+            self.assertEqual(
+                json.loads((root / ".specify/spex.json").read_text())["codex_progress"], "declined"
+            )
+
+    def test_decline_updates_an_existing_profile(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self.run_tool("persist", root=root, input_value=self.declaration())
+            result = self.run_tool("decline-codex-progress", root=root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            stored = json.loads((root / ".specify/spex.json").read_text())
+        self.assertEqual(stored, self.declaration(codex_progress="declined"))
+
+    def test_decline_creates_a_default_profile(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            result = self.run_tool("decline-codex-progress", root=root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            stored = json.loads((root / ".specify/spex.json").read_text())
+        self.assertEqual(stored["codex_progress"], "declined")
+        self.assertEqual(stored["harness"], "auto")
+        self.assertEqual(stored["security"], "safe")
+
+    def test_decline_with_invalid_profile_fails(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / ".specify").mkdir()
+            (root / ".specify/spex.json").write_text("{broken")
+            result = self.run_tool("decline-codex-progress", root=root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ERROR:", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

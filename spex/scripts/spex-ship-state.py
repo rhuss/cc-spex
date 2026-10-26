@@ -313,6 +313,63 @@ def do_checkpoint_record(args):
     print("CHECKPOINT_RECORDED checkpoint={} findings={} fixed={}".format(checkpoint, findings, fixed))
 
 
+def build_plan(data):
+    """Eight-stage plan for Codex update_plan: completed below the current
+    index, in progress at it (with a paused/failed suffix), pending above."""
+    if data.get("stage") == "done":
+        return [{"step": name, "status": "completed"} for name in STAGES]
+    index = data.get("stage_index")
+    if isinstance(index, str) and index.strip().isdigit():
+        # Same reading as the banner's bash arithmetic for a quoted number
+        index = int(index)
+    if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(STAGES):
+        return [{"step": name, "status": "pending"} for name in STAGES]
+    suffix = {"paused": " (paused)", "failed": " (failed)"}.get(data.get("status"), "")
+    plan = []
+    for j, name in enumerate(STAGES):
+        if j < index:
+            plan.append({"step": name, "status": "completed"})
+        elif j == index:
+            plan.append({"step": name + suffix, "status": "in_progress"})
+        else:
+            plan.append({"step": name, "status": "pending"})
+    return plan
+
+
+def render_banner(state_path):
+    """Plain banner from the status line script (single source for icons and bar)."""
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "spex-ship-statusline.sh")
+    if not os.path.isfile(script):
+        return ""
+    env = dict(os.environ, SHIP_STATE_FILE=state_path)
+    try:
+        r = subprocess.run(["bash", script, "--banner"], stdin=subprocess.DEVNULL,
+                           capture_output=True, text=True, timeout=5, env=env)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = r.stdout.strip().splitlines()
+    return lines[0].strip() if lines else ""
+
+
+def do_progress():
+    """Print BANNER and PLAN lines for the ship state, or nothing. Never fails."""
+    try:
+        data = read_state()
+    except (OSError, ValueError):
+        return
+    if not isinstance(data, dict):
+        return
+    mode = data.get("mode")
+    # Legacy files without a mode count as ship when they have a stage (the
+    # status line's `jq -e .stage` test: null and false do not count).
+    if mode != "ship" and not (not mode and data.get("stage") not in (None, False)):
+        return
+    banner = render_banner(os.path.abspath(STATE_FILE))
+    if banner:
+        print("BANNER " + banner)
+    print("PLAN " + json.dumps(build_plan(data), ensure_ascii=False, separators=(", ", ": ")))
+
+
 COMMANDS = {
     "create": lambda a: do_create(a),
     "advance": lambda a: do_advance(),
@@ -321,6 +378,7 @@ COMMANDS = {
     "fail": lambda a: do_fail(),
     "resume": lambda a: do_resume(a),
     "cleanup": lambda a: do_cleanup(),
+    "progress": lambda a: do_progress(),
     "checkpoint-record": lambda a: do_checkpoint_record(a),
     "watch-start": lambda a: do_watch_start(a),
     "watch-update": lambda a: do_watch_update(a),

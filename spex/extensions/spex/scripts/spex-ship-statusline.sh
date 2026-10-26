@@ -3,12 +3,22 @@
 # Usage: Called by Claude Code status line integration
 # Input: JSON via stdin from Claude Code with context_window info
 # Output: Colored status line for ship or flow mode, or empty if no active state
+#
+# --banner: print only the ship line as plain text (no colors, extensions,
+# context or chained status line) plus a newline, for harnesses without a
+# status line (Codex, OpenCode). Prints nothing unless a ship state exists.
+
+BANNER_MODE=false
+if [ "${1:-}" = "--banner" ]; then
+  BANNER_MODE=true
+fi
 
 # Read the context JSON Claude Code pipes to stdin. Read until EOF rather
 # than probing with `read -t 0`: Claude Code writes the JSON after spawning
 # the process, so a non-blocking probe races and usually sees nothing.
+# Banner mode never reads stdin, so it cannot block on an open pipe.
 STDIN_JSON=""
-if [ ! -t 0 ]; then
+if [ "$BANNER_MODE" = false ] && [ ! -t 0 ]; then
   STDIN_JSON=$(cat 2>/dev/null)
 fi
 
@@ -63,6 +73,7 @@ get_chain_output() {
 
 if [ -z "$STATE_FILE" ]; then
   # No spex state, just show the chained statusline
+  [ "$BANNER_MODE" = true ] && exit 0
   get_chain_output
   exit 0
 fi
@@ -77,7 +88,7 @@ MODE=$(echo "$STATE_JSON" | jq -r '.mode // empty' 2>/dev/null)
 # branch (e.g., main) before specify creates the feature branch, so a branch
 # mismatch is expected during Stage 0. The advance command updates feature_branch
 # on each stage transition.
-if [ "$MODE" = "flow" ]; then
+if [ "$MODE" = "flow" ] && [ "$BANNER_MODE" = false ]; then
   FEATURE_BRANCH=$(echo "$STATE_JSON" | jq -r '.feature_branch // empty' 2>/dev/null)
   if [ -n "$FEATURE_BRANCH" ]; then
     CURRENT_BRANCH=$(git -C "$SESSION_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
@@ -99,6 +110,9 @@ YELLOW="\033[33m"
 MAGENTA="\033[35m"
 RED="\033[31m"
 WHITE="\033[37m"
+if [ "$BANNER_MODE" = true ]; then
+  RESET="" BOLD="" DIM="" CYAN="" BLUE="" GREEN="" YELLOW="" MAGENTA="" RED="" WHITE=""
+fi
 
 # --- Context window percentage (from stdin JSON) ---
 render_context() {
@@ -282,6 +296,18 @@ render_ship() {
     exit 0
   fi
 
+  # Banner mode: an agent prints this text verbatim, so accept only plain
+  # values. Small decimal numbers only before arithmetic (bash would evaluate
+  # expressions such as a[$(cmd)], read a leading 0 as octal, and a huge
+  # index would draw a huge bar) and a stage without control or format
+  # characters.
+  if [ "$BANNER_MODE" = true ]; then
+    case "$INDEX" in ''|*[!0-9]*|0?*|???*) exit 0;; esac
+    case "$TOTAL" in ''|*[!0-9]*|0*|???*) exit 0;; esac
+    [ "$INDEX" -le "$TOTAL" ] || exit 0
+    case "$STAGE" in *[!A-Za-z0-9_-]*) exit 0;; esac
+  fi
+
   local DISPLAY_INDEX=$((INDEX + 1))
 
   # Per-stage emoji and color
@@ -327,6 +353,10 @@ render_ship() {
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON} ${RED}${BOLD}✗ failed${RESET}"
   else
     printf "${PREFIX} ${STAGE_DISPLAY} ${PROGRESS} ${ASK_ICON}"
+  fi
+  if [ "$BANNER_MODE" = true ]; then
+    printf "\n"
+    return
   fi
   read_extensions
   render_context
@@ -387,6 +417,17 @@ render_watch() {
 }
 
 # --- Mode dispatch ---
+# Banner mode: ship line only (legacy files without a mode but with a stage
+# count as ship); flow, watch and anything else print nothing.
+if [ "$BANNER_MODE" = true ]; then
+  if [ "$MODE" = "ship" ]; then
+    render_ship
+  elif [ -z "$MODE" ] && echo "$STATE_JSON" | jq -e '.stage' >/dev/null 2>&1; then
+    render_ship
+  fi
+  exit 0
+fi
+
 # Run chained statusline first (previous statusline output appears before spex)
 CHAIN_OUTPUT=$(get_chain_output)
 if [ -n "$CHAIN_OUTPUT" ]; then

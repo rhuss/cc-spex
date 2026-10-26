@@ -49,11 +49,13 @@ trap 'rm -rf "$TMPDIR_WORK"' EXIT
 FALLBACK_NOTE=$(jq -r '.fallback_note // ""' "$MAPPING_TABLE")
 HARNESS_ID=$(jq -r '.harness // ""' "$MAPPING_TABLE")
 
-# Pre-extract token values into individual files for replacement
+# Pre-extract token values into individual files for replacement.
+# Written without a trailing newline (jq -j), so an empty value yields an
+# empty file and expands to nothing (no blank line, no fallback note).
 TOKENS_DIR="$TMPDIR_WORK/.tokens"
 mkdir -p "$TOKENS_DIR"
 jq -r '.tokens // {} | keys[]' "$MAPPING_TABLE" 2>/dev/null | while IFS= read -r tkey; do
-  jq -r --arg key "$tkey" '.tokens[$key]' "$MAPPING_TABLE" > "$TOKENS_DIR/$tkey"
+  jq -j --arg key "$tkey" '.tokens[$key]' "$MAPPING_TABLE" > "$TOKENS_DIR/$tkey"
 done
 
 file_count=0
@@ -157,9 +159,15 @@ for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
           if (do_debug == "true") {
             print "DEBUG: " rel_path ": inline {harness:" tkey "} -> replaced" > "/dev/stderr"
           }
+        } else if (rc == 0) {
+          # Token file exists but is empty: expand to nothing
+          close(repl_file)
+          if (do_debug == "true") {
+            print "DEBUG: " rel_path ": inline {harness:" tkey "} -> replaced (empty)" > "/dev/stderr"
+          }
         } else {
-          if (rc < 0) close(repl_file)
-          # Apply fallback template
+          # Token file missing (rc < 0): apply fallback template
+          close(repl_file)
           repl = fallback_note
           gsub(/\{harness\}/, harness_id, repl)
           gsub(/\{fallback_text\}/, "This feature requires harness-specific support.", repl)

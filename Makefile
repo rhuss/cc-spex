@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-workflow-setup test-generated-trees test-walkthrough test-statusline test-ship-state test-worktree release migrate sync-scripts sync-scripts-check help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-workflow-setup test-generated-trees test-walkthrough test-statusline test-ship-state test-adapt test-codex-progress test-worktree release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -35,6 +35,12 @@ test-ship-state:
 
 test-statusline:
 	@tests/test_ship_statusline.sh
+
+test-adapt:
+	@tests/test_adapt_ship_progress.sh
+
+test-codex-progress:
+	python3 -m unittest tests/test_codex_progress.py
 
 test-worktree:
 	@tests/test_worktree.sh

@@ -254,6 +254,8 @@ SHIP_STATE_FILE="$SHIP_STATE_FILE" "$SHIP_STATE" advance
 This advances `stage` and `stage_index` to the next stage with `status: running`. After the final stage (review-code), `advance` automatically removes the state file and outputs `PIPELINE_COMPLETE`.
 
 **Do NOT manually write JSON to the state file. Always use the script.**
+{harness:ship-progress}
+{/harness:ship-progress}
 
 ### CWD Recovery After Subagents (Worktree Pipelines)
 

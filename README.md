@@ -228,6 +228,12 @@ The `--extensions` and `--security` defaults apply only to a project without `.s
 
 To update later, run `codex plugin marketplace upgrade cc-spex` and re-run `$cc-spex-init` in your projects.
 
+#### Ship progress in Codex
+
+Codex has no spex status line, so a `$speckit-spex-ship` run reports its progress in the conversation. At the start, after every stage change, and on pause, failure, resume and completion, the pipeline prints a one-line banner such as `🧬 ship 🔨 implement ▓▓▓▓▓▓▓░░ 7/8 🧠` (with `⏸ paused` or `✗ failed` appended when the run stops) and refreshes a checklist of the eight stages. Both come from `spex-ship-state.sh progress`, so they always match the state file.
+
+After a successful bootstrap, `$cc-spex-init` asks once per project whether to add spex progress to the Codex footer and terminal title. On yes it appends the built-in `task-progress` item to `[tui].status_line` and `[tui].terminal_title` in `~/.codex/config.toml` (or `$CODEX_HOME/config.toml`), keeping everything else in the file, and asks for approval because the file lives outside the workspace. The footer and title then show `Tasks n/8` during ship runs (start a new Codex session first). On no, the answer is stored as `"codex_progress": "declined"` in `.specify/spex.json` and the question is not asked again. To add it by hand later, run `/statusline` and `/title` in Codex and select "task progress". The setup step reads TOML and needs Python 3.11 or newer (or the `tomli` package); without it the question is skipped and only this hint is shown. If `config.toml` is a symlink (for example from a dotfiles manager), the linked file is edited and the link is kept. Claude Code is unchanged: it keeps the spex status line and never sees the question.
+
 #### Migrating from the thin cc-spex plugin
 
 Earlier Codex installs (`0.1.0+codex.*`) contained only the init skill and cloned GitHub `main` into a temporary directory on every run. The bundled plugin uses the same identity (`cc-spex` in the `cc-spex` marketplace), so it replaces the thin plugin:

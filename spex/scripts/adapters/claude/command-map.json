@@ -20,7 +20,8 @@
     "agent-teams-dispatch": "Use the **Agent** tool with `team_name` to spawn teammates in isolated worktrees.\n\nIf the current harness does not support parallel dispatch, execute tasks sequentially in the current session.",
     "agent-teams-research-dispatch": "Use the **Agent** tool with `team_name` to spawn research agents. Each agent explores in its own context.\n\nIf the current harness does not support parallel dispatch, research all topics sequentially.",
     "worktree-isolation": "**IMPORTANT:** Do NOT use the `ExitWorktree` tool (Claude Code only). Spex worktrees are created via `git worktree add`, not `EnterWorktree`, so `ExitWorktree` will refuse to operate on them. Always use git commands directly. On agents without `EnterWorktree` (Codex, OpenCode), worktrees are always managed via git commands.",
-    "codex-review-tool": "Include Codex external tool detection and dispatch"
+    "codex-review-tool": "Include Codex external tool detection and dispatch",
+    "ship-progress": ""
   },
   "fallback_note": "> **Note:** This capability is not available on {harness}. {fallback_text}"
 }
