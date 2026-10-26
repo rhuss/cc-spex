@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-10-18
+Last updated: 2026-10-26
 
 ## Sessions
 
@@ -25,6 +25,7 @@ Last updated: 2026-10-18
 | 48 | 2026-10-11 | walkthrough-runbook | ready for spec | 054 | - |
 | 49 | 2026-10-13 | merge-stamp-finish | active | - | - |
 | 50 | 2026-10-18 | codex-bundled-init | active | - | [#58](https://github.com/rhuss/cc-spex/issues/58) |
+| 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
 
 ## Open Threads
 
@@ -94,6 +95,7 @@ Last updated: 2026-10-18
 - Should manual `specify extension enable/disable` update `.specify/spex.json`? (from #50)
 - One rule for exact selection vs keeping manually disabled extensions across `spex-init.sh` and `setup.yml`? (from #50)
 - Do Claude-only files in the Codex plugin cache cause Codex warnings? (from #50)
+- Does Codex honor `[tui]` keys from a trusted project's `.codex/config.toml`? (from #51)
 
 ## Parked Ideas
 
