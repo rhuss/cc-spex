@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-10-26
+Last updated: 2026-10-29
 
 ## Sessions
 
@@ -26,6 +26,7 @@ Last updated: 2026-10-26
 | 49 | 2026-10-13 | merge-stamp-finish | active | - | - |
 | 50 | 2026-10-18 | codex-bundled-init | active | - | [#58](https://github.com/rhuss/cc-spex/issues/58) |
 | 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
+| 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
 
 ## Open Threads
 
@@ -96,6 +97,10 @@ Last updated: 2026-10-26
 - One rule for exact selection vs keeping manually disabled extensions across `spex-init.sh` and `setup.yml`? (from #50)
 - Do Claude-only files in the Codex plugin cache cause Codex warnings? (from #50)
 - Does Codex honor `[tui]` keys from a trusted project's `.codex/config.toml`? (from #51)
+- Should Standard permissions also move to `settings.local.json`? (from #52)
+- Should a stored `"security": "yolo"` require confirmation before applying for another user? (from #52)
+- Should Codex YOLO move out of the project `.codex/config.toml`? (from #52)
+- Which anchored rule form matches the absolute-path script invocation? (from #52)
 
 ## Parked Ideas
 
