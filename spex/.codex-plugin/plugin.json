@@ -1,6 +1,6 @@
 {
   "name": "cc-spex",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "Discover and initialize Spex specification-driven workflows for Codex.",
   "author": {
     "name": "cc-spex maintainers"

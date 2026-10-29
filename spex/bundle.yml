@@ -1,7 +1,7 @@
 bundle:
   id: spex
   name: Spex
-  version: "6.1.0"
+  version: "6.2.0"
   description: >-
     Specification-Driven Development toolkit for AI coding agents.
     Installs extensions for quality gates, worktrees, deep review,
