@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-10-29
+Last updated: 2026-11-01
 
 ## Sessions
 
@@ -27,6 +27,7 @@ Last updated: 2026-10-29
 | 50 | 2026-10-18 | codex-bundled-init | active | - | [#58](https://github.com/rhuss/cc-spex/issues/58) |
 | 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
 | 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
+| 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
 
 ## Open Threads
 
@@ -101,6 +102,11 @@ Last updated: 2026-10-29
 - Should a stored `"security": "yolo"` require confirmation before applying for another user? (from #52)
 - Should Codex YOLO move out of the project `.codex/config.toml`? (from #52)
 - Which anchored rule form matches the absolute-path script invocation? (from #52)
+- How does evolve's converge + implement loop run inside ship (flow state, iteration cap)? (from #53)
+- Should spex-collab `revise` adopt the append-only model or keep regenerate + reconcile? (from #53)
+- Does `/speckit-analyze` tolerate superseded `[X]` tasks, or do amendments need "supersedes T0xx" references? (from #53)
+- Is evolve's fix-code "trivial vs. major" boundary its existing severity classification? (from #53)
+- How do plan amendments + converge relate to the openspec-style proposal short-run idea? (from #53)
 
 ## Parked Ideas
 
