@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-11-01
+Last updated: 2026-11-02
 
 ## Sessions
 
@@ -102,11 +102,10 @@ Last updated: 2026-11-01
 - Should a stored `"security": "yolo"` require confirmation before applying for another user? (from #52)
 - Should Codex YOLO move out of the project `.codex/config.toml`? (from #52)
 - Which anchored rule form matches the absolute-path script invocation? (from #52)
-- How does evolve's converge + implement loop run inside ship (flow state, iteration cap)? (from #53)
-- Should spex-collab `revise` adopt the append-only model or keep regenerate + reconcile? (from #53)
-- Does `/speckit-analyze` tolerate superseded `[X]` tasks, or do amendments need "supersedes T0xx" references? (from #53)
-- Is evolve's fix-code "trivial vs. major" boundary its existing severity classification? (from #53)
-- How do plan amendments + converge relate to the openspec-style proposal short-run idea? (from #53)
+- Should `unrequested` converge findings pause an autonomous ship run at every oversight level? (from #53)
+- Should spex-collab `revise` adopt the `SUPERSEDED`/`RETIRED` markers? (from #53)
+- Should evolve detect an installed reconcile extension and defer to it, or stay independent? (from #53)
+- Contribute spex's flow-back experience to [github/spec-kit#4944](https://github.com/github/spec-kit/issues/4944)? (from #53)
 
 ## Parked Ideas
 
