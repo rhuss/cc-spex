@@ -112,7 +112,8 @@ Last updated: 2026-11-02
 - Default visibility when init creates a specs GitHub repo (from #54)
 - Whether `auto_commit` should also push to the specs repo remote (from #54)
 - How init detects a fork to suggest detach (from #54)
-- Fix the stealth-mode exclude gap as a separate bug first? (from #54)
+- Fix the stealth-mode exclude gap as a separate bug first? `run_detach_enable` runs before the selection enables detach (from #54)
+- Repair existing detach projects with missing exclude entries on `--refresh` (from #54)
 
 ## Parked Ideas
 
