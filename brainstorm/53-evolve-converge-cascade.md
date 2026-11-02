@@ -58,3 +58,58 @@ Resulting evolve cascade:
 - How does `/speckit-analyze` behave in practice with superseded `[X]` tasks? Is skill guidance enough, or do amendments need an explicit "supersedes T0xx" reference?
 - Is the "trivial vs. major" boundary for fix-code taken from evolve's existing severity classification, or does it need a separate rule?
 - Relation to the `openspec-style-proposal-short-run` inbox idea: amendments plus converge already form a small delta model for existing specs.
+
+---
+
+## Revisit: 2026-11-02
+
+### Updated Problem Framing
+
+A first ship run (aborted at review-spec) exposed two weak spots in the original decision, and research into upstream spec-kit (v1.2.5) changed the framing:
+
+- **Upstream separates delivery from persistence.** The delivery loop is fixed: specify, plan, tasks, implement, converge, and repeat implement/converge until done. What happens to artifacts after delivery is a team-chosen *persistence model*: flow-forward (completed feature dirs are immutable, changes get a new feature dir), living spec (spec.md is the contract, plan/tasks are regenerated), or flow-back (accepted discoveries are reconciled into any artifact). None is the default. Upstream recommends recording the choice in the constitution. Sources: `docs/concepts/spec-persistence.md`, `docs/guides/evolving-specs.md`.
+- **Core deliberately has no amend/reconcile command.** [github/spec-kit#4940](https://github.com/github/spec-kit/issues/4940) (core flow-back amend step) was closed as not planned: accepting a discovery is a human decision that must be written into the intended contract *before* converge, and converge must never accept code as a substitute for documented intent. `/speckit.revise` ([#4156](https://github.com/github/spec-kit/issues/4156), PR [#4158](https://github.com/github/spec-kit/pull/4158)) was redirected to a community extension. [#4944](https://github.com/github/spec-kit/issues/4944) (open) explores opt-in persistence extensions. Extensions are the sanctioned place for this, which is what evolve is.
+- **Community conventions exist.** The [reconcile extension](https://github.com/stn1slv/spec-kit-reconcile) (community catalog, v1.3.1) amends affected spec.md/plan.md sections in place with dated revision notes, appends remediation tasks, never edits `[X]` tasks, is re-run safe, writes nothing under a flow-forward constitution, and routes back to converge. Both reconcile and the revise proposal mark dead requirements as `SUPERSEDED by <ID>`, `RETIRED`, or `CANCELLED` instead of rewriting them, and give replacements new IDs.
+- **Converge is not idempotent** ([#4269](https://github.com/github/spec-kit/issues/4269), open): running it while tasks are still open appends duplicates.
+
+Weak spots in the original decision:
+
+1. **The appended `## Amendments` section leaves stale intent in plan.md.** Converge reads the whole plan as intent, so the original (now wrong) plan text could produce false `contradicts` tasks after a spec-catches-up evolve.
+2. **The `*(evolved YYYY-MM-DD)*` marker edits a requirement's meaning in place.** Completed tasks are usually tagged by user story, not FR ID, so reviewers cannot tell which completed tasks a change superseded.
+
+### New Approaches Considered
+
+#### D: Depend on the reconcile extension
+- Pros: maintained, battle-tested conventions, already re-run safe.
+- Cons: external dependency outside spex's extension set; every run is interactive (approval prompt), which conflicts with ship's autonomous mode; it takes a free-form gap report while evolve already produces structured findings.
+
+#### E: Evolve as spex's flow-back implementation, adopting community conventions (chosen)
+Keep Approach A's core (artifacts first, then converge confirms), but replace the two weak spots with the conventions upstream and the community already use, and make the persistence model explicit.
+
+### Updated Decision
+
+Approach E. Changes to the original decision:
+
+1. **Requirement changes use supersede markers, not in-place rewording.** Replacing a live requirement: mark the old line `SUPERSEDED by FR-0NN` and add the replacement under a new ID. Dropping one: mark it `RETIRED`. Pure wording clarifications that do not change meaning may be edited in place. Existing IDs are never reused or renumbered. A completed task that implements a superseded or retired requirement is history by definition.
+2. **plan.md is edited in place, with a dated revision note.** The affected plan section is updated so plan.md states only current intent. A `## Revision Notes` entry at the end (date, what changed, rationale, affected IDs) records the change. The original wording survives in git and in the revision note, not as live text that converge would read. research.md, data-model.md, contracts/ are only touched when the change reaches them.
+3. **Persistence model is declared.** spex projects declare flow-back as the model evolve implements (constitution template / project constitution). Under a declared flow-forward model, evolve writes nothing to the completed feature and recommends a new feature directory instead. Living-spec projects may regenerate plan/tasks only when no task is complete.
+4. **Unchanged from the original decision:** tasks.md is append-only and only converge appends to it; converge runs after all spec/plan edits, only when no task is still open (avoids #4269); fix-code at Minor or higher goes through converge as a traced `contradicts` task, Trivial fixes stay direct; when converge appends tasks from a verify/finish trigger, verify does not pass and finish stops.
+5. **Converge is told how to read the artifacts.** Evolve passes guidance in converge's arguments: `SUPERSEDED`/`RETIRED` lines are not intent, completed tasks for them are history, revision notes explain plan changes. Upstream converge stays untouched.
+
+### Key Requirements (updated)
+
+- Replace evolve's "never manually edit, always regenerate" instruction with the flow-back cascade above.
+- Supersede/retire marker convention compatible with the reconcile extension and the revise proposal (`SUPERSEDED by <ID>`, `RETIRED`), with no ID reuse or renumbering.
+- In-place plan.md edits plus a `## Revision Notes` entry format (date, change, rationale, affected IDs).
+- Evolve invokes `/speckit-converge` with interpretation guidance after spec/plan edits; on appended tasks, proceed to (or offer) `/speckit-implement`, then re-run converge once to confirm.
+- Evolve respects the declared persistence model (flow-forward: no edits, recommend new feature dir).
+- Review-code and verify treat completed tasks for superseded/retired requirements as history.
+- No changes under `.specify/` (upstream files); all changes in spex extension files.
+- Update README.md, spex/docs/help.md, and the constitution (persistence model, Principle I wording on generated plan/tasks).
+
+### Open Threads
+
+- Should `unrequested` converge findings pause an autonomous ship run at every oversight level (removing code is a judgment call)?
+- Should spex-collab `revise` adopt the same markers, given upstream's revise proposal uses them?
+- Should evolve interoperate with an installed reconcile extension (detect it and defer), or stay independent?
+- Contribute to [github/spec-kit#4944](https://github.com/github/spec-kit/issues/4944) with spex's flow-back experience?
