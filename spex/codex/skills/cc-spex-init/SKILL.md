@@ -118,3 +118,10 @@ After success, report the effective command prefix as `$`, remind the user to
 start a new Codex session so generated skills are discovered, and suggest
 `$speckit-spex-help`. Do not suggest slash-prefixed Spex commands or claim
 that `$speckit-spex-ship` is necessarily the next workflow step.
+
+Stealth mode (spex-detach): when the setup output contains `Stealth mode: ...`,
+`Repaired stealth mode: ...` or `WARNING: stealth mode is NOT fully active`
+lines, show them to the user verbatim, including the indented path lines below
+a warning. Never claim stealth mode is active unless a `Stealth mode: active`
+line was printed. A stealth-mode warning never fails setup: report it and
+continue.

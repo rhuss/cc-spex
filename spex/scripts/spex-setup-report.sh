@@ -8,8 +8,9 @@
 # state (.specify/workflows/runs/<run-id>/state.json) instead of printing it.
 # This prints, on stderr, the messages users need to see:
 #   - the extension selection changes (`Enabled:` / `Disabled:` lines and the
-#     summary), the legacy spex-detach migration note, and the notice when an
-#     interactive reply was not captured
+#     summary), the spex-detach stealth-mode lines (written, repaired,
+#     verified or still visible), the legacy spex-detach migration note, and
+#     the notice when an interactive reply was not captured
 #   - the Claude permission messages: `Permissions configured in ...` from
 #     claude-permissions, and the `Migrated: ...` and `WARNING: ...` lines
 #     from both claude-permissions and migrate-permissions (spec 061)

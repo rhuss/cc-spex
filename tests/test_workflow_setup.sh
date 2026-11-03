@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Isolate git from the developer's global configuration: a global excludes
+# file (core.excludesFile, or the default ~/.config/git/ignore) would change
+# what git reports as ignored in the stealth-mode checks below.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.excludesFile GIT_CONFIG_VALUE_0=/dev/null
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 TEST_REPO="$(mktemp -d "${TMPDIR:-/tmp}/spex-workflow-setup.XXXXXX")"
 LEGACY_REPO="$(mktemp -d "${TMPDIR:-/tmp}/spex-workflow-legacy.XXXXXX")"
@@ -263,6 +269,171 @@ assert_enabled "gates and worktrees" "$wt" "spex-gates,spex-worktrees"
 jq -e '.extensions.git.enabled == true' "$wt/.specify/extensions/.registry" >/dev/null ||
   fail "gates and worktrees: the git extension was not enabled for spex-worktrees"
 echo "PASS: selecting spex-worktrees last still enables the git extension"
+
+# --- spex-detach: stealth mode written, verified, kept and repaired ---------
+
+det="$(new_project select-detach)"
+det_config="$det/.specify/extensions/spex-detach/spex-detach-config.yml"
+det_exclude="$det/.git/info/exclude"
+det_hash() { shasum -a 256 "$det_config" | awk '{print $1}'; }
+run_case "detach selected" "$det" -i integration=claude -i extensions=spex-detach -i security=safe
+assert_enabled "detach selected" "$det" "spex-detach"
+for line in "Enabled: spex-detach" "Stealth mode: exclude entries written: .specify/ specs/ brainstorm/" "Stealth mode: active (verified:"; do
+  printf '%s' "$RUN_OUTPUT" | grep -qF "$line" || fail "detach selected: no '$line' in output: $RUN_OUTPUT"
+done
+for probe in specs/x/spec.md .specify/spex.json .specify/memory/constitution.md brainstorm/x.md; do
+  git -C "$det" check-ignore -q -- "$probe" || fail "detach selected: git does not ignore $probe"
+done
+for e in .specify/ specs/ brainstorm/; do
+  [ "$(grep -cxF -- "$e" "$det_exclude")" = 1 ] || fail "detach selected: $e is not in the local exclude file exactly once"
+done
+# The refresh keeps a saved copy instead of overwriting it only when the live
+# config equals the template, so the installed config must be the template.
+cmp -s "$det_config" "$SRC/extensions/spex-detach/config-template.yml" ||
+  fail "detach selected: the installed config differs from config-template.yml"
+echo "PASS: selecting spex-detach writes and verifies the exclude entries; declaration and constitution are ignored"
+
+yq -i '.archive.path = "/tmp/x-specs" | .archive.auto_commit = false' "$det_config"
+det_before="$(det_hash)"
+run_case "detach refresh" "$det"
+[ "$(det_hash)" = "$det_before" ] || fail "detach refresh: the detach configuration changed"
+[ ! -e "$det/.specify/.spex-detach-config.saved.yml" ] || fail "detach refresh: saved config copy left behind"
+echo "PASS: a refresh keeps the customized detach configuration byte-identical"
+
+grep -vxF 'specs/' "$det_exclude" > "$det_exclude.new" && mv "$det_exclude.new" "$det_exclude"
+run_case "detach repair" "$det"
+printf '%s' "$RUN_OUTPUT" | grep -qF "Repaired stealth mode: added specs/" ||
+  fail "detach repair: no repair reported: $RUN_OUTPUT"
+run_case "detach second refresh" "$det"
+if printf '%s' "$RUN_OUTPUT" | grep -qF "Repaired stealth mode"; then
+  fail "detach second refresh: repaired again"
+fi
+for e in .specify/ specs/ brainstorm/; do
+  [ "$(grep -cxF -- "$e" "$det_exclude")" = 1 ] || fail "detach second refresh: $e is not in the exclude file exactly once"
+done
+[ "$(det_hash)" = "$det_before" ] || fail "detach second refresh: the detach configuration changed"
+echo "PASS: a refresh repairs a missing exclude entry once, and a second refresh adds nothing"
+
+run_case "detach left out" "$det" -i extensions=spex-gates
+assert_enabled "detach left out" "$det" "spex-gates"
+[ "$(det_hash)" = "$det_before" ] || fail "detach left out: the disabled detach configuration changed"
+if printf '%s' "$RUN_OUTPUT" | grep -qF "tealth mode"; then
+  fail "detach left out: stealth-mode output without spex-detach: $RUN_OUTPUT"
+fi
+echo "PASS: a refresh that leaves spex-detach out keeps its configuration and prints no stealth-mode output"
+
+# The verification runs after spex's own exclude rules are written, so what
+# it reports matches the final exclude file (SC-002): with a glob entry for
+# .specify/, an "active" report must mean git still ignores the files the spex
+# rules re-include.
+glob="$(new_project detach-glob)"
+glob_exclude="$glob/.git/info/exclude"
+run_case "detach glob" "$glob" -i integration=claude -i extensions=spex-detach -i security=safe
+yq -i '.exclude.paths = [".specify/**", "specs/", "brainstorm/"]' "$glob/.specify/extensions/spex-detach/spex-detach-config.yml"
+: > "$glob_exclude"
+run_case "detach glob refresh" "$glob"
+printf '%s' "$RUN_OUTPUT" | grep -qF "Stealth mode: active" ||
+  fail "detach glob refresh: no 'Stealth mode: active' line: $RUN_OUTPUT"
+for probe in .specify/spex.json .specify/memory/constitution.md specs/x.md; do
+  git -C "$glob" check-ignore -q -- "$probe" ||
+    fail "detach glob refresh: stealth mode reported active, but git does not ignore $probe: $(cat "$glob_exclude")"
+done
+echo "PASS: with a glob entry, an active stealth-mode report matches the final exclude rules"
+
+# --- spex-detach config preservation under failures (FR-009, R11, R13) ------
+#
+# Failure injection: a read-only .specify/ would also break the workflow
+# engine's own run state (.specify/workflows/runs), so the save failure is
+# injected by making the live config unreadable (cp fails, nothing else is
+# touched). The add and restore failures come from a specify wrapper that
+# fails `extension add .../spex-detach`, or makes the freshly added
+# extension directory read-only so the restore cannot move the config back.
+fails="$(new_project detach-failures)"
+fails_config="$fails/.specify/extensions/spex-detach/spex-detach-config.yml"
+fails_saved="$fails/.specify/.spex-detach-config.saved.yml"
+fails_registry="$fails/.specify/extensions/.registry"
+fails_hash() { shasum -a 256 "$1" | awk '{print $1}'; }
+run_case "detach failures setup" "$fails" -i integration=claude -i extensions=spex-detach -i security=safe
+yq -i '.archive.path = "../fails-specs" | .archive.auto_commit = false' "$fails_config"
+user_hash="$(fails_hash "$fails_config")"
+
+registry_before="$(fails_hash "$fails_registry")"
+chmod 000 "$fails_config"
+save_out="$(setup_in "$fails" "$SRC")" && fail "detach save failure: setup succeeded"
+chmod 644 "$fails_config"
+jq -e '.status == "failed" and .current_step_id == "save-detach-config"' <<<"$save_out" >/dev/null ||
+  fail "detach save failure: unexpected result $save_out"
+save_report="$(cd "$fails" && sh "$SRC/scripts/spex-setup-report.sh" "$(jq -r '.run_id' <<<"$save_out")" 2>&1)"
+printf '%s' "$save_report" | grep -qF "ERROR: cannot save .specify/extensions/spex-detach/spex-detach-config.yml" ||
+  fail "detach save failure: the error does not name the config file: $save_report"
+[ "$(fails_hash "$fails_config")" = "$user_hash" ] || fail "detach save failure: the config changed"
+[ "$(fails_hash "$fails_registry")" = "$registry_before" ] || fail "detach save failure: the registry changed"
+[ ! -e "$fails_saved" ] || fail "detach save failure: a saved copy was written"
+echo "PASS: a failed config save stops the workflow at save-detach-config, names the file and changes nothing"
+
+REAL_SPECIFY="$(command -v specify)"
+FAIL_BIN="$SCRATCH/detach-fail-bin"
+mkdir -p "$FAIL_BIN"
+cat > "$FAIL_BIN/specify" <<STUB
+#!/usr/bin/env bash
+detach_add=false
+if [ "\${1:-} \${2:-}" = "extension add" ] && [ "\${3%/spex-detach}" != "\${3:-}" ]; then
+  detach_add=true
+fi
+if [ "\$detach_add" = true ] && [ "\${DETACH_FAIL_MODE:-}" = add ]; then
+  echo "spex-detach add failed in this test" >&2
+  exit 1
+fi
+"$REAL_SPECIFY" "\$@"
+rc=\$?
+if [ "\$detach_add" = true ] && [ "\$rc" -eq 0 ] && [ "\${DETACH_FAIL_MODE:-}" = restore ]; then
+  chmod a-w .specify/extensions/spex-detach
+fi
+exit \$rc
+STUB
+chmod +x "$FAIL_BIN/specify"
+
+add_out="$(DETACH_FAIL_MODE=add PATH="$FAIL_BIN:$PATH" setup_in "$fails" "$SRC")" &&
+  fail "detach add failure: setup succeeded"
+jq -e '.status == "failed" and .current_step_id == "install-ext-spex-detach"' <<<"$add_out" >/dev/null ||
+  fail "detach add failure: the failed add did not stop the step: $add_out"
+[ -f "$fails_saved" ] && [ "$(fails_hash "$fails_saved")" = "$user_hash" ] ||
+  fail "detach add failure: the saved copy is missing or not the user config"
+run_case "detach add failure recovery" "$fails"
+[ "$(fails_hash "$fails_config")" = "$user_hash" ] || fail "detach add failure recovery: the user config was not restored"
+[ ! -e "$fails_saved" ] || fail "detach add failure recovery: saved copy left behind"
+echo "PASS: a failed spex-detach add stops the step, keeps the saved config, and the next run restores it"
+
+# Enabled before: a failed restore leaves it enabled, so the next refresh
+# keeps spex-detach in the declaration instead of dropping it as legacy.
+restore_out="$(DETACH_FAIL_MODE=restore PATH="$FAIL_BIN:$PATH" setup_in "$fails" "$SRC")" &&
+  fail "detach restore failure: setup succeeded"
+chmod u+w "$fails/.specify/extensions/spex-detach"
+jq -e '.status == "failed" and .current_step_id == "install-ext-spex-detach"' <<<"$restore_out" >/dev/null ||
+  fail "detach restore failure: unexpected result $restore_out"
+jq -e '.extensions["spex-detach"].enabled == true' "$fails_registry" >/dev/null ||
+  fail "detach restore failure: spex-detach was enabled before but is not now: $(jq -c '.extensions["spex-detach"]' "$fails_registry")"
+[ "$(fails_hash "$fails_saved")" = "$user_hash" ] || fail "detach restore failure: the saved copy is not the user config"
+run_case "detach restore failure recovery" "$fails"
+[ "$(fails_hash "$fails_config")" = "$user_hash" ] ||
+  fail "detach restore failure recovery: the template replaced the user config"
+assert_enabled "detach restore failure recovery" "$fails" "spex-detach"
+echo "PASS: a failed restore keeps an enabled spex-detach enabled, and the next run restores the user config"
+
+# Disabled before: a failed restore must not switch stealth mode on
+# (disable runs before the restore).
+run_case "detach left out before restore failure" "$fails" -i extensions=spex-gates
+jq -e '.extensions["spex-detach"].enabled == false' "$fails_registry" >/dev/null ||
+  fail "detach left out before restore failure: spex-detach still enabled"
+restore_off_out="$(DETACH_FAIL_MODE=restore PATH="$FAIL_BIN:$PATH" setup_in "$fails" "$SRC")" &&
+  fail "detach restore failure (disabled): setup succeeded"
+chmod u+w "$fails/.specify/extensions/spex-detach"
+jq -e '.status == "failed" and .current_step_id == "install-ext-spex-detach"' <<<"$restore_off_out" >/dev/null ||
+  fail "detach restore failure (disabled): unexpected result $restore_off_out"
+jq -e '.extensions["spex-detach"].enabled == false' "$fails_registry" >/dev/null ||
+  fail "detach restore failure (disabled): the failed run switched spex-detach on"
+[ "$(fails_hash "$fails_saved")" = "$user_hash" ] || fail "detach restore failure (disabled): the saved copy is not the user config"
+echo "PASS: a failed restore never switches a disabled spex-detach on and keeps the saved config"
 
 # Without an obtainable git extension, setup stops with the FR-019 guidance.
 REAL_SPECIFY="$(command -v specify)"

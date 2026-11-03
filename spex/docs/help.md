@@ -144,7 +144,16 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     commits, PRs, or git status. Archives to sibling repo at finish time.
     /speckit-spex-detach-detach  → enable/disable stealth mode, archive specs,
                                    or check detach status
-                                   Subcommands: enable, disable, archive, is-enabled
+                                   Subcommands: enable, disable, archive, is-enabled,
+                                   verify (check with git, changes nothing)
+    Setup with spex-detach selected writes the exclude entries, verifies
+    them with git and prints "Stealth mode: active (verified: ...)", or a
+    "WARNING: stealth mode is NOT fully active" block naming every path git
+    still sees (for example tracked files), or when the check cannot run.
+    An unreadable detach config is reported ("Stealth mode: cannot read
+    ...") and the default paths are used. A refresh keeps the detach
+    config byte for byte (no merge with newer template defaults) and adds
+    missing entries ("Repaired stealth mode: added ...").
     /speckit-spex-brainstorm     → when enabled + archive.path configured,
                                    writes brainstorm docs to project-specs repo.
                                    Scans sibling repo brainstorm/ for revisit

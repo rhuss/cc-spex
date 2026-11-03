@@ -13,7 +13,7 @@ Run the command from `<spex-init-command>` in the `<spex-context>` system remind
 - If output contains `NEED_INSTALL`: show output, STOP.
 - If output contains `ERROR` or the script exits with a non-zero status other than `3` (`3` means `RESTART_REQUIRED`): show the error, STOP. Do not continue to Step 2, Step 3 or the restart advice.
   - In particular, init exits with status `1` and `ERROR: spex-worktrees requires the spec-kit git extension` when `spex-worktrees` is enabled but the `git` extension cannot be enabled. Show the message with its two fixes: add the git extension (`specify extension add git` / `specify extension enable git`) and run `/spex:init` again, or re-run setup with an extension selection that leaves out `spex-worktrees` (the message shows the `specify workflow run ... -i extensions=...` command). Do not tell the user to disable `spex-worktrees` by hand.
-- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed. When the project has a declaration (`.specify/spex.json`), the refresh re-applied its extension selection exactly (extensions toggled by hand are reset, and the output names every change); without a declaration, the enabled/disabled state of the installed extensions is preserved. No permission rules are added, but the refresh rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules that earlier spex versions wrote to the bare tool names (`Bash`, `Read`, `Edit`, `Write`, same meaning) in `.claude/settings.json` and `.claude/settings.local.json`, and prints one `Migrated: ...` line per changed file. Go directly to Step 4 and report that the refresh completed, including any `Enabled:`, `Disabled:`, `Migrated:` or `WARNING:` lines from the output. Tell the user to restart Claude Code.
+- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed. When the project has a declaration (`.specify/spex.json`), the refresh re-applied its extension selection exactly (extensions toggled by hand are reset, and the output names every change); without a declaration, the enabled/disabled state of the installed extensions is preserved. No permission rules are added, but the refresh rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules that earlier spex versions wrote to the bare tool names (`Bash`, `Read`, `Edit`, `Write`, same meaning) in `.claude/settings.json` and `.claude/settings.local.json`, and prints one `Migrated: ...` line per changed file. Go directly to Step 4 and report that the refresh completed, including any `Enabled:`, `Disabled:`, `Migrated:` or `WARNING:` lines and any `Stealth mode: ...`, `Repaired stealth mode: ...` or `WARNING: stealth mode is NOT fully active` lines (with the paths listed below it) from the output. Tell the user to restart Claude Code.
 - If output contains `READY` or `RESTART_REQUIRED`: **do not summarize yet**, go to Step 2.
 
 ## Step 2: Ask about extensions and permissions
@@ -48,6 +48,7 @@ RESOLVED=$(python3 "<scripts>/spex-setup-profile.py" resolve --root "$PWD" \
   --extensions "spex,<csv>" --legacy-permissions <permissions> [--harness claude])
 SELECTED=$(printf '%s' "$RESOLVED" | jq -r '.extensions | join(",")')
 sh "<scripts>/spex-apply-extensions.sh" "$SELECTED"
+rm -f .specify/.spex-detach-was-enabled
 case ",$SELECTED," in
   *,spex-worktrees,*)
     jq -e '.extensions.git.enabled == true' .specify/extensions/.registry >/dev/null 2>&1 ||
@@ -106,6 +107,8 @@ Check for any of these upstream superpowers skills: `test-driven-development`, `
 ## Step 4: Report
 
 Summarize: extensions enabled, permission level, and companion plugins detected. Relay every `Migrated:` and `WARNING:` line from the Step 1 and Step 2 output verbatim (for a full init as well as for `--refresh` and `--update`), so the user sees which permission rules were rewritten and which settings files were left alone. Tell the user to restart Claude Code if Step 1 said RESTART_REQUIRED, if a `Permissions configured in ... (<n> rules added)` line has n greater than 0, if a `Default mode set to ...` line appeared, or if any `Migrated:` line appeared.
+
+Stealth mode (spex-detach): when the output of Step 1 or of the Step 2 block contains `Stealth mode: ...`, `Repaired stealth mode: ...` or `WARNING: stealth mode is NOT fully active` lines, show them to the user verbatim, including the indented path lines below a warning. Never claim stealth mode is active unless a `Stealth mode: active` line was printed. A stealth-mode warning never stops init: report it and continue.
 
 If superpowers companion plugin was NOT detected (Step 3b), append this to the report:
 

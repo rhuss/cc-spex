@@ -1,6 +1,6 @@
 ---
 description: "Enable or disable stealth mode (exclude spec files from git) or archive specs to sibling repo"
-argument-hint: "[enable|disable|archive]"
+argument-hint: "[enable|disable|archive|verify]"
 ---
 
 # Spex Detach
@@ -12,6 +12,7 @@ Manage spec artifact visibility for upstream contributions. Stealth mode uses .g
 - **enable** (default): Write .git/info/exclude entries to hide spec artifacts from git
 - **disable**: Remove .git/info/exclude entries to make spec artifacts visible to git again
 - **archive**: Copy spec artifacts to the configured project-specs sibling repo
+- **verify**: Check with git that every configured exclude path is really hidden (changes nothing). This is the way to check whether stealth mode is active
 - **is-enabled**: Check if the detach extension is enabled in `.specify/extensions/.registry` (exit 0 = yes, exit 1 = no)
 
 ## Execution
@@ -49,6 +50,25 @@ else
   echo "$RESULT"
 fi
 ```
+
+After enabling, run the **verify** subcommand below and show its result, so the user knows whether stealth mode is fully active.
+
+### Subcommand: verify
+
+Ask git whether a probe under each configured exclude path is ignored, check for tracked files under each path, and probe `.specify/spex.json` and `.specify/memory/constitution.md` (which spex's own exclude rules re-include) when a configured path covers them. Nothing is written. Setup and refresh run the same check automatically when spex-detach is enabled.
+
+```bash
+"$DETACH_SCRIPT" verify >/dev/null
+EXIT_CODE=$?
+```
+
+Show the script's stderr to the user verbatim:
+
+- exit 0: `Stealth mode: active (verified: <paths>)`
+- exit 1: `WARNING: stealth mode is NOT fully active. Still visible to git:` followed by one line per visible path (`tracked` means files under it are already committed and must be removed from history separately; `not-ignored` means another rule re-includes it)
+- exit 2: not a git repository
+
+Never report stealth mode as active unless verify exited 0.
 
 ### Subcommand: disable
 
