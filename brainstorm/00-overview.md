@@ -29,6 +29,7 @@ Last updated: 2026-11-03
 | 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
 | 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
 | 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-03) | - | - |
+| 55 | 2026-11-03 | permission-rule-modernize | active | - | - |
 
 ## Open Threads
 
@@ -111,6 +112,9 @@ Last updated: 2026-11-03
 - Layout and sync timing of `spex.json`/constitution in the specs repo (from #54)
 - How a fresh fork checkout restores the constitution and `spex.json` from the specs repo (from #54)
 - How the fork hint checks upstream for `.specify/` when the upstream ref is not fetched (from #54)
+- Where should the permission migration live: spex-init.sh refresh path or a reusable helper for #62? (from #55)
+- Should the permission migration touch user-level ~/.claude/settings.json? (from #55)
+- Should Read stay in the YOLO allow list at all? (from #55)
 
 ## Parked Ideas
 
