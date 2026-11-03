@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03
 
 ## Sessions
 
@@ -28,7 +28,7 @@ Last updated: 2026-11-02
 | 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
 | 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
 | 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
-| 54 | 2026-11-02 | detach-mode-at-init | idea | - | - |
+| 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-03) | - | - |
 
 ## Open Threads
 
@@ -107,13 +107,10 @@ Last updated: 2026-11-02
 - Should spex-collab `revise` adopt the `SUPERSEDED`/`RETIRED` markers? (from #53)
 - Should evolve detect an installed reconcile extension and defer to it, or stay independent? (from #53)
 - Contribute spex's flow-back experience to [github/spec-kit#4944](https://github.com/github/spec-kit/issues/4944)? (from #53)
-- Where the detach archive path is stored so it survives `--refresh` (from #54)
-- Whether `spex.json` and the constitution stay committed in detach mode (from #54)
-- Default visibility when init creates a specs GitHub repo (from #54)
-- Whether `auto_commit` should also push to the specs repo remote (from #54)
-- How init detects a fork to suggest detach (from #54)
-- Fix the stealth-mode exclude gap as a separate bug first? `run_detach_enable` runs before the selection enables detach (from #54)
-- Repair existing detach projects with missing exclude entries on `--refresh` (from #54)
+- Does `specify extension add` overwrite an existing detach config when refresh keeps it, or does spex need backup/restore? (from #54)
+- Layout and sync timing of `spex.json`/constitution in the specs repo (from #54)
+- How a fresh fork checkout restores the constitution and `spex.json` from the specs repo (from #54)
+- How the fork hint checks upstream for `.specify/` when the upstream ref is not fetched (from #54)
 
 ## Parked Ideas
 
