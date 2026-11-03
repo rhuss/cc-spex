@@ -282,3 +282,30 @@ _Review-related ideas (goal-alignment-skip-behavior, spec-completeness, platform
 - **Summary**: The Claude status line still evaluates `stage_index` and `total_stages` in bash arithmetic, which can run `a[$(cmd)]` from a tampered state file (pre-existing).
 
 > A digits-only check would leave output for valid states byte-identical and close the hole; it was kept out of this feature because of the byte-identical requirement.
+
+### permission-presets-in-script
+
+- **Source**: deep-review
+- **Date**: 2026-11-03
+- **Reference**: 061-permission-rule-modernize
+- **Summary**: The Standard and YOLO rule lists live in both the init skill and setup.yml and already differ; `spex-permissions.sh apply --level standard|yolo` could define them once.
+
+> Interactive init and workflow setup produce different YOLO allow lists for the same choice, and every future rule change has to be made in two files.
+
+### settings-write-concurrency
+
+- **Source**: deep-review
+- **Date**: 2026-11-03
+- **Reference**: 061-permission-rule-modernize
+- **Summary**: spex-permissions.sh rewrites settings files without a lock or change check while Claude Code may write settings.local.json concurrently.
+
+> The window is milliseconds today, but it matters if migrations ever run from hooks or parallel pipelines.
+
+### settings-check-then-act
+
+- **Source**: deep-review
+- **Date**: 2026-11-03
+- **Reference**: 061-permission-rule-modernize
+- **Summary**: The user-settings guard resolves the path before reading and re-checks before writing, but a concurrent writer in .claude/ could still swap files between the steps.
+
+> Exploiting it needs write access to the project at the same moment, which already allows worse; a descriptor-based write would close it fully.

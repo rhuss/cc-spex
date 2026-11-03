@@ -506,38 +506,26 @@ steps:
               type: shell
               run: |
                 LEVEL="{{ steps.selected-security.output.stdout }}"
-                SETTINGS=".claude/settings.json"
-                mkdir -p .claude
+                SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
+                PERMS="$SOURCE/scripts/spex-permissions.sh"
 
+                # spex-permissions.sh appends the missing rules to
+                # .claude/settings.json without re-sorting the existing list
+                # and rewrites legacy Tool(*) rules. Bare Bash, Read, Edit and
+                # Write allow every command and path; do not write Tool(*)
+                # forms, current Claude Code releases flag them. The script
+                # reports its own result ("Permissions configured in ..." or
+                # a WARNING), so this step only names the level beforehand
+                # and never claims success itself.
+                echo "Claude Code permission level: $LEVEL" >&2
                 if [ "$LEVEL" = "yolo" ]; then
-                  ALLOW='["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "Skill", "Agent(*)", "WebFetch", "WebSearch", "EnterPlanMode", "ExitPlanMode", "EnterWorktree", "ExitWorktree"]'
-                  MODE='"bypassPermissions"'
+                  sh "$PERMS" apply --default-mode bypassPermissions \
+                    Bash Read Edit Write Skill 'Agent(*)' WebFetch WebSearch \
+                    EnterPlanMode ExitPlanMode EnterWorktree ExitWorktree
                 else
-                  ALLOW='["Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]'
-                  MODE='null'
+                  sh "$PERMS" apply \
+                    Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
                 fi
-
-                if [ -f "$SETTINGS" ]; then
-                  TMP=$(mktemp)
-                  if [ "$MODE" = "null" ]; then
-                    jq --argjson allow "$ALLOW" '
-                      .permissions.allow = ((.permissions.allow // []) + $allow | unique)
-                    ' "$SETTINGS" > "$TMP"
-                  else
-                    jq --argjson allow "$ALLOW" --argjson mode "$MODE" '
-                      .permissions.allow = ((.permissions.allow // []) + $allow | unique) |
-                      .permissions.defaultMode = $mode
-                    ' "$SETTINGS" > "$TMP"
-                  fi
-                  mv "$TMP" "$SETTINGS"
-                else
-                  if [ "$MODE" = "null" ]; then
-                    jq -n --argjson allow "$ALLOW" '{permissions: {allow: $allow}}' > "$SETTINGS"
-                  else
-                    jq -n --argjson allow "$ALLOW" --argjson mode "$MODE" '{permissions: {defaultMode: $mode, allow: $allow}}' > "$SETTINGS"
-                  fi
-                fi
-                echo "Claude Code permissions configured ($LEVEL)" >&2
           codex:
             - id: codex-permissions
               type: shell
@@ -548,6 +536,17 @@ steps:
               type: shell
               run: |
                 echo "OpenCode permissions are managed via the spex-plugin.ts (configured in adapt-harness step)" >&2
+
+  # Runs for every security level and harness: earlier spex versions wrote
+  # Bash(*), Read(*), Edit(*) and Write(*), which current Claude Code releases
+  # flag. The script rewrites them to bare tool names in the project's
+  # .claude/settings.json and .claude/settings.local.json, and does nothing
+  # when neither file exists.
+  - id: migrate-permissions
+    type: shell
+    run: |
+      SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"
+      sh "$SOURCE/scripts/spex-permissions.sh" migrate
 
   # Ignore rules go to .git/info/exclude, never to the tracked .gitignore.
   # Committing them pushes spex's local scaffolding into a repository that never

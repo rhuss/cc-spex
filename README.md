@@ -407,6 +407,16 @@ $cc-spex-init --extensions spex-gates,spex-teams                            # in
 Projects without `.specify/spex.json` keep the earlier `/spex:init --refresh`
 behavior: the enabled/disabled state of installed extensions is preserved.
 
+Every init run, including `/spex:init --refresh` and `--update`, also repairs
+Claude Code permission rules that earlier spex versions wrote. The legacy
+`Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` allow rules in
+`.claude/settings.json` and `.claude/settings.local.json` become the bare tool
+names `Bash`, `Read`, `Edit` and `Write`, which allow every command and path
+without the warnings current Claude Code releases print for the `(*)` forms.
+Other rules and settings stay untouched, and each changed file is reported
+with a `Migrated:` line. The YOLO permission level now writes the bare names
+directly.
+
 ## Commands Reference
 
 ### Workflow Commands

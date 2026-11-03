@@ -170,8 +170,11 @@ spex COMMANDS (helpers and configuration)
   /spex:init                  Initialize spec-kit + configure extensions and permissions
                                 Writes the choice to .specify/spex.json
                                 --refresh: update templates; re-applies .specify/spex.json
-                                           when present (else keeps extension state)
+                                           when present (else keeps extension state);
+                                           rewrites legacy Bash(*), Read(*), Edit(*),
+                                           Write(*) allow rules to bare tool names
                                 --update: upgrade specify CLI and refresh
+                                          (includes the permission rule migration)
                                 --clear: reset status line state
                                 6.x: delegates to setup.yml workflow when specify >= 0.7.4
                                      Any harness: specify workflow run spex/setup.yml

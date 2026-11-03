@@ -13,7 +13,7 @@ Run the command from `<spex-init-command>` in the `<spex-context>` system remind
 - If output contains `NEED_INSTALL`: show output, STOP.
 - If output contains `ERROR` or the script exits with a non-zero status other than `3` (`3` means `RESTART_REQUIRED`): show the error, STOP. Do not continue to Step 2, Step 3 or the restart advice.
   - In particular, init exits with status `1` and `ERROR: spex-worktrees requires the spec-kit git extension` when `spex-worktrees` is enabled but the `git` extension cannot be enabled. Show the message with its two fixes: add the git extension (`specify extension add git` / `specify extension enable git`) and run `/spex:init` again, or re-run setup with an extension selection that leaves out `spex-worktrees` (the message shows the `specify workflow run ... -i extensions=...` command). Do not tell the user to disable `spex-worktrees` by hand.
-- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed. When the project has a declaration (`.specify/spex.json`), the refresh re-applied its extension selection exactly (extensions toggled by hand are reset, and the output names every change); without a declaration, the enabled/disabled state of the installed extensions is preserved. Permissions are unchanged. Go directly to Step 4 and report that the refresh completed, including any `Enabled:`, `Disabled:` or `Migrated:` lines from the output. Tell the user to restart Claude Code.
+- If the command was run with `--refresh` or `--update` and output contains `RESTART_REQUIRED`: **SKIP Steps 2 and 3.** Templates and extensions were refreshed. When the project has a declaration (`.specify/spex.json`), the refresh re-applied its extension selection exactly (extensions toggled by hand are reset, and the output names every change); without a declaration, the enabled/disabled state of the installed extensions is preserved. No permission rules are added, but the refresh rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules that earlier spex versions wrote to the bare tool names (`Bash`, `Read`, `Edit`, `Write`, same meaning) in `.claude/settings.json` and `.claude/settings.local.json`, and prints one `Migrated: ...` line per changed file. Go directly to Step 4 and report that the refresh completed, including any `Enabled:`, `Disabled:`, `Migrated:` or `WARNING:` lines from the output. Tell the user to restart Claude Code.
 - If output contains `READY` or `RESTART_REQUIRED`: **do not summarize yet**, go to Step 2.
 
 ## Step 2: Ask about extensions and permissions
@@ -69,20 +69,28 @@ Run the block as one Bash call so `set -e` stops it before `persist` when a step
 - `--legacy-permissions` maps None to `safe`, Standard to `autonomous` and YOLO to `yolo` in `.specify/spex.json`.
 - If the block fails, the declaration is not written. Show the error and STOP. For `ERROR: spex-worktrees requires the spec-kit git extension`, offer the two fixes from Step 1: add the git extension and run `/spex:init` again, or choose again without `spex-worktrees`. Otherwise report the `Enabled:` / `Disabled:` lines in Step 4.
 
-**Permissions**: The `specify` CLI does not manage permissions. Instead, write permission allowlists directly to `.claude/settings.json` based on the user's choice. Use the EXACT allow arrays below (copy verbatim, do not modify or rephrase the permission strings):
+**Permissions**: The `specify` CLI does not manage permissions. All Claude permission writes go through `spex-permissions.sh` in the same `<scripts>` directory. Do not edit `.claude/settings.json` yourself, and do not merge rules with your own `jq` calls. Run the block for the user's choice as one Bash call, copying the rule arguments verbatim (do not modify or rephrase the permission strings):
 
 - **Standard**:
-  ```json
-  {"permissions": {"allow": ["Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  ```bash
+  sh "<scripts>/spex-permissions.sh" apply \
+    Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+  sh "<scripts>/spex-permissions.sh" migrate
   ```
 - **YOLO**:
-  ```json
-  {"permissions": {"defaultMode": "bypassPermissions", "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch", "WebSearch", "Skill", "Bash(specify *)", "Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"]}}
+  ```bash
+  sh "<scripts>/spex-permissions.sh" apply --default-mode bypassPermissions \
+    Bash Read Edit Write WebFetch WebSearch Skill \
+    'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+  sh "<scripts>/spex-permissions.sh" migrate
   ```
-  Note: `defaultMode: "bypassPermissions"` skips all permission prompts. The broad `allow` rules serve as additional fallback. Use this for unattended ship pipelines or when you trust the agent fully.
-- **None**: Do not modify permissions (leave defaults)
+  Note: `defaultMode: "bypassPermissions"` skips all permission prompts. The broad `allow` rules serve as additional fallback. Use this for unattended ship pipelines or when you trust the agent fully. The bare tool names `Bash`, `Read`, `Edit` and `Write` allow the tool for every command and every path, including sibling worktrees outside the working directory. Never write `Bash(*)`, `Read(*)`, `Edit(*)` or `Write(*)` instead: current Claude Code releases flag these forms, and `Read(*)`, `Edit(*)` and `Write(*)` only cover the working directories there.
+- **None**: Do not add permission rules. Still run the migration, so legacy rules from an earlier spex version are repaired:
+  ```bash
+  sh "<scripts>/spex-permissions.sh" migrate
+  ```
 
-Use the existing project `.claude/settings.json` (create if missing). Merge permission entries without overwriting existing settings.
+`apply` appends the missing rules to the project's `.claude/settings.json` (created when missing) without re-sorting the existing list, and leaves every other setting alone. `migrate` rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules to the bare names in `.claude/settings.json` and `.claude/settings.local.json`. Both print their results on stderr: `Permissions configured in .claude/settings.json (<n> rules added)`, `Default mode set to bypassPermissions in .claude/settings.json` when YOLO changed the default mode, one `Migrated: ...` line per repaired file, and `WARNING: ...` lines for files they left alone (including a project settings path that resolves to the user-level `~/.claude` settings, which spex never changes). Keep these lines for Step 4.
 
 ## Step 3: Detect companion plugins and seed memory
 
@@ -97,7 +105,7 @@ Check for any of these upstream superpowers skills: `test-driven-development`, `
 
 ## Step 4: Report
 
-Summarize: extensions enabled, permission level, and companion plugins detected. If Step 1 said RESTART_REQUIRED or Step 2 permissions said CHANGED, tell user to restart Claude Code.
+Summarize: extensions enabled, permission level, and companion plugins detected. Relay every `Migrated:` and `WARNING:` line from the Step 1 and Step 2 output verbatim (for a full init as well as for `--refresh` and `--update`), so the user sees which permission rules were rewritten and which settings files were left alone. Tell the user to restart Claude Code if Step 1 said RESTART_REQUIRED, if a `Permissions configured in ... (<n> rules added)` line has n greater than 0, if a `Default mode set to ...` line appeared, or if any `Migrated:` line appeared.
 
 If superpowers companion plugin was NOT detected (Step 3b), append this to the report:
 

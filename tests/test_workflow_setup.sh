@@ -244,7 +244,7 @@ jq -e '.extensions["spex-detach"].enabled == false' "$all/.specify/extensions/.r
   fail "legacy refresh enabled spex-detach"
 jq -e '.extensions | index("spex-detach") == null' "$all/.specify/spex.json" >/dev/null ||
   fail "legacy refresh kept spex-detach in .specify/spex.json"
-printf '%s' "$RUN_OUTPUT" | grep -qF "Migrated:" || fail "legacy refresh did not report the migration: $RUN_OUTPUT"
+printf '%s' "$RUN_OUTPUT" | grep -qF "Migrated: removed spex-detach" || fail "legacy refresh did not report the migration: $RUN_OUTPUT"
 assert_enabled "legacy spex-detach refresh" "$all" "$ALL_SET"
 echo "PASS: a legacy declaration drops spex-detach instead of enabling it, and says so"
 
@@ -294,6 +294,70 @@ if printf '%s' "$nogit_report" | grep -qF "extension disable spex-worktrees"; th
 fi
 [ ! -e "$nogit/.specify/spex.json" ] || fail "worktrees without git: a declaration was written"
 echo "PASS: without the git extension, setup stops before persisting and prints the FR-019 guidance"
+
+# --- Spec 061: permission rules (FR-002, FR-004, FR-010) --------------------
+
+LEGACY_RULES_JQ='[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)" or . == "Edit(*)" or . == "Write(*)")] | length == 0'
+
+# YOLO writes bare Bash, Read, Edit and Write, once each.
+yolo="$(new_project permissions-yolo)"
+run_case "yolo permissions" "$yolo" -i integration=claude -i extensions=recommended -i security=yolo
+yolo_settings="$yolo/.claude/settings.json"
+jq -e '.permissions.defaultMode == "bypassPermissions"' "$yolo_settings" >/dev/null ||
+  fail "yolo permissions: defaultMode is not bypassPermissions: $(cat "$yolo_settings")"
+for tool in Bash Read Edit Write; do
+  jq -e --arg t "$tool" '[.permissions.allow[] | select(. == $t)] | length == 1' "$yolo_settings" >/dev/null ||
+    fail "yolo permissions: '$tool' is not in the allow list exactly once: $(cat "$yolo_settings")"
+done
+jq -e "$LEGACY_RULES_JQ" "$yolo_settings" >/dev/null ||
+  fail "yolo permissions: a Tool(*) form was written: $(cat "$yolo_settings")"
+printf '%s' "$RUN_OUTPUT" | grep -qE "Permissions configured in \.claude/settings\.json \([0-9]+ rules added\)" ||
+  fail "yolo permissions: the setup report does not show the apply result: $RUN_OUTPUT"
+echo "PASS: security=yolo writes bare Bash, Read, Edit, Write and no Tool(*) forms"
+
+# security=safe adds no rules but still migrates legacy ones, in both files,
+# and the setup report relays the Migrated lines.
+safe="$(new_project permissions-safe-legacy)"
+mkdir -p "$safe/.claude"
+printf '%s' '{"permissions":{"defaultMode":"bypassPermissions","allow":["Bash(*)","Read(*)","Edit(*)","Write(*)","Bash(npm test)"]},"hooks":{"Stop":[]}}' \
+  > "$safe/.claude/settings.json"
+printf '%s' '{"permissions":{"allow":["Read(*)","Skill"]}}' > "$safe/.claude/settings.local.json"
+run_case "safe with legacy permissions" "$safe" -i integration=claude -i extensions=recommended -i security=safe
+[ "$(jq -c '.permissions.allow' "$safe/.claude/settings.json")" = '["Bash","Read","Edit","Write","Bash(npm test)"]' ] ||
+  fail "safe with legacy permissions: settings.json not migrated: $(cat "$safe/.claude/settings.json")"
+jq -e '.hooks == {"Stop": []} and .permissions.defaultMode == "bypassPermissions"' "$safe/.claude/settings.json" >/dev/null ||
+  fail "safe with legacy permissions: other keys changed: $(cat "$safe/.claude/settings.json")"
+[ "$(jq -c '.permissions.allow' "$safe/.claude/settings.local.json")" = '["Read","Skill"]' ] ||
+  fail "safe with legacy permissions: settings.local.json not migrated: $(cat "$safe/.claude/settings.local.json")"
+safe_report="$(cd "$safe" && sh "$SRC/scripts/spex-setup-report.sh" 2>&1)"
+printf '%s' "$safe_report" | grep -qF "Migrated: .claude/settings.json permissions: Bash(*) -> Bash, Read(*) -> Read, Edit(*) -> Edit, Write(*) -> Write" ||
+  fail "safe with legacy permissions: the setup report misses the settings.json Migrated line: $safe_report"
+printf '%s' "$safe_report" | grep -qF "Migrated: .claude/settings.local.json permissions: Read(*) -> Read" ||
+  fail "safe with legacy permissions: the setup report misses the settings.local.json Migrated line: $safe_report"
+if printf '%s' "$safe_report" | grep -qF "Permissions configured"; then
+  fail "safe with legacy permissions: rules were applied for security=safe: $safe_report"
+fi
+safe_hash="$(shasum -a 256 "$safe/.claude/settings.json" | awk '{print $1}')"
+run_case "refresh after the migration" "$safe"
+[ "$(shasum -a 256 "$safe/.claude/settings.json" | awk '{print $1}')" = "$safe_hash" ] ||
+  fail "refresh after the migration: settings.json changed again"
+if printf '%s' "$RUN_OUTPUT" | grep -qF "Migrated: .claude/settings"; then
+  fail "refresh after the migration: a second migration was reported: $RUN_OUTPUT"
+fi
+echo "PASS: security=safe migrates legacy rules in both settings files, the report shows it, and a refresh is a no-op"
+
+# A non-Claude harness still repairs existing Claude settings (spec 061 edge
+# case), because migrate-permissions runs outside the harness switch.
+codexperm="$(new_project permissions-codex-legacy)"
+mkdir -p "$codexperm/.claude"
+printf '%s' '{"permissions":{"allow":["Read(*)","Skill"]}}' > "$codexperm/.claude/settings.json"
+run_case "codex with legacy permissions" "$codexperm" -i integration=codex -i extensions=recommended -i security=safe
+[ "$(jq -c '.permissions.allow' "$codexperm/.claude/settings.json")" = '["Read","Skill"]' ] ||
+  fail "codex with legacy permissions: settings.json not migrated: $(cat "$codexperm/.claude/settings.json")"
+codex_report="$(cd "$codexperm" && sh "$SRC/scripts/spex-setup-report.sh" 2>&1)"
+printf '%s' "$codex_report" | grep -qF "Migrated: .claude/settings.json permissions: Read(*) -> Read" ||
+  fail "codex with legacy permissions: the setup report misses the Migrated line: $codex_report"
+echo "PASS: a Codex setup run migrates legacy rules in existing Claude settings"
 
 # --- US1: $cc-spex-init from a bundled plugin copy without network (SC-001) --
 

@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-workflow-setup test-generated-trees test-walkthrough test-statusline test-ship-state test-adapt test-codex-progress test-worktree release migrate sync-scripts sync-scripts-check help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-permissions test-workflow-setup test-generated-trees test-walkthrough test-statusline test-ship-state test-adapt test-codex-progress test-worktree release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -22,6 +22,9 @@ test-codex-plugin:
 
 test-apply-extensions:
 	@tests/test_apply_extensions.sh
+
+test-permissions:
+	@tests/test_permissions.sh
 
 test-workflow-setup:
 	@tests/test_workflow_setup.sh
@@ -252,6 +255,7 @@ help:
 	@echo "  test-install        - Integration test: install from local marketplace"
 	@echo "  test-codex-plugin   - Test the bundled Codex plugin and \$$cc-spex-init bootstrap"
 	@echo "  test-apply-extensions - Test exact extension selection (spex-apply-extensions.sh)"
+	@echo "  test-permissions    - Test Claude permission rule apply/migrate (spex-permissions.sh)"
 	@echo "  test-install-remote - Integration test: install from GitHub marketplace"
 	@echo "  sync-scripts        - Copy canonical scripts from spex/scripts/ to extension directories"
 	@echo "  sync-scripts-check  - Verify extension scripts match canonical sources (used by release)"

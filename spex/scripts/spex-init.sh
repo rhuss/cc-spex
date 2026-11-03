@@ -693,6 +693,14 @@ do_init() {
   fi
 }
 
+# --- Migrate legacy Claude permission rules (spec 061) ---
+# Rewrites Bash(*), Read(*), Edit(*) and Write(*) in the project's
+# .claude/settings.json and .claude/settings.local.json to bare tool names.
+# Prints "Migrated: ..." or "WARNING: ..." lines on stderr; never fails refresh.
+migrate_permissions() {
+  sh "$(dirname "$0")/spex-permissions.sh" migrate || true
+}
+
 # --- Refresh templates only ---
 do_refresh() {
   if ! command -v specify &>/dev/null; then
@@ -709,6 +717,7 @@ do_refresh() {
   fix_constitution
   install_extensions
   install_agent_adapter "$(detect_agent)"
+  migrate_permissions
   check_update 2>/dev/null || true
 
   echo ""
@@ -734,6 +743,7 @@ do_update() {
   specify init --here --integration claude --script sh --force
   install_extensions
   install_agent_adapter "$(detect_agent)"
+  migrate_permissions
 
   echo ""
   specify version

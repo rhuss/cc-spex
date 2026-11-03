@@ -10,6 +10,9 @@
 #   - the extension selection changes (`Enabled:` / `Disabled:` lines and the
 #     summary), the legacy spex-detach migration note, and the notice when an
 #     interactive reply was not captured
+#   - the Claude permission messages: `Permissions configured in ...` from
+#     claude-permissions, and the `Migrated: ...` and `WARNING: ...` lines
+#     from both claude-permissions and migrate-permissions (spec 061)
 #   - for a failed run, the stderr of the failed step (for example the
 #     spex-worktrees / git extension guidance)
 # Without a run id, the most recent run is used. Prints nothing when there
@@ -28,7 +31,7 @@ fi
 
 jq -r '
   . as $state
-  | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions"] as $report
+  | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions"] as $report
   | ( $report[] | ($state.step_results[.].output.stderr // empty) ),
     ( if ($state.status == "failed" or $state.status == "aborted")
          and (($report | index($state.current_step_id)) == null)
