@@ -309,3 +309,39 @@ _Review-related ideas (goal-alignment-skip-behavior, spec-completeness, platform
 - **Summary**: The user-settings guard resolves the path before reading and re-checks before writing, but a concurrent writer in .claude/ could still swap files between the steps.
 
 > Exploiting it needs write access to the project at the same moment, which already allows worse; a descriptor-based write would close it fully.
+
+### operationalize-converge-hook-skip
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: FR-017 requires the evolve-invoked /speckit-implement to skip its after_implement hooks, but names no concrete lever; the recursion guard is stated, not operationalized.
+
+> after_implement hooks are fired by harness/extension config, not agent intent. Specify a concrete suppressor (e.g. an implement flag or a .spex-state field the spex-gates hook checks) and add a defense-in-depth re-entry guard to review-code.md.
+
+### anchor-persistence-model-matcher
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: The "first match anywhere" persistence-model matcher can mis-select the model from explanatory prose that mentions a model before the real declaration.
+
+> Prefer last match, or require a standalone list item in a known section, or ignore matches inside code spans / mid-sentence. Impact is currently conservative (cannot destroy completed-task history), so this is robustness hardening.
+
+### id-less-supersede-in-contract-and-converge-guidance
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: Contract section 4 and the FR-012 converge hand-off guidance name only "SUPERSEDED by <ID>" and "RETIRED", omitting the ID-less bare "**SUPERSEDED**" form that contract section 1 defines.
+
+> The downstream filters and evolve guard were extended to recognize the bare form, but the verbatim converge-guidance block was left aligned to the contract. A future contract revision should add the ID-less form so the guidance can include it without drifting from the contract.
+
+### single-source-the-two-help-files
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: spex/docs/help.md and spex/extensions/spex/docs/help.md are maintained as near-duplicates and have already drifted on command naming.
+
+> The flow-back/analyze content is now duplicated across both. Consider single-sourcing to prevent further drift.

@@ -110,6 +110,14 @@ Because the spec is already reviewed and agreed, reviewers already understand th
 
 If spec/code drift is detected during implementation, use `/speckit-spex-evolve` to reconcile: either update the spec or fix the code, then continue.
 
+Once a feature has completed tasks, evolve is spex's **flow-back** implementation. Rather than regenerating `plan.md` and `tasks.md` (which would destroy completed-task history), it records accepted changes in place and lets `/speckit-converge` append any remaining work:
+
+- **Supersede / retire markers**: a replaced requirement keeps its text and gains a trailing `**SUPERSEDED by <new-ID>**`, with the replacement added under a new ID; a dropped one is marked `**RETIRED**`. IDs are never reused, so the history stays followable.
+- **Revision notes**: each evolve session appends a dated entry to a `## Revision Notes` section in `spec.md` (and in `plan.md` when a design decision changes), so a reader can see what changed and why without consulting git history.
+- **Converge hand-off**: after the spec and plan edits, evolve runs `/speckit-converge` once. If the code already satisfies the live spec, converge reports converged and `tasks.md` is byte-identical; if work remains, converge appends a traced Convergence phase and implementation builds it, followed by one confirming converge.
+- **Append-only `tasks.md`**: evolve never edits or regenerates `tasks.md`; only `/speckit-converge` appends to it, so every completed task keeps its mark.
+- **Persistence model**: flow-back is the default (`Persistence model: flow-back` in the constitution). A project can instead declare `flow-forward` (delivered feature directories are immutable; changes go into a new feature directory) or `living-spec` (plan/tasks are regenerated only before any task is complete).
+
 ### Context Management
 
 **Start each spec-kit/spex session in a fresh Claude Code session.** The SDD workflow orchestration requires a non-fatigued context to be followed rigorously. Reusing a session that already has significant conversation history leads to the model taking shortcuts, skipping quality gates, or collapsing workflow steps. Open a new terminal or run `claude` fresh before starting a spec-kit workflow.
@@ -447,7 +455,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
 | `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify`. `--sync`: archive completed brainstorms to `brainstorm/attic/` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
-| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
+| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution; flow-back (supersede/retire markers, revision notes, append-only converge hand-off) once tasks are complete |
 | `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |
 | `/speckit-spex-help` | spex | Show a quick reference for all commands |
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |

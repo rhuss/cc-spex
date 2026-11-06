@@ -1,11 +1,14 @@
 <!-- Sync Impact Report
-Version: 2.1.0 → 2.1.1 (PATCH: record the dual-harness plugin root)
+Version: 2.1.1 → 2.2.0 (MINOR: declare flow-back persistence model; clarify generate-directive timing)
 Added sections: none
 Modified sections:
-  - Plugin Architecture Constraints: spex/ is both the Claude Code and the
-    Codex plugin root, Codex skills live in spex/codex/skills/, the release
-    sets the Codex manifest version, extensions install with --dev from any
-    source location
+  - I. Spec-Guided Development: the plan/tasks generate-directive
+    (`/speckit-plan`, `/speckit-tasks`) applies before implementation
+    begins; after implementation, flow-back edits (speckit-spex-evolve)
+    plus converge-appended tasks are the expected path. Declared the
+    flow-back persistence model (see the bullet below). Corrected the
+    dotted plan/tasks command references to the hyphen form (Naming
+    Discipline).
 Follow-up TODOs: none
 -->
 
@@ -25,7 +28,17 @@ gate on every code change. Code can change without documentation.
 - Specs define WHAT and WHY. Plans define HOW. But when the code
   tells a clearer story than the docs, the code wins.
 - Spec artifacts (plan.md, tasks.md) SHOULD be generated via
-  `/speckit.plan` and `/speckit.tasks` for tracked features.
+  `/speckit-plan` and `/speckit-tasks` for tracked features. This
+  generate-directive applies **before implementation begins**. After
+  implementation (at least one task complete), plan.md and tasks.md are
+  NOT regenerated: `speckit-spex-evolve` flows accepted changes back into
+  spec.md and plan.md (supersede/retire markers and dated revision notes),
+  and `/speckit-converge` appends any remaining work as traced tasks. This
+  preserves completed-task history.
+- Persistence model: flow-back
+  - This project's post-delivery artifact convention: accepted discoveries
+    are reconciled into whichever artifacts they affect, never by
+    regeneration that would destroy completed `tasks.md` history.
 - Specs and docs are living documents. They do not need to be
   updated for every code change. Drift is acceptable when the
   cost of updating docs exceeds the value.
@@ -215,4 +228,4 @@ Implementation plans SHOULD include a "Constitution Check" section.
 - **Compliance reviews** happen during `spex:review-spec` and
   `spex:review-plan` invocations when those gates are used.
 
-**Version**: 2.1.1 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-10-18
+**Version**: 2.2.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-11-06
