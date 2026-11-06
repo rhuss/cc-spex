@@ -1,7 +1,7 @@
 # Brainstorm: Select Detach Mode at Init
 
 **Date:** 2026-11-02
-**Status:** active (revisited 2026-11-03)
+**Status:** active (revisited 2026-11-04)
 **Related:** #23 (dual-repo-spec-workflow), attic #37 (spex-detach hardening)
 
 ## Problem Framing
@@ -109,3 +109,56 @@ Approach A, split into two deliverables.
 - Layout of project-level files in the specs repo (for example `project/spex.json`, `project/constitution.md`) and when they are synced: on every archive, on change, or on finish. (deliverable 2)
 - Restore path: how a fresh checkout of the fork pulls the constitution and `spex.json` back from the specs repo. (deliverable 2)
 - How the fork hint checks upstream for `.specify/` without a network call when the upstream ref is not fetched. (deliverable 2)
+
+---
+
+## Revisit: 2026-11-04
+
+Deliverable 1 shipped as spec 060 (`41874bd`). Its open thread is resolved: `specify extension add` does reset the config, so spex saves and restores it around refresh.
+
+### New Thread: When Specs Reach the Specs Repo
+
+**Problem.** Spec artifacts reach the specs repo only at `finish`, through the `before_finish` archive step. Until then they exist only as excluded files in the checkout. In stealth mode, a worktree gets its spec directory by copy (`rsync` in `spex-worktree.sh`), so removing a worktree without `finish` loses the specs. The same risk the corgi case showed for brainstorms applies to every feature in progress.
+
+Current archive behavior (`cmd_archive` in `spex-detach.py`):
+- It can run any time with `/speckit-spex-detach-detach archive`, but nothing runs it before `finish`.
+- It copies and never deletes. A file that was removed or renamed locally stays in the archive.
+- The target folder is named after the current branch. On the default branch it archives into `<project>/main/`.
+- It copies all of `.specify/` and all of `brainstorm/` per feature, so every feature folder holds its own snapshot of project-level files.
+
+### Approaches Considered
+
+**A: Symlink the spec directories into the specs repo.** `specs/` (and `brainstorm/`) in the checkout become links into the specs repo, so there is one copy and nothing to sync. Spec-kit only reads and writes files under `specs/`, which works through a directory link. Checked on a scratch repo on 2026-11-04:
+- The exclude entry `specs/` does not hide a symlink. Git treats the link as a file, and only `specs` (no trailing slash) matches it.
+- `rg` does not follow symlinks while walking a tree. A search from the repo root found nothing under the linked `specs/`, and `rg -L` found it. Claude's search tools are built on ripgrep, so the agent would likely not see its own specs.
+- Each worktree needs its own link, and a relative link breaks when a worktree sits at a different depth. `.specify/` can't be linked, since it holds per-checkout state (`feature.json`, `.spex-state`, installed extensions).
+- `rm -rf specs/` with a trailing slash deletes the contents in the specs repo, not the link.
+- Windows: real symlinks need Developer Mode or admin rights. In Git Bash, `ln -s` silently makes a copy unless `MSYS=winsymlinks:nativestrict` is set, so the two copies drift without warning. Directory junctions (`mklink /J`) avoid the admin requirement but need absolute paths, local NTFS and Windows-specific code.
+
+**B: Continuous mirror through phase hooks.** Keep copying, but automatically and as a true mirror. Archive runs after each phase (specify, clarify, plan, tasks, implement, each review gate) and at `finish`. It removes files that were deleted locally. Each run commits to the specs repo when something changed (and pushes when `auto_push` is on).
+- Works the same on every platform and needs no change to exclude entries or search.
+- Specs survive a lost worktree up to the last phase boundary.
+- The specs repo gets a readable history: one commit per phase.
+
+**C: Archive only at finish (today).** Simple, but loses work when a worktree is removed early, and the specs repo has no history of how a spec evolved.
+
+### Leaning
+
+B as the default. A may come later as an opt-in "live" mode for macOS and Linux, if the exclude pattern and search issues get handled. To confirm when Deliverable 2 is specified.
+
+### Key Requirements (new thread)
+
+- Spec artifacts reach the specs repo without the user remembering to archive.
+- A worktree removed without `finish` loses at most the edits since the last phase boundary.
+- Deleting or renaming a spec file locally is reflected in the specs repo.
+- Archive folders are per feature (the spec directory), not per branch.
+- Project-level files (`spex.json`, constitution) are synced once per project, not copied into every feature folder.
+- A failed archive or push warns and never blocks a phase or `finish`.
+
+### Open Threads
+
+- Which hooks trigger the mirror: every `after_*` phase hook, only gate passes, or a file-change hook? (new thread)
+- Mirror scope: should a mirror run be allowed to delete files in the specs repo that were added there by hand?
+- Commit granularity: one commit per phase, or amend a running commit per feature until `finish`?
+- Migration of existing archives laid out as `<project>/<branch>/` to the per-feature layout.
+- Brainstorm sync: mirror `brainstorm/` on every brainstorm save, independent of a feature?

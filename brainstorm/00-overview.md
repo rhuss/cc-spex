@@ -28,7 +28,7 @@ Last updated: 2026-11-03
 | 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
 | 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
 | 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
-| 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-03) | - | - |
+| 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-04) | 060 (bug fix part) | - |
 | 55 | 2026-11-03 | permission-rule-modernize | active | - | - |
 
 ## Open Threads
@@ -108,8 +108,12 @@ Last updated: 2026-11-03
 - Should spex-collab `revise` adopt the `SUPERSEDED`/`RETIRED` markers? (from #53)
 - Should evolve detect an installed reconcile extension and defer to it, or stay independent? (from #53)
 - Contribute spex's flow-back experience to [github/spec-kit#4944](https://github.com/github/spec-kit/issues/4944)? (from #53)
-- Does `specify extension add` overwrite an existing detach config when refresh keeps it, or does spex need backup/restore? (from #54)
 - Layout and sync timing of `spex.json`/constitution in the specs repo (from #54)
+- Which hooks trigger the continuous specs-repo mirror: every phase, gate passes only, or file changes? (from #54)
+- Should a mirror run delete files added to the specs repo by hand? (from #54)
+- Specs-repo commit granularity: one commit per phase, or one running commit per feature? (from #54)
+- Migrating existing `<project>/<branch>/` archives to a per-feature layout (from #54)
+- Should `brainstorm/` be mirrored on every save, independent of a feature? (from #54)
 - How a fresh fork checkout restores the constitution and `spex.json` from the specs repo (from #54)
 - How the fork hint checks upstream for `.specify/` when the upstream ref is not fetched (from #54)
 - Where should the permission migration live: spex-init.sh refresh path or a reusable helper for #62? (from #55)
