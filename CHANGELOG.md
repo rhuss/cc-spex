@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.1] - 2026-11-06
+
+### Fixed
+
+- **Detach stealth mode now hides spec artifacts and survives a refresh.** Selecting `spex-detach` during setup (and the Codex equivalent) enabled the extension but never wrote its git exclude entries: the step that writes them ran before the selection was applied, while spex-detach was still disabled, so spec files, the project declaration and the constitution could still reach an upstream `git add -A`. Setup now writes the exclude entries when the extension is enabled and verifies each configured path is ignored (a file under directory entries, the path itself for file entries, a synthetic match for glob entries, plus the re-included project declaration and constitution), reporting any path still visible. A refresh used to uninstall and reinstall spex-detach, resetting the archive path, custom excludes and auto-commit to the template; it now saves the configuration before anything is uninstalled (stopping the whole run, unchanged, if the save fails), restores it byte-for-byte, and repairs projects set up before the fix.
+- **Generated permission rules no longer trigger Claude Code warnings.** New projects wrote `Read(*)`, `Edit(*)` and `Write(*)` allow rules for the YOLO level, which current Claude Code releases flag. Every init path (interactive, workflow setup, `--refresh`, `--update`) now writes the bare tool names `Bash`, `Read`, `Edit` and `Write`, migrates existing legacy rules to the bare form (meaning preserved, a no-op when there are none), and reports each change as a `Migrated: <file> permissions: <old> -> <new>` line.
+- **Setup failures now show the underlying error.** `specify workflow run` keeps a shell step's output in the run state instead of printing it, and `spex-setup-report.sh` surfaced only a failed step's stderr. Tools that print errors to stdout (notably `specify init`) left the report empty, so a failed setup showed only the generic `Shell command exited with code 1.` The report now surfaces the failed step's stdout alongside its stderr, so the real `Error:` line is visible.
+
 ## [6.2.0] - 2026-10-29
 
 ### Added
