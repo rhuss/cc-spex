@@ -649,3 +649,41 @@ stdout_fail_report="$(cd "$stdout_fail" && sh "$SRC/scripts/spex-setup-report.sh
 printf '%s' "$stdout_fail_report" | grep -qF "integration-options" ||
   fail "stdout failure: the report did not surface the underlying stdout error: $stdout_fail_report"
 echo "PASS: a failed step's stdout error (e.g. specify init) is surfaced by spex-setup-report.sh"
+
+# --- A sandbox "Operation not permitted" failure gets an actionable hint ----
+#
+# When `specify init` is blocked by a sandbox (Codex guards the project's
+# .agents/ directory, where spec-kit installs its Codex skills), it fails with
+# EPERM: "Operation not permitted: .../.agents". The report must surface that
+# error and add a hint that names the resolution (approve the filesystem
+# escalation, or grant write access), so the user is not left with a bare
+# "Operation not permitted". A one-step workflow prints that EPERM to stdout.
+perm_fail="$(new_project report-perm-hint)"
+cat > "$perm_fail/fail.yml" <<'WF'
+schema_version: "1.0"
+workflow:
+  id: report-perm-hint
+  name: report-perm-hint
+  version: "1.0.0"
+steps:
+  - id: init-project
+    type: shell
+    run: |
+      echo "Initialization failed: [Errno 1] Operation not permitted: '$(pwd)/.agents'"
+      exit 1
+WF
+perm_fail_out="$(cd "$perm_fail" && specify workflow run "$perm_fail/fail.yml" --json </dev/null 2>/dev/null || true)"
+jq -e '.status == "failed" and .current_step_id == "init-project"' <<<"$perm_fail_out" >/dev/null ||
+  fail "perm hint: the step did not fail as expected: $perm_fail_out"
+perm_fail_report="$(cd "$perm_fail" && sh "$SRC/scripts/spex-setup-report.sh" "$(jq -r '.run_id' <<<"$perm_fail_out")" 2>&1)"
+printf '%s' "$perm_fail_report" | grep -qF "Operation not permitted" ||
+  fail "perm hint: the underlying EPERM error was not surfaced: $perm_fail_report"
+printf '%s' "$perm_fail_report" | grep -qF "filesystem escalation" ||
+  fail "perm hint: no actionable hint was added: $perm_fail_report"
+echo "PASS: a sandbox \"Operation not permitted\" failure is surfaced with an actionable hint"
+
+# And a non-EPERM failure must NOT get the sandbox hint.
+if printf '%s' "$stdout_fail_report" | grep -qF "filesystem escalation"; then
+  fail "perm hint: the sandbox hint leaked onto an unrelated failure"
+fi
+echo "PASS: the sandbox hint is scoped to EPERM failures only"

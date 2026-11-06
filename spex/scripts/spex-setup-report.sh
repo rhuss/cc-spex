@@ -19,6 +19,9 @@
 #     stdout rather than stderr (for example `specify init` prints its
 #     `Error:` lines to stdout; without this the run JSON only carries the
 #     generic "Shell command exited with code 1.")
+#   - a hint when a failed step reported "Operation not permitted" (EPERM),
+#     which is typically a sandbox (for example Codex) denying a write to the
+#     project's .agents/ directory where spec-kit installs its Codex skills
 # Without a run id, the most recent run is used. Prints nothing when there
 # is no run state or jq is missing. Always exits 0.
 
@@ -33,7 +36,8 @@ else
 fi
 [ -n "$STATE" ] && [ -f "$STATE" ] || exit 0
 
-jq -r '
+STATUS=$(jq -r '.status // empty' "$STATE" 2>/dev/null)
+REPORT=$(jq -r '
   . as $state
   | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions"] as $report
   | ( $report[] | ($state.step_results[.].output.stderr // empty) ),
@@ -45,5 +49,25 @@ jq -r '
             else empty end ),
           ($state.step_results[$cur].output.stdout // empty)
       else empty end )
-' "$STATE" 2>/dev/null | sed '/^[[:space:]]*$/d' >&2
+' "$STATE" 2>/dev/null | sed '/^[[:space:]]*$/d')
+
+[ -z "$REPORT" ] || printf '%s\n' "$REPORT" >&2
+
+# "Operation not permitted" (EPERM) on a failed run is almost always a sandbox
+# denying a write, not a real permission problem. Codex's workspace sandbox
+# guards the project's .agents/ directory, where spec-kit installs its Codex
+# skills, so `specify init` stops there. Point the user at the resolution.
+case "$STATUS" in
+  failed|aborted)
+    if printf '%s' "$REPORT" | grep -q "Operation not permitted"; then
+      printf '%s\n' \
+        "" \
+        "HINT: \"Operation not permitted\" above is usually a sandbox denying a write." \
+        "With Codex this commonly blocks the project's .agents/ directory, where" \
+        "spec-kit installs its Codex skills. Re-run \$cc-spex-init and approve the" \
+        "filesystem escalation when prompted, or grant this project write access to" \
+        "the blocked directory, then run setup again." >&2
+    fi
+    ;;
+esac
 exit 0
