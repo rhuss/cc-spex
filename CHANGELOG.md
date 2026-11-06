@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.2] - 2026-11-06
+
+### Changed
+
+- **Setup names a sandbox-blocked initialization.** When a setup step fails with `Operation not permitted` (EPERM), the report adds an actionable hint. Under Codex this is usually the workspace sandbox guarding the project's `.agents/` directory, where spec-kit installs its Codex skills, so `specify init` stops there; the hint says to approve the filesystem escalation when prompted, or grant the project write access to the blocked directory. It appears together with the underlying error that 6.2.1 began surfacing.
+
 ## [6.2.1] - 2026-11-06
 
 ### Fixed
