@@ -613,3 +613,39 @@ jq -e '.harness == "codex" and .security == "autonomous"' "$s7/.specify/spex.jso
 grep -qF "security=autonomous (from .specify/spex.json)" "$s7.log" ||
   fail "bootstrap refresh: the stored security level was not named: $(cat "$s7.log")"
 echo "PASS: \$cc-spex-init without arguments keeps the all selection and autonomous security"
+
+# --- A failed step's stdout error is surfaced, not only its stderr ----------
+#
+# Regression (init-project opacity): `specify init` writes its `Error:` lines
+# to stdout, and `specify workflow run` captures them in the failed step's
+# stdout while its stderr stays empty. spex-setup-report.sh must surface that
+# stdout, otherwise a failed init shows only the generic run-state message
+# "Shell command exited with code 1." with no underlying cause. A minimal
+# one-step workflow reproduces a genuine specify-init failure: --integration
+# generic needs --integration-options, and that error prints to stdout.
+stdout_fail="$(new_project report-stdout-failure)"
+cat > "$stdout_fail/fail.yml" <<'WF'
+schema_version: "1.0"
+workflow:
+  id: report-stdout-failure
+  name: report-stdout-failure
+  version: "1.0.0"
+steps:
+  - id: init-project
+    type: shell
+    run: |
+      specify init --here --integration generic --script sh --force
+WF
+stdout_fail_out="$(cd "$stdout_fail" && specify workflow run "$stdout_fail/fail.yml" --json </dev/null 2>/dev/null || true)"
+jq -e '.status == "failed" and .current_step_id == "init-project"' <<<"$stdout_fail_out" >/dev/null ||
+  fail "stdout failure: the init step did not fail as expected: $stdout_fail_out"
+stdout_fail_run="$(jq -r '.run_id' <<<"$stdout_fail_out")"
+stdout_fail_state="$stdout_fail/.specify/workflows/runs/$stdout_fail_run/state.json"
+# Guard the scenario: the underlying error must really be on the step's
+# stdout (this is what made it invisible before the fix).
+jq -e '.step_results["init-project"].output.stdout | test("integration-options")' "$stdout_fail_state" >/dev/null ||
+  fail "stdout failure: specify's error is not on the step's stdout (test assumption broke): $(cat "$stdout_fail_state")"
+stdout_fail_report="$(cd "$stdout_fail" && sh "$SRC/scripts/spex-setup-report.sh" "$stdout_fail_run" 2>&1)"
+printf '%s' "$stdout_fail_report" | grep -qF "integration-options" ||
+  fail "stdout failure: the report did not surface the underlying stdout error: $stdout_fail_report"
+echo "PASS: a failed step's stdout error (e.g. specify init) is surfaced by spex-setup-report.sh"
