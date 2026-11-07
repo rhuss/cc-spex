@@ -483,7 +483,20 @@ steps:
         printf "neutral"
         exit 0
       fi
-      "$ADAPT_SCRIPT" "$AGENT" "$COMMANDS_DIR" "$ADAPTERS_DIR" && printf "adapted"
+      "$ADAPT_SCRIPT" "$AGENT" "$COMMANDS_DIR" "$ADAPTERS_DIR" || exit $?
+      # Extension installation already emitted the agent's skills. Adapting
+      # only the source commands leaves those copies with neutral markers,
+      # including the missing Codex progress instructions.
+      case "$AGENT" in
+        codex) SKILLS_DIR=".agents/skills" ;;
+        claude) SKILLS_DIR=".claude/skills" ;;
+        opencode) SKILLS_DIR=".opencode/skills" ;;
+        *) SKILLS_DIR="" ;;
+      esac
+      if [ -n "$SKILLS_DIR" ] && [ -d "$SKILLS_DIR" ]; then
+        "$ADAPT_SCRIPT" "$AGENT" "$SKILLS_DIR" "$ADAPTERS_DIR" || exit $?
+      fi
+      printf "adapted"
 
   - id: adapt-harness
     type: switch

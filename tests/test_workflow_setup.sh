@@ -576,6 +576,12 @@ codex_out="$(
     sh "$PLUGIN_COPY/codex/skills/cc-spex-init/scripts/bootstrap.sh" 2> "$codex.log"
 )" || fail "bundled bootstrap failed: $(cat "$codex.log")"
 assert_completed "bundled bootstrap" "$codex_out"
+codex_ship="$codex/.agents/skills/speckit-spex-ship/SKILL.md"
+grep -qF 'Call `update_plan`' "$codex_ship" ||
+  fail "bundled bootstrap: generated ship skill lacks native progress instructions"
+if grep -qE '\{/?harness:' "$codex_ship"; then
+  fail "bundled bootstrap: generated ship skill contains unresolved harness markers"
+fi
 grep -qF "bundled source $PLUGIN_COPY" "$codex.log" || fail "bootstrap did not use the bundled plugin copy: $(cat "$codex.log")"
 assert_enabled "bundled bootstrap" "$codex" "$RECOMMENDED_SET"
 jq -e '.harness == "codex" and .security == "safe"' "$codex/.specify/spex.json" >/dev/null ||
