@@ -41,12 +41,15 @@ awk '/^```bash/{inblock=1; block=""; next}
      inblock{block = block $0 "\n"}' "$RUN_MD" > "$WORK/read_config.sh"
 echo 'echo "coderabbit=$DEFAULT_CODERABBIT copilot=$DEFAULT_COPILOT codex=$DEFAULT_CODEX"' >> "$WORK/read_config.sh"
 
-# Stand-in yq: `yq -r '<path>' <file>` -> `jq -r '<path>' <file>`.
+# Stand-in yq: `yq [-r] '<path>' <file>` -> `jq -r '<path>' <file>`. Like real yq, it ignores
+# whole-line comments, so a comment-only file parses as empty.
 mkdir -p "$WORK/fakebin"
 cat > "$WORK/fakebin/yq" <<'SHIM'
 #!/usr/bin/env bash
-shift            # drop -r
-exec jq -r "$1" "$2"
+if [ "$1" = "-r" ]; then
+  shift
+fi
+grep -v '^[[:space:]]*#' "$2" | jq -r "$1"
 SHIM
 chmod +x "$WORK/fakebin/yq"
 
