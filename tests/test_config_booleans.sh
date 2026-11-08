@@ -83,17 +83,17 @@ echo "Test: config present but yq missing"
 # A PATH that holds only the tools the config block needs (tr), so no yq can be found even where
 # yq and the system tools share a folder (CI runners ship yq in /usr/bin).
 mkdir -p "$WORK/toolbin"
-ln -s "$(command -v tr)" "$WORK/toolbin/tr" 2>/dev/null || cp "$(command -v tr)" "$WORK/toolbin/tr"
+printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v tr)" > "$WORK/toolbin/tr"
+chmod +x "$WORK/toolbin/tr"
 NO_YQ_PATH="$WORK/toolbin"
 assert_eq "defaults are used" "coderabbit=true copilot=true codex=true" \
   "$(run_with_config '{"external_tools":{"copilot":false}}' "$NO_YQ_PATH")"
-if grep -q "yq not found" "$WORK/stderr"; then
-  echo "  PASS: one line says the config cannot be read"
-  PASS=$((PASS + 1))
-else
-  echo "  FAIL: no warning when yq is missing (stderr: $(cat "$WORK/stderr"))"
-  FAIL=$((FAIL + 1))
-fi
+assert_eq "stderr is exactly the one warning line" \
+  "spex: yq not found, so .specify/extensions/spex-deep-review/deep-review-config.yml cannot be read; using defaults" \
+  "$(cat "$WORK/stderr")"
+assert_eq "no config and no yq: defaults" "coderabbit=true copilot=true codex=true" \
+  "$(run_with_config '' "$NO_YQ_PATH")"
+assert_eq "no config and no yq: stderr is empty" "" "$(cat "$WORK/stderr")"
 
 echo "Test: no command file reads a boolean with // true or // false"
 LEFT=$(grep -rnE "yq -r '[^']*// (true|false)'" "$REPO_ROOT/spex/extensions" --include='*.md' || true)
