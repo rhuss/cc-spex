@@ -581,7 +581,7 @@ stale_records() {
 # a new worktree is created. Never prompts, never fails, prints nothing when
 # there is nothing stale.
 print_stale_notice() {
-  local report line state path branch reasons origin ahead shown=0 stale=0 dirty=0 default
+  local report state path branch reasons origin ahead stale=0 dirty=0 default
   report=$(cmd_stale 2>/dev/null) || return 0
   default=$(printf '%s\n' "$report" | sed -n '1s/.* default=//p')
   while IFS=$'\t' read -r state path branch reasons origin ahead; do
@@ -597,7 +597,6 @@ print_stale_notice() {
     while IFS=$'\t' read -r state path branch reasons origin ahead; do
       [ "$state" = "STALE" ] || continue
       echo "NOTICE: stale worktree $(display_path "$path") ($branch): $reasons"
-      shown=$((shown + 1))
     done <<< "$report"
   elif [ "$stale" -gt 0 ]; then
     echo "NOTICE: $stale stale worktrees (merged into ${default:-the default branch}, or their upstream branch is gone)"
