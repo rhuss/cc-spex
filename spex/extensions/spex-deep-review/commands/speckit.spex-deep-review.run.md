@@ -44,6 +44,9 @@ DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
   echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
 fi
+if [ -f "$DEEP_REVIEW_CONFIG" ] && command -v yq >/dev/null 2>&1 && ! yq -e '.' "$DEEP_REVIEW_CONFIG" >/dev/null 2>&1; then
+  echo "spex: $DEEP_REVIEW_CONFIG is not valid YAML; using defaults" >&2
+fi
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
 case "$DEFAULT_CODERABBIT" in
   true|yes|on) DEFAULT_CODERABBIT=true ;;
@@ -166,6 +169,9 @@ Detect the project's test command for use in the fix loop (Step 7.6). Check sour
 ```bash
 # 1. Config override (highest priority)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+fi
 TEST_CMD=$(yq -r '.test_command // ""' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 TEST_TIMEOUT=$(yq -r '.test_timeout_seconds // 300' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 

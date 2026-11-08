@@ -90,6 +90,11 @@ assert_eq "a non-boolean word warns once" \
   "$(cat "$WORK/stderr")"
 run_with_config '{"external_tools":{}}' "$WITH_YQ" >/dev/null
 assert_eq "a missing key does not warn" "" "$(cat "$WORK/stderr")"
+assert_eq "a malformed config uses defaults" "coderabbit=true copilot=true codex=true" \
+  "$(run_with_config '{"external_tools": {' "$WITH_YQ")"
+assert_eq "a malformed config warns once" \
+  "spex: .specify/extensions/spex-deep-review/deep-review-config.yml is not valid YAML; using defaults" \
+  "$(cat "$WORK/stderr")"
 
 echo "Test: config present but yq missing"
 # A PATH that holds only the tools the config block needs (tr), so no yq can be found even where
