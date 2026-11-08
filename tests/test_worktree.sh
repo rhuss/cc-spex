@@ -1367,6 +1367,14 @@ run_wt "$REPO" prepare --short-name x
 assert_eq "exit code" "0" "$RC"
 assert_not_contains "no stale notice" "stale" "$OUT"
 
+echo "Test: the cleanup command uses the shared report, not its own merged-branch logic"
+MANAGE_MD="$REPO_ROOT/spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md"
+CLEANUP_SECTION=$(sed -n '/^## Action: Cleanup/,/^## Worktree Context for Downstream Commands/p' "$MANAGE_MD")
+assert_contains "cleanup calls the stale subcommand" '"$WORKTREE_SCRIPT" stale' "$CLEANUP_SECTION"
+assert_not_contains "cleanup has no branch --merged command" 'git branch --merged "' "$CLEANUP_SECTION"
+assert_not_contains "cleanup has no NNN- branch filter" "[0-9]{3}-" "$CLEANUP_SECTION"
+assert_not_contains "cleanup never forces a plain removal" "git worktree remove --force '<path>'" "$(printf '%s\n' "$CLEANUP_SECTION" | sed -n '/^### Step 2/,/^### Step 3/p' | grep -v 'retry with')"
+
 echo "Test: stale never fetches or touches the network"
 assert_eq "script has no fetch, pull or remote update" "0" "$(grep -cE 'git (-C [^ ]+ )?(fetch|pull|remote update)' "$WT_SCRIPT" || true)"
 
