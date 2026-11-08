@@ -473,7 +473,11 @@ LEGACY_RULES_JQ='[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)"
 # YOLO writes bare Bash, Read, Edit and Write, once each.
 yolo="$(new_project permissions-yolo)"
 run_case "yolo permissions" "$yolo" -i integration=claude -i extensions=recommended -i security=yolo
-yolo_settings="$yolo/.claude/settings.json"
+# The rules go to the personal settings.local.json, never the committed settings.json.
+yolo_settings="$yolo/.claude/settings.local.json"
+if [ -f "$yolo/.claude/settings.json" ] && jq -e '.permissions // empty' "$yolo/.claude/settings.json" >/dev/null 2>&1; then
+  fail "yolo permissions: permissions were written to the committed settings.json: $(cat "$yolo/.claude/settings.json")"
+fi
 jq -e '.permissions.defaultMode == "bypassPermissions"' "$yolo_settings" >/dev/null ||
   fail "yolo permissions: defaultMode is not bypassPermissions: $(cat "$yolo_settings")"
 for tool in Bash Read Edit Write; do
@@ -482,7 +486,7 @@ for tool in Bash Read Edit Write; do
 done
 jq -e "$LEGACY_RULES_JQ" "$yolo_settings" >/dev/null ||
   fail "yolo permissions: a Tool(*) form was written: $(cat "$yolo_settings")"
-printf '%s' "$RUN_OUTPUT" | grep -qE "Permissions configured in \.claude/settings\.json \([0-9]+ rules added\)" ||
+printf '%s' "$RUN_OUTPUT" | grep -qE "Permissions configured in \.claude/settings\.local\.json \([0-9]+ rules added\)" ||
   fail "yolo permissions: the setup report does not show the apply result: $RUN_OUTPUT"
 echo "PASS: security=yolo writes bare Bash, Read, Edit, Write and no Tool(*) forms"
 
