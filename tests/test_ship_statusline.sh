@@ -136,28 +136,117 @@ OUT=$(run_statusline "$MAIN" "$MAIN")
 assert_contains "bare path containing a space: still shown" "PREV[] stdin-ok" "$OUT"
 cleanup
 
-echo "Test: init keeps a status line given as a command line (#54)"
-# Run only the status-line step of spex-init.sh, against a project whose settings hold
-# `bash <script> --compact`. Before #54 that failed `-f`, was not saved, and was overwritten.
-setup
-make_prev "$WORKDIR/bin/prev.sh"
-mkdir -p "$MAIN/.claude"
-printf '{"statusLine":{"type":"command","command":"bash %s --compact"}}\n' "$WORKDIR/bin/prev.sh" > "$MAIN/.claude/settings.local.json"
+
+# --- The status-line step exists twice: configure_statusline() in spex-init.sh and the
+# claude-statusline step in setup.yml. Both are extracted from the real files and run against
+# the same cases, so neither copy can drift unnoticed. ---
+
 # From the function header to the `}` that follows its closing message (the function body
 # holds a heredoc with its own `}` at column 0, so the first `}` is not the end).
-STEP=$(awk '/^configure_statusline\(\) \{/{on=1} on{print} on && /Status line configured/{done=1} done && /^\}/{exit}' \
+INIT_STEP=$(awk '/^configure_statusline\(\) \{/{on=1} on{print} on && /Status line configured/{done=1} done && /^\}/{exit}' \
   "$REPO_ROOT/spex/scripts/spex-init.sh")
-if [ -z "$STEP" ]; then
-  echo "  FAIL: could not find configure_statusline() in spex-init.sh"; FAIL=$((FAIL + 1))
-else
-  # $0 must be spex-init.sh: the function finds the statusline script next to it.
-  (cd "$MAIN" && bash -c "$STEP"$'\n'"configure_statusline" "$REPO_ROOT/spex/scripts/spex-init.sh" >/dev/null 2>&1) || true
+# From the step's `run: |` line to the next case (`codex:`), minus its 12-space indent.
+SETUP_STEP=$(awk '/- id: claude-statusline/{f=1; next} f && /^ *run: \|/{r=1; next} r && /^      codex:/{exit} r{sub(/^ {12}/, ""); print}' \
+  "$REPO_ROOT/spex/setup.yml")
+
+# An extract that did not end where expected would run far more than the step (for init, the
+# whole script's main dispatch), so refuse to run anything that does not look right.
+INIT_LAST_LINE=$(printf '%s\n' "$INIT_STEP" | tail -n 1)
+case "$INIT_STEP" in
+  "configure_statusline() {"*) INIT_OK=yes ;;
+  *) INIT_OK=no ;;
+esac
+if [ "$INIT_LAST_LINE" != "}" ] || [[ "$INIT_STEP" == *do_init* ]]; then INIT_OK=no; fi
+case "$SETUP_STEP" in
+  'SOURCE="${SPEX_SOURCE:-$SPECKIT_WORKFLOW_DIR}"'*) SETUP_OK=yes ;;
+  *) SETUP_OK=no ;;
+esac
+if [ "$SETUP_OK" = "yes" ] && [[ "$SETUP_STEP" == *"id: codex"* ]]; then SETUP_OK=no; fi
+
+# Run one copy of the step inside $MAIN. $1 = init | setup. stderr goes to $WORKDIR/step.err.
+run_step() {
+  if [ "$1" = "init" ]; then
+    # $0 must be spex-init.sh: the function finds the statusline script next to it.
+    (cd "$MAIN" && bash -c "$INIT_STEP"$'\n'"configure_statusline" "$REPO_ROOT/spex/scripts/spex-init.sh" >/dev/null 2>"$WORKDIR/step.err") || true
+  else
+    (cd "$MAIN" && SPEX_SOURCE="$REPO_ROOT/spex" bash -c "$SETUP_STEP" >/dev/null 2>"$WORKDIR/step.err") || true
+  fi
+}
+
+settings_command() {
+  jq -r '.statusLine.command // empty' "$MAIN/.claude/settings.local.json" 2>/dev/null
+}
+
+CHAIN_REL=".claude/.spex-previous-statusline"
+
+for KIND in init setup; do
+  OK_VAR="${KIND^^}_OK"
+  if [ "${!OK_VAR}" != "yes" ]; then
+    echo "  FAIL: could not extract the $KIND status-line step cleanly"; FAIL=$((FAIL + 1))
+    continue
+  fi
+
+  echo "Test [$KIND]: a status line given as a command line is chained and spex is installed (#54)"
+  setup
+  make_prev "$WORKDIR/bin/prev.sh"
+  mkdir -p "$MAIN/.claude"
+  printf '{"statusLine":{"type":"command","command":"bash %s --compact"}}\n' "$WORKDIR/bin/prev.sh" > "$MAIN/.claude/settings.local.json"
+  run_step "$KIND"
   assert_contains "chain file holds the whole command line" "bash $WORKDIR/bin/prev.sh --compact" \
-    "$(cat "$MAIN/.claude/.spex-previous-statusline" 2>/dev/null)"
-  OUT=$(run_statusline "$MAIN" "$MAIN")
-  assert_contains "and it still shows after init" "PREV[--compact] stdin-ok" "$OUT"
-fi
-cleanup
+    "$(cat "$MAIN/$CHAIN_REL" 2>/dev/null)"
+  assert_contains "settings now point at the spex script" "spex-ship-statusline.sh" "$(settings_command)"
+  # Run the command that settings now hold (not $STATUSLINE directly): this is what Claude Code runs.
+  OUT=$(cd "$MAIN" && printf '{"workspace":{"current_dir":"%s"},"context_window":{"used_percentage":42}}' "$MAIN" \
+    | env -u SHIP_STATE_FILE CLAUDE_PROJECT_DIR="$MAIN" bash -c "$(settings_command)" 2>/dev/null | sed $'s/\033\\[[0-9;]*m//g')
+  assert_contains "the old status line still shows after setup" "PREV[--compact] stdin-ok" "$OUT"
+
+  echo "Test [$KIND]: running it twice changes nothing (idempotent)"
+  CHAIN_BEFORE=$(cat "$MAIN/$CHAIN_REL")
+  SETTINGS_BEFORE=$(cat "$MAIN/.claude/settings.local.json")
+  run_step "$KIND"
+  assert_contains "chain file unchanged" "$CHAIN_BEFORE" "$(cat "$MAIN/$CHAIN_REL")"
+  assert_contains "settings unchanged" "$SETTINGS_BEFORE" "$(cat "$MAIN/.claude/settings.local.json")"
+  cleanup
+
+  echo "Test [$KIND]: a dead spex path is refreshed, not kept and not chained"
+  for DEAD in "/nonexistent/spex-ship-statusline.sh" "bash /nonexistent/spex-ship-statusline.sh"; do
+    setup
+    mkdir -p "$MAIN/.claude"
+    printf '{"statusLine":{"type":"command","command":"%s"}}\n' "$DEAD" > "$MAIN/.claude/settings.local.json"
+    run_step "$KIND"
+    assert_not_contains "'$DEAD' replaced in settings" "nonexistent" "$(settings_command)"
+    assert_contains "'$DEAD': settings point at the real script" "/spex/scripts/spex-ship-statusline.sh" "$(settings_command)"
+    if [ -f "$MAIN/$CHAIN_REL" ]; then
+      echo "  FAIL: '$DEAD' was saved as a chain target"; FAIL=$((FAIL + 1))
+    else
+      echo "  PASS: '$DEAD' was not saved as a chain target"; PASS=$((PASS + 1))
+    fi
+    cleanup
+  done
+
+  echo "Test [$KIND]: a wrapper that only mentions the spex script as an argument is chained"
+  setup
+  mkdir -p "$MAIN/.claude"
+  printf '{"statusLine":{"type":"command","command":"bash /x/wrapper.sh /y/spex-ship-statusline.sh --compact"}}\n' > "$MAIN/.claude/settings.local.json"
+  run_step "$KIND"
+  assert_contains "wrapper saved as the chain target" "bash /x/wrapper.sh /y/spex-ship-statusline.sh --compact" \
+    "$(cat "$MAIN/$CHAIN_REL" 2>/dev/null)"
+  cleanup
+
+  echo "Test [$KIND]: when the old command cannot be saved, the old status line is left alone"
+  setup
+  mkdir -p "$MAIN/.claude"
+  printf '{"statusLine":{"type":"command","command":"bash /x/prev.sh --compact"}}\n' > "$MAIN/.claude/settings.local.json"
+  # A directory where the chain file should go makes the write fail on every platform and for
+  # root alike (a read-only folder would not).
+  mkdir -p "$MAIN/$CHAIN_REL"
+  SETTINGS_BEFORE=$(cat "$MAIN/.claude/settings.local.json")
+  run_step "$KIND"
+  assert_contains "a warning says it could not save" "could not save the existing status line" "$(cat "$WORKDIR/step.err")"
+  assert_not_contains "no raw shell error as well" "Is a directory" "$(cat "$WORKDIR/step.err")"
+  assert_contains "settings.local.json is untouched" "$SETTINGS_BEFORE" "$(cat "$MAIN/.claude/settings.local.json")"
+  cleanup
+done
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -195,16 +195,28 @@ configure_statusline() {
       local current_cmd
       current_cmd="$(jq -r '.statusLine.command // empty' "$settings_file")"
       if [ -n "$current_cmd" ]; then
-        # Already pointing to our script, nothing to do
+        # A command that ENDS in our script name is ours (the bare path, or `bash <path>`).
+        # If it still resolves, nothing to do. If it points at a script that is gone (a
+        # plugin-cache path from an older version, a deleted temp source), refresh it below
+        # and do not save it as the chain target: it would chain to nothing. A command that
+        # merely mentions the script elsewhere (a wrapper) is someone else's and is chained.
         case "$current_cmd" in
-          *spex-ship-statusline.sh*) return 0 ;;
+          *spex-ship-statusline.sh)
+            if [ "$current_cmd" = "$abs_script" ] || [ -f "$current_cmd" ]; then
+              return 0
+            fi
+            current_cmd=""
+            ;;
         esac
         # Different statusline exists: save the whole command line for chaining (a bare path
         # or `bash script.sh --args`). If it cannot be saved, leave the user's line alone
-        # rather than replace it with nothing to fall back to.
-        if ! printf '%s\n' "$current_cmd" > "$chain_file" 2>/dev/null; then
-          echo "  WARNING: could not save the existing status line to $chain_file; leaving it unchanged" >&2
-          return 0
+        # rather than replace it with nothing to fall back to. The braces keep the shell's own
+        # "cannot create" message out of the output, so only our warning shows.
+        if [ -n "$current_cmd" ]; then
+          if ! { printf '%s\n' "$current_cmd" > "$chain_file"; } 2>/dev/null; then
+            echo "  WARNING: could not save the existing status line to $chain_file; leaving it unchanged" >&2
+            return 0
+          fi
         fi
       fi
     fi
