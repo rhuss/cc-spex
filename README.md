@@ -169,6 +169,7 @@ flowchart TD
 **Prerequisites:**
 1. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
 2. [Spec-Kit](https://github.com/github/spec-kit) installed (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git` or see their docs)
+3. Optional: [yq](https://github.com/mikefarah/yq) (`brew install yq` or `winget install MikeFarah.yq`). Spex reads its extension config files with it; without yq it uses defaults (and warns), so a setting such as `copilot: false` has no effect.
 
 **Install via Marketplace (recommended):**
 

@@ -398,3 +398,9 @@ COMMON MISTAKES (do NOT use these)
 
   Rule: spex commands use /speckit-spex-* prefix (brainstorm, review, evolve).
         Spec-kit commands use /speckit-* prefix (specify, plan, implement).
+
+OPTIONAL TOOLS
+
+  yq  Reads extension config files (.specify/extensions/*/*.yml). Without it spex uses defaults
+      and prints one warning, so settings such as copilot: false have no effect.
+      Install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq
