@@ -79,6 +79,18 @@ assert_eq "no config file: defaults, no warning" "coderabbit=true copilot=true c
   "$(run_with_config '' "$WITH_YQ")"
 assert_eq "no config file: stderr is empty" "" "$(cat "$WORK/stderr")"
 
+echo "Test: YAML 1.1 spellings are accepted, other words warn"
+assert_eq "False / no / OFF mean false" "coderabbit=false copilot=false codex=false" \
+  "$(run_with_config '{"external_tools":{"coderabbit":"False","copilot":"no","codex":"OFF"}}' "$WITH_YQ")"
+assert_eq "Yes / ON / True mean true" "coderabbit=true copilot=true codex=true" \
+  "$(run_with_config '{"external_tools":{"coderabbit":"Yes","copilot":"ON","codex":"True"}}' "$WITH_YQ")"
+run_with_config '{"external_tools":{"copilot":"maybe"}}' "$WITH_YQ" >/dev/null
+assert_eq "a non-boolean word warns once" \
+  "spex: ignoring non-boolean 'maybe' for external_tools.copilot in .specify/extensions/spex-deep-review/deep-review-config.yml; using true" \
+  "$(cat "$WORK/stderr")"
+run_with_config '{"external_tools":{}}' "$WITH_YQ" >/dev/null
+assert_eq "a missing key does not warn" "" "$(cat "$WORK/stderr")"
+
 echo "Test: config present but yq missing"
 # A PATH that holds only the tools the config block needs (tr), so no yq can be found even where
 # yq and the system tools share a folder (CI runners ship yq in /usr/bin).
