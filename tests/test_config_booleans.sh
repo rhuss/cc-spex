@@ -96,7 +96,10 @@ assert_eq "no config and no yq: defaults" "coderabbit=true copilot=true codex=tr
 assert_eq "no config and no yq: stderr is empty" "" "$(cat "$WORK/stderr")"
 
 echo "Test: no command file reads a boolean with // true or // false"
-LEFT=$(grep -rnE "yq -r '[^']*// (true|false)'" "$REPO_ROOT/spex/extensions" --include='*.md' || true)
+# Only `// true` is the bug: it turns an explicit false into true. `// false` is harmless (false
+# stays false). Matches single- or double-quoted yq/jq queries, with or without -r, any spacing.
+LEFT=$(grep -rnE "(yq|jq)[^|]*['\"][^'\"]*//[[:space:]]*true\b" \
+  "$REPO_ROOT/spex" --include='*.md' --include='*.sh' || true)
 assert_eq "no // boolean reads remain" "" "$LEFT"
 
 echo ""
