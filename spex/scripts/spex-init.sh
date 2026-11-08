@@ -833,7 +833,7 @@ case "${1:-}" in
         exit 1
       fi
       ensure_extension_skills 2>/dev/null || true
-      configure_statusline 2>/dev/null || true
+      configure_statusline >/dev/null || true  # stdout muted on the fast path; the warning on stderr must show
       configure_git_exclude 2>/dev/null || true
       run_detach_enable 2>/dev/null || true
       check_update 2>/dev/null || true
