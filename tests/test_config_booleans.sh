@@ -67,7 +67,15 @@ run_with_config() {
 }
 
 echo "Test: the real config block from the deep-review command"
-WITH_YQ="$WORK/fakebin:$PATH"
+# Use the real yq when mikefarah's yq is installed (it reads these JSON configs as YAML); fall back
+# to the jq stand-in only where it is not, so the test still runs there.
+if command -v yq >/dev/null 2>&1 && yq --version 2>&1 | grep -q mikefarah; then
+  WITH_YQ="$PATH"
+  echo "  (real yq: $(yq --version))"
+else
+  WITH_YQ="$WORK/fakebin:$PATH"
+  echo "  (yq not installed: using the jq stand-in)"
+fi
 assert_eq "copilot: false is honoured" "coderabbit=true copilot=false codex=true" \
   "$(run_with_config '{"external_tools":{"copilot":false}}' "$WITH_YQ")"
 assert_eq "all three false are honoured" "coderabbit=false copilot=false codex=false" \
