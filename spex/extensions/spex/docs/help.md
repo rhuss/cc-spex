@@ -337,7 +337,7 @@ MULTI-AGENT SUPPORT
     3. --ai value from .specify/init-options.json
 
   Per-agent adapters (configured by setup workflow):
-    Claude Code  Statusline, permissions in .claude/settings.json
+    Claude Code  Statusline, permissions in .claude/settings.local.json (not committed)
     Codex CLI    Python hooks in .codex/hooks.json + AGENTS.md
     OpenCode     TypeScript plugin in .opencode/plugins/ + AGENTS.md
 
