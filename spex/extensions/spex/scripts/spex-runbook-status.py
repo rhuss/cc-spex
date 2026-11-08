@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """spex-runbook-status.py - Runbook status, freshness, and scratch location.
 
-Subcommands: fingerprint, locate, init, step, steps, mode, show, list, not-testable.
+Subcommands: fingerprint, locate, init, step, steps, mode, reset, show, list, not-testable.
 Frontmatter and the human status line are written only by this script
 (Constitution VII). Stdlib only (no PyYAML). JSON goes to stdout; diagnostics
 to stderr.
@@ -23,6 +23,9 @@ FM_ORDER = [
     "step_results", "drafted_at", "drafted_fingerprint", "tested_at",
     "tested_fingerprint", "updated",
 ]
+# Optional keys are written only when non-empty, so runbooks that never use
+# them stay byte-identical. stale_reason is set by `reset` (FR-030).
+OPTIONAL_KEYS = ["stale_reason"]
 REQUIRED_KEYS = ["status", "mode", "steps_total", "step_results"]
 RESULTS = ("passed", "failed", "skipped", "pending")
 
@@ -200,6 +203,10 @@ def serialize_frontmatter(fm):
     for k in FM_ORDER:
         v = fm.get(k, "")
         lines.append("{}:".format(k) if v == "" else "{}: {}".format(k, v))
+    for k in OPTIONAL_KEYS:
+        v = fm.get(k, "")
+        if v != "":
+            lines.append("{}: {}".format(k, v))
     lines.append("---")
     return "\n".join(lines) + "\n"
 
@@ -236,6 +243,8 @@ def status_line_text(fm):
         pieces.append("Drafted at {}".format(fm["drafted_at"]))
     if fm.get("updated"):
         pieces.append(fm["updated"])
+    if fm.get("status") == "stale" and fm.get("stale_reason"):
+        pieces.append("Reset: {}; step results below predate it".format(fm["stale_reason"]))
     return "> " + " · ".join(pieces)
 
 
@@ -407,6 +416,7 @@ def do_step(args):
     fm["tested_fingerprint"] = fingerprint() or ""
     fm["updated"] = today()
     fm["status"] = derive_status(results, presented=True)
+    fm.pop("stale_reason", None)
     write_runbook(runbook, fm, body)
     print(json.dumps(build_show(runbook, use_git=True)))
 
@@ -431,8 +441,47 @@ def do_steps(args):
     fm["steps_total"] = n
     fm["updated"] = today()
     presented = bool(fm.get("tested_at"))
-    fm["status"] = derive_status(results, presented=presented)
+    if fm.get("status") == "stale" and all(r == "pending" for r in results):
+        fm["status"] = "stale"  # a refreshed step count does not clear a reset
+    else:
+        fm["status"] = derive_status(results, presented=presented)
     write_runbook(runbook, fm, body)
+
+
+def do_reset(args):
+    """Mark a runbook stale after a requirement-changing spec amendment (FR-030).
+
+    Every step goes back to pending and the test stamps are cleared, so earlier
+    results no longer count; the draft stamps, mode, and step count are kept.
+    A missing runbook is a no-op (exit 0)."""
+    reason = ""
+    pos = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--reason":
+            i += 1
+            reason = args[i] if i < len(args) else ""
+        else:
+            pos.append(args[i])
+        i += 1
+    if len(pos) != 1:
+        sys.stderr.write("usage: reset <spec-dir|runbook> [--reason <text>]\n")
+        sys.exit(2)
+    runbook = resolve_runbook(pos[0])
+    if not os.path.isfile(runbook):
+        print(json.dumps({"reset": False, "why": "no-runbook", "path": runbook}))
+        return
+    fm, body = _load_or_die(runbook, 1)
+    reason = " ".join(reason.split()) or "spec amended"
+    n = int(fm["steps_total"])
+    fm["step_results"] = ",".join(["pending"] * n)
+    fm["status"] = "stale"
+    fm["stale_reason"] = reason
+    fm["tested_at"] = ""
+    fm["tested_fingerprint"] = ""
+    fm["updated"] = today()
+    write_runbook(runbook, fm, body)
+    print(json.dumps(build_show(runbook, use_git=False)))
 
 
 def do_mode(args):
@@ -459,7 +508,7 @@ def build_show(arg, use_git):
         "exists": False, "path": runbook, "readable": None, "status": None,
         "mode": None, "steps": None, "drafted_at": None, "tested_at": None,
         "current": None, "changed_since_draft": None, "changed_files": [],
-        "changed_files_note": None, "not_testable": False,
+        "changed_files_note": None, "not_testable": False, "stale_reason": None,
     }
     if not os.path.isfile(runbook):
         spec_dir = os.path.dirname(os.path.dirname(runbook)) if runbook.endswith(
@@ -487,6 +536,7 @@ def build_show(arg, use_git):
         "drafted_at": drafted_at, "tested_at": tested_at,
         "current": None, "changed_since_draft": None, "changed_files": [],
         "changed_files_note": None, "not_testable": False,
+        "stale_reason": fm.get("stale_reason") or None,
     }
     if use_git:
         fp = fingerprint()
@@ -574,6 +624,7 @@ COMMANDS = {
     "step": do_step,
     "steps": do_steps,
     "mode": do_mode,
+    "reset": do_reset,
     "show": do_show,
     "list": do_list,
     "not-testable": do_not_testable,

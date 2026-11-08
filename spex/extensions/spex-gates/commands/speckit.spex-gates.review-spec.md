@@ -249,6 +249,8 @@ Invoke `/speckit-analyze` to check consistency between:
 
 **Report any mismatches or gaps found.**
 
+**After a flow-back evolve (FR-025):** If the feature has been through `speckit-spex-evolve`, expect `/speckit-analyze` findings about spec items marked `SUPERSEDED by <ID>` or `RETIRED`, and about completed tasks (`- [x]`/`- [X]`) that implemented them. These are expected and NOT actionable: superseded/retired items are no longer intent and their completed tasks are history. Findings about live spec items remain actionable as usual.
+
 ### 9. Generate Review Report
 
 Output the review findings to the console. Do NOT write a `REVIEW-SPEC.md` file. All review information is presented directly in the conversation output.

@@ -334,6 +334,57 @@ mkdir -p specs/054-x
 assert_eq "no state file created" "absent" "$([ -f .specify/.spex-state ] && echo present || echo absent)"
 cleanup
 
+# ─── Test: reset marks a passed runbook stale (059 FR-030) ───
+echo "=== Test: reset marks a passed runbook stale ==="
+setup_test_repo
+mkdir -p specs/054-x
+printf '# Try it: Thing\n\nbody\n' > specs/054-x/RUNBOOK.md
+"$STATUS" init specs/054-x/RUNBOOK.md --feature 054-x --mode light --steps 3
+DRAFTED_AT=$(grep '^drafted_at:' specs/054-x/RUNBOOK.md)
+for n in 1 2 3; do "$STATUS" step specs/054-x/RUNBOOK.md "$n" passed >/dev/null; done
+assert_eq "precondition: passed" "passed" "$("$STATUS" show specs/054-x | jq -r .status)"
+assert_eq "never-reset runbook has no stale_reason key" "0" "$(grep -c '^stale_reason:' specs/054-x/RUNBOOK.md || true)"
+RESET_OUT=$("$STATUS" reset specs/054-x --reason "spec evolved 2026-11-08:
+  FR-004 → FR-029")
+assert_eq "reset prints stale status" "stale" "$(echo "$RESET_OUT" | jq -r .status)"
+SHOW=$("$STATUS" show specs/054-x)
+assert_eq "status stale" "stale" "$(echo "$SHOW" | jq -r .status)"
+assert_eq "all steps pending" "3" "$(echo "$SHOW" | jq -r .steps.pending)"
+assert_eq "tested_at cleared" "null" "$(echo "$SHOW" | jq -r .tested_at)"
+assert_eq "reason collapsed to one line" "spec evolved 2026-11-08: FR-004 → FR-029" "$(echo "$SHOW" | jq -r .stale_reason)"
+assert_eq "draft stamp kept" "$DRAFTED_AT" "$(grep '^drafted_at:' specs/054-x/RUNBOOK.md)"
+assert_contains "status block names the reset" "Reset: spec evolved 2026-11-08: FR-004 → FR-029; step results below predate it" "$(cat specs/054-x/RUNBOOK.md)"
+"$STATUS" steps specs/054-x/RUNBOOK.md 4
+assert_eq "steps keeps stale while all pending" "stale" "$("$STATUS" show specs/054-x | jq -r .status)"
+"$STATUS" step specs/054-x/RUNBOOK.md 1 passed >/dev/null
+SHOW=$("$STATUS" show specs/054-x)
+assert_eq "step after reset leaves stale" "in_progress" "$(echo "$SHOW" | jq -r .status)"
+assert_eq "step after reset clears stale_reason" "null" "$(echo "$SHOW" | jq -r .stale_reason)"
+assert_eq "stale_reason key removed" "0" "$(grep -c '^stale_reason:' specs/054-x/RUNBOOK.md || true)"
+cleanup
+
+# ─── Test: init clears a stale reset ───
+echo "=== Test: init clears a stale reset ==="
+setup_test_repo
+mkdir -p specs/054-x
+printf '# Try it: Thing\n\nbody\n' > specs/054-x/RUNBOOK.md
+"$STATUS" init specs/054-x/RUNBOOK.md --feature 054-x --mode light --steps 2
+"$STATUS" reset specs/054-x --reason "spec evolved" >/dev/null
+"$STATUS" init specs/054-x/RUNBOOK.md --feature 054-x --mode light --steps 2
+assert_eq "init returns to drafted" "drafted" "$("$STATUS" show specs/054-x | jq -r .status)"
+assert_eq "init drops stale_reason" "0" "$(grep -c '^stale_reason:' specs/054-x/RUNBOOK.md || true)"
+cleanup
+
+# ─── Test: reset without a runbook is a no-op ───
+echo "=== Test: reset without a runbook ==="
+setup_test_repo
+mkdir -p specs/054-x
+NO_OUT=$("$STATUS" reset specs/054-x --reason "spec evolved"); NO_RC=$?
+assert_eq "exit 0" "0" "$NO_RC"
+assert_eq "reports reset false" "false" "$(echo "$NO_OUT" | jq -r .reset)"
+assert_eq "no runbook created" "absent" "$([ -f specs/054-x/RUNBOOK.md ] && echo present || echo absent)"
+cleanup
+
 # ─── Summary ───
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="

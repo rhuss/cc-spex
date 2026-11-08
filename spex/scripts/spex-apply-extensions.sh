@@ -16,8 +16,16 @@
 # extension spex does not ship are never disabled; the spec-kit `git`
 # extension is enabled (never disabled) when spex-worktrees is selected.
 #
+# When spex-detach ends up enabled, its exclude entries are written (or
+# repaired) and verified through `spex-detach.sh ensure` (stealth mode). That
+# step reports `Stealth mode: ...`, `Repaired stealth mode: ...` or a
+# `WARNING: stealth mode is NOT fully active` block (also when `ensure` itself
+# fails, for example without Python) and never changes the exit code.
+# Without an enabled spex-detach nothing is written or printed.
+#
 # Output goes to stderr: one `Enabled: <ext>` / `Disabled: <ext>` line per
-# change, then `Extensions: <n> enabled, <m> disabled, <k> unchanged`.
+# change, the stealth-mode lines, then
+# `Extensions: <n> enabled, <m> disabled, <k> unchanged`.
 #
 # Exit codes: 0 success, 1 a required change failed or a selected extension
 # is not installed, 2 usage error.
@@ -123,6 +131,10 @@ n_disabled=0
 n_unchanged=0
 rc=0
 
+# spex-detach state before the loop: the reference for "repaired" vs. "written"
+# when the snapshot does not know the extension.
+detach_pre=$(state "$REGISTRY" spex-detach)
+
 for ext in $OPTIONAL_EXTENSIONS; do
   current=$(state "$REGISTRY" "$ext")
   [ "$current" != absent ] || continue
@@ -177,6 +189,43 @@ if is_selected spex-worktrees; then
       echo "WARNING: the git extension (required by spex-worktrees) is not installed; the git check after this step reports it if it stays missing" >&2
       ;;
   esac
+fi
+
+# Stealth mode: write missing spex-detach exclude entries and verify them.
+# Only stderr is relayed; the result never changes the exit code (FR-004).
+DETACH_SCRIPT=".specify/extensions/spex-detach/scripts/spex-detach.sh"
+if [ "$(state "$REGISTRY" spex-detach)" = true ] && [ -x "$DETACH_SCRIPT" ]; then
+  detach_ref="$detach_pre"
+  if [ -n "$BEFORE" ]; then
+    detach_prev=$(state "$BEFORE" spex-detach)
+    [ "$detach_prev" = absent ] || detach_ref="$detach_prev"
+  fi
+  # spex-init.sh leaves this marker when spex-detach was enabled before a
+  # setup run whose workflow disabled it again (no declaration yet).
+  DETACH_MARKER=".specify/.spex-detach-was-enabled"
+  if [ -f "$DETACH_MARKER" ]; then
+    detach_ref=true
+    rm -f "$DETACH_MARKER"
+  fi
+  detach_rc=0
+  detach_err=$(mktemp "${TMPDIR:-/tmp}/spex-detach-err.XXXXXX") || detach_err=/dev/null
+  if [ "$detach_ref" = true ]; then
+    detach_out=$("$DETACH_SCRIPT" ensure --was-enabled 2>"$detach_err") || detach_rc=$?
+  else
+    detach_out=$("$DETACH_SCRIPT" ensure 2>"$detach_err") || detach_rc=$?
+  fi
+  [ "$detach_err" = /dev/null ] || { cat "$detach_err" >&2; }
+  # `ensure` prints its JSON result on stdout for exit 0 (active) and 1 (a
+  # path is visible); exit 2 means "not a git repository" and stays silent.
+  # Any other failure (no Python, a crash) printed no stealth-mode line, so
+  # say so, with the last error line (callers may filter the rest out).
+  # Keep in sync with report_detach_crash in spex-init.sh.
+  if [ "$detach_rc" -ne 0 ] && [ "$detach_rc" -ne 2 ] && [ -z "$detach_out" ]; then
+    detach_last=$(tail -n 1 "$detach_err" 2>/dev/null)
+    echo "WARNING: stealth mode is NOT fully active. The exclude entries could not be written or verified:" >&2
+    echo "  spex-detach.sh ensure failed with exit code $detach_rc${detach_last:+: $detach_last}" >&2
+  fi
+  [ "$detach_err" = /dev/null ] || rm -f "$detach_err"
 fi
 
 echo "Extensions: $n_enabled enabled, $n_disabled disabled, $n_unchanged unchanged" >&2

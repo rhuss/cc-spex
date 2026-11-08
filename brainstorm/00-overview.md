@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-10-18
+Last updated: 2026-11-03
 
 ## Sessions
 
@@ -25,6 +25,11 @@ Last updated: 2026-10-18
 | 48 | 2026-10-11 | walkthrough-runbook | ready for spec | 054 | - |
 | 49 | 2026-10-13 | merge-stamp-finish | active | - | - |
 | 50 | 2026-10-18 | codex-bundled-init | active | - | [#58](https://github.com/rhuss/cc-spex/issues/58) |
+| 51 | 2026-10-26 | codex-ship-progress | ready for spec | - | - |
+| 52 | 2026-10-29 | init-permissions-local-settings | active | - | [#62](https://github.com/rhuss/cc-spex/issues/62) |
+| 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
+| 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-04) | 060 (bug fix part) | - |
+| 55 | 2026-11-03 | permission-rule-modernize | active | - | - |
 
 ## Open Threads
 
@@ -94,6 +99,26 @@ Last updated: 2026-10-18
 - Should manual `specify extension enable/disable` update `.specify/spex.json`? (from #50)
 - One rule for exact selection vs keeping manually disabled extensions across `spex-init.sh` and `setup.yml`? (from #50)
 - Do Claude-only files in the Codex plugin cache cause Codex warnings? (from #50)
+- Does Codex honor `[tui]` keys from a trusted project's `.codex/config.toml`? (from #51)
+- Should Standard permissions also move to `settings.local.json`? (from #52)
+- Should a stored `"security": "yolo"` require confirmation before applying for another user? (from #52)
+- Should Codex YOLO move out of the project `.codex/config.toml`? (from #52)
+- Which anchored rule form matches the absolute-path script invocation? (from #52)
+- Should `unrequested` converge findings pause an autonomous ship run at every oversight level? (from #53)
+- Should spex-collab `revise` adopt the `SUPERSEDED`/`RETIRED` markers? (from #53)
+- Should evolve detect an installed reconcile extension and defer to it, or stay independent? (from #53)
+- Contribute spex's flow-back experience to [github/spec-kit#4944](https://github.com/github/spec-kit/issues/4944)? (from #53)
+- Layout and sync timing of `spex.json`/constitution in the specs repo (from #54)
+- Which hooks trigger the continuous specs-repo mirror: every phase, gate passes only, or file changes? (from #54)
+- Should a mirror run delete files added to the specs repo by hand? (from #54)
+- Specs-repo commit granularity: one commit per phase, or one running commit per feature? (from #54)
+- Migrating existing `<project>/<branch>/` archives to a per-feature layout (from #54)
+- Should `brainstorm/` be mirrored on every save, independent of a feature? (from #54)
+- How a fresh fork checkout restores the constitution and `spex.json` from the specs repo (from #54)
+- How the fork hint checks upstream for `.specify/` when the upstream ref is not fetched (from #54)
+- Where should the permission migration live: spex-init.sh refresh path or a reusable helper for #62? (from #55)
+- Should the permission migration touch user-level ~/.claude/settings.json? (from #55)
+- Should Read stay in the YOLO allow list at all? (from #55)
 
 ## Parked Ideas
 

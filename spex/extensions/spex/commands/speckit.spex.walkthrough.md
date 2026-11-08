@@ -59,7 +59,7 @@ Before any command output is written into the runbook, redact credentials to
 | `/speckit-spex-walkthrough --draft` | Testability check and draft only. No fixtures, no steps. Used by `ship`. |
 | `/speckit-spex-walkthrough --force [what to try]` | Skip a "not testable" verdict and draft anyway, covering the given hint. |
 | `/speckit-spex-walkthrough <feature>` | `<feature>` is a number prefix (`054`) or a spec directory name. Runs that runbook from any branch. |
-| on the default branch, no feature argument | Picker over `"$STATUS" list` entries with status `drafted`, `in_progress`, or `failed`. |
+| on the default branch, no feature argument | Picker over `"$STATUS" list` entries with status `drafted`, `stale`, `in_progress`, or `failed`. |
 
 Flags combine: `<feature> --draft`, `<feature> --force`.
 
@@ -73,7 +73,7 @@ Flags combine: `<feature> --draft`, `<feature> --force`.
    - Otherwise, derive it from the current branch (`NNN-feature-name`).
    - On the default branch with no `<feature>` and no runbook for the current
      context, run `"$STATUS" list` and present a picker over entries whose status
-     is `drafted`, `in_progress`, or `failed` (FR-030). Resolve the chosen one.
+     is `drafted`, `stale`, `in_progress`, or `failed` (FR-030). Resolve the chosen one.
 2. Resolve the runbook path and scratch folder:
 
    ```bash
@@ -90,6 +90,14 @@ Flags combine: `<feature> --draft`, `<feature> --force`.
    - `exists: true` and status `in_progress`: go to **Resume** (Phase 6).
    - `exists: true` and status `drafted`, `failed`, or `passed`: offer to run or
      rerun, then go to Phase 4.
+   - `exists: true` and status `stale` (spec 059 FR-031): `speckit-spex-evolve`
+     reset the runbook after a requirement-changing spec amendment. Show the
+     `stale_reason` from `show` and offer two choices: **refresh the affected
+     steps** (read the spec's latest `## Revision Notes` entry, update the steps
+     that exercise the superseded, retired, or added IDs, then `"$STATUS" steps`
+     if the count changed) or **run as is**. Then go to Phase 4. The earlier
+     step results in the body predate the change; each one is overwritten as
+     its step is rerun.
    - `exists: false`: continue to Phase 2.
    - **Freshness (FR-031).** When running a previously drafted runbook, check
      `changed_since_draft` and `current` from `show`. If the code changed since

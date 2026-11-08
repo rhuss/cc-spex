@@ -32,6 +32,9 @@ DEFAULT = {
 }
 LEGACY_SECURITY = {"none": "safe", "standard": "autonomous", "yolo": "yolo"}
 FIELDS = set(DEFAULT)
+# Optional fields: kept by validate/resolve/persist only when present.
+# codex_progress records a declined Codex footer/title setup question.
+OPTIONAL = {"codex_progress": {"declined"}}
 # Optional extensions per selection mode. `all` leaves out spex-detach, which
 # is opt-in and enabled only when named explicitly.
 MODES = {
@@ -94,23 +97,30 @@ def validate(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         fail("configuration must be a JSON object")
     missing = FIELDS - set(value)
-    extra = set(value) - FIELDS
+    extra = set(value) - FIELDS - set(OPTIONAL)
     if missing:
         fail(f"configuration is missing: {', '.join(sorted(missing))}")
     if extra:
         fail(f"configuration contains unknown fields: {', '.join(sorted(extra))}")
     if value["schema_version"] != 1:
         fail("schema_version must be 1")
-    if value["harness"] not in HARNESSES:
+    if not isinstance(value["harness"], str) or value["harness"] not in HARNESSES:
         fail("harness must be auto, claude, codex, or opencode")
-    if value["security"] not in SECURITY:
+    if not isinstance(value["security"], str) or value["security"] not in SECURITY:
         fail("security must be safe, autonomous, or yolo")
-    return {
+    for field, allowed in OPTIONAL.items():
+        if field in value and (not isinstance(value[field], str) or value[field] not in allowed):
+            fail(f"{field} must be {', '.join(sorted(allowed))}")
+    result = {
         "schema_version": 1,
         "harness": value["harness"],
         "extensions": normalize_extensions(value["extensions"]),
         "security": value["security"],
     }
+    for field in OPTIONAL:
+        if field in value:
+            result[field] = value[field]
+    return result
 
 
 def read_json(stream) -> dict[str, Any]:
@@ -190,6 +200,9 @@ def resolve(args: argparse.Namespace) -> None:
         "extensions": extensions,
         "security": security or stored["security"],
     }
+    for field in OPTIONAL:
+        if field in stored:
+            candidate[field] = stored[field]
     emit(validate(candidate))
 
 
@@ -266,6 +279,16 @@ def migrate_detach(args: argparse.Namespace) -> None:
     print(MIGRATED_DETACH, file=sys.stderr)
 
 
+def decline_codex_progress(args: argparse.Namespace) -> None:
+    """Record that the Codex footer/title setup question was declined."""
+
+    root = root_path(args.root)
+    stored = load(root) or DEFAULT
+    value = validate({**stored, "codex_progress": "declined"})
+    write_atomic(root, value)
+    emit(value)
+
+
 def validate_command(args: argparse.Namespace) -> None:
     """Validate a declaration received on standard input."""
 
@@ -301,6 +324,9 @@ def parser() -> argparse.ArgumentParser:
     migrate_parser.add_argument("--root", required=True)
     migrate_parser.add_argument("--before", required=True)
     migrate_parser.set_defaults(handler=migrate_detach)
+    decline_parser = commands.add_parser("decline-codex-progress")
+    decline_parser.add_argument("--root", required=True)
+    decline_parser.set_defaults(handler=decline_codex_progress)
     return result
 
 

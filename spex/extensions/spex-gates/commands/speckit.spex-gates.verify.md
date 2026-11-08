@@ -267,9 +267,17 @@ These are craft-level issues that no spec describes but that cause real bugs.**
 cat specs/features/[feature-name].md
 ```
 
-**Check each requirement and emit a machine-readable compliance matrix:**
+**Assess compliance against LIVE spec items only (after an evolve).**
 
-For each functional requirement in the spec, determine its status. There are exactly two valid statuses:
+A feature that went through `speckit-spex-evolve` records accepted changes with flow-back markers. Build the compliance set from **live** spec items only — those with no trailing `**SUPERSEDED by <ID>**`, `**SUPERSEDED**` (the ID-less form on superseded acceptance scenarios and edge-case entries), or `**RETIRED**` marker:
+
+- **FR-022**: An item marked `SUPERSEDED by <ID>`, the ID-less `**SUPERSEDED**`, or `RETIRED` is no longer intent. It MUST NOT be counted as `MISSING` and MUST NOT fail the gate. Assess its live replacement instead.
+- **FR-023**: Do NOT raise a drift or compliance finding whose only evidence is the wording of a completed task (`- [x]`/`- [X]`) in `tasks.md`. A completed task's old wording differing from the current spec is not a gap.
+- **FR-024**: Still mark every **live** spec item the code does not satisfy as `MISSING`. Excluding superseded/retired items MUST NOT suppress genuine gaps against current intent.
+
+**Check each LIVE requirement and emit a machine-readable compliance matrix:**
+
+For each live functional requirement in the spec, determine its status. There are exactly two valid statuses:
 
 - **IMPLEMENTED**: Code fully implements the requirement. You can point to the function, the test, and the behavior.
 - **MISSING**: Code does not implement the requirement, or implements it only partially.
@@ -336,6 +344,8 @@ The only valid paths when the gate is FAIL:
 - Document each instance
 - Use `speckit-spex-evolve` to reconcile
 - Do not proceed with drift
+
+**FR-016 — evolve triggered by verify appended convergence tasks:** When reconciling through `speckit-spex-evolve` causes `/speckit-converge` to append tasks (a `## Phase N: Convergence` section with open `- [ ]` tasks), that is unbuilt work against live intent. Verify MUST NOT pass in this case, and evolve MUST NOT start implementation from inside verify (this takes precedence over evolve's normal implement-and-reconfirm flow). Report `spec compliance` (or `spec drift`) as a failing gate, tell the user to implement the appended convergence tasks and re-run verify, and do not record a pass.
 
 ### 5. Verify Success Criteria
 

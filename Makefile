@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-workflow-setup test-generated-trees test-walkthrough test-statusline test-config-booleans test-ship-state test-worktree release migrate sync-scripts sync-scripts-check help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-permissions test-detach test-workflow-setup test-generated-trees test-walkthrough test-statusline test-config-booleans test-flow-state test-ship-state test-adapt test-codex-progress test-worktree release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -23,6 +23,13 @@ test-codex-plugin:
 test-apply-extensions:
 	@tests/test_apply_extensions.sh
 
+test-permissions:
+	@tests/test_permissions.sh
+test-detach:
+	@tests/test_spex_detach.sh
+	@tests/test_detach_config_preserve.sh
+	@tests/test_init_detach.sh
+
 test-workflow-setup:
 	@tests/test_workflow_setup.sh
 
@@ -38,6 +45,15 @@ test-statusline:
 
 test-config-booleans:
 	@tests/test_config_booleans.sh
+
+test-flow-state:
+	@tests/test_flow_state.sh
+
+test-adapt:
+	@tests/test_adapt_ship_progress.sh
+
+test-codex-progress:
+	python3 -m unittest tests/test_codex_progress.py
 
 test-worktree:
 	@tests/test_worktree.sh
@@ -249,6 +265,8 @@ help:
 	@echo "  test-install        - Integration test: install from local marketplace"
 	@echo "  test-codex-plugin   - Test the bundled Codex plugin and \$$cc-spex-init bootstrap"
 	@echo "  test-apply-extensions - Test exact extension selection (spex-apply-extensions.sh)"
+	@echo "  test-permissions    - Test Claude permission rule apply/migrate (spex-permissions.sh)"
+	@echo "  test-detach         - Test spex-detach (verify/ensure, config preserve, init refresh path)"
 	@echo "  test-install-remote - Integration test: install from GitHub marketplace"
 	@echo "  sync-scripts        - Copy canonical scripts from spex/scripts/ to extension directories"
 	@echo "  sync-scripts-check  - Verify extension scripts match canonical sources (used by release)"

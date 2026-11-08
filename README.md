@@ -1,6 +1,6 @@
 # cc-spex
 
-![Version](https://img.shields.io/badge/version-6.0.0-blue)
+![Version](https://img.shields.io/badge/version-6.2.2-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple)
 [![Builds on Superpowers](https://img.shields.io/badge/builds%20on-Superpowers-orange)](https://github.com/obra/superpowers)
@@ -109,6 +109,15 @@ Without `spex-collab`, implementation runs straight through and code review fire
 Because the spec is already reviewed and agreed, reviewers already understand the design. They can focus on whether the code correctly implements the spec rather than questioning the approach itself.
 
 If spec/code drift is detected during implementation, use `/speckit-spex-evolve` to reconcile: either update the spec or fix the code, then continue.
+
+Once a feature has completed tasks, evolve is spex's **flow-back** implementation. Rather than regenerating `plan.md` and `tasks.md` (which would destroy completed-task history), it records accepted changes in place and lets `/speckit-converge` append any remaining work:
+
+- **Supersede / retire markers**: a replaced requirement keeps its text and gains a trailing `**SUPERSEDED by <new-ID>**`, with the replacement added under a new ID; a dropped one is marked `**RETIRED**`. IDs are never reused, so the history stays followable.
+- **Revision notes**: each evolve session appends a dated entry to a `## Revision Notes` section in `spec.md` (and in `plan.md` when a design decision changes), so a reader can see what changed and why without consulting git history.
+- **Converge hand-off**: after the spec and plan edits, evolve runs `/speckit-converge` once. If the code already satisfies the live spec, converge reports converged and `tasks.md` is byte-identical; if work remains, converge appends a traced Convergence phase and implementation builds it, followed by one confirming converge.
+- **Append-only `tasks.md`**: evolve never edits or regenerates `tasks.md`; only `/speckit-converge` appends to it, so every completed task keeps its mark.
+- **Stale checks reset**: when a session supersedes, retires, or adds requirements, evolve resets the clarify and review gates (the status line shows C/S/P/R as not passed again) and marks the walkthrough runbook stale (`WT ⟳ 0/N`), because those checks ran against the old spec. Finish and the walkthrough then offer to refresh and rerun it.
+- **Persistence model**: flow-back is the default (`Persistence model: flow-back` in the constitution). A project can instead declare `flow-forward` (delivered feature directories are immutable; changes go into a new feature directory) or `living-spec` (plan/tasks are regenerated only before any task is complete).
 
 ### Context Management
 
@@ -228,6 +237,12 @@ $cc-spex-init --extensions spex-gates,spex-teams
 The `--extensions` and `--security` defaults apply only to a project without `.specify/spex.json`. When the declaration exists, `$cc-spex-init` without options re-applies the stored selection and security unchanged (it names the stored security level before it runs); pass an option to change it. `$cc-spex-init` always sets the declaration's `harness` to `codex`. The `interactive` values currently apply `recommended` and `safe` with a notice, because spec-kit's prompt step does not return the reply; pass an explicit list or level instead. The spex source is taken from `SPEX_SOURCE` when set, from `./spex` when you run it inside the cc-spex repository, and from the installed plugin otherwise. Start a new Codex session after init so the generated `$speckit-*` skills are discovered, then try `$speckit-spex-help`.
 
 To update later, run `codex plugin marketplace upgrade cc-spex` and re-run `$cc-spex-init` in your projects.
+
+#### Ship progress in Codex
+
+Codex has no spex status line, so a `$speckit-spex-ship` run reports its progress in the conversation. At the start, after every stage change, and on pause, failure, resume and completion, the pipeline prints a one-line banner such as `🧬 ship 🔨 implement ▓▓▓▓▓▓▓░░ 7/8 🧠` (with `⏸ paused` or `✗ failed` appended when the run stops) and refreshes a checklist of the eight stages. Both come from `spex-ship-state.sh progress`, so they always match the state file.
+
+After a successful bootstrap, `$cc-spex-init` asks once per project whether to add spex progress to the Codex footer and terminal title. On yes it appends the built-in `task-progress` item to `[tui].status_line` and `[tui].terminal_title` in `~/.codex/config.toml` (or `$CODEX_HOME/config.toml`), keeping everything else in the file, and asks for approval because the file lives outside the workspace. The footer and title then show `Tasks n/8` during ship runs (start a new Codex session first). On no, the answer is stored as `"codex_progress": "declined"` in `.specify/spex.json` and the question is not asked again. To add it by hand later, run `/statusline` and `/title` in Codex and select "task progress". The setup step reads TOML and needs Python 3.11 or newer (or the `tomli` package); without it the question is skipped and only this hint is shown. If `config.toml` is a symlink (for example from a dotfiles manager), the linked file is edited and the link is kept. Claude Code is unchanged: it keeps the spex status line and never sees the question.
 
 #### Migrating from the thin cc-spex plugin
 
@@ -370,7 +385,7 @@ The gate checks: value mismatches (spec says `5%`, code says `10%`), missing con
 
 **`spex-collab`** (requires `spex-gates`): Collaborative PR workflows for team-based spec-driven development. Generates `REVIEWERS.md` review guides that help PR reviewers complete reviews within 30 minutes, and manages implementation phases with pause points between them. Smart phase splitting estimates file count from plan.md (with a task-count heuristic fallback) and silently defaults to single-phase mode for small features (configurable via `phases.file_threshold` in collab-config.yml, default 20). For large features, adjacent small phases are merged to ensure each phase touches at least 10 files for meaningful review.
 
-**`spex-detach`** (opt-in): Stealth mode for contributing to upstream projects that don't use spec-driven development. Uses `.git/info/exclude` to hide spec artifacts (`.specify/`, `specs/`, `brainstorm/`) from git without modifying any committed files. Spec files remain on disk for normal spex workflows but are invisible to `git status`, `git add`, and PRs. The `enable` subcommand writes exclude entries (runs automatically via `after_init` hook). The `disable` subcommand reverses this, removing exclude entries so spec artifacts become visible to git again (for switching to integrated mode). At finish time, the `archive` subcommand copies spec artifacts to a configured sibling specs repo for version control. The brainstorm skill auto-detects sibling `*-specs` directories and scans them for revisit detection.
+**`spex-detach`** (opt-in): Stealth mode for contributing to upstream projects that don't use spec-driven development. Uses `.git/info/exclude` to hide spec artifacts (`.specify/`, `specs/`, `brainstorm/`) from git without modifying any committed files. Spec files remain on disk for normal spex workflows but are invisible to `git status`, `git add`, and PRs. The `enable` subcommand writes exclude entries. Selecting spex-detach in setup (`/spex:init`, `$cc-spex-init` or the setup workflow) writes the configured entries and then verifies them with git: setup reports `Stealth mode: active (verified: ...)` only when git ignores every configured path. Whenever a configured path covers `.specify/spex.json` or the constitution (as the default `.specify/` does), those files are probed too, because spex's own rules would otherwise re-include them. Any path that is still visible (for example because files under it are already tracked) is named in a `WARNING: stealth mode is NOT fully active` block, and setup continues. The same warning appears when the check itself cannot run (for example without Python). A detach configuration that cannot be read is reported as `Stealth mode: cannot read ...`, and the default paths are used. `verify` runs the same check on its own without changing anything. A refresh keeps the detach configuration (`.specify/extensions/spex-detach/spex-detach-config.yml`) exactly as it was and adds any exclude entries that are missing, reported as `Repaired stealth mode: added ...`. The preserved configuration is never merged with a newer template, so changed defaults in a later release reach only new installs. The `disable` subcommand reverses this, removing exclude entries so spec artifacts become visible to git again (for switching to integrated mode). At finish time, the `archive` subcommand copies spec artifacts to a configured sibling specs repo for version control. The brainstorm skill auto-detects sibling `*-specs` directories and scans them for revisit detection.
 - `after_tasks`: generates `REVIEWERS.md` with spec PR review guidance, offers to create a `[Spec]` PR
 - `before_implement`: presents phase split proposal for implementation PRs
 - `phase-manager`: coordinates PR creation, code review updates, and phase boundaries. After spec PR creation, suggests triage with a `/loop` command and delay notice. After spec triage completes, runs a gate check comparing review comment count against `triage.split_threshold` (default 100) to recommend continuing on the same PR or splitting into separate implementation PR(s). After implementation push, suggests triage (with deep-review first if that extension is enabled).
@@ -402,6 +417,16 @@ $cc-spex-init --extensions spex-gates,spex-teams                            # in
 Projects without `.specify/spex.json` keep the earlier `/spex:init --refresh`
 behavior: the enabled/disabled state of installed extensions is preserved.
 
+Every init run, including `/spex:init --refresh` and `--update`, also repairs
+Claude Code permission rules that earlier spex versions wrote. The legacy
+`Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` allow rules in
+`.claude/settings.json` and `.claude/settings.local.json` become the bare tool
+names `Bash`, `Read`, `Edit` and `Write`, which allow every command and path
+without the warnings current Claude Code releases print for the `(*)` forms.
+Other rules and settings stay untouched, and each changed file is reported
+with a `Migrated:` line. The YOLO permission level now writes the bare names
+directly.
+
 ## Commands Reference
 
 ### Workflow Commands
@@ -432,7 +457,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
 | `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify`. `--sync`: archive completed brainstorms to `brainstorm/attic/` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
-| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
+| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution; flow-back (supersede/retire markers, revision notes, append-only converge hand-off) once tasks are complete |
 | `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |
 | `/speckit-spex-help` | spex | Show a quick reference for all commands |
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
@@ -440,7 +465,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook), includes spec-declared constants drift check |
 | `/speckit-spex-walkthrough` | spex | Try the feature: a testability check (one line and no files when nothing can be tried by hand), a tutorial-style `RUNBOOK.md` (each step says why, the exact command, and what you should see), then a co-pilot session where you run each command yourself (it lands on the clipboard) or let the agent run it with full expected-versus-actual output. Light and full fixture modes; advisory (never hard-blocks). `--draft` drafts without running; `--force` overrides a not-testable verdict; `<feature>` runs a drafted runbook later |
 | `/speckit-spex-submit` | spex | Push and create PR for team review. Runs verification, commits outstanding changes, creates PR with spec-linked body and REVIEWERS.md. `--watch`: monitor CI, auto-fix failures, triage review comments |
-| `/speckit-spex-finish` | spex | Verify + walkthrough gate + squash + merge/keep (land the code). Runs `/speckit-spex-gates-verify` first and stops before squash or merge when any gate fails (skips the run when a pass is already recorded for the current code). Then reads the runbook status (from `/speckit-spex-walkthrough`) and offers to run or resume it when it is not passed, squashes commits with a conventional commit message, merges or keeps. When spex-detach enabled: archives specs to sibling repo and preserves the spec dir back to the main checkout before removing the worktree. `--no-verify`: skip verification. `--no-walkthrough`: skip the walkthrough gate |
+| `/speckit-spex-finish` | spex | Verify + walkthrough gate + squash + merge/keep (land the code). Runs `/speckit-spex-gates-verify` first and stops before squash or merge when any gate fails (skips the run when a pass is already recorded for the current code). Then reads the runbook status (from `/speckit-spex-walkthrough`) and offers to run or resume it when it is not passed (a drafted runbook can also be skipped and marked done, recording every step as skipped), squashes commits with a conventional commit message, merges or keeps. When spex-detach enabled: archives specs to sibling repo and preserves the spec dir back to the main checkout before removing the worktree. `--no-verify`: skip verification. `--no-walkthrough`: skip the walkthrough gate |
 | `/speckit-spex-gates-verify` | spex-gates | Verification only (finish runs it first) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, finish, or clean up git worktrees (prepare and finalize run as specify hooks) |
