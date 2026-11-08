@@ -239,9 +239,9 @@ GIT_CONFIG=".specify/extensions/git/git-config.yml"
 if [ -f "$GIT_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
   echo "spex: yq not found, so $GIT_CONFIG cannot be read; using defaults" >&2
 fi
-AUTO_COMMIT=$(yq -r '.auto_commit.after_tasks.enabled' "$GIT_CONFIG" 2>/dev/null)
-case "$AUTO_COMMIT" in true|false) ;; *) AUTO_COMMIT=$(yq -r '.auto_commit.default' "$GIT_CONFIG" 2>/dev/null) ;; esac
-case "$AUTO_COMMIT" in true|false) ;; *) AUTO_COMMIT=false ;; esac
+AUTO_COMMIT=$(yq -r '.auto_commit.after_tasks.enabled' "$GIT_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$AUTO_COMMIT" in true|yes|on) AUTO_COMMIT=true ;; false|no|off) AUTO_COMMIT=false ;; *) AUTO_COMMIT=$(yq -r '.auto_commit.default' "$GIT_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]') ;; esac
+case "$AUTO_COMMIT" in true|yes|on) AUTO_COMMIT=true ;; *) AUTO_COMMIT=false ;; esac
 ```
 
 If `AUTO_COMMIT` is `true` and there are uncommitted changes:
