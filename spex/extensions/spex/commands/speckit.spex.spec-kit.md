@@ -69,6 +69,8 @@ After `specify init`, these `/speckit-*` commands are available:
 | `/speckit-implement` | Execute implementation | code files |
 | `/speckit-constitution` | Create project constitution | `.specify/memory/constitution.md` |
 
+**`/speckit-analyze` after a flow-back evolve (FR-025):** On a feature that has been through `speckit-spex-evolve`, analyze findings about spec items marked `SUPERSEDED by <ID>` or `RETIRED`, or about completed tasks that implemented them, are expected and NOT actionable. Superseded/retired items are no longer intent, and their completed tasks are history. Findings about live spec items remain actionable as usual.
+
 **Usage in skills:**
 
 When a skill needs to create a spec, plan, or tasks, it should:

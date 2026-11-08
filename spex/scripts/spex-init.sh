@@ -259,8 +259,19 @@ migrate_old_commands() {
   echo "Migration complete."
 }
 
-# --- Run detach enable if extension is installed ---
-run_detach_enable() {
+# --- Write and verify detach exclude entries if the extension is enabled ---
+# Runs `spex-detach.sh ensure --was-enabled` when spex-detach is enabled now.
+# Without a declaration, install_extensions keeps spex-detach disabled unless
+# it was enabled before this run, so any entry added here is a repair.
+# Its `Stealth mode: ...`, `Repaired stealth mode: ...` and warning lines go
+# to stderr and reach the user. Skipped when install_extensions applied a
+# declaration through spex-apply-extensions.sh in this run (that already ran
+# ensure). A visible path never fails init (FR-004).
+SPEX_DETACH_ENSURED=0
+run_detach_ensure() {
+  if [ "$SPEX_DETACH_ENSURED" = 1 ]; then
+    return 0
+  fi
   local detach_script=".specify/extensions/spex-detach/scripts/spex-detach.sh"
   [ -x "$detach_script" ] || return 0
 
@@ -269,8 +280,30 @@ run_detach_enable() {
   enabled=$(jq -r '.extensions["spex-detach"].enabled // false' .specify/extensions/.registry 2>/dev/null)
   [ "$enabled" = "true" ] || return 0
 
-  if "$detach_script" enable >/dev/null 2>&1; then
-    echo "  Detach stealth mode: exclude entries written to .git/info/exclude"
+  local out rc=0 err
+  err=$(mktemp "${TMPDIR:-/tmp}/spex-detach-err.XXXXXX") || err=/dev/null
+  out=$("$detach_script" ensure --was-enabled 2>"$err") || rc=$?
+  if [ "$err" != /dev/null ]; then
+    cat "$err" >&2
+    report_detach_crash "$rc" "$out" "$(tail -n 1 "$err")"
+    rm -f "$err"
+  else
+    report_detach_crash "$rc" "$out" ""
+  fi
+  return 0
+}
+
+# --- Report an `ensure` that failed without a result ---
+# `ensure` prints its JSON result on stdout for exit 0 (active) and 1 (a path
+# is visible); exit 2 means "not a git repository" and stays silent. Any other
+# failure (no Python, a crash) printed no stealth-mode line, so say so, with
+# the last error line (the fast path filters the rest out). Never changes the
+# exit code (FR-004). Keep in sync with spex-apply-extensions.sh.
+# report_detach_crash <exit code> <stdout> <last stderr line>
+report_detach_crash() {
+  if [ "$1" -ne 0 ] && [ "$1" -ne 2 ] && [ -z "$2" ]; then
+    echo "WARNING: stealth mode is NOT fully active. The exclude entries could not be written or verified:" >&2
+    echo "  spex-detach.sh ensure failed with exit code $1${3:+: $3}" >&2
   fi
 }
 
@@ -432,6 +465,18 @@ install_agent_adapter() {
   esac
 }
 
+# --- Save the spex-detach configuration before anything is reinstalled ---
+# Reinstalling spex-detach deletes its configuration and installs the
+# template; install_extensions restores the saved copy right after re-adding
+# it (FR-007). A failed save stops init before anything is changed (FR-009).
+detach_config() {
+  sh "$(cd "$(dirname "$0")/.." && pwd)/scripts/spex-detach-config.sh" "$@"
+}
+
+save_detach_config() {
+  detach_config save || exit 1
+}
+
 # --- Install bundled extensions ---
 install_extensions() {
   local plugin_root
@@ -493,6 +538,19 @@ install_extensions() {
     fi
     if specify extension add "$ext_path" --dev; then
       installed=$((installed + 1))
+      # Put the configuration saved by save_detach_config back over the
+      # template (no saved copy: the template stays).
+      if [ "$ext_id" = "spex-detach" ] && ! detach_config restore; then
+        # Re-adding registered it as enabled. Leave it as it was before this
+        # run: never switch stealth mode on after a failed run, and never
+        # switch it off either (a disabled spex-detach that the declaration
+        # names would be dropped as a legacy entry by the next refresh).
+        if [ "$detach_before" != "true" ]; then
+          specify extension disable spex-detach >/dev/null 2>&1 || true
+        fi
+        [ -z "$snapshot" ] || rm -f "$snapshot"
+        exit 1
+      fi
     else
       echo "WARNING: Failed to install extension '$ext_id'" >&2
       failed=$((failed + 1))
@@ -532,6 +590,9 @@ install_extensions() {
     else
       sh "$apply_tool" "$declared" || apply_rc=$?
     fi
+    # spex-apply-extensions.sh already wrote and verified the spex-detach
+    # exclude entries when the selection enables it.
+    SPEX_DETACH_ENSURED=1
     rm -f "$snapshot"
     if [ "$apply_rc" -ne 0 ]; then
       echo "ERROR: could not apply the extension selection from .specify/spex.json ($declared)" >&2
@@ -671,11 +732,13 @@ do_init() {
   # Check if NEW skills were installed (didn't exist before)
   if [ "$had_skills" = false ] && ls .claude/skills/speckit-*/SKILL.md &>/dev/null 2>&1; then
     fix_constitution
+    # Before install_extensions: the stealth-mode verification it may run must
+    # see spex's own exclude rules (including the re-include rules).
+    configure_git_exclude
     install_extensions
     install_agent_adapter "$(detect_agent)"
     configure_statusline
-    configure_git_exclude
-    run_detach_enable
+    run_detach_ensure
     echo ""
     echo "RESTART_REQUIRED"
     echo ""
@@ -696,11 +759,11 @@ do_init() {
 
     migrate_phase_marker
 
+    configure_git_exclude
     install_extensions
     install_agent_adapter "$(detect_agent)"
     configure_statusline
-    configure_git_exclude
-    run_detach_enable
+    run_detach_ensure
     check_update 2>/dev/null || true
     echo ""
     echo "READY"
@@ -708,6 +771,14 @@ do_init() {
     echo "ERROR: initialization completed but verification failed"
     exit 1
   fi
+}
+
+# --- Migrate legacy Claude permission rules (spec 061) ---
+# Rewrites Bash(*), Read(*), Edit(*) and Write(*) in the project's
+# .claude/settings.json and .claude/settings.local.json to bare tool names.
+# Prints "Migrated: ..." or "WARNING: ..." lines on stderr; never fails refresh.
+migrate_permissions() {
+  sh "$(dirname "$0")/spex-permissions.sh" migrate || true
 }
 
 # --- Refresh templates only ---
@@ -725,7 +796,9 @@ do_refresh() {
 
   fix_constitution
   install_extensions
+  run_detach_ensure
   install_agent_adapter "$(detect_agent)"
+  migrate_permissions
   check_update 2>/dev/null || true
 
   echo ""
@@ -750,7 +823,9 @@ do_update() {
   echo "Refreshing project setup..."
   specify init --here --integration claude --script sh --force
   install_extensions
+  run_detach_ensure
   install_agent_adapter "$(detect_agent)"
+  migrate_permissions
 
   echo ""
   specify version
@@ -775,9 +850,15 @@ do_clear() {
 # --- Main ---
 case "${1:-}" in
   --refresh)
+    # A was-enabled marker is only meaningful within one no-flag /spex:init;
+    # drop one left by an abandoned run.
+    rm -f .specify/.spex-detach-was-enabled 2>/dev/null || true
+    save_detach_config
     do_refresh
     ;;
   --update)
+    rm -f .specify/.spex-detach-was-enabled 2>/dev/null || true
+    save_detach_config
     do_update
     ;;
   --clear)
@@ -791,6 +872,16 @@ case "${1:-}" in
       echo "DECLARATION_EXISTED=true"
     else
       echo "DECLARATION_EXISTED=false"
+    fi
+    # Without a declaration the workflow below applies the recommended set,
+    # which disables spex-detach, and the init skill re-applies the user's
+    # selection afterwards. Remember that spex-detach was enabled before this
+    # run, so spex-apply-extensions.sh reports entries it adds then as a
+    # repair (FR-010). It removes the marker when it uses it.
+    rm -f .specify/.spex-detach-was-enabled 2>/dev/null || true
+    if [ ! -f .specify/spex.json ] &&
+       [ "$(jq -r '.extensions["spex-detach"].enabled // false' .specify/extensions/.registry 2>/dev/null)" = "true" ]; then
+      : > .specify/.spex-detach-was-enabled
     fi
     # Delegate to setup workflow if specify CLI and setup.yml are available
     if command -v specify &>/dev/null; then
@@ -822,20 +913,54 @@ case "${1:-}" in
     fi
 
     # Legacy path: no workflow available
+    # Save the detach configuration here, before anything changes and outside
+    # the fast path's output-discarding (install_extensions) subshell.
+    save_detach_config
     migrate_phase_marker
     # Fast path: already ready?
     if check_ready; then
       fix_constitution
 
+      # With a declaration, install_extensions applies it through
+      # spex-apply-extensions.sh, which already writes and verifies the
+      # spex-detach exclude entries.
+      _declared=false
+      [ -f .specify/spex.json ] && _declared=true
+      # Before the install, so the stealth-mode verification sees spex's own
+      # exclude rules (including the re-include rules).
+      configure_git_exclude 2>/dev/null || true
       # Quiet install, but never swallow the spex-worktrees/git refusal.
-      if ! (install_extensions) >/dev/null 2>&1 && worktrees_missing_git; then
+      _inst_rc=0
+      _inst_out=$(install_extensions 2>&1) || _inst_rc=$?
+      if [ "$_inst_rc" -ne 0 ] && worktrees_missing_git; then
         worktrees_git_error
         exit 1
       fi
+      # The install output is discarded, except for the stealth-mode lines
+      # (written, repaired, verified, or the warning with its path lines),
+      # which must reach the user (FR-003, FR-004, FR-010).
+      printf '%s\n' "$_inst_out" | awk '
+        /^(Stealth mode:|Repaired stealth mode:)/ { print; w = 0; next }
+        /^WARNING: stealth mode/ { print; w = 1; next }
+        w && /^  / { print; next }
+        { w = 0 }' >&2
+      [ "$_declared" = false ] || SPEX_DETACH_ENSURED=1
+      # If restoring the detach configuration failed during the install,
+      # retry visibly so the error is shown. When spex-detach was not
+      # re-added, the saved copy stays for the next run (as on the other
+      # paths).
+      if detach_config pending; then
+        detach_config restore || exit 1
+        # The install stopped at the failed restore, before the extension
+        # selection was applied: report it instead of claiming READY.
+        if [ "$_inst_rc" -ne 0 ]; then
+          echo "ERROR: restoring the spex-detach configuration failed during the install; it is restored now. Run /spex:init again to apply the extension selection." >&2
+          exit 1
+        fi
+      fi
       ensure_extension_skills 2>/dev/null || true
       configure_statusline || true
-      configure_git_exclude 2>/dev/null || true
-      run_detach_enable 2>/dev/null || true
+      run_detach_ensure || true
       check_update 2>/dev/null || true
       echo "READY"
       exit 0

@@ -59,6 +59,9 @@ SPEC-KIT COMMANDS (core workflow)
   /speckit-checklist   Generate a custom checklist for the feature
   /speckit-clarify     Identify underspecified areas in the spec
   /speckit-analyze     Cross-artifact consistency and quality analysis
+                       NOTE: After an evolve, findings about SUPERSEDED/
+                       RETIRED items or their completed tasks are expected
+                       and not actionable.
   /speckit-taskstoissues  Convert tasks into GitHub issues
   /speckit-constitution   Create or update project constitution
 
@@ -144,7 +147,16 @@ spex EXTENSIONS (quality gates for spec-kit commands)
     commits, PRs, or git status. Archives to sibling repo at finish time.
     /speckit-spex-detach-detach  → enable/disable stealth mode, archive specs,
                                    or check detach status
-                                   Subcommands: enable, disable, archive, is-enabled
+                                   Subcommands: enable, disable, archive, is-enabled,
+                                   verify (check with git, changes nothing)
+    Setup with spex-detach selected writes the exclude entries, verifies
+    them with git and prints "Stealth mode: active (verified: ...)", or a
+    "WARNING: stealth mode is NOT fully active" block naming every path git
+    still sees (for example tracked files), or when the check cannot run.
+    An unreadable detach config is reported ("Stealth mode: cannot read
+    ...") and the default paths are used. A refresh keeps the detach
+    config byte for byte (no merge with newer template defaults) and adds
+    missing entries ("Repaired stealth mode: added ...").
     /speckit-spex-brainstorm     → when enabled + archive.path configured,
                                    writes brainstorm docs to project-specs repo.
                                    Scans sibling repo brainstorm/ for revisit
@@ -170,8 +182,11 @@ spex COMMANDS (helpers and configuration)
   /spex:init                  Initialize spec-kit + configure extensions and permissions
                                 Writes the choice to .specify/spex.json
                                 --refresh: update templates; re-applies .specify/spex.json
-                                           when present (else keeps extension state)
+                                           when present (else keeps extension state);
+                                           rewrites legacy Bash(*), Read(*), Edit(*),
+                                           Write(*) allow rules to bare tool names
                                 --update: upgrade specify CLI and refresh
+                                          (includes the permission rule migration)
                                 --clear: reset status line state
                                 6.x: delegates to setup.yml workflow when specify >= 0.7.4
                                      Any harness: specify workflow run spex/setup.yml
@@ -189,6 +204,10 @@ spex COMMANDS (helpers and configuration)
                                 --integration codex|claude|opencode|auto (default codex)
                                 Defaults (recommended, safe) apply only without
                                 .specify/spex.json; otherwise the stored choice is reused
+                                After setup, asks once per project whether to add
+                                "task progress" to the Codex footer and terminal title
+                                (edits ~/.codex/config.toml or $CODEX_HOME/config.toml;
+                                a "no" is stored as codex_progress in .specify/spex.json)
   /speckit-spex-worktrees-manage  List active worktrees, finish, or cleanup merged ones
   /speckit-spex-brainstorm    Rough idea into formal spec (interactive dialogue)
                                 Checks brainstorm/idea-inbox.md for review seeds
@@ -228,7 +247,16 @@ spex COMMANDS (helpers and configuration)
   /speckit-spex-gates-review-code  Check code compliance against spec
                                 (includes spec-declared constants drift check)
   /speckit-spex-gates-verify  Verification only (finish runs it first)
-  /speckit-spex-evolve        Reconcile spec/code drift
+  /speckit-spex-evolve        Reconcile spec/code drift. Once tasks are
+                              complete, flow-back: mark old requirements
+                              SUPERSEDED by <ID> / RETIRED, add dated revision
+                              notes, then /speckit-converge appends remaining
+                              work (tasks.md stays append-only; never
+                              regenerated). A requirement-changing session
+                              resets the C/S/P/R review gates and marks the
+                              walkthrough stale (WT ⟳). Persistence model
+                              (constitution): flow-back (default),
+                              flow-forward, or living-spec.
   /speckit-spex-clear         Clear stuck state, dismiss status line
   /speckit-spex-help          This quick reference
 
@@ -252,7 +280,9 @@ CLOSING OUT A FEATURE (after review passes)
   /speckit-spex-finish first runs /speckit-spex-gates-verify and stops
   before squash or merge if any gate fails (it skips the run when a pass is
   already recorded for the current code). It then checks the walkthrough
-  gate (runs it if needed, skips if already completed at current commit),
+  gate (runs it if needed, skips if already completed at current commit;
+  a drafted runbook can also be skipped and marked done, recording every
+  step as skipped),
   squashes all commits into one with a conventional commit message, and
   merges to main with worktree cleanup, or keeps the branch.
   Use --no-verify to skip verification and --no-walkthrough to skip the
@@ -331,6 +361,16 @@ MULTI-AGENT SUPPORT
     Claude Code  Statusline, permissions in .claude/settings.json
     Codex CLI    Python hooks in .codex/hooks.json + AGENTS.md
     OpenCode     TypeScript plugin in .opencode/plugins/ + AGENTS.md
+
+  Ship progress outside Claude Code (no spex status line):
+    Codex        Banner line after every stage change, pause, failure,
+                 resume and completion, e.g.
+                 🧬 ship 🔨 implement ▓▓▓▓▓▓▓░░ 7/8 🧠
+                 plus an eight-stage checklist (update_plan). With the
+                 opt-in from $cc-spex-init, footer and title show Tasks n/8.
+                 Manual: run /statusline and /title, add "task progress".
+    OpenCode     Banner line only.
+    Source:      spex-ship-state.sh progress (BANNER and PLAN lines)
 
   Command adaptation (spex-adapt-commands.sh):
     Extension commands use harness-neutral vocabulary by default.

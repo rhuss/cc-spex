@@ -1,8 +1,8 @@
 {
   "upstream_repo": "https://github.com/obra/superpowers",
-  "last_sync_commit": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
-  "last_sync_date": "2026-10-08",
-  "note": "Synced via /update-superpowers (Superpowers 6.4.2)",
+  "last_sync_commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "last_sync_date": "2026-10-23",
+  "note": "Synced via /update-superpowers (Superpowers 7.0.1)",
   "modified_skills": {
     "writing-plans": {
       "upstream_file": "skills/writing-plans/SKILL.md",
@@ -88,14 +88,19 @@
     "brainstorm": {
       "upstream_file": "skills/brainstorming/SKILL.md",
       "local_file": "extensions/spex/commands/speckit.spex.brainstorm.md",
-      "modification_summary": "Diverged significantly from upstream. Spex brainstorm produces structured brainstorm documents (not specs), with idea inbox, revisit detection, sync archiving, and issue creation. Upstream v6.3.0 added three-path router (Spike/Bounded/Architectural) which doesn't map to spex's brainstorm->specify->plan pipeline. YAGNI principle already present. Three-path routing noted as potential future feature. [6.4.1] Absorbed Establish Shared Understanding: write back understanding (separate stated from assumed, invite correction) before exploring approaches. Skipped three-path HARD-GATE (does not fit brainstorm->specify pipeline).",
+      "modification_summary": "Diverged significantly from upstream. Spex brainstorm produces structured brainstorm documents (not specs), with idea inbox, revisit detection, sync archiving, and issue creation. Upstream v6.3.0 added three-path router (Spike/Bounded/Architectural) which doesn't map to spex's brainstorm->specify->plan pipeline. YAGNI principle already present. Three-path routing noted as potential future feature. [6.4.1] Absorbed Establish Shared Understanding: write back understanding (separate stated from assumed, invite correction) before exploring approaches. Skipped three-path HARD-GATE (does not fit brainstorm->specify pipeline). [7.0.0/7.0.1] Upstream rebuilt brainstorming from scratch around drawing out intent. Absorbed: look before you ask (never ask what the context answers), first-message pattern (echo back + one open question, or one open question with its reason), open questions first with menus only when stuck, Socratic questions grounded in project and prior answers, ground-to-cover territory (goals, non-goals, anti-goals, prior art, current state), how-it-gets-made ownership (user-owned choices become constraints, defaults said out loud and marked as proposals), offer recon, incremental 200-300 word playback, approaches laid out in a message of their own (drop weak ones, one-sensible-way case), approval covers what was shown, Red Flags table. Skipped sizing/short-vs-full design doc, builder check, spike, visual companion, opt-out offer.",
       "key_sections_modified": [
         "Overview: Output is brainstorm document not spec",
         "Checklist: 10-step brainstorm workflow with idea inbox",
         "Process Flow: Brainstorm-specific (no Spike/Bounded paths)",
-        "Brainstorm Document Structure: Structured format with status values",
+        "Understanding the idea: Look before you ask, first message pattern, open questions first, ground to cover, how it gets made, offer recon, play it back as you go",
+        "Laying out the approaches: message of their own, drop weak ones, one-sensible-way case",
+        "Reaching agreement: approval covers what was shown",
+        "Brainstorm Document Structure: Structured format with status values; Problem Framing carries success/non-goals/anti-goals, Key Requirements marks user-owned constraints and proposals",
         "Revisit Detection: Topic matching against existing brainstorms",
         "Sync Process: Archive completed brainstorms to attic",
+        "Red Flags: adapted from upstream 7.0 table",
+        "Example Flow: open questions and playback instead of lettered menus",
         "Key Principles: YAGNI, WHAT/WHY focus, separate from specify"
       ],
       "spex_additions": [
@@ -109,13 +114,16 @@
         "WHAT vs HOW separation principle"
       ],
       "skipped_upstream": [
-        "Three-path router (Spike/Bounded/Architectural) - doesn't fit brainstorm->specify pipeline model",
+        "Three-path router (Spike/Bounded/Architectural, 6.3) and its 7.0 successor, Size the Work (quick task / small change in chat / project with design doc) - spex always writes a brainstorm document and hands off to specify",
+        "Written design doc (short/full) and docs/superpowers/specs/ path convention - spex writes brainstorm/NN-topic.md, the spec comes from /speckit-specify",
+        "Builder check subagent - review-spec gate and /speckit-clarify cover 'what would a builder still need to ask' downstream of specify",
+        "Spike to feel things out - conflicts with the spex HARD-GATE (no code during brainstorming)",
+        "Opt-out offer ('or I just dive in') - spex brainstorm is always invoked explicitly, upstream 7.0.1 drops the offer in that case too",
         "Visual companion (superpowers-specific infrastructure)",
-        "docs/superpowers/specs/ path convention (spex uses specs/NNN-feature/ via spec-kit)",
-        "Red Flags table (spex brainstorm has different anti-patterns)",
+        "6.3 Red Flags table (replaced by the 7.0 table, which was adapted)",
         "Key Principles folded into points of use (spex keeps separate section for clarity)"
       ],
-      "future_consideration": "Three-path routing could be adapted to let brainstorm skip specify for small changes. Would need its own brainstorm/spec cycle."
+      "future_consideration": "Sizing (7.0 Size the Work) could let brainstorm skip specify for small changes. A builder check before the handoff to specify (fresh subagent reads the brainstorm document as the specifier and lists what it would still need to ask) is a cheap addition if review-spec findings keep tracing back to brainstorm gaps. A spike offer would need a HARD-GATE exception like upstream's (throwaway, keeping it is a new request)."
     }
   },
   "new_spex_skills": [

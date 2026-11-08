@@ -107,7 +107,15 @@ ls -la [implementation-files]
 
 ### 2. Review Functional Requirements
 
-**For each functional requirement in spec:**
+**Assess compliance against LIVE spec items only (after an evolve).**
+
+A feature that has been through `speckit-spex-evolve` records accepted changes with flow-back markers. Build the compliance set from **live** spec items only — items with no trailing `**SUPERSEDED by <ID>**`, `**SUPERSEDED**` (the ID-less form on superseded acceptance scenarios and edge-case entries), or `**RETIRED**` marker:
+
+- **FR-022**: An item marked `SUPERSEDED by <ID>`, the ID-less `**SUPERSEDED**`, or `RETIRED` is no longer intent. It MUST NOT be counted as unmet, and MUST NOT appear as a deviation or missing requirement. Assess the live replacement item instead.
+- **FR-023**: Do NOT raise a finding whose only evidence is the wording of a completed task (`- [x]`/`- [X]`) in `tasks.md`. Completed tasks that implemented a now-superseded item are history, not obligations; a completed task's old wording differing from the current spec is not a deviation.
+- **FR-024**: Still report every **live** spec item the code does not satisfy. Removing superseded/retired noise MUST NOT suppress genuine gaps against current intent.
+
+**For each live functional requirement in spec:**
 
 1. **Find implementation** in code
 2. **Compare behavior**: Does code do what spec says?

@@ -190,12 +190,25 @@ The walkthrough is advisory (FR-033): a recorded FAIL never hard-blocks finishin
 | `passed`, `current: false` | List `changed_files` and offer **rerun** (`/speckit-spex-walkthrough`) or **continue**. | Print the status and continue. |
 | `in_progress` | Offer **resume** (`/speckit-spex-walkthrough`) or **continue**. | Print the status and continue. |
 | `failed` | Show the failed step and offer **continue** or **stop**. | Print the status and continue. |
-| `drafted` | Offer **run now** (`/speckit-spex-walkthrough`) or **later**. | Print the status and continue. |
+| `drafted` | Offer **run now** (`/speckit-spex-walkthrough`), **later**, or **skip and mark done**. | Print the status and continue. |
+| `stale` | The spec changed after the walkthrough ran (spec 059 FR-031). Show `stale_reason` from `show` and offer **rerun** (`/speckit-spex-walkthrough`, refreshing the steps that touch the changed IDs) or **continue**. | Print the status and the reason, and continue. |
 | `not_testable` | Nothing to try by hand. Proceed. | Proceed. |
 | `unreadable` | Report it and offer **rerun** or **continue**. | Print the status and continue. |
 | missing | Run `/speckit-spex-walkthrough` (full session). | Run `/speckit-spex-walkthrough --draft` (draft only, no prompts). |
 
-After any walkthrough invocation returns, re-read `"$STATUS" show "$FEATURE_DIR"` so later steps see the updated status, then proceed to Phase 2.
+**Skip and mark done (drafted row).** When the user picks **skip and mark done**, the walkthrough is consciously dismissed instead of left as an unfinished draft: mark every runbook step as `skipped` so the runbook records the decision (the status line then shows all steps skipped) and the gate resolves.
+
+```bash
+RUNBOOK=$(printf '%s' "$SHOW" | jq -r '.path')
+STEPS=$(printf '%s' "$SHOW" | jq -r '.steps.total')
+i=1
+while [ "$i" -le "$STEPS" ]; do
+  "$STATUS" step "$RUNBOOK" "$i" skipped >/dev/null
+  i=$((i + 1))
+done
+```
+
+After any walkthrough invocation or skip-and-mark-done marking returns, re-read `"$STATUS" show "$FEATURE_DIR"` so later steps see the updated status, then proceed to Phase 2.
 
 ## Phase 2: Context Detection
 

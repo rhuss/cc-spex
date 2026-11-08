@@ -2,7 +2,8 @@
   "harness": "opencode",
   "version": "2.0.0",
   "tokens": {
-    "codex-review-tool": "Include Codex external tool detection and dispatch"
+    "codex-review-tool": "Include Codex external tool detection and dispatch",
+    "ship-progress": "\n### Progress Reporting (OpenCode)\n\nOpenCode has no spex status line, so the pipeline reports its progress in the conversation. `\"$SHIP_STATE\" progress` is an additional state command: it reads the state file and prints a `BANNER` line (stage, progress bar, oversight level) and a `PLAN` line. Only the `BANNER` line is used here.\n\n- Whenever the pipeline pauses (findings that need the user, blockers, retries exhausted), run `SHIP_STATE_FILE=\"$SHIP_STATE_FILE\" \"$SHIP_STATE\" pause` first. Whenever a stage fails with an unrecoverable error, run `SHIP_STATE_FILE=\"$SHIP_STATE_FILE\" \"$SHIP_STATE\" fail` first.\n- After every state command that changes the pipeline (`create`, `advance`, `pause`, `fail`, `resume`, including the `resume` of `--resume`), run:\n  ```bash\n  SHIP_STATE_FILE=\"$SHIP_STATE_FILE\" \"$SHIP_STATE\" progress\n  ```\n- Put the text after `BANNER ` verbatim as its own line in your next reply. Do not reword it or compose your own banner. Ignore the `PLAN` line.\n- When `advance` prints `PIPELINE_COMPLETE`, the state file still exists with stage `done`: `advance` does not remove it, whatever the table and the paragraph above say, and only `cleanup` does. Run `progress` immediately, before the walkthrough draft and before anything removes the state file.\n- When the user replies to a pause, run `progress` before continuing, even if you did not run `resume` yourself (the prompt hook may already have set the state back to running).\n- If `progress` prints nothing, skip this step and continue. Progress reporting never blocks the pipeline."
   },
   "fallback_note": "> **Note:** This capability is not directly supported on OpenCode. {fallback_text}"
 }

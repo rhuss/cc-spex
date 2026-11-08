@@ -189,7 +189,7 @@ run_refresh
 assert_eq "exit code 3 (restart required)" "3" "$RC"
 assert_eq "spex-detach stays disabled" "false" "$(registry_enabled spex-detach)"
 assert_eq "spex-detach removed from the declaration" "spex,spex-gates" "$(declared)"
-assert_contains "reports the migration" "Migrated:" "$OUT"
+assert_contains "reports the migration" "Migrated: removed spex-detach" "$OUT"
 
 echo "Test: refresh with a declaration that selects an enabled spex-detach keeps it"
 make_project false no '{"spex-gates": true, "spex-detach": true}'
@@ -198,7 +198,7 @@ run_refresh
 assert_eq "exit code 3 (restart required)" "3" "$RC"
 assert_eq "spex-detach enabled" "true" "$(registry_enabled spex-detach)"
 assert_eq "declaration unchanged" "spex,spex-gates,spex-detach" "$(declared)"
-assert_not_contains "no migration" "Migrated:" "$OUT"
+assert_not_contains "no migration" "Migrated: removed spex-detach" "$OUT"
 
 echo "Test: refresh with an invalid declaration stops with the validator message"
 make_project false no '{"spex-gates": true}'
@@ -248,6 +248,46 @@ assert_eq "exit code 0" "0" "$RC"
 assert_contains "declaration present" "DECLARATION_EXISTED=true" "$OUT"
 assert_not_contains "never both" "DECLARATION_EXISTED=false" "$OUT"
 assert_not_contains "no inputs with a declaration" " -i " "$(grep '^workflow run' "$TMPROOT/specify-calls.log")"
+
+echo "Test: refresh migrates legacy permission rules in both settings files (spec 061, US2)"
+make_project false no
+mkdir -p "$PROJ/.claude"
+printf '%s' '{"permissions":{"defaultMode":"bypassPermissions","allow":["Bash(*)","Read(*)","Bash(npm test)"]},"hooks":{"Stop":[]}}' > "$PROJ/.claude/settings.json"
+printf '%s' '{"permissions":{"allow":["Edit(*)"]}}' > "$PROJ/.claude/settings.local.json"
+run_refresh
+assert_eq "exit code 3 (restart required)" "3" "$RC"
+assert_eq "settings.json migrated" '["Bash","Read","Bash(npm test)"]' "$(jq -c .permissions.allow "$PROJ/.claude/settings.json")"
+assert_eq "other keys kept" '{"Stop":[]}|bypassPermissions' "$(jq -c .hooks "$PROJ/.claude/settings.json")|$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.json")"
+assert_eq "settings.local.json migrated" '["Edit"]' "$(jq -c .permissions.allow "$PROJ/.claude/settings.local.json")"
+assert_contains "Migrated line" "Migrated: .claude/settings.json permissions: Bash(*) -> Bash, Read(*) -> Read" "$OUT"
+assert_contains "Migrated line (local)" "Migrated: .claude/settings.local.json permissions: Edit(*) -> Edit" "$OUT"
+BEFORE=$(cksum < "$PROJ/.claude/settings.json")
+run_refresh
+assert_eq "second refresh: exit code 3" "3" "$RC"
+assert_eq "second refresh: settings.json byte-identical" "$BEFORE" "$(cksum < "$PROJ/.claude/settings.json")"
+assert_not_contains "second refresh: no Migrated line" "Migrated: .claude/settings" "$OUT"
+
+echo "Test: refresh with invalid settings JSON warns and still completes (spec 061, US3-3)"
+make_project false no
+mkdir -p "$PROJ/.claude"
+printf '%s' '{"permissions":' > "$PROJ/.claude/settings.json"
+BEFORE=$(cksum < "$PROJ/.claude/settings.json")
+run_refresh
+assert_eq "exit code 3 (restart required)" "3" "$RC"
+assert_eq "file unchanged" "$BEFORE" "$(cksum < "$PROJ/.claude/settings.json")"
+assert_contains "warning names the file" "WARNING: .claude/settings.json is not valid JSON; permission rules not migrated" "$OUT"
+assert_contains "refresh completed" "RESTART_REQUIRED" "$OUT"
+
+echo "Test: update migrates legacy permission rules (spec 061, FR-004)"
+make_project false no
+printf '#!/bin/sh\nexit 0\n' > "$TMPROOT/bin/uv"; chmod +x "$TMPROOT/bin/uv"
+mkdir -p "$PROJ/.claude"
+printf '%s' '{"permissions":{"allow":["Write(*)","Skill"]}}' > "$PROJ/.claude/settings.json"
+RC=0
+OUT=$(cd "$PROJ" && STUB_ROOT="$TMPROOT" TMPDIR="$TMPROOT/tmp" PATH="$TMPROOT/bin:$PATH" bash "$INIT_SCRIPT" --update 2>&1) || RC=$?
+assert_eq "exit code 3 (restart required)" "3" "$RC"
+assert_eq "settings.json migrated" '["Write","Skill"]' "$(jq -c .permissions.allow "$PROJ/.claude/settings.json")"
+assert_contains "Migrated line" "Migrated: .claude/settings.json permissions: Write(*) -> Write" "$OUT"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -13,7 +13,7 @@ Help turn rough ideas into clear, agreed-upon feature descriptions through natur
 **Idea Inbox:** On startup, check `brainstorm/idea-inbox.md` for accumulated review ideas and offer them as brainstorm seeds (see step 3). After creating a brainstorm document from inbox items, remove consumed entries (see step 8). When invoked after a review discussion that contained deferred-idea signals ("out of scope", "worth considering later", "design tension", "follow-up", "for a future PR"), also mention that ideas can be added to the inbox manually.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, create spec files, or take any implementation action during brainstorming. Brainstorming ends with a decision and a brainstorm document, not a spec.
+Do NOT invoke any implementation skill, write any code, scaffold any project, create spec files, or take any implementation action during brainstorming. Brainstorming ends with a decision and a brainstorm document, not a spec. Reading and exploring the project are fine and expected.
 </HARD-GATE>
 
 <HARD-GATE>
@@ -37,8 +37,8 @@ You MUST create a task for each of these items and complete them in order:
 2. **Explore project context** - check files, specs, constitution, recent commits
 3. **Check idea inbox** - check `brainstorm/idea-inbox.md` for accumulated ideas from reviews, offer as brainstorm seeds
 4. **Check for related brainstorms** - scan `brainstorm/` for existing docs on similar topics, offer to update or create new
-5. **Ask clarifying questions** - one at a time, understand purpose/constraints/success criteria
-6. **Propose 2-3 approaches** - with trade-offs and your recommendation
+5. **Ask clarifying questions** - one at a time, open questions first, grounded in what the project and earlier answers already tell you; play back your understanding as it forms
+6. **Lay out the approaches** - in a message of their own: the 2-3 that survive, grounded in the project, with trade-offs and your recommendation
 7. **Reach agreement** - confirm the chosen approach and scope with the user
 8. **Write brainstorm document** - persist session summary to `brainstorm/NN-topic-slug.md`, optionally create GitHub/GitLab issue. If seeded from inbox items, remove consumed entries from `brainstorm/idea-inbox.md`
 9. **Update overview** - create or refresh `brainstorm/00-overview.md` with index, open threads, parked ideas
@@ -52,8 +52,8 @@ digraph brainstorming {
     "Explore project context" [shape=box];
     "Check idea inbox" [shape=box];
     "Related brainstorm exists?" [shape=diamond];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
+    "Ask clarifying questions\n(play back as you go)" [shape=box];
+    "Lay out 2-3 approaches" [shape=box];
     "User chooses approach?" [shape=diamond];
     "Write brainstorm document\n(+ optional issue)" [shape=box];
     "Update overview" [shape=box];
@@ -63,11 +63,11 @@ digraph brainstorming {
     "Initialize spec-kit" -> "Explore project context";
     "Explore project context" -> "Check idea inbox";
     "Check idea inbox" -> "Related brainstorm exists?";
-    "Related brainstorm exists?" -> "Ask clarifying questions" [label="no, or user chooses new"];
-    "Related brainstorm exists?" -> "Ask clarifying questions" [label="yes, user chooses update"];
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "User chooses approach?";
-    "User chooses approach?" -> "Ask clarifying questions" [label="needs more exploration"];
+    "Related brainstorm exists?" -> "Ask clarifying questions\n(play back as you go)" [label="no, or user chooses new"];
+    "Related brainstorm exists?" -> "Ask clarifying questions\n(play back as you go)" [label="yes, user chooses update"];
+    "Ask clarifying questions\n(play back as you go)" -> "Lay out 2-3 approaches";
+    "Lay out 2-3 approaches" -> "User chooses approach?";
+    "User chooses approach?" -> "Ask clarifying questions\n(play back as you go)" [label="needs more exploration"];
     "User chooses approach?" -> "Write brainstorm document\n(+ optional issue)" [label="agreed"];
     "Write brainstorm document\n(+ optional issue)" -> "Update overview";
     "Update overview" -> "Offer next steps";
@@ -90,6 +90,8 @@ Spec-kit must be initialized before brainstorming. If `.specify/` directory does
 - Look for related features or patterns
 - Scan `brainstorm/` directory for existing brainstorm documents (triggers revisit detection, see step 4 in checklist)
 - Check if `brainstorm/idea-inbox.md` exists and has entries (triggers inbox seed offering, see step 3 in checklist)
+- When the user pointed at something (an issue, an inbox entry, a spec, a handoff, files, an earlier conversation), read it and the code or material it connects to. Keep reading until you can explain how the relevant parts work today and what this change would touch.
+- Never ask what the project or the user's context already answers.
 
 **Check idea inbox (step 3):**
 
@@ -118,26 +120,39 @@ After exploring project context, check if `brainstorm/idea-inbox.md` exists and 
 - Before asking detailed questions, assess scope: if the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"), flag this immediately. Don't spend questions refining details of a project that needs to be decomposed first.
 - If the project is too large for a single spec, help the user decompose into sub-projects: what are the independent pieces, how do they relate, what order should they be built? Then brainstorm the first sub-project through the normal design flow. Each sub-project gets its own spec, plan, and implementation cycle.
 
-**Ask questions to refine:**
-- For appropriately-scoped projects, ask questions one at a time to refine the idea
-- Only one question per message. If a topic needs more exploration, break it into multiple questions
-- Prefer multiple choice when possible, but open-ended is fine too
-- Focus on: purpose, constraints, success criteria, edge cases
-- Identify dependencies and integrations
-- Knowing the kind of thing being built does not tell you why the user wants it. When purpose or intended use is missing, ask about that before proposing features or approaches.
+**Your first message:**
 
-**Write back your understanding:**
-Once you have enough to frame the problem, summarize the intended outcome, constraints, and success criteria in a short note the user can assess. Separate what they stated from what you are assuming, and invite correction. Incorporate their answer before treating this as the design brief. When the request already supplies purpose and constraints, reflect that understanding instead of asking the same questions again. This happens before exploring approaches, not after.
+Move the work forward with one of these:
+
+- **They have already said what they want** (a detailed request, an issue, an inbox entry, a spec): aim for about 200 words for the whole message. Echo the request back in your own words so they can see whether you have its shape: what they want, who it is for, and why, as far as they have said. Add what you found that bears on it: how the relevant parts work today and what the change would touch. If you found something they may not have considered that would change what they are asking for or how it has to be built (a constraint, a conflict, a cheaper path), say so plainly. End with one line inviting corrections, then one question about the thing their request leaves open whose answer would most change what gets built.
+- **They have not:** one open question, in their own terms, about the biggest thing the request leaves unsettled. Say why you are asking: what the answer would change about what gets built.
+
+Brainstorming is always invoked explicitly here, so do not offer to skip the questions. End with your question; the process shows itself.
+
+**Ask questions to refine:**
+- Only one question per message: a single sentence with no list of example answers hanging off it. If a topic needs more exploration, break it into multiple questions.
+- **Open questions first.** Their own words carry intent that your options cannot. Offer a short menu only when they are stuck. When they say "just guess" or "what do you think?", propose something concrete.
+- **Make every question specific** to their project and what they have told you. Build each question on their last answer or on something you found, so it helps them think through a consequence or a case they may have missed. When the reason is not already plain, say what the answer would change. A proposal they can correct, plus your reason for it, often beats a question.
+- Use plain language, pitched just a little above where the user is. Match their vocabulary and never use process jargon or quote this command at them.
+- **Ground to cover** (territory, not a script; never read these out as questions): what kind of thing this is and what makes it special; why now, and what success looks like to them; goals, non-goals, and anti-goals (what would make this a failure even if it technically works); prior art they have seen elsewhere, loved or hated; current state (what exists now, what they have tried); dependencies and integrations; the details they care about.
+- Knowing the kind of thing being built does not tell you why the user wants it. When purpose or intended use is missing, ask about that before proposing approaches.
+- **How it gets made.** Find out early which choices about platform, language, libraries, or tooling they want to own, which they are handing over, and what they already have to work with. Choices they own become constraints in Key Requirements. When there is existing work, build on what it already uses. Anything you fill in goes into the document as your proposal with your reason, never as something they agreed to. Everything else about the how stays with the plan phase.
+- **Offer recon.** Once you have a bit of grounding and looking further would help, offer to go look: deeper into the codebase, their own files and data, or the web. Say what you would look for. They decide whether you go.
+
+**Play it back as you go:**
+As soon as you understand one part well enough to describe it (what it is for and who it serves, say, or how one piece should behave), describe that part back in about 200-300 words, then return to questions about the next part. Playback and questions alternate through the conversation; the last chunk covers whatever is left. Only what they said goes in as theirs. Anything you filled in goes in as your proposal, with your reason. End each chunk by asking what is wrong or missing, and incorporate their answer before treating that part as settled. When the request already supplies purpose and constraints, reflect that understanding instead of asking the same questions again. Laying out the approaches comes after this, not before.
 
 **Remember:** You're exploring WHAT needs to happen, not HOW it will be implemented.
 
-### Exploring approaches
+### Laying out the approaches
 
-**Propose 2-3 different approaches:**
-- Present options conversationally with trade-offs
-- Lead with your recommended option
-- Explain reasoning clearly
-- Consider: complexity, maintainability, user impact
+Once you understand what they want, and before you write anything up, put the ways of building it in a message of its own:
+- Come up with several real alternatives and drop the weak ones, including any that work against why they want it and any the existing project rules out.
+- Present the two or three that remain. Ground each in what the project actually does and say what it trades off (complexity, maintainability, user impact).
+- Lead with your recommendation and say why, then ask which way they want to go.
+- When there is genuinely one sensible way, say so and explain why the others do not fit. Still record the alternatives you dropped in the brainstorm document.
+
+This is about how it gets built at the level of approach, not implementation detail. "Cache the result" versus "recompute on every request" belongs here; "use Redis for caching" does not.
 
 **Questions to explore:**
 - What are the core requirements vs. nice-to-have?
@@ -152,7 +167,7 @@ Once the user picks an approach, confirm the scope:
 - Confirm key requirements and constraints
 - Note any open questions that the spec phase should resolve
 
-This is the decision point. The brainstorm document captures this agreement.
+This is the decision point. The brainstorm document captures this agreement. Approval covers what you showed them: "sounds good" to the idea is not a choice of an approach they have not seen laid out.
 
 ### Transition: next steps
 
@@ -213,7 +228,7 @@ Each brainstorm session produces a structured summary document. The document use
 **Issue:** <URL> *(optional, present when a GitHub/GitLab issue was created)*
 
 ## Problem Framing
-[What problem is being explored and why it matters]
+[What problem is being explored and why it matters. What success looks like, and what would make this a failure even if it technically works (non-goals, anti-goals)]
 
 ## Approaches Considered
 
@@ -229,7 +244,7 @@ Each brainstorm session produces a structured summary document. The document use
 [What was chosen and why, or "Parked: [reason]" if no decision was reached]
 
 ## Key Requirements
-[Core requirements agreed during brainstorming, to feed into the spec]
+[Core requirements agreed during brainstorming, to feed into the spec. Constraints the user chose to own (platform, language, libraries) go here. Mark anything you proposed rather than they stated as your call, with the reason]
 
 ## Open Questions
 - [Unresolved question that the spec phase should address]
@@ -652,10 +667,12 @@ After the commit, the sync process is complete. Exit without offering the normal
 
 ## Key Principles
 
+- **Look before you ask** - Never ask what the project or the user's context already answers
 - **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
+- **Open questions first** - Their own words carry intent your options cannot; offer a short menu only when they are stuck
+- **Say your defaults out loud** - A default they never heard is one they could not reject; mark it as your call in the document
 - **YAGNI ruthlessly** - Remove unnecessary features from all specs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
+- **Explore alternatives** - Always lay out 2-3 approaches, in a message of their own, before settling
 - **Be flexible** - Go back and clarify when something doesn't make sense
 - **Separate WHAT from HOW** - Focus on requirements and outcomes, not implementation
 - **Brainstorm, don't specify** - The formal spec comes later via `/speckit-specify` or `/speckit-spex-ship`
@@ -678,6 +695,18 @@ After the commit, the sync process is complete. Exit without offering the normal
 - Note open questions for the spec phase
 - Write the brainstorm document
 
+## Red Flags
+
+| Thought | Reality |
+|---------|---------|
+| "I'll offer a menu of what they might want" | Options steer. Ask them to describe it first. |
+| "The project probably answers this, but I'll ask to be safe" | Read it. Never ask what the context already answers. |
+| "I'll fill in sensible defaults" | Good. Say them out loud and mark them as yours in the document. A default they never heard is one they could not reject. |
+| "I've answered their questions, so I'll write the document" | Lay out the approaches first, in a message of their own, and let them pick. |
+| "I should explain the process first" | Ask your question. The process shows itself. |
+| "They said 'sounds good' to the idea" | Approval covers what you showed them. An approach they have not seen laid out is not chosen. |
+| "This is small, I'll skip the document" | The brainstorm document is the handoff to specify. Write it. |
+
 ## Example Flow
 
 ```
@@ -685,35 +714,36 @@ User: I want to add a comment system to the blog
 
 You: I'm using speckit-spex-brainstorm to refine this idea.
 
-Let me understand the context first...
-[Reviews existing code and specs]
+[Reads the post model, the templates, and existing specs; finds a static build and no user accounts]
 
-For the comment system, what level of features do you want?
+Posts are rendered at build time and there are no user accounts, so comments need somewhere to live and a way to show up without a rebuild. If this is mainly so readers can react to a post, a small form and a small store are enough; if you want ongoing discussion, threading and notifications pull in a lot more. What do you want a reader to be able to do after they finish a post?
 
-A) Basic - Name, email, comment text only
-B) Standard - Above + threading/replies
-C) Advanced - Above + reactions, editing, moderation
-D) Full - Above + notifications, mentions, markdown
+User: Reply to the post and to each other, but keep it simple.
 
-User: B - Standard with threading
+You: Replies to replies can nest forever, which gets hard to read on a blog. One level (replies to a top-level comment) keeps threads flat and is what most blogs do. Would one level be enough, or do you have a case in mind that needs deeper nesting?
 
-You: Great. For threading, should replies be:
+User: One level is fine.
 
-A) Unlimited depth (comments on comments on comments...)
-B) One level only (reply to top-level comments)
-C) Two levels (reply and one nested level)
+You: Here is what I have so far.
 
-[... conversation continues, approaches explored ...]
+[200-300 words: readers comment with name, email, and text; replies nest one level under a parent; newest first. Marked as my proposals with reasons: markdown in comment text, no moderation in the first version.]
 
-You: Based on our discussion, here's what we've agreed on:
+What is wrong or missing?
 
-- Standard comment system with one level of threading
-- Comments require name, email, and text
-- Newest first, replies nested under parent
-- Markdown support for comment text
-- No moderation in first version (out of scope)
+User: That's right. Markdown yes, moderation can wait.
 
-I'll save this as a brainstorm document. How would you like to proceed?
+You: Two ways to build this that fit the static build:
+
+A) A small comments service the page fetches on load. Comments appear immediately; adds a runtime dependency.
+B) Pull comments from a hosted store at build time. No runtime dependency; comments appear only after the next build.
+
+I recommend A, because you want readers to see their comment right away. Which way do you want to go?
+
+User: A
+
+You: [Writes brainstorm/NN-comments.md, updates the overview]
+
+I've saved this as a brainstorm document. How would you like to proceed?
 
 A) Specify step-by-step (/speckit-specify)
 B) Ship autonomously (/speckit-spex-ship)

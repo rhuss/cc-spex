@@ -11,10 +11,18 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APPLY="$REPO_ROOT/spex/scripts/spex-apply-extensions.sh"
 
+DETACH_SRC="$REPO_ROOT/spex/extensions/spex-detach/scripts"
+
 PASS=0
 FAIL=0
 TMPROOT=""
 PROJ=""
+
+# Isolate git from the developer's global configuration (a global excludes
+# file would change what the stealth-mode verification reports).
+GIT_ISOLATION_HOME=$(mktemp -d)
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 XDG_CONFIG_HOME="$GIT_ISOLATION_HOME"
+export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 
 cleanup() {
   if [ -n "$TMPROOT" ] && [ -d "$TMPROOT" ]; then
@@ -22,7 +30,7 @@ cleanup() {
   fi
   TMPROOT=""
 }
-trap cleanup EXIT
+trap 'cleanup; rm -rf "$GIT_ISOLATION_HOME"' EXIT
 
 assert_eq() {
   local desc="$1" expected="$2" actual="$3"
@@ -111,6 +119,20 @@ enabled() {
   jq -r --arg id "$1" '.extensions[$id] | if . == null then "absent" else (.enabled | tostring) end' \
     "$PROJ/.specify/extensions/.registry"
 }
+
+# add_detach_scripts [git]: install the real spex-detach scripts into the
+# fixture; with "git", also make the project a git repository.
+add_detach_scripts() {
+  mkdir -p "$PROJ/.specify/extensions/spex-detach/scripts"
+  cp "$DETACH_SRC"/* "$PROJ/.specify/extensions/spex-detach/scripts/"
+  chmod +x "$PROJ/.specify/extensions/spex-detach/scripts/spex-detach.sh"
+  if [ "${1:-}" = git ]; then
+    git -C "$PROJ" init -q
+    mkdir -p "$PROJ/.git/info"
+  fi
+}
+
+EXCLUDE_FILE_REL=".git/info/exclude"
 
 ALL_ON='{"spex": true, "spex-gates": true, "spex-worktrees": true, "spex-deep-review": true, "spex-teams": true, "spex-collab": true, "spex-detach": true, "git": true}'
 RECOMMENDED="spex,spex-gates,spex-worktrees,spex-deep-review"
@@ -275,6 +297,176 @@ assert_eq "unreadable --before exits 2" "2" "$RC"
 run_apply --bogus "$RECOMMENDED"
 assert_eq "unknown option exits 2" "2" "$RC"
 assert_eq "usage errors change nothing" "true" "$(enabled spex-teams)"
+
+echo "Test: selecting spex-detach writes and verifies the exclude entries (US1)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "reports Enabled: spex-detach" "Enabled: spex-detach" "$ERR"
+assert_contains "entries written line" "Stealth mode: exclude entries written: .specify/ specs/ brainstorm/" "$ERR"
+assert_contains "active line" "Stealth mode: active (verified: .specify/ specs/ brainstorm/)" "$ERR"
+assert_not_contains "no repair on first enable" "Repaired" "$ERR"
+assert_eq "stdout stays empty" "" "$OUT"
+for e in .specify/ specs/ brainstorm/; do
+  assert_eq "$e in exclude file" "1" "$(grep -cxF "$e" "$PROJ/$EXCLUDE_FILE_REL")"
+done
+assert_contains "summary line still printed" "Extensions: 1 enabled, 0 disabled, 1 unchanged" "$ERR"
+
+echo "Test: a visible configured path warns and still exits 0 (US1)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+mkdir -p "$PROJ/specs" && echo x > "$PROJ/specs/tracked.md"
+git -C "$PROJ" add specs/tracked.md && git -C "$PROJ" commit -q -m tracked
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "warning" "WARNING: stealth mode is NOT fully active" "$ERR"
+assert_contains "names the tracked path" "specs/ (tracked)" "$ERR"
+assert_not_contains "no active line" "Stealth mode: active" "$ERR"
+
+echo "Test: selecting spex-detach outside a git repository stays quiet (US1)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_not_contains "no ERROR" "ERROR" "$ERR"
+assert_not_contains "no stealth line" "tealth mode" "$ERR"
+assert_contains "reports Enabled: spex-detach" "Enabled: spex-detach" "$ERR"
+
+echo "Test: the was-enabled marker from spex-init.sh turns a write into a repair (FR-010)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+: > "$PROJ/.specify/.spex-detach-was-enabled"
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "repair line" "Repaired stealth mode: added .specify/ specs/ brainstorm/" "$ERR"
+assert_not_contains "no written line" "exclude entries written" "$ERR"
+assert_eq "marker removed" "false" "$([ -e "$PROJ/.specify/.spex-detach-was-enabled" ] && echo true || echo false)"
+
+# ─── US3: repair on refresh ───
+
+# before_with_detach <true|false>: snapshot as taken before reinstalling
+before_with_detach() {
+  jq -n --argjson d "$1" '{schema_version: "1.0", extensions: {
+    "spex": {enabled: true}, "spex-gates": {enabled: true}, "spex-detach": {enabled: $d}}}' > "$TMPROOT/before.json"
+}
+
+echo "Test: enabled before, all entries missing -> repair names every path (US3)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": true}'
+add_detach_scripts git
+before_with_detach true
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "repair line" "Repaired stealth mode: added .specify/ specs/ brainstorm/" "$ERR"
+assert_contains "verified" "Stealth mode: active" "$ERR"
+assert_not_contains "no Enabled: line" "Enabled: spex-detach" "$ERR"
+
+echo "Test: enabled before, only specs/ missing -> repair names only specs/ (US3)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": true}'
+add_detach_scripts git
+printf '%s\n' '# spex-detach: spec artifacts excluded from git' '.specify/' 'brainstorm/' > "$PROJ/$EXCLUDE_FILE_REL"
+before_with_detach true
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "repair names specs/" "Repaired stealth mode: added specs/" "$ERR"
+assert_not_contains "repair names nothing else" "added specs/ " "$ERR"
+assert_not_contains ".specify/ not re-added" "added .specify/" "$ERR"
+
+echo "Test: enabled before, all entries present -> no repair, still verified (US3)"
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_not_contains "no repair line" "Repaired" "$ERR"
+assert_contains "verified" "Stealth mode: active" "$ERR"
+
+echo "Test: two runs leave each entry exactly once (US3)"
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+for e in .specify/ specs/ brainstorm/; do
+  assert_eq "$e once" "1" "$(grep -cxF "$e" "$PROJ/$EXCLUDE_FILE_REL")"
+done
+
+# ─── US4: projects without detach are unaffected ───
+
+echo "Test: selection without spex-detach leaves the exclude file alone (US4)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+printf '%s\n' '*.log' > "$PROJ/$EXCLUDE_FILE_REL"
+EXCL_BEFORE=$(shasum "$PROJ/$EXCLUDE_FILE_REL" | cut -d' ' -f1)
+run_apply "spex,spex-gates"
+assert_eq "exit code 0" "0" "$RC"
+assert_not_contains "no stealth output" "tealth mode" "$ERR"
+assert_eq "exclude file byte-identical" "$EXCL_BEFORE" "$(shasum "$PROJ/$EXCLUDE_FILE_REL" | cut -d' ' -f1)"
+
+echo "Test: deselecting spex-detach keeps its entries and prints no stealth output (US4)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": true}'
+add_detach_scripts git
+printf '%s\n' '# spex-detach: spec artifacts excluded from git' '.specify/' 'specs/' 'brainstorm/' > "$PROJ/$EXCLUDE_FILE_REL"
+run_apply "spex,spex-gates"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "reports Disabled: spex-detach" "Disabled: spex-detach" "$ERR"
+assert_not_contains "no stealth output" "tealth mode" "$ERR"
+assert_eq "specs/ entry kept" "1" "$(grep -cxF specs/ "$PROJ/$EXCLUDE_FILE_REL")"
+
+echo "Test: spex-detach enabled but its scripts missing -> no output, exit code unchanged (US4)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+git -C "$PROJ" init -q
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_not_contains "no stealth output" "tealth mode" "$ERR"
+assert_contains "reports Enabled: spex-detach" "Enabled: spex-detach" "$ERR"
+
+# ─── The before-snapshot decides between "written" and "repaired" ───
+# In the setup workflow, install-ext-spex-detach disables spex-detach before
+# apply-extensions runs, so the live registry says false and only --before
+# knows whether it was enabled before this run.
+
+echo "Test: registry disabled, snapshot enabled -> entries are a repair (FR-010)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+before_with_detach true
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "repair line" "Repaired stealth mode: added .specify/ specs/ brainstorm/" "$ERR"
+assert_not_contains "no written line" "exclude entries written" "$ERR"
+
+echo "Test: registry disabled, snapshot disabled -> entries are written, not repaired (US1-4)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+before_with_detach false
+run_apply --before "$TMPROOT/before.json" "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "written line" "Stealth mode: exclude entries written: .specify/ specs/ brainstorm/" "$ERR"
+assert_not_contains "no repair line" "Repaired" "$ERR"
+assert_contains "verified" "Stealth mode: active" "$ERR"
+
+# ─── A failing ensure is reported, never silent ───
+
+echo "Test: ensure crashing without a result prints a warning, exit code unchanged (R7)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+printf '#!/bin/sh\necho "ERROR: No Python interpreter found" >&2\nexit 1\n' \
+  > "$PROJ/.specify/extensions/spex-detach/scripts/spex-detach.sh"
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "warning line" "WARNING: stealth mode is NOT fully active. The exclude entries could not be written or verified:" "$ERR"
+assert_contains "names the exit code and the error" "  spex-detach.sh ensure failed with exit code 1: ERROR: No Python interpreter found" "$ERR"
+assert_not_contains "no active line" "Stealth mode: active" "$ERR"
+
+echo "Test: a visible path (exit 1 with a result) is not reported as a failed ensure (R7)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts git
+mkdir -p "$PROJ/specs" && echo x > "$PROJ/specs/t.md"
+git -C "$PROJ" add specs/t.md
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_contains "visible-path warning" "  specs/ (tracked)" "$ERR"
+assert_not_contains "no failed-ensure line" "could not be written or verified" "$ERR"
+
+echo "Test: outside a git repository (exit 2) no failed-ensure warning (R7)"
+make_project '{"spex": true, "spex-gates": true, "spex-detach": false}'
+add_detach_scripts
+run_apply "spex,spex-gates,spex-detach"
+assert_eq "exit code 0" "0" "$RC"
+assert_not_contains "no stealth output" "tealth mode" "$ERR"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
