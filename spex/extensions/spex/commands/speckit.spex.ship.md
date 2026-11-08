@@ -155,22 +155,19 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
    case "$DEFAULT_CODERABBIT" in
      true|yes|on) DEFAULT_CODERABBIT=true ;;
      false|no|off) DEFAULT_CODERABBIT=false ;;
-     *) [ -n "$DEFAULT_CODERABBIT" ] && [ "$DEFAULT_CODERABBIT" != null ] && echo "spex: ignoring non-boolean '$DEFAULT_CODERABBIT' for external_tools.coderabbit in $DEEP_REVIEW_CONFIG; using true" >&2
-        DEFAULT_CODERABBIT=true ;;
+     *) DEFAULT_CODERABBIT=true ;;
    esac
    DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
    case "$DEFAULT_COPILOT" in
      true|yes|on) DEFAULT_COPILOT=true ;;
      false|no|off) DEFAULT_COPILOT=false ;;
-     *) [ -n "$DEFAULT_COPILOT" ] && [ "$DEFAULT_COPILOT" != null ] && echo "spex: ignoring non-boolean '$DEFAULT_COPILOT' for external_tools.copilot in $DEEP_REVIEW_CONFIG; using true" >&2
-        DEFAULT_COPILOT=true ;;
+     *) DEFAULT_COPILOT=true ;;
    esac
    DEFAULT_CODEX=$(yq -r '.external_tools.codex' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
    case "$DEFAULT_CODEX" in
      true|yes|on) DEFAULT_CODEX=true ;;
      false|no|off) DEFAULT_CODEX=false ;;
-     *) [ -n "$DEFAULT_CODEX" ] && [ "$DEFAULT_CODEX" != null ] && echo "spex: ignoring non-boolean '$DEFAULT_CODEX' for external_tools.codex in $DEEP_REVIEW_CONFIG; using true" >&2
-        DEFAULT_CODEX=true ;;
+     *) DEFAULT_CODEX=true ;;
    esac
    ```
 
@@ -667,8 +664,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    case "$TEST_BETWEEN_TASKS" in
      true|yes|on) TEST_BETWEEN_TASKS=true ;;
      false|no|off) TEST_BETWEEN_TASKS=false ;;
-     *) [ -n "$TEST_BETWEEN_TASKS" ] && [ "$TEST_BETWEEN_TASKS" != null ] && echo "spex: ignoring non-boolean '$TEST_BETWEEN_TASKS' for implement.test_between_tasks in $SPEX_CONFIG; using true" >&2
-        TEST_BETWEEN_TASKS=true ;;
+     *) TEST_BETWEEN_TASKS=true ;;
    esac
    ```
 
@@ -710,8 +706,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    case "$REVIEW_CHECKPOINTS" in
      true|yes|on) REVIEW_CHECKPOINTS=true ;;
      false|no|off) REVIEW_CHECKPOINTS=false ;;
-     *) [ -n "$REVIEW_CHECKPOINTS" ] && [ "$REVIEW_CHECKPOINTS" != null ] && echo "spex: ignoring non-boolean '$REVIEW_CHECKPOINTS' for implement.review_checkpoints in $SPEX_CONFIG; using true" >&2
-        REVIEW_CHECKPOINTS=true ;;
+     *) REVIEW_CHECKPOINTS=true ;;
    esac
    TOTAL_TASKS=$(grep -c '^\- \[.\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
    ```

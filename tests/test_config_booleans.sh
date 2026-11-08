@@ -79,15 +79,13 @@ assert_eq "no config file: defaults, no warning" "coderabbit=true copilot=true c
   "$(run_with_config '' "$WITH_YQ")"
 assert_eq "no config file: stderr is empty" "" "$(cat "$WORK/stderr")"
 
-echo "Test: YAML 1.1 spellings are accepted, other words warn"
+echo "Test: YAML 1.1 spellings are accepted, other words use the default"
 assert_eq "False / no / OFF mean false" "coderabbit=false copilot=false codex=false" \
   "$(run_with_config '{"external_tools":{"coderabbit":"False","copilot":"no","codex":"OFF"}}' "$WITH_YQ")"
 assert_eq "Yes / ON / True mean true" "coderabbit=true copilot=true codex=true" \
   "$(run_with_config '{"external_tools":{"coderabbit":"Yes","copilot":"ON","codex":"True"}}' "$WITH_YQ")"
 run_with_config '{"external_tools":{"copilot":"maybe"}}' "$WITH_YQ" >/dev/null
-assert_eq "a non-boolean word warns once" \
-  "spex: ignoring non-boolean 'maybe' for external_tools.copilot in .specify/extensions/spex-deep-review/deep-review-config.yml; using true" \
-  "$(cat "$WORK/stderr")"
+assert_eq "a non-boolean word does not warn" "" "$(cat "$WORK/stderr")"
 run_with_config '{"external_tools":{}}' "$WITH_YQ" >/dev/null
 assert_eq "a missing key does not warn" "" "$(cat "$WORK/stderr")"
 assert_eq "a malformed config uses defaults" "coderabbit=true copilot=true codex=true" \
@@ -95,6 +93,8 @@ assert_eq "a malformed config uses defaults" "coderabbit=true copilot=true codex
 assert_eq "a malformed config warns once" \
   "spex: .specify/extensions/spex-deep-review/deep-review-config.yml is not valid YAML; using defaults" \
   "$(cat "$WORK/stderr")"
+run_with_config '# only a comment' "$WITH_YQ" >/dev/null
+assert_eq "a comment-only config does not warn" "" "$(cat "$WORK/stderr")"
 
 echo "Test: config present but yq missing"
 # A PATH that holds only the tools the config block needs (tr), so no yq can be found even where

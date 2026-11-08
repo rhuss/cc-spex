@@ -312,8 +312,7 @@ LABELS_ENABLED=$(yq -r '.labels.enabled' "$COLLAB_CONFIG" 2>/dev/null | tr '[:up
 case "$LABELS_ENABLED" in
   true|yes|on) LABELS_ENABLED=true ;;
   false|no|off) LABELS_ENABLED=false ;;
-  *) [ -n "$LABELS_ENABLED" ] && [ "$LABELS_ENABLED" != null ] && echo "spex: ignoring non-boolean '$LABELS_ENABLED' for labels.enabled in $COLLAB_CONFIG; using true" >&2
-     LABELS_ENABLED=true ;;
+  *) LABELS_ENABLED=true ;;
 esac
 IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
 LABEL_FLAG=""
