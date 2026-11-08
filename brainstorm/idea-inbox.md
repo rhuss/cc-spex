@@ -309,3 +309,12 @@ _Review-related ideas (goal-alignment-skip-behavior, spec-completeness, platform
 - **Summary**: The user-settings guard resolves the path before reading and re-checks before writing, but a concurrent writer in .claude/ could still swap files between the steps.
 
 > Exploiting it needs write access to the project at the same moment, which already allows worse; a descriptor-based write would close it fully.
+
+### finish-worktree-awareness
+
+- **Source**: conversation (aprofile, finishing 002-profile-isolation-levels)
+- **Date**: 2026-11-05
+- **Reference**: speckit.spex.finish.md, speckit.spex.gates.verify.md, spex-finish-context.sh
+- **Summary**: Run from the main checkout on the default branch, `/speckit-spex-finish` never looks at worktrees, so it verified an old spec that was already on main while the feature the user meant (implemented, uncommitted) sat in `.claude/worktrees/<branch>`.
+
+> After a `/clear` the session was in the main checkout on `main`. `.spex-state` and `feature.json` are per worktree, so finish resolved no active feature, fell back to `specs/main`, and verify picked the only spec present on main (an already-landed one). The "already on the default branch, no merge needed" stop sits in Phase 2, after the full verification, so a long verify ran against the wrong feature before finish found it had nothing to land. Proposed fixes: (1) when finish or verify starts on the default branch or cannot resolve a feature, list `git worktree list` entries and their `.specify/.spex-state`; if a worktree holds an active feature, stop and name it with its path and state (for example "002-x in .claude/worktrees/002-x: implemented, uncommitted changes; run finish there"). `spex-finish-context.sh` already calls `git worktree list`, so this is a small addition. (2) Move the default-branch check ahead of Phase 0 so nothing is verified when there is nothing to land. (3) Let verify's spec picker include specs from active worktrees, labeled with their path. (4) Optionally, show "N active features in worktrees" in the status line of the main checkout. Related: `custom-branch-repair-gap`, `hook-commit-target-cwd`.
