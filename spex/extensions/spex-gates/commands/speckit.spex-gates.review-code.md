@@ -362,14 +362,24 @@ Flags are consumed and removed from the argument string. The remaining text (if 
 **Resolve external tool settings (defaults + flag overrides):**
 
 ```bash
-# 1. Read defaults from deep-review extension config (all default to true if key is missing)
+# Read defaults from deep-review extension config. A tool is on unless its key is a clear
+# false (false/no/off); a missing key, a non-boolean value, or a missing yq all mean true.
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
-
-# 2. If config file is missing, default all tools to true
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+fi
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$DEFAULT_CODERABBIT" in
+  true|yes|on) DEFAULT_CODERABBIT=true ;;
+  false|no|off) DEFAULT_CODERABBIT=false ;;
+  *) DEFAULT_CODERABBIT=true ;;
+esac
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$DEFAULT_COPILOT" in
+  true|yes|on) DEFAULT_COPILOT=true ;;
+  false|no|off) DEFAULT_COPILOT=false ;;
+  *) DEFAULT_COPILOT=true ;;
+esac
 ```
 
 ```

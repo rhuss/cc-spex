@@ -305,7 +305,15 @@ if [ -f "$REVIEWERS_REL" ]; then
 fi
 
 COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
-LABELS_ENABLED=$(yq -r '.labels.enabled // true' "$COLLAB_CONFIG" 2>/dev/null || echo "true")
+if [ -f "$COLLAB_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found; $COLLAB_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+fi
+LABELS_ENABLED=$(yq -r '.labels.enabled' "$COLLAB_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$LABELS_ENABLED" in
+  true|yes|on) LABELS_ENABLED=true ;;
+  false|no|off) LABELS_ENABLED=false ;;
+  *) LABELS_ENABLED=true ;;
+esac
 IMPL_LABEL=$(yq -r '.labels.implement // "spex/implement"' "$COLLAB_CONFIG" 2>/dev/null || echo "spex/implement")
 LABEL_FLAG=""
 if [ "$LABELS_ENABLED" = "true" ]; then

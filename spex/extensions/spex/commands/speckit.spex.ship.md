@@ -148,12 +148,27 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
 1. Read config defaults from deep-review extension config:
    ```bash
    DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-   DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-   DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
-   DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-   DEFAULT_CODEX=${DEFAULT_CODEX:-true}
+   if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+     echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+   fi
+   DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+   case "$DEFAULT_CODERABBIT" in
+     true|yes|on) DEFAULT_CODERABBIT=true ;;
+     false|no|off) DEFAULT_CODERABBIT=false ;;
+     *) DEFAULT_CODERABBIT=true ;;
+   esac
+   DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+   case "$DEFAULT_COPILOT" in
+     true|yes|on) DEFAULT_COPILOT=true ;;
+     false|no|off) DEFAULT_COPILOT=false ;;
+     *) DEFAULT_COPILOT=true ;;
+   esac
+   DEFAULT_CODEX=$(yq -r '.external_tools.codex' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+   case "$DEFAULT_CODEX" in
+     true|yes|on) DEFAULT_CODEX=true ;;
+     false|no|off) DEFAULT_CODEX=false ;;
+     *) DEFAULT_CODEX=true ;;
+   esac
    ```
 
 2. Start with config defaults:
@@ -644,8 +659,15 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Before spawning the subagent, check if per-task test checkpoints are enabled:
    ```bash
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
-   TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks // true' "$SPEX_CONFIG" 2>/dev/null)
-   TEST_BETWEEN_TASKS=${TEST_BETWEEN_TASKS:-true}
+   if [ -f "$SPEX_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+     echo "spex: yq not found; $SPEX_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+   fi
+   TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks' "$SPEX_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+   case "$TEST_BETWEEN_TASKS" in
+     true|yes|on) TEST_BETWEEN_TASKS=true ;;
+     false|no|off) TEST_BETWEEN_TASKS=false ;;
+     *) TEST_BETWEEN_TASKS=true ;;
+   esac
    ```
 
    Build the test checkpoint instruction block (only when `TEST_BETWEEN_TASKS` is `true`):
@@ -680,9 +702,14 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Check if mid-implementation review checkpoints should be enabled:
    ```bash
    DEEP_REVIEW_ENABLED=$(jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+   # Same spex-config.yml as the test_between_tasks read above, which already warned if yq is missing.
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
-   REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints // true' "$SPEX_CONFIG" 2>/dev/null)
-   REVIEW_CHECKPOINTS=${REVIEW_CHECKPOINTS:-true}
+   REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints' "$SPEX_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+   case "$REVIEW_CHECKPOINTS" in
+     true|yes|on) REVIEW_CHECKPOINTS=true ;;
+     false|no|off) REVIEW_CHECKPOINTS=false ;;
+     *) REVIEW_CHECKPOINTS=true ;;
+   esac
    TOTAL_TASKS=$(grep -c '^\- \[.\]' "$FEATURE_DIR/tasks.md" 2>/dev/null || echo 0)
    ```
 

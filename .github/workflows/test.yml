@@ -14,3 +14,12 @@ jobs:
           persist-credentials: false
       - name: Reject tracked generated harness trees
         run: make test-generated-trees
+
+  config-booleans:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Boolean config reads (the runner image ships mikefarah yq and jq)
+        run: make test-config-booleans

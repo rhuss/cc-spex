@@ -41,12 +41,30 @@ This prevents callers (e.g., ship pipeline subagent prompts) from accidentally d
 ```bash
 # ALWAYS read config defaults (never skip this step, never trust caller values)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
-DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODERABBIT=${DEFAULT_CODERABBIT:-true}
-DEFAULT_COPILOT=$(yq -r '.external_tools.copilot // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_COPILOT=${DEFAULT_COPILOT:-true}
-DEFAULT_CODEX=$(yq -r '.external_tools.codex // true' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
-DEFAULT_CODEX=${DEFAULT_CODEX:-true}
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+fi
+if [ -f "$DEEP_REVIEW_CONFIG" ] && command -v yq >/dev/null 2>&1 && ! yq '.' "$DEEP_REVIEW_CONFIG" >/dev/null 2>&1; then
+  echo "spex: $DEEP_REVIEW_CONFIG is not valid YAML; using defaults" >&2
+fi
+DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$DEFAULT_CODERABBIT" in
+  true|yes|on) DEFAULT_CODERABBIT=true ;;
+  false|no|off) DEFAULT_CODERABBIT=false ;;
+  *) DEFAULT_CODERABBIT=true ;;
+esac
+DEFAULT_COPILOT=$(yq -r '.external_tools.copilot' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$DEFAULT_COPILOT" in
+  true|yes|on) DEFAULT_COPILOT=true ;;
+  false|no|off) DEFAULT_COPILOT=false ;;
+  *) DEFAULT_COPILOT=true ;;
+esac
+DEFAULT_CODEX=$(yq -r '.external_tools.codex' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+case "$DEFAULT_CODEX" in
+  true|yes|on) DEFAULT_CODEX=true ;;
+  false|no|off) DEFAULT_CODEX=false ;;
+  *) DEFAULT_CODEX=true ;;
+esac
 ```
 
 ```
@@ -117,7 +135,7 @@ Check for external review CLIs, respecting the external tool settings from the c
 # CodeRabbit (skip only if explicitly disabled in config)
 which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 
-# GitHub Copilot CLI (skip if copilot setting is false)
+# GitHub Copilot CLI (run this check only if the resolved copilot setting is true)
 which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
 ```
@@ -148,6 +166,9 @@ Detect the project's test command for use in the fix loop (Step 7.6). Check sour
 ```bash
 # 1. Config override (highest priority)
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
+if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
+  echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
+fi
 TEST_CMD=$(yq -r '.test_command // ""' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 TEST_TIMEOUT=$(yq -r '.test_timeout_seconds // 300' "$DEEP_REVIEW_CONFIG" 2>/dev/null)
 
@@ -329,7 +350,7 @@ Parse output:
 6. **Preserve the full rationale** from CodeRabbit output for inclusion in review-findings.md
 7. **All CodeRabbit findings with severity Critical or Important MUST enter the fix loop** (Step 7). They are treated identically to internal agent findings for gate and fix purposes.
 
-**Copilot CLI** (if available):
+**Copilot CLI** (only when the resolved copilot setting is `true` and `COPILOT_AVAILABLE=true`; when it is `false`, never send the diff to Copilot):
 ```bash
 copilot -s -p "Review the following git diff for bugs, security issues, and code quality problems. Output ONLY a structured list of findings. For each finding use this exact format:
 
