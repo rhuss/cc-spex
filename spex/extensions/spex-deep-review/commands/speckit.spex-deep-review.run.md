@@ -135,7 +135,7 @@ Check for external review CLIs, respecting the external tool settings from the c
 # CodeRabbit (skip only if explicitly disabled in config)
 which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 
-# GitHub Copilot CLI (skip if copilot setting is false)
+# GitHub Copilot CLI (run this check only if the resolved copilot setting is true)
 which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
 
 ```
@@ -347,7 +347,7 @@ Parse output:
 6. **Preserve the full rationale** from CodeRabbit output for inclusion in review-findings.md
 7. **All CodeRabbit findings with severity Critical or Important MUST enter the fix loop** (Step 7). They are treated identically to internal agent findings for gate and fix purposes.
 
-**Copilot CLI** (if available):
+**Copilot CLI** (only when the resolved copilot setting is `true` and `COPILOT_AVAILABLE=true`; when it is `false`, never send the diff to Copilot):
 ```bash
 copilot -s -p "Review the following git diff for bugs, security issues, and code quality problems. Output ONLY a structured list of findings. For each finding use this exact format:
 
