@@ -13,6 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUN_MD="$REPO_ROOT/spex/extensions/spex-deep-review/commands/speckit.spex-deep-review.run.md"
 
+BASH_BIN=$(command -v bash)
 PASS=0
 FAIL=0
 WORK=$(mktemp -d)
@@ -57,7 +58,9 @@ run_with_config() {
   if [ -n "$1" ]; then
     printf '%s\n' "$1" > "$project/.specify/extensions/spex-deep-review/deep-review-config.yml"
   fi
-  (cd "$project" && PATH="$2" bash "$WORK/read_config.sh" 2>"$WORK/stderr")
+  # BASH_BIN was resolved before PATH was filtered, so removing a folder that holds both yq and
+  # bash (for example /usr/bin) cannot make bash disappear.
+  (cd "$project" && PATH="$2" "$BASH_BIN" "$WORK/read_config.sh" 2>"$WORK/stderr")
 }
 
 echo "Test: the real config block from the deep-review command"
@@ -77,14 +80,11 @@ assert_eq "no config file: defaults, no warning" "coderabbit=true copilot=true c
 assert_eq "no config file: stderr is empty" "" "$(cat "$WORK/stderr")"
 
 echo "Test: config present but yq missing"
-# The normal PATH minus every folder that holds a yq (CI runners ship one).
-NO_YQ_PATH=""
-IFS=':' read -r -a path_parts <<< "$PATH"
-for part in "${path_parts[@]}"; do
-  if [ -n "$part" ] && [ ! -x "$part/yq" ] && [ ! -x "$part/yq.exe" ]; then
-    NO_YQ_PATH="${NO_YQ_PATH:+$NO_YQ_PATH:}$part"
-  fi
-done
+# A PATH that holds only the tools the config block needs (tr), so no yq can be found even where
+# yq and the system tools share a folder (CI runners ship yq in /usr/bin).
+mkdir -p "$WORK/toolbin"
+ln -s "$(command -v tr)" "$WORK/toolbin/tr" 2>/dev/null || cp "$(command -v tr)" "$WORK/toolbin/tr"
+NO_YQ_PATH="$WORK/toolbin"
 assert_eq "defaults are used" "coderabbit=true copilot=true codex=true" \
   "$(run_with_config '{"external_tools":{"copilot":false}}' "$NO_YQ_PATH")"
 if grep -q "yq not found" "$WORK/stderr"; then
