@@ -171,7 +171,7 @@ REVIEWERS_URL="${REMOTE_URL}/blob/${BRANCH}/${REVIEWERS_REL}"
 # Read label config
 COLLAB_CONFIG=".specify/extensions/spex-collab/collab-config.yml"
 if [ -f "$COLLAB_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-  echo "spex: yq not found, so $COLLAB_CONFIG cannot be read; using defaults" >&2
+  echo "spex: yq not found; $COLLAB_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
 fi
 LABELS_ENABLED=$(yq -r '.labels.enabled' "$COLLAB_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
 case "$LABELS_ENABLED" in

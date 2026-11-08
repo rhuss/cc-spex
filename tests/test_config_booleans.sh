@@ -101,7 +101,7 @@ NO_YQ_PATH="$WORK/toolbin"
 assert_eq "defaults are used" "coderabbit=true copilot=true codex=true" \
   "$(run_with_config '{"external_tools":{"copilot":false}}' "$NO_YQ_PATH")"
 assert_eq "stderr is exactly the one warning line" \
-  "spex: yq not found, so .specify/extensions/spex-deep-review/deep-review-config.yml cannot be read; using defaults" \
+  "spex: yq not found; .specify/extensions/spex-deep-review/deep-review-config.yml ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" \
   "$(cat "$WORK/stderr")"
 assert_eq "no config and no yq: defaults" "coderabbit=true copilot=true codex=true" \
   "$(run_with_config '' "$NO_YQ_PATH")"

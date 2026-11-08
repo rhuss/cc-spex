@@ -358,7 +358,7 @@ Flags are consumed and removed from the argument string. The remaining text (if 
 # false (false/no/off); a missing key, a non-boolean value, or a missing yq all mean true.
 DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
 if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-  echo "spex: yq not found, so $DEEP_REVIEW_CONFIG cannot be read; using defaults" >&2
+  echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
 fi
 DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
 case "$DEFAULT_CODERABBIT" in

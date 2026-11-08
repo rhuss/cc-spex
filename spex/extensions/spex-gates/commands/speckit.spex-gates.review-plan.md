@@ -237,7 +237,7 @@ Check the git extension's auto-commit config. Only commit if the user has enable
 ```bash
 GIT_CONFIG=".specify/extensions/git/git-config.yml"
 if [ -f "$GIT_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-  echo "spex: yq not found, so $GIT_CONFIG cannot be read; using defaults" >&2
+  echo "spex: yq not found; $GIT_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
 fi
 AUTO_COMMIT=$(yq -r '.auto_commit.after_tasks.enabled' "$GIT_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
 case "$AUTO_COMMIT" in true|yes|on) AUTO_COMMIT=true ;; false|no|off) AUTO_COMMIT=false ;; *) AUTO_COMMIT=$(yq -r '.auto_commit.default' "$GIT_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]') ;; esac

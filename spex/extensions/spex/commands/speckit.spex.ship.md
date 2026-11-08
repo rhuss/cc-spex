@@ -149,7 +149,7 @@ ERROR: Invalid oversight level "X". Must be one of: always, smart, never
    ```bash
    DEEP_REVIEW_CONFIG=".specify/extensions/spex-deep-review/deep-review-config.yml"
    if [ -f "$DEEP_REVIEW_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-     echo "spex: yq not found, so $DEEP_REVIEW_CONFIG cannot be read; using defaults" >&2
+     echo "spex: yq not found; $DEEP_REVIEW_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
    fi
    DEFAULT_CODERABBIT=$(yq -r '.external_tools.coderabbit' "$DEEP_REVIEW_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
    case "$DEFAULT_CODERABBIT" in
@@ -661,7 +661,7 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    ```bash
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
    if [ -f "$SPEX_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-     echo "spex: yq not found, so $SPEX_CONFIG cannot be read; using defaults" >&2
+     echo "spex: yq not found; $SPEX_CONFIG ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)" >&2
    fi
    TEST_BETWEEN_TASKS=$(yq -r '.implement.test_between_tasks' "$SPEX_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
    case "$TEST_BETWEEN_TASKS" in
@@ -704,10 +704,8 @@ This stage runs in an isolated subagent to prevent context accumulation in the o
    Check if mid-implementation review checkpoints should be enabled:
    ```bash
    DEEP_REVIEW_ENABLED=$(jq -r '.extensions["spex-deep-review"].enabled // false' .specify/extensions/.registry 2>/dev/null)
+   # Same spex-config.yml as the test_between_tasks read above, which already warned if yq is missing.
    SPEX_CONFIG=".specify/extensions/spex/spex-config.yml"
-   if [ -f "$SPEX_CONFIG" ] && ! command -v yq >/dev/null 2>&1; then
-     echo "spex: yq not found, so $SPEX_CONFIG cannot be read; using defaults" >&2
-   fi
    REVIEW_CHECKPOINTS=$(yq -r '.implement.review_checkpoints' "$SPEX_CONFIG" 2>/dev/null | tr '[:upper:]' '[:lower:]')
    case "$REVIEW_CHECKPOINTS" in
      true|yes|on) REVIEW_CHECKPOINTS=true ;;
