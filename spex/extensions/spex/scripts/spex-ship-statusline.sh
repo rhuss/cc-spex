@@ -47,23 +47,31 @@ for candidate in ".claude/.spex-previous-statusline" "${CLAUDE_PROJECT_DIR:-.}/.
   fi
 done
 
+# Run the previous status line: a file path (possibly with spaces) runs directly, as before;
+# anything else is a command line such as `bash ~/.claude/statusline.sh --compact`, run
+# through a shell the way Claude Code runs statusLine.command itself.
+run_previous() {
+  local prev_cmd="$1"
+  if [ -f "$prev_cmd" ]; then
+    "$prev_cmd" 2>/dev/null
+  else
+    bash -c "$prev_cmd" 2>/dev/null
+  fi
+}
+
 get_chain_output() {
-  if [ -n "$CHAIN_FILE" ]; then
-    local prev_cmd
-    prev_cmd=$(cat "$CHAIN_FILE" 2>/dev/null)
-    [ -n "$prev_cmd" ] || return 0
-    # A bare script path (possibly with spaces) runs directly, as before. Anything else is a
-    # command line such as `bash ~/.claude/statusline.sh --compact`, run through a shell the
-    # way Claude Code runs statusLine.command itself.
-    local runner=()
-    if [ ! -f "$prev_cmd" ]; then
-      runner=(bash -c)
-    fi
-    if [ -n "$STDIN_JSON" ]; then
-      echo "$STDIN_JSON" | ${runner[@]+"${runner[@]}"} "$prev_cmd" 2>/dev/null || true
-    else
-      ${runner[@]+"${runner[@]}"} "$prev_cmd" 2>/dev/null || true
-    fi
+  [ -n "$CHAIN_FILE" ] || return 0
+  # Recursion guard: if the chained command itself calls this script (a wrapper around spex),
+  # the inner copy sees this variable and prints nothing instead of chaining forever.
+  [ -z "${SPEX_STATUSLINE_CHAINING:-}" ] || return 0
+  local prev_cmd
+  prev_cmd=$(cat "$CHAIN_FILE" 2>/dev/null)
+  [ -n "$prev_cmd" ] || return 0
+  export SPEX_STATUSLINE_CHAINING=1
+  if [ -n "$STDIN_JSON" ]; then
+    echo "$STDIN_JSON" | run_previous "$prev_cmd" || true
+  else
+    run_previous "$prev_cmd" || true
   fi
 }
 

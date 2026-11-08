@@ -137,6 +137,40 @@ assert_contains "bare path containing a space: still shown" "PREV[] stdin-ok" "$
 cleanup
 
 
+echo "Test: the chain also works without stdin, and with an active ship state"
+setup
+make_prev "$WORKDIR/bin/prev.sh"
+mkdir -p "$MAIN/.claude"
+printf '%s\n' "bash $WORKDIR/bin/prev.sh --compact" > "$MAIN/.claude/.spex-previous-statusline"
+OUT=$(cd "$MAIN" && env -u SHIP_STATE_FILE CLAUDE_PROJECT_DIR="$MAIN" bash "$STATUSLINE" </dev/null 2>/dev/null)
+assert_contains "no stdin: argument passed, no stdin seen" "PREV[--compact] no-stdin" "$OUT"
+ship_state implement 6 > "$MAIN/.specify/.spex-state"
+OUT=$(run_statusline "$MAIN" "$MAIN")
+if [[ "$OUT" == "PREV[--compact] stdin-ok "* ]]; then
+  echo "  PASS: chain output comes first, then one space, then the spex line"; PASS=$((PASS + 1))
+else
+  echo "  FAIL: expected output to start with 'PREV[--compact] stdin-ok ' (got '$OUT')"; FAIL=$((FAIL + 1))
+fi
+assert_contains "spex line shown after the chain output" "implement" "$OUT"
+cleanup
+
+echo "Test: a chained wrapper that calls the spex script again does not loop"
+setup
+mkdir -p "$MAIN/.claude" "$WORKDIR/bin"
+cat > "$WORKDIR/bin/wrapper.sh" <<WRAP
+#!/usr/bin/env bash
+printf 'W['
+bash "$STATUSLINE" </dev/null
+printf ']'
+WRAP
+chmod +x "$WORKDIR/bin/wrapper.sh"
+printf '%s\n' "bash $WORKDIR/bin/wrapper.sh" > "$MAIN/.claude/.spex-previous-statusline"
+# timeout turns an endless loop into a failed assertion instead of a hung test run.
+OUT=$(cd "$MAIN" && echo '{}' | timeout 15 env -u SHIP_STATE_FILE -u SPEX_STATUSLINE_CHAINING CLAUDE_PROJECT_DIR="$MAIN" bash "$STATUSLINE" 2>/dev/null || echo "TIMEOUT-OR-ERROR")
+assert_contains "wrapper output appears once, inner spex stays silent" "W[]" "$OUT"
+assert_not_contains "no timeout" "TIMEOUT" "$OUT"
+cleanup
+
 # --- The status-line step exists twice: configure_statusline() in spex-init.sh and the
 # claude-statusline step in setup.yml. Both are extracted from the real files and run against
 # the same cases, so neither copy can drift unnoticed. ---
