@@ -107,6 +107,62 @@ assert_eq "no config and no yq: defaults" "coderabbit=true copilot=true codex=tr
   "$(run_with_config '' "$NO_YQ_PATH")"
 assert_eq "no config and no yq: stderr is empty" "" "$(cat "$WORK/stderr")"
 
+# Run the first bash block of a command file that contains a marker, with a config file placed
+# in the project. $1 = command file, $2 = marker regex (awk), $3 = config path inside the
+# project, $4 = JSON config body ("" = none), $5 = line to print the result.
+run_other_block() {
+  local file="$1" marker="$2" config_path="$3" body="$4" echo_line="$5"
+  # A block that has no closing fence (reviewers.md has one) ends where the next block opens.
+  awk -v marker="$marker" '/^```bash/{if (inblock && block ~ marker) {printf "%s", block; exit} inblock=1; block=""; next}
+       /^```/{if (inblock && block ~ marker) {printf "%s", block; exit} inblock=0; next}
+       inblock{block = block $0 "\n"}' "$file" > "$WORK/other_block.sh"
+  # Cut at the first `git push` so the test never runs the push or the prose after it.
+  sed -i '/^git push/,$d' "$WORK/other_block.sh"
+  if [ ! -s "$WORK/other_block.sh" ]; then
+    echo "NO BLOCK FOUND"
+    return 0
+  fi
+  echo "$echo_line" >> "$WORK/other_block.sh"
+  local project="$WORK/project"
+  rm -rf "$project"
+  mkdir -p "$project/$(dirname "$config_path")"
+  if [ -n "$body" ]; then
+    printf '%s\n' "$body" > "$project/$config_path"
+  fi
+  (cd "$project" && PATH="$WITH_YQ" "$BASH_BIN" "$WORK/other_block.sh" 2>"$WORK/stderr")
+}
+
+echo "Test: two-stage auto_commit in review-plan and review-spec"
+GIT_CFG=".specify/extensions/git/git-config.yml"
+for stage_file in "review-plan:after_tasks" "review-spec:after_specify"; do
+  command_name="${stage_file%%:*}"
+  stage_key="${stage_file##*:}"
+  md="$REPO_ROOT/spex/extensions/spex-gates/commands/speckit.spex-gates.$command_name.md"
+  run_auto() {
+    run_other_block "$md" 'AUTO_COMMIT=\\$\\(yq' "$GIT_CFG" "$1" 'echo "auto_commit=$AUTO_COMMIT"'
+  }
+  assert_eq "$command_name: stage false beats default true" "auto_commit=false" \
+    "$(run_auto '{"auto_commit":{"default":true,"'"$stage_key"'":{"enabled":false}}}')"
+  assert_eq "$command_name: stage missing uses default true" "auto_commit=true" \
+    "$(run_auto '{"auto_commit":{"default":true}}')"
+  assert_eq "$command_name: both missing means false" "auto_commit=false" \
+    "$(run_auto '{"auto_commit":{}}')"
+  assert_eq "$command_name: stage 'maybe' falls to default false" "auto_commit=false" \
+    "$(run_auto '{"auto_commit":{"default":false,"'"$stage_key"'":{"enabled":"maybe"}}}')"
+  assert_eq "$command_name: stage 'Yes' means true" "auto_commit=true" \
+    "$(run_auto '{"auto_commit":{"default":false,"'"$stage_key"'":{"enabled":"Yes"}}}')"
+done
+
+echo "Test: labels.enabled in the collab reviewers command"
+COLLAB_MD="$REPO_ROOT/spex/extensions/spex-collab/commands/speckit.spex-collab.reviewers.md"
+COLLAB_CFG=".specify/extensions/spex-collab/collab-config.yml"
+run_labels() {
+  run_other_block "$COLLAB_MD" 'LABELS_ENABLED=\\$\\(yq' "$COLLAB_CFG" "$1" 'echo "labels=$LABELS_ENABLED"'
+}
+assert_eq "labels.enabled: false is honoured" "labels=false" "$(run_labels '{"labels":{"enabled":false}}')"
+assert_eq "labels.enabled: missing means true" "labels=true" "$(run_labels '{"labels":{}}')"
+assert_eq "labels.enabled: 'off' means false" "labels=false" "$(run_labels '{"labels":{"enabled":"off"}}')"
+
 echo "Test: no command file reads a boolean with // true or // false"
 # Only `// true` is the bug: it turns an explicit false into true. `// false` is harmless (false
 # stays false). Matches single- or double-quoted yq/jq queries, with or without -r, any spacing.
