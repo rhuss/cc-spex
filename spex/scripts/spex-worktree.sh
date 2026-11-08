@@ -13,6 +13,11 @@
 #   spex-worktree.sh adopt
 #       Legacy path: move a feature branch checked out in the main checkout
 #       into a new worktree (finalize fallback, ensure action).
+#   spex-worktree.sh stale
+#       Report-only: list the linked worktrees that are stale (branch merged
+#       into the default branch, upstream gone, or a detached HEAD reachable
+#       from the default branch). Never removes or fetches. prepare and adopt
+#       print the same findings as NOTICE lines; cleanup calls this directly.
 #
 # Output is line-oriented. The first stdout line is a machine-readable status
 # line (`WORKTREE_<STATUS> key=value ...`). Human-readable lines follow, and
@@ -43,6 +48,7 @@ Usage:
   spex-worktree.sh prepare --short-name <name> [--description <text>] [--branch <exact-name>]
   spex-worktree.sh finalize
   spex-worktree.sh adopt
+  spex-worktree.sh stale
 EOF
 }
 
@@ -444,6 +450,166 @@ clean_short_name() {
 }
 
 # ---------------------------------------------------------------------------
+# Stale worktree report
+#
+# One judgement of "is this worktree stale", used by the notice that prepare
+# and adopt print, and by the cleanup action. Report-only: nothing here
+# removes anything, and nothing here talks to the network (it reads what the
+# last fetch recorded, so specify never waits on a remote).
+# ---------------------------------------------------------------------------
+
+# Past this many stale worktrees the notice prints a count instead of a line each.
+STALE_NOTICE_MAX_LINES=3
+
+# True when <ancestor> is a commit reachable from <descendant>.
+commit_is_ancestor() {
+  git merge-base --is-ancestor "$1" "$2" 2>/dev/null
+}
+
+# True when a local branch has had commits since it was created: its reflog
+# holds more than the creation entry. A branch that never moved and sits at
+# the default branch's tip is a new, empty branch, not a merged one. Without
+# a reflog this says no, so such a branch is never reported.
+branch_has_moved() {
+  local entries
+  entries=$(git reflog show --format=%H "refs/heads/$1" -- 2>/dev/null | wc -l | tr -d ' ')
+  [ "${entries:-0}" -ge 2 ]
+}
+
+# True when the worktree at <path> holds work that removal would lose:
+# tracked changes, or untracked files that are not ignored. Files that
+# prepare copied in (recorded in the manifest) do not count. Ignored files
+# are not counted either, the same rule `git worktree remove` applies.
+# Fails closed: an unreadable worktree counts as dirty.
+worktree_is_dirty() {
+  local wt="$1" gd manifest tracked current extras path
+  tracked=$(git -C "$wt" status --porcelain --untracked-files=no 2>/dev/null) || return 0
+  [ -z "$tracked" ] || return 0
+  current=$(untracked_manifest "$wt") || return 0
+  [ -n "$current" ] || return 1
+  extras="$current"
+  gd=$(worktree_git_dir "$wt") || return 0
+  manifest="$gd/$MARKER_MANIFEST"
+  if [ -f "$manifest" ]; then
+    extras=$(printf '%s\n' "$current" | grep -vxF -f "$manifest" || true)
+  fi
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    path="${path#*$'\t'}"
+    git -C "$wt" check-ignore -q -- "$path" 2>/dev/null || return 0
+  done <<< "$extras"
+  return 1
+}
+
+# stale_entry <path> <head-sha> <branch-or-empty> <default> <default-tip> <current-root>
+# Print one record for a worktree that is stale, nothing otherwise:
+#   <STALE|DIRTY> <path> <branch|(detached)> <reasons> <origin> <ahead>
+# tab separated. DIRTY is a stale worktree with changes that removal would
+# lose. Reasons (comma separated):
+#   merged          the branch tip is reachable from the default branch
+#   upstream-gone   the branch had an upstream and the last fetch recorded it
+#                   as deleted (the usual trace of a squash merge)
+#   detached-merged detached HEAD, reachable from the default branch
+# origin is `spex` for a worktree this script created (or a feature branch)
+# and `other` for anything else, such as an agent or a hand-made worktree.
+# ahead is the number of commits that are on no part of the default branch.
+# Never reported: the current worktree, locked or missing ones, the default
+# branch, and worktrees prepare has not finalized (cleanup handles those).
+stale_entry() {
+  local path="$1" head="$2" branch="$3" default="$4" tip="$5" me="$6"
+  local real gd reasons="" track origin ahead state
+  real=$(cd "$path" 2>/dev/null && pwd -P) || return 0
+  [ "$real" != "$me" ] || return 0
+  gd=$(worktree_git_dir "$real") || return 0
+  [ ! -f "$gd/$MARKER_PREPARED" ] || return 0
+  [ -n "$head" ] || return 0
+
+  if [ -n "$branch" ]; then
+    [ "$branch" != "$default" ] || return 0
+    if [ "$head" = "$tip" ]; then
+      if branch_has_moved "$branch"; then reasons="merged"; fi
+    elif commit_is_ancestor "$head" "$tip"; then
+      reasons="merged"
+    fi
+    track=$(git for-each-ref --format='%(upstream:track)' "refs/heads/$branch" 2>/dev/null || true)
+    if [ "$track" = "[gone]" ]; then
+      reasons="${reasons:+$reasons,}upstream-gone"
+    fi
+  else
+    if [ "$head" != "$tip" ] && commit_is_ancestor "$head" "$tip"; then
+      reasons="detached-merged"
+    fi
+  fi
+  [ -n "$reasons" ] || return 0
+
+  origin="other"
+  if created_by_prepare "$real" || { [ -n "$branch" ] && is_feature_branch "$branch"; }; then
+    origin="spex"
+  fi
+  ahead=$(git rev-list --count "$tip..$head" 2>/dev/null || echo "?")
+  state="STALE"
+  if worktree_is_dirty "$real"; then state="DIRTY"; fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$state" "$real" "${branch:-(detached)}" "$reasons" "$origin" "$ahead"
+}
+
+# stale_records <default> <default-tip> <current-root>: one record per stale
+# linked worktree. The main checkout (first entry), locked and prunable
+# (directory missing) worktrees are skipped here, so no caller can offer them.
+stale_records() {
+  local default="$1" tip="$2" me="$3" line path="" head="" branch="" locked="" prunable="" index=0
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        path="${line#worktree }"; head=""; branch=""; locked=""; prunable=""
+        index=$((index + 1))
+        ;;
+      "HEAD "*) head="${line#HEAD }" ;;
+      "branch "*) branch="${line#branch refs/heads/}" ;;
+      locked*) locked=yes ;;
+      prunable*) prunable=yes ;;
+      "")
+        if [ "$index" -gt 1 ] && [ -z "$locked" ] && [ -z "$prunable" ] && [ -n "$path" ]; then
+          stale_entry "$path" "$head" "$branch" "$default" "$tip" "$me"
+        fi
+        path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null; echo)
+}
+
+# print_stale_notice: report-only lines for the stale worktrees, printed when
+# a new worktree is created. Never prompts, never fails, prints nothing when
+# there is nothing stale.
+print_stale_notice() {
+  local report line state path branch reasons origin ahead shown=0 stale=0 dirty=0 default
+  report=$(cmd_stale 2>/dev/null) || return 0
+  default=$(printf '%s\n' "$report" | sed -n '1s/.* default=//p')
+  while IFS=$'\t' read -r state path branch reasons origin ahead; do
+    case "$state" in
+      STALE) stale=$((stale + 1)) ;;
+      DIRTY) dirty=$((dirty + 1)) ;;
+      *) continue ;;
+    esac
+  done <<< "$report"
+  [ $((stale + dirty)) -gt 0 ] || return 0
+
+  if [ "$stale" -le "$STALE_NOTICE_MAX_LINES" ]; then
+    while IFS=$'\t' read -r state path branch reasons origin ahead; do
+      [ "$state" = "STALE" ] || continue
+      echo "NOTICE: stale worktree $(display_path "$path") ($branch): $reasons"
+      shown=$((shown + 1))
+    done <<< "$report"
+  elif [ "$stale" -gt 0 ]; then
+    echo "NOTICE: $stale stale worktrees (merged into ${default:-the default branch}, or their upstream branch is gone)"
+  fi
+  if [ "$dirty" -gt 0 ]; then
+    echo "NOTICE: $dirty more stale worktree(s) have uncommitted or untracked changes and are kept"
+  fi
+  echo "NOTICE: review them with /speckit-spex-worktrees-manage cleanup (nothing was removed)"
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # Subcommands
 # ---------------------------------------------------------------------------
 
@@ -604,6 +770,7 @@ prepare_late() {
   fi
   [ -z "$moved_msg" ] || echo "$moved_msg"
   echo "Worktree ready at $(display_path "$path") on branch $branch. Continue /speckit-specify there."
+  print_stale_notice || true
   echo "cd $path"
 }
 
@@ -742,6 +909,7 @@ cmd_prepare() {
   else
     echo "The directory name is provisional: run the rest of /speckit-specify there, and after git.feature has created the feature branch inside the worktree, finalize renames the directory after the branch."
   fi
+  print_stale_notice || true
   echo "cd $path"
 }
 
@@ -1145,6 +1313,7 @@ Assisted-By: 🤖 Claude Code" -- "$spec_dir") || die "committing $spec_dir to $
   else
     echo "Worktree created at $(display_path "$path"). The main checkout is back on $default."
   fi
+  print_stale_notice || true
   echo "cd $path"
 }
 
@@ -1153,10 +1322,30 @@ cmd_adopt() {
   adopt_impl "WORKTREE_CREATED"
 }
 
+# Report-only: list the linked worktrees that are stale. Changes nothing and
+# never fetches. Output: the status line, then one tab-separated record per
+# stale worktree (see stale_entry for the fields).
+cmd_stale() {
+  [ $# -eq 0 ] || { usage; exit 2; }
+  local default tip me records stale dirty
+  if ! default=$(resolve_default_branch) || ! tip=$(default_tip "$default"); then
+    echo "WORKTREE_STALE_SKIPPED reason=no-default-branch"
+    return 0
+  fi
+  me=$(current_root) || die "not inside a git working tree"
+  records=$(stale_records "$default" "$tip" "$me")
+  stale=$(printf '%s\n' "$records" | awk -F'\t' '$1 == "STALE" { n++ } END { print n + 0 }')
+  dirty=$(printf '%s\n' "$records" | awk -F'\t' '$1 == "DIRTY" { n++ } END { print n + 0 }')
+  echo "WORKTREE_STALE count=$stale dirty=$dirty default=$default"
+  if [ -n "$records" ]; then
+    printf '%s\n' "$records"
+  fi
+}
+
 main() {
   local sub="${1:-}"
   case "$sub" in
-    prepare|finalize|adopt) ;;
+    prepare|finalize|adopt|stale) ;;
     -h|--help) usage; exit 0 ;;
     *) usage; exit 2 ;;
   esac
@@ -1166,6 +1355,7 @@ main() {
     prepare) cmd_prepare "$@" ;;
     finalize) cmd_finalize "$@" ;;
     adopt) cmd_adopt "$@" ;;
+    stale) cmd_stale "$@" ;;
   esac
 }
 
