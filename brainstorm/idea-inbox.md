@@ -318,3 +318,39 @@ _Review-related ideas (goal-alignment-skip-behavior, spec-completeness, platform
 - **Summary**: Run from the main checkout on the default branch, `/speckit-spex-finish` never looks at worktrees, so it verified an old spec that was already on main while the feature the user meant (implemented, uncommitted) sat in `.claude/worktrees/<branch>`.
 
 > After a `/clear` the session was in the main checkout on `main`. `.spex-state` and `feature.json` are per worktree, so finish resolved no active feature, fell back to `specs/main`, and verify picked the only spec present on main (an already-landed one). The "already on the default branch, no merge needed" stop sits in Phase 2, after the full verification, so a long verify ran against the wrong feature before finish found it had nothing to land. Proposed fixes: (1) when finish or verify starts on the default branch or cannot resolve a feature, list `git worktree list` entries and their `.specify/.spex-state`; if a worktree holds an active feature, stop and name it with its path and state (for example "002-x in .claude/worktrees/002-x: implemented, uncommitted changes; run finish there"). `spex-finish-context.sh` already calls `git worktree list`, so this is a small addition. (2) Move the default-branch check ahead of Phase 0 so nothing is verified when there is nothing to land. (3) Let verify's spec picker include specs from active worktrees, labeled with their path. (4) Optionally, show "N active features in worktrees" in the status line of the main checkout. Related: `custom-branch-repair-gap`, `hook-commit-target-cwd`.
+
+### operationalize-converge-hook-skip
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: FR-017 requires the evolve-invoked /speckit-implement to skip its after_implement hooks, but names no concrete lever; the recursion guard is stated, not operationalized.
+
+> after_implement hooks are fired by harness/extension config, not agent intent. Specify a concrete suppressor (e.g. an implement flag or a .spex-state field the spex-gates hook checks) and add a defense-in-depth re-entry guard to review-code.md.
+
+### anchor-persistence-model-matcher
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: The "first match anywhere" persistence-model matcher can mis-select the model from explanatory prose that mentions a model before the real declaration.
+
+> Prefer last match, or require a standalone list item in a known section, or ignore matches inside code spans / mid-sentence. Impact is currently conservative (cannot destroy completed-task history), so this is robustness hardening.
+
+### id-less-supersede-in-contract-and-converge-guidance
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: Contract section 4 and the FR-012 converge hand-off guidance name only "SUPERSEDED by <ID>" and "RETIRED", omitting the ID-less bare "**SUPERSEDED**" form that contract section 1 defines.
+
+> The downstream filters and evolve guard were extended to recognize the bare form, but the verbatim converge-guidance block was left aligned to the contract. A future contract revision should add the ID-less form so the guidance can include it without drifting from the contract.
+
+### single-source-the-two-help-files
+
+- **Source**: deep-review
+- **Date**: 2026-11-06
+- **Reference**: 059-evolve-converge-cascade
+- **Summary**: spex/docs/help.md and spex/extensions/spex/docs/help.md are maintained as near-duplicates and have already drifted on command naming.
+
+> The flow-back/analyze content is now duplicated across both. Consider single-sourcing to prevent further drift.

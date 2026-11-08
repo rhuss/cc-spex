@@ -5,7 +5,7 @@
 #
 # Arguments:
 #   harness      - claude | codex | opencode | generic
-#   commands-dir - path to installed .specify/extensions/ directory
+#   commands-dir - installed .specify/extensions/ or generated skills directory
 #   adapters-dir - path to spex/scripts/adapters/ source directory
 #
 # Behavior:
@@ -61,15 +61,18 @@ done
 file_count=0
 changed_count=0
 
-for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
+for cmd_file in "$COMMANDS_DIR"/*/commands/*.md "$COMMANDS_DIR"/*/SKILL.md; do
   [ -f "$cmd_file" ] || continue
+  # A harness skill directory can also contain user/plugin skills. Leave
+  # marker-free skills byte-identical, including read-only files.
+  case "$cmd_file" in
+    */SKILL.md) grep -qE '\{/?harness:[a-z][a-z0-9-]*\}' "$cmd_file" || continue ;;
+  esac
   file_count=$((file_count + 1))
 
   rel_path="${cmd_file#"$COMMANDS_DIR"/}"
-  ext_name=$(echo "$rel_path" | cut -d'/' -f1)
-
-  mkdir -p "$TMPDIR_WORK/$ext_name/commands"
   dest="$TMPDIR_WORK/$rel_path"
+  mkdir -p "$(dirname "$dest")"
 
   cp "$cmd_file" "$dest"
 
@@ -189,7 +192,7 @@ for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
 done
 
 # Phase 3: Post-adaptation validation - scan for leftover markers
-for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
+for cmd_file in "$COMMANDS_DIR"/*/commands/*.md "$COMMANDS_DIR"/*/SKILL.md; do
   [ -f "$cmd_file" ] || continue
   rel_path="${cmd_file#"$COMMANDS_DIR"/}"
   dest="$TMPDIR_WORK/$rel_path"
@@ -204,7 +207,7 @@ for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
 done
 
 if [ "$DRY_RUN" = true ]; then
-  for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
+  for cmd_file in "$COMMANDS_DIR"/*/commands/*.md "$COMMANDS_DIR"/*/SKILL.md; do
     [ -f "$cmd_file" ] || continue
     rel_path="${cmd_file#"$COMMANDS_DIR"/}"
     dest="$TMPDIR_WORK/$rel_path"
@@ -218,12 +221,14 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 # Copy transformed files into place (re-running setup restores neutral state on failure)
-for cmd_file in "$COMMANDS_DIR"/*/commands/*.md; do
+for cmd_file in "$COMMANDS_DIR"/*/commands/*.md "$COMMANDS_DIR"/*/SKILL.md; do
   [ -f "$cmd_file" ] || continue
   rel_path="${cmd_file#"$COMMANDS_DIR"/}"
   dest="$TMPDIR_WORK/$rel_path"
   [ -f "$dest" ] || continue
-  cp "$dest" "$cmd_file"
+  if ! cmp -s "$dest" "$cmd_file"; then
+    cp "$dest" "$cmd_file"
+  fi
 done
 
 echo "Adapted $changed_count of $file_count command files for $HARNESS" >&2

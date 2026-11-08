@@ -264,6 +264,7 @@ render_flow() {
         failed)      gate_wt="${RED}WT ✗ ${wt_done}/${wt_total}${RESET}" ;;
         in_progress) gate_wt="${YELLOW}WT ${wt_done}/${wt_total}${RESET}" ;;
         drafted)     gate_wt="${DIM}WT ◌ 0/${wt_total}${RESET}" ;;
+        stale)       gate_wt="${YELLOW}WT ⟳ 0/${wt_total}${RESET}" ;;
       esac
     fi
   fi

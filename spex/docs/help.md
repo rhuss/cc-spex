@@ -59,6 +59,9 @@ SPEC-KIT COMMANDS (core workflow)
   /speckit-checklist   Generate a custom checklist for the feature
   /speckit-clarify     Identify underspecified areas in the spec
   /speckit-analyze     Cross-artifact consistency and quality analysis
+                       NOTE: After an evolve, findings about SUPERSEDED/
+                       RETIRED items or their completed tasks are expected
+                       and not actionable.
   /speckit-taskstoissues  Convert tasks into GitHub issues
   /speckit-constitution   Create or update project constitution
 
@@ -244,7 +247,16 @@ spex COMMANDS (helpers and configuration)
   /speckit-spex-gates-review-code  Check code compliance against spec
                                 (includes spec-declared constants drift check)
   /speckit-spex-gates-verify  Verification only (finish runs it first)
-  /speckit-spex-evolve        Reconcile spec/code drift
+  /speckit-spex-evolve        Reconcile spec/code drift. Once tasks are
+                              complete, flow-back: mark old requirements
+                              SUPERSEDED by <ID> / RETIRED, add dated revision
+                              notes, then /speckit-converge appends remaining
+                              work (tasks.md stays append-only; never
+                              regenerated). A requirement-changing session
+                              resets the C/S/P/R review gates and marks the
+                              walkthrough stale (WT ⟳). Persistence model
+                              (constitution): flow-back (default),
+                              flow-forward, or living-spec.
   /speckit-spex-clear         Clear stuck state, dismiss status line
   /speckit-spex-help          This quick reference
 
@@ -268,7 +280,9 @@ CLOSING OUT A FEATURE (after review passes)
   /speckit-spex-finish first runs /speckit-spex-gates-verify and stops
   before squash or merge if any gate fails (it skips the run when a pass is
   already recorded for the current code). It then checks the walkthrough
-  gate (runs it if needed, skips if already completed at current commit),
+  gate (runs it if needed, skips if already completed at current commit;
+  a drafted runbook can also be skipped and marked done, recording every
+  step as skipped),
   squashes all commits into one with a conventional commit message, and
   merges to main with worktree cleanup, or keeps the branch.
   Use --no-verify to skip verification and --no-walkthrough to skip the

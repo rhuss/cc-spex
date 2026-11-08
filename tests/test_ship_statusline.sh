@@ -197,6 +197,30 @@ golden_check "watch" \
   $'\xf0\x9f\x91\x80 \033[36m\033[1mPR #42\033[0m \033[2m|\033[0m \033[2m0m\033[0m \033[2m|\033[0m \033[32mCI \xe2\x9c\x93\033[0m \033[31mF:1\033[0m \033[2m|\033[0m \033[35mT:2\033[0m \033[2m|\033[0m \033[32m42%\033[0m.'
 rm -rf "$GOLDEN_DIR"
 
+# --- Walkthrough (WT) segment, including the stale marker (spec 059 FR-031) ---
+echo "Test: WT segment renders drafted, passed, and stale runbooks"
+WT_DIR=$(mktemp -d); WT_DIR="$(cd "$WT_DIR" && pwd -P)"
+RB_STATUS="$(cd "$(dirname "$STATUSLINE")" && pwd)/spex-runbook-status.sh"
+(cd "$WT_DIR" && git init -q && git -c user.email=t@e -c user.name=t commit -q --allow-empty -m init)
+mkdir -p "$WT_DIR/.specify" "$WT_DIR/specs/001-x"
+touch "$WT_DIR/specs/001-x/spec.md" "$WT_DIR/specs/001-x/plan.md"
+printf '%s' '{"mode":"flow","spec_dir":"specs/001-x","implemented":true,"clarified":true,"review_spec_passed":true}' \
+  > "$WT_DIR/.specify/.spex-state"
+printf '# Try it: Thing\n\nbody\n' > "$WT_DIR/specs/001-x/RUNBOOK.md"
+wt_line() {
+  (cd "$WT_DIR" && env -u CLAUDE_PROJECT_DIR SHIP_STATE_FILE="$WT_DIR/.specify/.spex-state" \
+    bash "$STATUSLINE" </dev/null 2>/dev/null) | sed $'s/\033\\[[0-9;]*m//g'
+}
+(cd "$WT_DIR" && "$RB_STATUS" init specs/001-x/RUNBOOK.md --feature 001-x --mode light --steps 3)
+assert_contains "drafted runbook shows WT ◌" "WT ◌ 0/3" "$(wt_line)"
+for n in 1 2 3; do (cd "$WT_DIR" && "$RB_STATUS" step specs/001-x/RUNBOOK.md "$n" passed >/dev/null); done
+assert_contains "passed runbook shows WT ✓" "WT ✓ 3/3" "$(wt_line)"
+(cd "$WT_DIR" && "$RB_STATUS" reset specs/001-x --reason "spec evolved 2026-11-08: FR-029" >/dev/null)
+OUT=$(wt_line)
+assert_contains "stale runbook shows WT ⟳" "WT ⟳ 0/3" "$OUT"
+assert_not_contains "stale runbook no longer shows WT ✓" "WT ✓" "$OUT"
+rm -rf "$WT_DIR"
+
 # --- Banner mode (--banner): plain-text ship line for Codex/OpenCode ---
 
 BANNER_DIR=""

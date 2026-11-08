@@ -171,6 +171,27 @@ assert_contains "PIPELINE_COMPLETE timing" "PIPELINE_COMPLETE" "$CODEX_SEC"
 assert_not_contains "no raw marker" "{harness:ship-progress}" "$CODEX_SHIP"
 assert_not_contains "no raw closing marker" "{/harness:ship-progress}" "$CODEX_SHIP"
 
+# spec-kit emits skills during extension installation, before setup adapts
+# the command sources. Adapt the emitted copy that Codex actually reads.
+echo "Test: Codex generated skill adaptation"
+SKILLS="$TMP/skills"
+mkdir -p "$SKILLS/speckit-spex-ship"
+cp "$EXTENSIONS/$SHIP_REL" "$SKILLS/speckit-spex-ship/SKILL.md"
+mkdir -p "$SKILLS/unrelated"
+printf '%s' '# User skill without a trailing newline' > "$SKILLS/unrelated/SKILL.md"
+cp "$SKILLS/unrelated/SKILL.md" "$TMP/unrelated-original"
+chmod 444 "$SKILLS/unrelated/SKILL.md"
+"$ADAPT" codex "$SKILLS" "$ADAPTERS" >/dev/null 2>&1
+assert_contains "generated skill updates native progress" 'Call `update_plan`' "$SKILLS/speckit-spex-ship/SKILL.md"
+assert_not_contains "generated skill has no raw markers" '{harness:' "$SKILLS/speckit-spex-ship/SKILL.md"
+if cmp -s "$TMP/unrelated-original" "$SKILLS/unrelated/SKILL.md"; then
+  pass "unrelated read-only skill is left untouched"
+else
+  fail "unrelated skill was changed"
+fi
+"$ADAPT" --dry-run codex "$SKILLS" "$ADAPTERS" > "$TMP/skill-diff" 2>/dev/null
+if [ ! -s "$TMP/skill-diff" ]; then pass "generated skill adaptation is idempotent"; else fail "generated skill adaptation is not idempotent"; fi
+
 # --- (d) OpenCode adaptation carries the banner rule only ---
 echo "Test: OpenCode adaptation of the ship command"
 adapt_copy opencode "$EXTENSIONS" "$TMP/opencode"

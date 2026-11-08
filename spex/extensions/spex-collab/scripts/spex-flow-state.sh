@@ -8,6 +8,7 @@
 #   spex-flow-state.sh clarified                  # Mark clarification complete
 #   spex-flow-state.sh implemented                # Mark implementation complete
 #   spex-flow-state.sh gate <name>                # Mark quality gate passed
+#   spex-flow-state.sh invalidate                 # Reset clarify + review gates (after a spec amendment)
 #   spex-flow-state.sh cleanup                    # Remove state file
 #
 # Gate actions output confirmation to stdout; other actions are silent unless an error occurs.
@@ -142,6 +143,21 @@ do_gate() {
   fi
 }
 
+do_invalidate() {
+  # Called by speckit-spex-evolve after a requirement-changing spec amendment
+  # (FR-029). Resets the clarify and review gates so the status line no longer
+  # claims checks that ran against the old spec. Never creates a state file and
+  # never touches ship state; `implemented` and the triage gates are unchanged.
+  if ! is_flow; then
+    exit 0
+  fi
+  local tmp
+  tmp=$(mktemp)
+  jq '.clarified = false | .review_spec_passed = false | .review_plan_passed = false | .review_code_passed = false' \
+    "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
+  echo "gates invalidated"
+}
+
 do_cleanup() {
   rm -f "$STATE_FILE"
 }
@@ -165,11 +181,14 @@ case "${1:-}" in
     shift
     do_gate "${1:-}"
     ;;
+  invalidate)
+    do_invalidate
+    ;;
   cleanup)
     do_cleanup
     ;;
   *)
-    echo "Usage: spex-flow-state.sh {create|running|clarified|implemented|gate|cleanup}" >&2
+    echo "Usage: spex-flow-state.sh {create|running|clarified|implemented|gate|invalidate|cleanup}" >&2
     exit 2
     ;;
 esac

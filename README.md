@@ -110,6 +110,15 @@ Because the spec is already reviewed and agreed, reviewers already understand th
 
 If spec/code drift is detected during implementation, use `/speckit-spex-evolve` to reconcile: either update the spec or fix the code, then continue.
 
+Once a feature has completed tasks, evolve is spex's **flow-back** implementation. Rather than regenerating `plan.md` and `tasks.md` (which would destroy completed-task history), it records accepted changes in place and lets `/speckit-converge` append any remaining work:
+
+- **Supersede / retire markers**: a replaced requirement keeps its text and gains a trailing `**SUPERSEDED by <new-ID>**`, with the replacement added under a new ID; a dropped one is marked `**RETIRED**`. IDs are never reused, so the history stays followable.
+- **Revision notes**: each evolve session appends a dated entry to a `## Revision Notes` section in `spec.md` (and in `plan.md` when a design decision changes), so a reader can see what changed and why without consulting git history.
+- **Converge hand-off**: after the spec and plan edits, evolve runs `/speckit-converge` once. If the code already satisfies the live spec, converge reports converged and `tasks.md` is byte-identical; if work remains, converge appends a traced Convergence phase and implementation builds it, followed by one confirming converge.
+- **Append-only `tasks.md`**: evolve never edits or regenerates `tasks.md`; only `/speckit-converge` appends to it, so every completed task keeps its mark.
+- **Stale checks reset**: when a session supersedes, retires, or adds requirements, evolve resets the clarify and review gates (the status line shows C/S/P/R as not passed again) and marks the walkthrough runbook stale (`WT ⟳ 0/N`), because those checks ran against the old spec. Finish and the walkthrough then offer to refresh and rerun it.
+- **Persistence model**: flow-back is the default (`Persistence model: flow-back` in the constitution). A project can instead declare `flow-forward` (delivered feature directories are immutable; changes go into a new feature directory) or `living-spec` (plan/tasks are regenerated only before any task is complete).
+
 ### Context Management
 
 **Start each spec-kit/spex session in a fresh Claude Code session.** The SDD workflow orchestration requires a non-fatigued context to be followed rigorously. Reusing a session that already has significant conversation history leads to the model taking shortcuts, skipping quality gates, or collapsing workflow steps. Open a new terminal or run `claude` fresh before starting a spec-kit workflow.
@@ -447,7 +456,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/spex:init` | (plugin) | Initialize Spec-Kit, install extensions, configure permissions (6.x: delegates to setup workflow) |
 | `/speckit-spex-brainstorm` | spex | Refine a rough idea into a structured brainstorm document as input for `/speckit-specify`. `--sync`: archive completed brainstorms to `brainstorm/attic/` |
 | `/speckit-spex-ship` | spex | Run the full workflow autonomously |
-| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution |
+| `/speckit-spex-evolve` | spex | Reconcile spec/code drift with guided resolution; flow-back (supersede/retire markers, revision notes, append-only converge hand-off) once tasks are complete |
 | `/speckit-spex-clear` | spex | Clear stuck state, dismiss status line |
 | `/speckit-spex-help` | spex | Show a quick reference for all commands |
 | `/speckit-spex-gates-review-spec` | spex-gates | Validate spec (fires automatically via hook) |
@@ -455,7 +464,7 @@ These commands are provided by spex extensions and available after `/spex:init`.
 | `/speckit-spex-gates-review-code` | spex-gates | Review code compliance (fires automatically via hook), includes spec-declared constants drift check |
 | `/speckit-spex-walkthrough` | spex | Try the feature: a testability check (one line and no files when nothing can be tried by hand), a tutorial-style `RUNBOOK.md` (each step says why, the exact command, and what you should see), then a co-pilot session where you run each command yourself (it lands on the clipboard) or let the agent run it with full expected-versus-actual output. Light and full fixture modes; advisory (never hard-blocks). `--draft` drafts without running; `--force` overrides a not-testable verdict; `<feature>` runs a drafted runbook later |
 | `/speckit-spex-submit` | spex | Push and create PR for team review. Runs verification, commits outstanding changes, creates PR with spec-linked body and REVIEWERS.md. `--watch`: monitor CI, auto-fix failures, triage review comments |
-| `/speckit-spex-finish` | spex | Verify + walkthrough gate + squash + merge/keep (land the code). Runs `/speckit-spex-gates-verify` first and stops before squash or merge when any gate fails (skips the run when a pass is already recorded for the current code). Then reads the runbook status (from `/speckit-spex-walkthrough`) and offers to run or resume it when it is not passed, squashes commits with a conventional commit message, merges or keeps. When spex-detach enabled: archives specs to sibling repo and preserves the spec dir back to the main checkout before removing the worktree. `--no-verify`: skip verification. `--no-walkthrough`: skip the walkthrough gate |
+| `/speckit-spex-finish` | spex | Verify + walkthrough gate + squash + merge/keep (land the code). Runs `/speckit-spex-gates-verify` first and stops before squash or merge when any gate fails (skips the run when a pass is already recorded for the current code). Then reads the runbook status (from `/speckit-spex-walkthrough`) and offers to run or resume it when it is not passed (a drafted runbook can also be skipped and marked done, recording every step as skipped), squashes commits with a conventional commit message, merges or keeps. When spex-detach enabled: archives specs to sibling repo and preserves the spec dir back to the main checkout before removing the worktree. `--no-verify`: skip verification. `--no-walkthrough`: skip the walkthrough gate |
 | `/speckit-spex-gates-verify` | spex-gates | Verification only (finish runs it first) |
 | `/speckit-spex-deep-review-review` | spex-deep-review | Multi-perspective code review with 5 agents |
 | `/speckit-spex-worktrees-manage` | spex-worktrees | List, finish, or clean up git worktrees (prepare and finalize run as specify hooks) |
