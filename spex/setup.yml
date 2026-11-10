@@ -605,8 +605,11 @@ steps:
                 PERMS="$SOURCE/scripts/spex-permissions.sh"
 
                 # spex-permissions.sh appends the missing rules to
-                # .claude/settings.json without re-sorting the existing list
-                # and rewrites legacy Tool(*) rules. Bare Bash, Read, Edit and
+                # .claude/settings.local.json (the personal, uncommitted file:
+                # a permission level is one person's trust decision, so it
+                # never goes into the committed .claude/settings.json) without
+                # re-sorting the existing list, and rewrites legacy Tool(*)
+                # rules there and in settings.json. Bare Bash, Read, Edit and
                 # Write allow every command and path; do not write Tool(*)
                 # forms, current Claude Code releases flag them. The script
                 # reports its own result ("Permissions configured in ..." or
@@ -619,7 +622,7 @@ steps:
                     EnterPlanMode ExitPlanMode EnterWorktree ExitWorktree
                 else
                   sh "$PERMS" apply \
-                    Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+                    Skill 'Bash(specify *)' 'Bash(/*/spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
                 fi
           codex:
             - id: codex-permissions

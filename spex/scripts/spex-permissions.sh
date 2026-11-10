@@ -10,7 +10,8 @@
 #            Write(*) to their bare tool names in .claude/settings.json and
 #            .claude/settings.local.json under DIR, when those files exist.
 #   apply    Append each RULE that is missing to permissions.allow in
-#            .claude/settings.json (created when missing), keeping the order
+#            .claude/settings.local.json (created when missing; the personal,
+#            uncommitted file, never the committed settings.json), keeping the order
 #            of the existing entries, optionally set permissions.defaultMode,
 #            then migrate legacy rules in the same file.
 #
@@ -43,6 +44,10 @@ set -f
 unset CDPATH
 
 SETTINGS_FILES=".claude/settings.json .claude/settings.local.json"
+# apply writes only here: the personal, uncommitted file. Rules such as YOLO
+# are one person's trust decision and must not land in the committed
+# .claude/settings.json (issue #62). migrate still repairs both files.
+APPLY_FILE=".claude/settings.local.json"
 
 usage_text() {
   echo "Usage: spex-permissions.sh migrate [--root DIR]"
@@ -303,10 +308,10 @@ else
 end
 '
 
-# do_apply RULE...: merge the rules into .claude/settings.json under $ROOT.
+# do_apply RULE...: merge the rules into $APPLY_FILE under $ROOT.
 # Never fails the run; problems are reported as warnings.
 do_apply() {
-  _rel=".claude/settings.json"
+  _rel="$APPLY_FILE"
   # From here on, every read and write uses the checked canonical path.
   _file=$(project_target "$_rel") || return 0
   # One JSON string per argument, in argument order, with argument boundaries

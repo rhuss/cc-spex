@@ -426,6 +426,12 @@ Other rules and settings stay untouched, and each changed file is reported
 with a `Migrated:` line. The YOLO permission level now writes the bare names
 directly.
 
+The Standard and YOLO permission rules go to `.claude/settings.local.json`,
+the personal file that is not committed, and never to the shared
+`.claude/settings.json`: a permission level is one person's trust decision, so
+it must not reach teammates through the repository. The init question names
+the file before you choose.
+
 ## Commands Reference
 
 ### Workflow Commands

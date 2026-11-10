@@ -31,9 +31,9 @@ You MUST ask all 3 questions below in a SINGLE AskUserQuestion call. Do NOT spli
    - "spex-detach": "Strip spec artifacts at PR time for contributing to repos that don't use SDD"
 
 3. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
-   - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
-   - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows"
-   - "None": "Confirm every spex command before execution"
+   - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI). Rules are written to .claude/settings.local.json (personal, not committed)"
+   - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows. Written to .claude/settings.local.json (personal, not committed)"
+   - "None": "Confirm every spex command before execution. No permission rules are written"
 
 Then apply the selections:
 
@@ -75,14 +75,14 @@ Run the block as one Bash call so `set -e` stops it before `persist` when a step
 - **Standard**:
   ```bash
   sh "<scripts>/spex-permissions.sh" apply \
-    Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+    Skill 'Bash(specify *)' 'Bash(/*/spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
   sh "<scripts>/spex-permissions.sh" migrate
   ```
 - **YOLO**:
   ```bash
   sh "<scripts>/spex-permissions.sh" apply --default-mode bypassPermissions \
     Bash Read Edit Write WebFetch WebSearch Skill \
-    'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+    'Bash(specify *)' 'Bash(/*/spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
   sh "<scripts>/spex-permissions.sh" migrate
   ```
   Note: `defaultMode: "bypassPermissions"` skips all permission prompts. The broad `allow` rules serve as additional fallback. Use this for unattended ship pipelines or when you trust the agent fully. The bare tool names `Bash`, `Read`, `Edit` and `Write` allow the tool for every command and every path, including sibling worktrees outside the working directory. Never write `Bash(*)`, `Read(*)`, `Edit(*)` or `Write(*)` instead: current Claude Code releases flag these forms, and `Read(*)`, `Edit(*)` and `Write(*)` only cover the working directories there.
@@ -91,7 +91,7 @@ Run the block as one Bash call so `set -e` stops it before `persist` when a step
   sh "<scripts>/spex-permissions.sh" migrate
   ```
 
-`apply` appends the missing rules to the project's `.claude/settings.json` (created when missing) without re-sorting the existing list, and leaves every other setting alone. `migrate` rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules to the bare names in `.claude/settings.json` and `.claude/settings.local.json`. Both print their results on stderr: `Permissions configured in .claude/settings.json (<n> rules added)`, `Default mode set to bypassPermissions in .claude/settings.json` when YOLO changed the default mode, one `Migrated: ...` line per repaired file, and `WARNING: ...` lines for files they left alone (including a project settings path that resolves to the user-level `~/.claude` settings, which spex never changes). Keep these lines for Step 4.
+`apply` appends the missing rules to the project's `.claude/settings.local.json` (created when missing), never to the committed `.claude/settings.json`, because a permission level is one person's trust decision. It does not re-sort the existing list and leaves every other setting alone. `migrate` rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules to the bare names in `.claude/settings.json` and `.claude/settings.local.json`. Both print their results on stderr: `Permissions configured in .claude/settings.local.json (<n> rules added)`, `Default mode set to bypassPermissions in .claude/settings.local.json` when YOLO changed the default mode, one `Migrated: ...` line per repaired file, and `WARNING: ...` lines for files they left alone (including a project settings path that resolves to the user-level `~/.claude` settings, which spex never changes). Keep these lines for Step 4.
 
 ## Step 3: Detect companion plugins and seed memory
 
