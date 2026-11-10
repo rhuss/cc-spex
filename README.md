@@ -426,6 +426,17 @@ Other rules and settings stay untouched, and each changed file is reported
 with a `Migrated:` line. The YOLO permission level now writes the bare names
 directly.
 
+Every init run also protects project edits to the core spec-kit templates.
+`specify init --force` rewrites `.specify/templates/*.md` with the stock
+versions, so spex first compares each core template with the hash spec-kit
+recorded in `.specify/integrations/*.manifest.json`. An edited template is
+copied to `.specify/templates/overrides/<name>.md` and reported with a
+`Preserved:` line. spec-kit reads `overrides/` before the core templates and
+never writes there, so the customization keeps applying after the refresh.
+Commit the override. If an override already exists and differs from the edited
+core template, init stops before changing anything and names the file. Keep
+project-specific templates in `overrides/` from the start.
+
 ## Commands Reference
 
 ### Workflow Commands

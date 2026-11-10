@@ -781,6 +781,17 @@ migrate_permissions() {
   sh "$(dirname "$0")/spex-permissions.sh" migrate || true
 }
 
+# --- Keep local edits to core templates (spex-preserve-templates.sh) ---
+# `specify init --force` rewrites .specify/templates/*.md with the stock
+# versions. Copy edited core templates to .specify/templates/overrides/
+# first; stop before init when an edit conflicts with an existing override.
+preserve_templates() {
+  if ! sh "$(dirname "$0")/spex-preserve-templates.sh"; then
+    echo "ERROR: refresh stopped to keep local template edits (see above)"
+    exit 1
+  fi
+}
+
 # --- Refresh templates only ---
 do_refresh() {
   if ! command -v specify &>/dev/null; then
@@ -788,6 +799,7 @@ do_refresh() {
     exit 2
   fi
 
+  preserve_templates
   echo "Refreshing project templates..."
   if ! specify init --here --integration claude --script sh --force; then
     echo "ERROR: specify init failed"
@@ -809,6 +821,7 @@ do_refresh() {
 
 # --- Update protocol ---
 do_update() {
+  preserve_templates
   echo "Updating specify-cli from GitHub..."
   if ! uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git; then
     echo "ERROR: Failed to update specify-cli"

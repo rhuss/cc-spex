@@ -221,6 +221,18 @@ steps:
       fi
       printf "ok"
 
+  # `specify init --force` rewrites the core templates in
+  # .specify/templates/. Copy templates edited in the project to
+  # .specify/templates/overrides/ first (spec-kit reads overrides before the
+  # core file); a conflict with an existing override stops setup here.
+  # scripts/spex-setup-report.sh prints this step's stderr by its id.
+  - id: preserve-templates
+    type: shell
+    run: |
+      SOURCE="{{ steps.validate-source.output.stdout }}"
+      sh "$SOURCE/scripts/spex-preserve-templates.sh" || exit 1
+      printf "ok"
+
   - id: init-project
     type: shell
     run: |

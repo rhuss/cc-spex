@@ -187,6 +187,9 @@ spex COMMANDS (helpers and configuration)
                                            Write(*) allow rules to bare tool names
                                 --update: upgrade specify CLI and refresh
                                           (includes the permission rule migration)
+                                Every run copies edited core templates in
+                                .specify/templates/ to .specify/templates/overrides/
+                                before specify init --force resets them ("Preserved:")
                                 --clear: reset status line state
                                 6.x: delegates to setup.yml workflow when specify >= 0.7.4
                                      Any harness: specify workflow run spex/setup.yml

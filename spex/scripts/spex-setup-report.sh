@@ -7,6 +7,8 @@
 # `specify workflow run` captures the stderr of every shell step into the run
 # state (.specify/workflows/runs/<run-id>/state.json) instead of printing it.
 # This prints, on stderr, the messages users need to see:
+#   - the `Preserved: ...` and `WARNING: ...` lines from preserve-templates
+#     (core templates with local edits copied to .specify/templates/overrides/)
 #   - the extension selection changes (`Enabled:` / `Disabled:` lines and the
 #     summary), the spex-detach stealth-mode lines (written, repaired,
 #     verified or still visible), the legacy spex-detach migration note, and
@@ -39,7 +41,7 @@ fi
 STATUS=$(jq -r '.status // empty' "$STATE" 2>/dev/null)
 REPORT=$(jq -r '
   . as $state
-  | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions", "claude-statusline"] as $report
+  | ["preserve-templates", "snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions", "claude-statusline"] as $report
   | ( $report[] | ($state.step_results[.].output.stderr // empty) ),
     ( if ($state.status == "failed" or $state.status == "aborted")
       then

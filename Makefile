@@ -1,4 +1,4 @@
-.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-permissions test-detach test-workflow-setup test-generated-trees test-walkthrough test-statusline test-flow-state test-ship-state test-adapt test-codex-progress test-worktree release migrate sync-scripts sync-scripts-check help
+.PHONY: validate install uninstall reinstall check-upstream test-hook test-install test-install-remote test-setup-profile test-codex-plugin test-apply-extensions test-permissions test-detach test-workflow-setup test-generated-trees test-walkthrough test-statusline test-flow-state test-ship-state test-adapt test-codex-progress test-worktree test-preserve-templates release migrate sync-scripts sync-scripts-check help
 
 MARKETPLACE := spex-plugin-development
 PLUGIN := spex@$(MARKETPLACE)
@@ -55,6 +55,9 @@ test-codex-progress:
 test-worktree:
 	@tests/test_worktree.sh
 	@tests/test_init_worktrees_git.sh
+
+test-preserve-templates:
+	@tests/test_preserve_templates.sh
 
 test-walkthrough:
 	@tests/test_runbook_status.sh
