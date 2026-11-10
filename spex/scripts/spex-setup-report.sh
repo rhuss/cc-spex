@@ -39,7 +39,7 @@ fi
 STATUS=$(jq -r '.status // empty' "$STATE" 2>/dev/null)
 REPORT=$(jq -r '
   . as $state
-  | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions"] as $report
+  | ["snapshot-registry", "selected-extensions", "selected-security", "apply-extensions", "claude-permissions", "migrate-permissions", "claude-statusline"] as $report
   | ( $report[] | ($state.step_results[.].output.stderr // empty) ),
     ( if ($state.status == "failed" or $state.status == "aborted")
       then

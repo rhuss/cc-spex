@@ -517,11 +517,28 @@ steps:
             if [ -f "$SETTINGS" ]; then
               if command -v jq >/dev/null 2>&1 && jq -e '.statusLine' "$SETTINGS" >/dev/null 2>&1; then
                 CURRENT_CMD="$(jq -r '.statusLine.command // empty' "$SETTINGS")"
-                if [ -n "$CURRENT_CMD" ] && [ -f "$CURRENT_CMD" ]; then
+                if [ -n "$CURRENT_CMD" ]; then
+                  # A command that ENDS in our script name is ours. If it still resolves,
+                  # nothing to do; if the script is gone (older plugin-cache path, deleted
+                  # temp source), refresh it below and do not chain it. A command that only
+                  # mentions the script elsewhere (a wrapper) is someone else's and is chained.
                   case "$CURRENT_CMD" in
-                    *spex-ship-statusline.sh) exit 0 ;;
+                    *spex-ship-statusline.sh)
+                      if [ "$CURRENT_CMD" = "$ABS_SCRIPT" ] || [ -f "$CURRENT_CMD" ]; then
+                        exit 0
+                      fi
+                      CURRENT_CMD=""
+                      ;;
                   esac
-                  echo "$CURRENT_CMD" > "$CHAIN_FILE"
+                  # Save the whole command line (bare path or `bash script.sh --args`); if that
+                  # fails, keep the user's status line rather than replace it. The braces keep
+                  # the shell's own "cannot create" message out of the output.
+                  if [ -n "$CURRENT_CMD" ]; then
+                    if ! { printf '%s\n' "$CURRENT_CMD" > "$CHAIN_FILE"; } 2>/dev/null; then
+                      echo "  WARNING: could not save the existing status line to $CHAIN_FILE; leaving it unchanged" >&2
+                      exit 0
+                    fi
+                  fi
                 fi
               fi
               TMP=$(mktemp)
