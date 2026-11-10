@@ -214,7 +214,8 @@ settings_command() {
 CHAIN_REL=".claude/.spex-previous-statusline"
 
 for KIND in init setup; do
-  OK_VAR="${KIND^^}_OK"
+  # ${KIND^^} needs bash 4; stock macOS still ships bash 3.2.
+  OK_VAR="$(printf '%s' "$KIND" | tr '[:lower:]' '[:upper:]')_OK"
   if [ "${!OK_VAR}" != "yes" ]; then
     echo "  FAIL: could not extract the $KIND status-line step cleanly"; FAIL=$((FAIL + 1))
     continue
