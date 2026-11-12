@@ -1241,6 +1241,171 @@ assert_eq "no commit reachable from the feature branch only" "0" "$FEATURE_ONLY"
 assert_eq "main checkout never left main" "main" "$(sort -u "$TMPROOT/heads.txt" | tr '\n' ' ' | sed 's/ $//')"
 
 # ===========================================================================
+# Test cases: stale worktree report (stale subcommand and the create notice)
+# ===========================================================================
+
+TAB=$'\t'
+
+# stale_record <path>: the record the last `stale` run printed for a worktree.
+stale_record() {
+  printf '%s\n' "$OUT" | awk -F'\t' -v p="$1" '$2 == p'
+}
+
+# stale_summary <path>: state, branch, reasons, origin of that record.
+stale_summary() {
+  stale_record "$1" | cut -f1,3,4,5
+}
+
+# add_stale_wt <name> <branch>: a linked worktree on a new branch, with one commit.
+add_stale_wt() {
+  git -C "$REPO" worktree add -q -b "$2" "$WTS/$1" main
+  echo "$1" > "$WTS/$1/$1.txt"
+  git -C "$WTS/$1" add "$1.txt"
+  git -C "$WTS/$1" commit -qm "work on $1"
+}
+
+echo "Test: stale report covers merged, upstream-gone, detached, dirty, locked, current"
+make_repo
+WTS="$TMPROOT/wts"
+mkdir -p "$WTS"
+INITIAL=$(git -C "$REPO" rev-parse main)
+git init -q --bare "$TMPROOT/origin.git"
+git -C "$REPO" remote add origin "$TMPROOT/origin.git"
+git -C "$REPO" push -q origin main
+add_stale_wt 004-merged 004-merged
+add_stale_wt fix-typo fix/typo
+add_stale_wt 005-dirty 005-dirty
+add_stale_wt 006-locked 006-locked
+add_stale_wt 008-current 008-current
+add_stale_wt gone gone-branch
+add_stale_wt wip wip-branch
+git -C "$REPO" worktree add -q --detach "$WTS/det-unique" main
+echo "only here" > "$WTS/det-unique/only-here.txt"
+git -C "$WTS/det-unique" add only-here.txt
+git -C "$WTS/det-unique" commit -qm "commit on no branch"
+# gone-branch: pushed with an upstream, then deleted on the remote and pruned.
+git -C "$WTS/gone" push -q -u origin gone-branch
+git -C "$TMPROOT/origin.git" branch -q -D gone-branch
+git -C "$REPO" fetch -q --prune origin
+# The merged ones land on main (a merge commit each, so main moves on).
+for b in 004-merged fix/typo 005-dirty 006-locked 008-current; do
+  git -C "$REPO" merge -q --no-ff -m "merge $b" "$b"
+done
+git -C "$REPO" worktree add -q --detach "$WTS/det-merged" "$INITIAL"
+# A branch just created at main's tip has nothing of its own yet: it looks
+# the same as a fast-forward merged one, so it is not reported.
+git -C "$REPO" worktree add -q -b 007-fresh "$WTS/007-fresh" main
+echo "scratch" > "$WTS/005-dirty/scratch.txt"
+git -C "$REPO" worktree lock "$WTS/006-locked"
+BRANCHES_BEFORE=$(branch_count)
+WT_BEFORE=$(wt_count)
+
+run_wt "$REPO" stale
+assert_eq "exit code" "0" "$RC"
+assert_eq "status line counts" "WORKTREE_STALE count=5 dirty=1 default=main" "$(status_line)"
+assert_eq "merged NNN branch" "STALE${TAB}004-merged${TAB}merged${TAB}spex" "$(stale_summary "$WTS/004-merged")"
+assert_eq "merged fix/... branch" "STALE${TAB}fix/typo${TAB}merged${TAB}other" "$(stale_summary "$WTS/fix-typo")"
+assert_eq "upstream gone, not merged" "STALE${TAB}gone-branch${TAB}upstream-gone${TAB}other" "$(stale_summary "$WTS/gone")"
+assert_eq "detached HEAD reachable from main" "STALE${TAB}(detached)${TAB}detached-merged${TAB}other" "$(stale_summary "$WTS/det-merged")"
+assert_eq "merged but dirty is reported as dirty" "DIRTY${TAB}005-dirty${TAB}merged${TAB}spex" "$(stale_summary "$WTS/005-dirty")"
+assert_eq "current worktree is listed when run from main" "STALE${TAB}008-current${TAB}merged${TAB}spex" "$(stale_summary "$WTS/008-current")"
+assert_eq "unmerged branch not reported" "" "$(stale_record "$WTS/wip")"
+assert_eq "detached HEAD with its own commit not reported" "" "$(stale_record "$WTS/det-unique")"
+assert_eq "new empty branch not reported" "" "$(stale_record "$WTS/007-fresh")"
+assert_eq "locked worktree not reported" "" "$(stale_record "$WTS/006-locked")"
+assert_eq "main checkout not reported" "" "$(stale_record "$REPO")"
+assert_eq "ahead count of the upstream-gone branch" "1" "$(stale_record "$WTS/gone" | cut -f6)"
+assert_eq "nothing removed (worktrees)" "$WT_BEFORE" "$(wt_count)"
+assert_eq "nothing removed (branches)" "$BRANCHES_BEFORE" "$(branch_count)"
+assert_file "dirty file still there" "$WTS/005-dirty/scratch.txt"
+
+echo "Test: stale report never offers the worktree the session runs in"
+run_wt "$WTS/008-current" stale
+assert_eq "exit code" "0" "$RC"
+assert_eq "current worktree not reported" "" "$(stale_record "$WTS/008-current")"
+assert_eq "other stale worktrees still reported" "STALE${TAB}004-merged${TAB}merged${TAB}spex" "$(stale_summary "$WTS/004-merged")"
+assert_eq "main checkout not reported from a worktree" "" "$(stale_record "$REPO")"
+
+echo "Test: create prints a notice (no prompt, nothing removed), one line each up to three"
+make_repo
+WTS="$TMPROOT/wts"
+mkdir -p "$WTS"
+add_stale_wt 004-old 004-old
+add_stale_wt fix-old fix/old
+git -C "$REPO" merge -q --no-ff -m "merge old" 004-old
+git -C "$REPO" merge -q --no-ff -m "merge fix" fix/old
+WT_BEFORE=$(wt_count)
+run_wt "$REPO" prepare --short-name x
+assert_eq "exit code" "0" "$RC"
+assert_contains "notice names the NNN worktree" "NOTICE: stale worktree $WTS/004-old (004-old): merged" "$OUT"
+assert_contains "notice names the fix worktree" "NOTICE: stale worktree $WTS/fix-old (fix/old): merged" "$OUT"
+assert_contains "notice points at cleanup" "/speckit-spex-worktrees-manage cleanup" "$OUT"
+assert_eq "last line is still cd" "cd $(status_field path)" "$(last_line)"
+assert_eq "only the new worktree was added" "$((WT_BEFORE + 1))" "$(wt_count)"
+
+echo "Test: create collapses the notice to a count past three, and counts dirty ones"
+make_repo
+WTS="$TMPROOT/wts"
+mkdir -p "$WTS"
+for n in 1 2 3 4; do
+  add_stale_wt "00$n-old" "00$n-old"
+  git -C "$REPO" merge -q --no-ff -m "merge $n" "00$n-old"
+done
+add_stale_wt 005-old 005-old
+git -C "$REPO" merge -q --no-ff -m "merge 5" 005-old
+echo "scratch" > "$WTS/005-old/scratch.txt"
+run_wt "$REPO" prepare --short-name x
+assert_eq "exit code" "0" "$RC"
+assert_contains "count line" "NOTICE: 4 stale worktrees (merged into main" "$OUT"
+assert_not_contains "no per-worktree lines past the limit" "NOTICE: stale worktree" "$OUT"
+assert_contains "dirty count line" "NOTICE: 1 more stale worktree(s) have uncommitted or untracked changes" "$OUT"
+assert_eq "last line is still cd" "cd $(status_field path)" "$(last_line)"
+
+echo "Test: create prints no notice when nothing is stale"
+make_repo
+run_wt "$REPO" prepare --short-name x
+assert_eq "exit code" "0" "$RC"
+assert_not_contains "no stale notice" "stale" "$OUT"
+
+echo "Test: the cleanup command uses the shared report, not its own merged-branch logic"
+MANAGE_MD="$REPO_ROOT/spex/extensions/spex-worktrees/commands/speckit.spex-worktrees.manage.md"
+CLEANUP_SECTION=$(sed -n '/^## Action: Cleanup/,/^## Worktree Context for Downstream Commands/p' "$MANAGE_MD")
+assert_contains "cleanup calls the stale subcommand" '"$WORKTREE_SCRIPT" stale' "$CLEANUP_SECTION"
+assert_not_contains "cleanup has no branch --merged command" 'git branch --merged "' "$CLEANUP_SECTION"
+assert_not_contains "cleanup has no NNN- branch filter" "[0-9]{3}-" "$CLEANUP_SECTION"
+assert_not_contains "cleanup never forces a plain removal" "git worktree remove --force '<path>'" "$(printf '%s\n' "$CLEANUP_SECTION" | sed -n '/^### Step 2/,/^### Step 3/p' | grep -v 'retry with')"
+
+echo "Test: stale never fetches or touches the network"
+assert_eq "script has no fetch, pull or remote update" "0" "$(grep -cE 'git (-C [^ ]+ )?(fetch|pull|remote update)' "$WT_SCRIPT" || true)"
+
+echo "Test: a finalized spex worktree with copied config is stale, dirty only with real changes"
+make_repo
+# Do not ignore the copied config, so prepare puts untracked files in the worktree.
+: > "$REPO/.gitignore"
+git -C "$REPO" add .gitignore
+git -C "$REPO" commit -qm "stop ignoring config"
+run_wt "$REPO" prepare --short-name x
+PENDING=$(status_field path)
+simulate_git_feature "$PENDING" x 057
+echo "feature" > "$PENDING/feature.txt"
+git -C "$PENDING" add feature.txt
+git -C "$PENDING" commit -qm "feature work"
+run_wt "$PENDING" finalize
+FINAL=$(status_field path)
+git -C "$REPO" merge -q --no-ff -m "merge 057-x" 057-x
+run_wt "$REPO" stale
+assert_eq "copied config does not make it dirty" "STALE${TAB}057-x${TAB}merged${TAB}spex" "$(stale_summary "$FINAL")"
+# The answer to "does a finalized one hit the same wall as pending": a plain
+# git worktree remove refuses while the copied config is untracked.
+PLAIN_RC=0
+git -C "$REPO" worktree remove "$FINAL" >/dev/null 2>&1 || PLAIN_RC=$?
+assert_ne "plain git worktree remove refuses (copied config is untracked)" "0" "$PLAIN_RC"
+assert_file "worktree still there after the refused removal" "$FINAL"
+echo "notes" > "$FINAL/notes.txt"
+run_wt "$REPO" stale
+assert_eq "a new untracked file makes it dirty" "DIRTY${TAB}057-x${TAB}merged${TAB}spex" "$(stale_summary "$FINAL")"
+
+# ===========================================================================
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
