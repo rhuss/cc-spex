@@ -472,12 +472,23 @@ LEGACY_RULES_JQ='[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)"
 
 # YOLO writes bare Bash, Read, Edit and Write, once each.
 yolo="$(new_project permissions-yolo)"
+# A committed settings.json that already exists (the scenario of issue 62): it
+# holds a team rule that is not a spex level, and must come out byte-identical.
+mkdir -p "$yolo/.claude"
+printf '%s\n' '{"hooks":{"Stop":[]},"permissions":{"allow":["Bash(npm test)"]}}' > "$yolo/.claude/settings.json"
+yolo_committed_hash="$(shasum -a 256 "$yolo/.claude/settings.json" | awk '{print $1}')"
 run_case "yolo permissions" "$yolo" -i integration=claude -i extensions=recommended -i security=yolo
 # The rules go to the personal settings.local.json, never the committed settings.json.
 yolo_settings="$yolo/.claude/settings.local.json"
-if [ -f "$yolo/.claude/settings.json" ] && jq -e '.permissions // empty' "$yolo/.claude/settings.json" >/dev/null 2>&1; then
-  fail "yolo permissions: permissions were written to the committed settings.json: $(cat "$yolo/.claude/settings.json")"
+[ "$(shasum -a 256 "$yolo/.claude/settings.json" | awk '{print $1}')" = "$yolo_committed_hash" ] ||
+  fail "yolo permissions: the committed settings.json changed: $(cat "$yolo/.claude/settings.json")"
+if jq -e '.permissions.defaultMode' "$yolo/.claude/settings.json" >/dev/null 2>&1; then
+  fail "yolo permissions: defaultMode reached the committed settings.json: $(cat "$yolo/.claude/settings.json")"
 fi
+# The status line step and the permissions step both write settings.local.json:
+# the status line must survive the permissions write.
+jq -e '.statusLine.command | endswith("spex-ship-statusline.sh")' "$yolo_settings" >/dev/null ||
+  fail "yolo permissions: the status line is missing from settings.local.json: $(cat "$yolo_settings")"
 jq -e '.permissions.defaultMode == "bypassPermissions"' "$yolo_settings" >/dev/null ||
   fail "yolo permissions: defaultMode is not bypassPermissions: $(cat "$yolo_settings")"
 for tool in Bash Read Edit Write; do

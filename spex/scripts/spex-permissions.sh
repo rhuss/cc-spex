@@ -9,11 +9,18 @@
 #   migrate  Rewrite the legacy allow rules Bash(*), Read(*), Edit(*) and
 #            Write(*) to their bare tool names in .claude/settings.json and
 #            .claude/settings.local.json under DIR, when those files exist.
-#   apply    Append each RULE that is missing to permissions.allow in
+#            Also removes a spex security level that an earlier version wrote
+#            into the committed .claude/settings.json: only when its allow
+#            list is exactly a known spex level (the entries are removed and
+#            defaultMode bypassPermissions is cleared); otherwise a WARNING
+#            is printed and the file is left alone.
+#   apply   Append each RULE that is missing to permissions.allow in
 #            .claude/settings.local.json (created when missing; the personal,
 #            uncommitted file, never the committed settings.json), keeping the order
 #            of the existing entries, optionally set permissions.defaultMode,
-#            then migrate legacy rules in the same file.
+#            then migrate legacy rules in the same file. The file is left
+#            alone with a WARNING when it is tracked by git, not ignored by
+#            git, a symlink or a hard link.
 #
 #   --root          Project root (default: current directory). Paths in the
 #                   output are relative to it.
@@ -30,6 +37,7 @@
 #
 # Output goes to stderr (stdout stays empty):
 #   Migrated: <file> permissions: <old> -> <new>[, <old> -> <new>...]
+#   Removed: <file> permissions: <n> spex <level> rules[, defaultMode ... cleared]
 #   Default mode set to <mode> in <file>
 #   Permissions configured in <file> (<n> rules added)
 #   WARNING: <file> ...
@@ -243,6 +251,59 @@ else
 end
 '
 
+# Known spex security levels, as earlier and current spex versions wrote them
+# into allow lists (issue #62). Used by the downgrade of the committed
+# .claude/settings.json only; compared as sets after the legacy Tool(*) forms
+# are turned into bare names, so order, duplicates and Tool(*) vs bare do not
+# matter, but any extra or missing entry means "no known level".
+# looks_spex: the document carries spex-style permissions even though no known
+# level matches exactly (reported as a warning, never changed).
+# shellcheck disable=SC2016
+JQ_DOWNGRADE='
+def init_rules: [
+  ["Bash(*spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"],
+  ["Bash(/*/spex-init.sh*)", "Bash(*spex-ship-statusline.sh*)"],
+  ["Bash(/*/spex-init.sh)", "Bash(/*/spex-init.sh --refresh)", "Bash(/*/spex-init.sh --update)",
+   "Bash(C:/*/spex-init.sh)", "Bash(C:/*/spex-init.sh --refresh)", "Bash(C:/*/spex-init.sh --update)"]
+];
+def standard_bases: [["Bash(specify *)"], ["Skill", "Bash(specify *)"]];
+def yolo_bases: [
+  ["Bash", "Read", "Edit", "Write", "mcp__*__*", "Bash(specify *)"],
+  ["Bash", "Read", "Edit", "Write", "Skill", "mcp__*__*", "Bash(specify *)"],
+  ["Bash", "Read", "Edit", "Write", "Skill", "Bash(specify *)"],
+  ["Bash", "Read", "Edit", "Write", "WebFetch", "WebSearch", "Skill", "Bash(specify *)"]
+];
+def yolo_setup_list: ["Bash", "Read", "Edit", "Write", "Skill", "Agent(*)", "WebFetch", "WebSearch",
+                      "EnterPlanMode", "ExitPlanMode", "EnterWorktree", "ExitWorktree"];
+def known_levels:
+  [standard_bases[] as $b | init_rules[] as $i | {level: "standard", rules: ($b + $i)}]
+  + [yolo_bases[] as $b | init_rules[] as $i | {level: "yolo", rules: ($b + $i)}]
+  + [{level: "yolo", rules: yolo_setup_list}];
+def looks_spex($norm):
+  .permissions.defaultMode == "bypassPermissions"
+  or any(.permissions.allow[]; type == "string" and (contains("spex-init.sh") or contains("spex-ship-statusline.sh")))
+  or ((["Bash", "Read", "Edit", "Write"] - $norm) | length) == 0;
+if type != "object" then {status: "skip"}
+elif (.permissions | type) != "object" then {status: "skip"}
+elif (.permissions.allow | type) != "array" then {status: "skip"}
+else
+  (.permissions.allow | mig | .list | unique) as $norm
+  | ([known_levels[] | select((.rules | unique) == $norm)] | .[0]) as $hit
+  | if $hit != null then
+      (($hit.level == "yolo") and (.permissions.defaultMode == "bypassPermissions")) as $clear
+      | {
+          status: "match",
+          level: $hit.level,
+          removed: (.permissions.allow | length),
+          mode_cleared: $clear,
+          doc: ((.permissions.allow = []) | if $clear then del(.permissions.defaultMode) else . end)
+        }
+    elif looks_spex($norm) then {status: "warn"}
+    else {status: "none"}
+    end
+end
+'
+
 # is_json_document <file>: true when the file holds exactly one JSON value.
 is_json_document() {
   jq -e -s 'length == 1' "$1" >/dev/null 2>&1
@@ -272,10 +333,47 @@ migrate_file() {
   printf 'Migrated: %s permissions: %s\n' "$_rel" "$_pairs" >&2
 }
 
+# downgrade_committed_file: an earlier spex version wrote its security level
+# (YOLO or Standard) into the committed .claude/settings.json, where it reaches
+# every clone (issue #62). When the allow list there is exactly a known spex
+# level, remove those entries and clear defaultMode bypassPermissions (YOLO
+# only). Anything else is left untouched; a WARNING is printed when it still
+# looks like spex permissions. The personal settings.local.json is never
+# downgraded: that is where the level belongs now.
+downgrade_committed_file() {
+  _rel=".claude/settings.json"
+  [ -f "$ROOT/$_rel" ] || return 0
+  _file=$(project_target "$_rel") || return 0
+  is_json_document "$_file" || return 0
+  _res=$(jq -c "$JQ_DEFS $JQ_DOWNGRADE" "$_file" 2>/dev/null) || return 0
+  _status=$(printf '%s' "$_res" | jq -r '.status')
+  case "$_status" in
+    warn)
+      warn "$_rel holds spex-style permissions that match no known spex level; left unchanged. Review it by hand: a committed file reaches every clone of the project"
+      return 0
+      ;;
+    match) ;;
+    *) return 0 ;;
+  esac
+  _doc=$(printf '%s' "$_res" | jq '.doc') || return 0
+  if ! printf '%s\n' "$_doc" | safe_write "$_file"; then
+    warn "could not write $_rel; spex permissions not removed"
+    return 0
+  fi
+  _level=$(printf '%s' "$_res" | jq -r '.level')
+  _removed=$(printf '%s' "$_res" | jq -r '.removed')
+  _msg="Removed: $_rel permissions: $_removed spex $_level rules"
+  if [ "$(printf '%s' "$_res" | jq -r '.mode_cleared')" = true ]; then
+    _msg="$_msg, defaultMode bypassPermissions cleared"
+  fi
+  printf '%s (run /spex:init to set a level in .claude/settings.local.json)\n' "$_msg" >&2
+}
+
 do_migrate() {
   for _f in $SETTINGS_FILES; do
     migrate_file "$_f"
   done
+  downgrade_committed_file
 }
 
 # apply program: settings document -> {status, n, pairs, doc}.
@@ -308,12 +406,49 @@ else
 end
 '
 
+# link_count <file>: number of hard links to <file> (GNU stat, then BSD stat).
+link_count() {
+  stat -c %h "$1" 2>/dev/null || stat -f %l "$1" 2>/dev/null || echo 1
+}
+
+# apply_target_is_personal <relpath>: true when <relpath> under $ROOT is safe
+# to hold a personal permission level. Prints a WARNING and fails when the file
+# is a symlink or hard link (it may be shared with other people or projects),
+# is tracked by git, or is inside a git work tree without being ignored (a
+# plain `git add -A` would commit it). Outside a git work tree nothing can be
+# committed, so only the link checks apply.
+apply_target_is_personal() {
+  _rel=$1
+  _abs="$ROOT/$_rel"
+  if [ -L "$_abs" ]; then
+    warn "$_rel is a symlink; permissions not applied (replace it with a regular file first)"
+    return 1
+  fi
+  if [ -f "$_abs" ] && [ "$(link_count "$_abs")" -gt 1 ]; then
+    warn "$_rel is hard-linked to another file; permissions not applied (replace it with a regular file first)"
+    return 1
+  fi
+  if ! git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    return 0
+  fi
+  if git -C "$ROOT" ls-files --error-unmatch -- "$_rel" >/dev/null 2>&1; then
+    warn "$_rel is tracked by git; permissions not applied (run: git rm --cached $_rel)"
+    return 1
+  fi
+  if ! git -C "$ROOT" check-ignore -q -- "$_rel" 2>/dev/null; then
+    warn "$_rel is not ignored by git; permissions not applied (add it to .gitignore first)"
+    return 1
+  fi
+  return 0
+}
+
 # do_apply RULE...: merge the rules into $APPLY_FILE under $ROOT.
 # Never fails the run; problems are reported as warnings.
 do_apply() {
   _rel="$APPLY_FILE"
   # From here on, every read and write uses the checked canonical path.
   _file=$(project_target "$_rel") || return 0
+  apply_target_is_personal "$_rel" || return 0
   # One JSON string per argument, in argument order, with argument boundaries
   # kept even for rules that contain a newline (works with jq 1.5, unlike
   # $ARGS.positional).

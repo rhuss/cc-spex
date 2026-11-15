@@ -633,8 +633,17 @@ steps:
                     Bash Read Edit Write Skill 'Agent(*)' WebFetch WebSearch \
                     EnterPlanMode ExitPlanMode EnterWorktree ExitWorktree
                 else
+                  # The init rules match only the exact calls the spex context
+                  # hook emits (spex-init.sh, --refresh, --update), for
+                  # absolute POSIX paths (/...) and Windows drive C: paths
+                  # (C:/...). Wildcards around the script name would also
+                  # approve any command that merely contains it. There is no
+                  # statusline rule: the status line runs as a statusLine
+                  # command, never through Bash.
                   sh "$PERMS" apply \
-                    Skill 'Bash(specify *)' 'Bash(/*/spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+                    Skill 'Bash(specify *)' \
+                    'Bash(/*/spex-init.sh)' 'Bash(/*/spex-init.sh --refresh)' 'Bash(/*/spex-init.sh --update)' \
+                    'Bash(C:/*/spex-init.sh)' 'Bash(C:/*/spex-init.sh --refresh)' 'Bash(C:/*/spex-init.sh --update)'
                 fi
           codex:
             - id: codex-permissions
