@@ -277,7 +277,9 @@ The workflow uses spec-kit's `SPECKIT_WORKFLOW_DIR` to locate its sibling script
 
 The first successful setup records requested project intent in
 `.specify/spex.json`. Commit this file so teammates and later refreshes use the
-same harness preference, extension selection, and requested security:
+same harness preference, extension selection, and requested security. Because
+a teammate's init applies the recorded security level again, do not commit a
+declaration with `"security": "yolo"`:
 
 ```json
 {
@@ -429,8 +431,21 @@ directly.
 The Standard and YOLO permission rules go to `.claude/settings.local.json`,
 the personal file that is not committed, and never to the shared
 `.claude/settings.json`: a permission level is one person's trust decision, so
-it must not reach teammates through the repository. The init question names
-the file before you choose.
+it must not reach teammates through the permission files in the repository.
+The init question names the file before you choose. `.specify/spex.json`
+still records the requested security level, and a teammate's init applies it
+again, so do not commit a declaration with `"security": "yolo"`.
+
+Every init run also protects project edits to the core spec-kit templates.
+`specify init --force` rewrites `.specify/templates/*.md` with the stock
+versions, so spex first compares each core template with the hash spec-kit
+recorded in `.specify/integrations/*.manifest.json`. An edited template is
+copied to `.specify/templates/overrides/<name>.md` and reported with a
+`Preserved:` line. spec-kit reads `overrides/` before the core templates and
+never writes there, so the customization keeps applying after the refresh.
+Commit the override. If an override already exists and differs from the edited
+core template, init stops before changing anything and names the file. Keep
+project-specific templates in `overrides/` from the start.
 
 ## Commands Reference
 

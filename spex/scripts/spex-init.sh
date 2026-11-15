@@ -194,13 +194,30 @@ configure_statusline() {
     if jq -e '.statusLine' "$settings_file" >/dev/null 2>&1; then
       local current_cmd
       current_cmd="$(jq -r '.statusLine.command // empty' "$settings_file")"
-      if [ -n "$current_cmd" ] && [ -f "$current_cmd" ]; then
-        # Already pointing to our script, nothing to do
+      if [ -n "$current_cmd" ]; then
+        # A command that ENDS in our script name is ours (the bare path, or `bash <path>`).
+        # If it still resolves, nothing to do. If it points at a script that is gone (a
+        # plugin-cache path from an older version, a deleted temp source), refresh it below
+        # and do not save it as the chain target: it would chain to nothing. A command that
+        # merely mentions the script elsewhere (a wrapper) is someone else's and is chained.
         case "$current_cmd" in
-          *spex-ship-statusline.sh) return 0 ;;
+          *spex-ship-statusline.sh)
+            if [ "$current_cmd" = "$abs_script" ] || [ -f "$current_cmd" ]; then
+              return 0
+            fi
+            current_cmd=""
+            ;;
         esac
-        # Different statusline exists, save it for chaining
-        echo "$current_cmd" > "$chain_file"
+        # Different statusline exists: save the whole command line for chaining (a bare path
+        # or `bash script.sh --args`). If it cannot be saved, leave the user's line alone
+        # rather than replace it with nothing to fall back to. The braces keep the shell's own
+        # "cannot create" message out of the output, so only our warning shows.
+        if [ -n "$current_cmd" ]; then
+          if ! { printf '%s\n' "$current_cmd" > "$chain_file"; } 2>/dev/null; then
+            echo "  WARNING: could not save the existing status line to $chain_file; leaving it unchanged" >&2
+            return 0
+          fi
+        fi
       fi
     fi
     # Merge or update statusLine
@@ -764,6 +781,17 @@ migrate_permissions() {
   sh "$(dirname "$0")/spex-permissions.sh" migrate || true
 }
 
+# --- Keep local edits to core templates (spex-preserve-templates.sh) ---
+# `specify init --force` rewrites .specify/templates/*.md with the stock
+# versions. Copy edited core templates to .specify/templates/overrides/
+# first; stop before init when an edit conflicts with an existing override.
+preserve_templates() {
+  if ! sh "$(dirname "$0")/spex-preserve-templates.sh"; then
+    echo "ERROR: refresh stopped to keep local template edits (see above)"
+    exit 1
+  fi
+}
+
 # --- Refresh templates only ---
 do_refresh() {
   if ! command -v specify &>/dev/null; then
@@ -771,6 +799,7 @@ do_refresh() {
     exit 2
   fi
 
+  preserve_templates
   echo "Refreshing project templates..."
   if ! specify init --here --integration claude --script sh --force; then
     echo "ERROR: specify init failed"
@@ -792,6 +821,7 @@ do_refresh() {
 
 # --- Update protocol ---
 do_update() {
+  preserve_templates
   echo "Updating specify-cli from GitHub..."
   if ! uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git; then
     echo "ERROR: Failed to update specify-cli"
@@ -942,7 +972,7 @@ case "${1:-}" in
         fi
       fi
       ensure_extension_skills 2>/dev/null || true
-      configure_statusline 2>/dev/null || true
+      configure_statusline || true
       run_detach_ensure || true
       check_update 2>/dev/null || true
       echo "READY"

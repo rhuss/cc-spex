@@ -1,6 +1,6 @@
 # Brainstorm Overview
 
-Last updated: 2026-11-03
+Last updated: 2026-11-11
 
 ## Sessions
 
@@ -30,6 +30,7 @@ Last updated: 2026-11-03
 | 53 | 2026-11-01 | evolve-converge-cascade | active | - | - |
 | 54 | 2026-11-02 | detach-mode-at-init | active (revisited 2026-11-04) | 060 (bug fix part) | - |
 | 55 | 2026-11-03 | permission-rule-modernize | active | - | - |
+| 56 | 2026-11-11 | implement-model-override | active | - | - |
 
 ## Open Threads
 
@@ -119,6 +120,11 @@ Last updated: 2026-11-03
 - Where should the permission migration live: spex-init.sh refresh path or a reusable helper for #62? (from #55)
 - Should the permission migration touch user-level ~/.claude/settings.json? (from #55)
 - Should Read stay in the YOLO allow list at all? (from #55)
+- Does Claude Code pass a non-Claude model ID in agent frontmatter through to the router unchanged? (from #56)
+- Can a Codex agent role select a model or provider outside the default available-models list? (from #56)
+- Should standalone `/speckit-implement` also use the implementer model, or only ship? (from #56)
+- Implementer config schema: per-harness models, or shared default plus overrides? (from #56)
+- Should the generated implementer agent carry extra guardrails for weaker models? (from #56)
 
 ## Parked Ideas
 
