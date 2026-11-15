@@ -395,11 +395,16 @@ file_mtime() {
   stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
 }
 
-# untracked_manifest <path>: "<blob-hash>\t<path>" for every untracked file
-# (ignored ones included) except symlinks and the moved state, sorted.
+# untracked_manifest <path> [visible]: "<blob-hash>\t<path>" for every untracked
+# file except symlinks and the moved state, sorted. Ignored files are included
+# unless the second argument is "visible", which lists only non-ignored files
+# (so the dirty check never reads large ignored trees such as node_modules).
 untracked_manifest() {
-  local wt="$1" list hashes
-  list=$(cd "$wt" && git ls-files --others 2>/dev/null | while IFS= read -r f; do
+  local wt="$1" scope="${2:-all}" list hashes opts=()
+  if [ "$scope" = "visible" ]; then
+    opts=(--exclude-standard)
+  fi
+  list=$(cd "$wt" && git ls-files --others ${opts[@]+"${opts[@]}"} 2>/dev/null | while IFS= read -r f; do
     [ "$f" = "$STATE_REL" ] && continue
     [ -L "$f" ] && continue
     printf '%s\n' "$f"
@@ -482,10 +487,10 @@ branch_has_moved() {
 # are not counted either, the same rule `git worktree remove` applies.
 # Fails closed: an unreadable worktree counts as dirty.
 worktree_is_dirty() {
-  local wt="$1" gd manifest tracked current extras path
+  local wt="$1" gd manifest tracked current extras
   tracked=$(git -C "$wt" status --porcelain --untracked-files=no 2>/dev/null) || return 0
   [ -z "$tracked" ] || return 0
-  current=$(untracked_manifest "$wt") || return 0
+  current=$(untracked_manifest "$wt" visible) || return 0
   [ -n "$current" ] || return 1
   extras="$current"
   gd=$(worktree_git_dir "$wt") || return 0
@@ -493,12 +498,7 @@ worktree_is_dirty() {
   if [ -f "$manifest" ]; then
     extras=$(printf '%s\n' "$current" | grep -vxF -f "$manifest" || true)
   fi
-  while IFS= read -r path; do
-    [ -n "$path" ] || continue
-    path="${path#*$'\t'}"
-    git -C "$wt" check-ignore -q -- "$path" 2>/dev/null || return 0
-  done <<< "$extras"
-  return 1
+  [ -n "$extras" ]
 }
 
 # stale_entry <path> <head-sha> <branch-or-empty> <default> <default-tip> <current-root>

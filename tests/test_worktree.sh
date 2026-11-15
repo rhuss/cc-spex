@@ -108,7 +108,10 @@ make_repo() {
   git -C "$REPO" config user.email "test@example.com"
   git -C "$REPO" config commit.gpgsign false
   # Keep the user's global ignore rules out of the fixture.
-  git -C "$REPO" config core.excludesFile /dev/null
+  # An empty real file, not /dev/null: on Windows git maps /dev/null to "nul"
+  # and `git ls-files --exclude-standard` rejects that as an exclude file.
+  : > "$TMPROOT/empty-excludes"
+  git -C "$REPO" config core.excludesFile "$TMPROOT/empty-excludes"
 
   cat > "$REPO/.gitignore" <<'EOF'
 .claude/
