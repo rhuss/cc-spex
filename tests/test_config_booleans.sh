@@ -133,7 +133,8 @@ run_other_block() {
        /^```/{if (inblock && block ~ marker) {printf "%s", block; exit} inblock=0; next}
        inblock{block = block $0 "\n"}' "$file" > "$WORK/other_block.sh"
   # Cut at the first `git push` so the test never runs the push or the prose after it.
-  sed -i '/^git push/,$d' "$WORK/other_block.sh"
+  sed '/^git push/,$d' "$WORK/other_block.sh" > "$WORK/other_block.cut"
+  mv "$WORK/other_block.cut" "$WORK/other_block.sh"
   if [ ! -s "$WORK/other_block.sh" ]; then
     echo "NO BLOCK FOUND"
     return 0
@@ -185,6 +186,9 @@ echo "Test: no command file reads a boolean with // true or // false"
 LEFT=$(grep -rnE "(yq|jq)[^|]*['\"][^'\"]*//[[:space:]]*true\b" \
   "$REPO_ROOT/spex" --include='*.md' --include='*.sh' || true)
 assert_eq "no // boolean reads remain" "" "$LEFT"
+
+echo "Test: the Copilot opt-out guards both the detection and the call"
+assert_eq "copilot detection and call are both guarded" "2" "$(grep -c 'if \[ "\$COPILOT_ENABLED" = "true" \]' "$RUN_MD")"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

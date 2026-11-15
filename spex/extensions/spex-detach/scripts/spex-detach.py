@@ -28,7 +28,7 @@ def yq_read(key, config_file):
     if shutil.which("yq") is None:
         print("spex: yq not found; {} ignored, using defaults (install: brew install yq | winget install MikeFarah.yq | https://github.com/mikefarah/yq)".format(config_file), file=sys.stderr)
         return None
-    r = subprocess.run(["yq", "-r", "{} // empty".format(key), config_file], capture_output=True, text=True)
+    r = subprocess.run(["yq", "-r", key, config_file], capture_output=True, text=True)
     val = r.stdout.strip() if r.returncode == 0 else ""
     return val if val and val != "null" else None
 

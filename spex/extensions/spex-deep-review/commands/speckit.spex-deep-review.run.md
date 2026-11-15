@@ -135,8 +135,12 @@ Check for external review CLIs, respecting the external tool settings from the c
 # CodeRabbit (skip only if explicitly disabled in config)
 which coderabbit >/dev/null 2>&1 && echo "CODERABBIT_AVAILABLE=true"
 
-# GitHub Copilot CLI (run this check only if the resolved copilot setting is true)
-which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
+# GitHub Copilot CLI (run this check only if the resolved copilot setting is true).
+# Set COPILOT_ENABLED to the resolved copilot setting (true or false) first.
+COPILOT_ENABLED=true
+if [ "$COPILOT_ENABLED" = "true" ]; then
+  which copilot >/dev/null 2>&1 && echo "COPILOT_AVAILABLE=true"
+fi
 
 ```
 
@@ -352,7 +356,11 @@ Parse output:
 
 **Copilot CLI** (only when the resolved copilot setting is `true` and `COPILOT_AVAILABLE=true`; when it is `false`, never send the diff to Copilot):
 ```bash
-copilot -s -p "Review the following git diff for bugs, security issues, and code quality problems. Output ONLY a structured list of findings. For each finding use this exact format:
+# Set COPILOT_ENABLED to the resolved copilot setting (true or false) first.
+# The diff is only built and sent when it is true.
+COPILOT_ENABLED=true
+if [ "$COPILOT_ENABLED" = "true" ]; then
+  copilot -s -p "Review the following git diff for bugs, security issues, and code quality problems. Output ONLY a structured list of findings. For each finding use this exact format:
 
 ### FINDING
 - Severity: Critical|Important|Minor
@@ -363,6 +371,7 @@ copilot -s -p "Review the following git diff for bugs, security issues, and code
 End each finding with ---
 
 $(git diff HEAD)" 2>&1
+fi
 ```
 Parse output:
 1. Split on "### FINDING" markers
