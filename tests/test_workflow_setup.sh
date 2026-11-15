@@ -475,7 +475,9 @@ yolo="$(new_project permissions-yolo)"
 # A committed settings.json that already exists (the scenario of issue 62): it
 # holds a team rule that is not a spex level, and must come out byte-identical.
 mkdir -p "$yolo/.claude"
-printf '%s\n' '{"hooks":{"Stop":[]},"permissions":{"allow":["Bash(npm test)"]}}' > "$yolo/.claude/settings.json"
+# Pretty-printed with a non-empty hook: `specify init` rewrites settings.json in that shape and drops
+# an empty "hooks":{"Stop":[]}, which would change the bytes without any spex code involved.
+printf '%s' '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]},"permissions":{"allow":["Bash(npm test)"]}}' | jq . > "$yolo/.claude/settings.json"
 yolo_committed_hash="$(shasum -a 256 "$yolo/.claude/settings.json" | awk '{print $1}')"
 run_case "yolo permissions" "$yolo" -i integration=claude -i extensions=recommended -i security=yolo
 # The rules go to the personal settings.local.json, never the committed settings.json.
