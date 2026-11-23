@@ -291,6 +291,12 @@ CLOSING OUT A FEATURE (after review passes)
   Use --no-verify to skip verification and --no-walkthrough to skip the
   walkthrough gate.
 
+  Commit reminder: a git commit on a feature branch whose spec has a
+  tasks.md, carrying code (not only specs/docs) and with no verification
+  recorded for the current code, gets a one-time reminder per session to
+  run /speckit-spex-gates-verify. Commits on main or other non-feature
+  branches never trigger it.
+
   Extensions are managed via the specify CLI:
     specify extension enable <name>    Enable an extension
     specify extension disable <name>   Disable an extension

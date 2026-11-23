@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Tests for the pre-commit verification reminder hooks (spec 055):
 # spex/scripts/hooks/shared/verify-gate.sh and spex/scripts/hooks/pretool-gate.py
-# both read the shared verification record (spex-verify-record.sh).
+# both read the shared verification record (spex-verify-record.sh) and must
+# agree on when the reminder is relevant (active feature, code in the commit,
+# once per session per feature).
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,7 +12,7 @@ GATE="$REPO_ROOT/spex/scripts/hooks/shared/verify-gate.sh"
 PRETOOL="$REPO_ROOT/spex/scripts/hooks/pretool-gate.py"
 RECORD="$REPO_ROOT/spex/scripts/spex-verify-record.sh"
 
-REMINDER="spex verify reminder: No verification is recorded for the current code."
+REMINDER="spex verify reminder: Feature 056-demo has code changes with no recorded verification."
 
 # Isolate from the developer's git config (global ignores, signing, hooks)
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
@@ -18,6 +20,7 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 PASS=0
 FAIL=0
 WORKDIR=""
+SID_COUNTER=0
 
 cleanup() {
   cd "$REPO_ROOT" || true
@@ -28,15 +31,18 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Repo on feature branch 056-demo with tasks.md and a staged code change.
 setup_test_repo() {
   WORKDIR=$(mktemp -d)
   cd "$WORKDIR" || exit 1
-  git init -q test-repo
+  git init -q -b main test-repo
   cd test-repo || exit 1
   git config user.email test@example.com
   git config user.name "Test User"
   git commit --allow-empty -m "initial" -q
-  mkdir -p .specify src
+  git checkout -q -b 056-demo
+  mkdir -p .specify src specs/056-demo docs
+  echo '- [ ] T001 demo' > specs/056-demo/tasks.md
   echo 'echo hi' > src/app.sh
   git add src/app.sh
   REPO="$(pwd -P)"
@@ -77,57 +83,124 @@ assert_not_contains() {
   fi
 }
 
-# run_gate: run the shared gate, set OUT and ELAPSED (whole seconds)
-run_gate() {
-  local start end
+# new_sid: set SID to a fresh session id (no subshell, so the counter advances)
+new_sid() {
+  SID_COUNTER=$((SID_COUNTER + 1))
+  SID="sid$SID_COUNTER"
+}
+
+# run_impl <gate|pretool> <command> <sid>: set OUT (empty when silent) and ELAPSED
+run_impl() {
+  local impl="$1" cmd="$2" sid="$3" start
   start=$(date +%s)
-  OUT=$(TMPDIR="$HOOK_TMP" sh "$GATE" Bash "git commit -m x" sid "$REPO" 2>&1)
-  end=$(date +%s)
-  ELAPSED=$((end - start))
+  if [ "$impl" = gate ]; then
+    OUT=$(TMPDIR="$HOOK_TMP" sh "$GATE" Bash "$cmd" "$sid" "$REPO" 2>&1)
+    [ "$OUT" = "allow" ] && OUT=""
+  else
+    OUT=$(jq -nc --arg c "$cmd" --arg s "$sid" --arg d "$REPO" \
+      '{tool_name:"Bash",tool_input:{command:$c},session_id:$s,cwd:$d}' \
+      | TMPDIR="$HOOK_TMP" python3 "$PRETOOL" 2>&1)
+  fi
+  ELAPSED=$(( $(date +%s) - start ))
 }
 
-run_pretool() {
-  OUT=$(printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"},"session_id":"sid","cwd":"%s"}' "$REPO" \
-    | TMPDIR="$HOOK_TMP" python3 "$PRETOOL" 2>&1)
+# expect <shown|silent> <desc> [command] [sid]: check both implementations.
+# A fresh session id per implementation unless one is given.
+expect() {
+  local want="$1" desc="$2" cmd="${3:-git commit -m x}" sid="${4:-}" impl s
+  for impl in gate pretool; do
+    new_sid
+    s="${sid:-$SID}"
+    run_impl "$impl" "$cmd" "$s"
+    if [ "$want" = shown ]; then
+      assert_contains "[$impl] $desc" "$REMINDER" "$OUT"
+    else
+      assert_eq "[$impl] $desc" "" "$OUT"
+    fi
+  done
 }
 
-echo "=== Test: shared verify-gate.sh ==="
+echo "=== Test: reminder content and verification record ==="
 setup_test_repo
-run_gate
-assert_contains "no record: reminder shown" "context:$REMINDER" "$OUT"
-assert_contains "reminder names /speckit-spex-gates-verify" "/speckit-spex-gates-verify" "$OUT"
-assert_contains "reminder names /speckit-spex-finish" "/speckit-spex-finish" "$OUT"
-assert_not_contains "reminder does not mention stamp" "stamp" "$OUT"
-assert_eq "no record: completes in under 5s" "true" "$([ "$ELAPSED" -lt 5 ] && echo true || echo false)"
-touch "$HOOK_TMP/.claude-spex-verified-sid"
-run_gate
-assert_contains "legacy session marker is ignored" "context:$REMINDER" "$OUT"
+for impl in gate pretool; do
+  new_sid
+  run_impl "$impl" "git commit -m x" "$SID"
+  assert_contains "[$impl] no record: reminder names the feature" "$REMINDER" "$OUT"
+  assert_contains "[$impl] reminder names /speckit-spex-gates-verify" "/speckit-spex-gates-verify" "$OUT"
+  assert_contains "[$impl] reminder names /speckit-spex-finish" "/speckit-spex-finish" "$OUT"
+  assert_not_contains "[$impl] reminder does not mention stamp" "stamp" "$OUT"
+  assert_eq "[$impl] no record: completes in under 5s" "true" "$([ "$ELAPSED" -lt 5 ] && echo true || echo false)"
+done
+new_sid
+run_impl gate "git commit -m x" "$SID"
+assert_contains "[gate] output has context: prefix" "context:spex verify reminder:" "$OUT"
+touch "$HOOK_TMP/.claude-spex-verified-legacy"
+expect shown "legacy session marker is ignored" "git commit -m x" ""
 "$RECORD" record >/dev/null
-run_gate
-assert_eq "with record: allow" "allow" "$OUT"
-assert_eq "with record: completes in under 5s" "true" "$([ "$ELAPSED" -lt 5 ] && echo true || echo false)"
+expect silent "with record: silent"
 echo 'echo changed' >> src/app.sh
-run_gate
-assert_contains "after code edit: reminder again" "context:$REMINDER" "$OUT"
-assert_eq "after code edit: completes in under 5s" "true" "$([ "$ELAPSED" -lt 5 ] && echo true || echo false)"
+git add src/app.sh
+expect shown "after code edit: reminder again"
 cleanup
 
-echo "=== Test: pretool-gate.py ==="
+echo "=== Test: relevance (only for a feature in progress) ==="
 setup_test_repo
-run_pretool
-assert_contains "no record: reminder shown" "$REMINDER" "$OUT"
-assert_contains "reminder names /speckit-spex-gates-verify" "/speckit-spex-gates-verify" "$OUT"
-assert_contains "reminder names /speckit-spex-finish" "/speckit-spex-finish" "$OUT"
-assert_not_contains "reminder does not mention stamp" "stamp" "$OUT"
-touch "$HOOK_TMP/.claude-spex-verified-sid"
-run_pretool
-assert_contains "legacy session marker is ignored" "$REMINDER" "$OUT"
-"$RECORD" record >/dev/null
-run_pretool
-assert_eq "with record: no output" "" "$OUT"
-echo 'echo changed' >> src/app.sh
-run_pretool
-assert_contains "after code edit: reminder again" "$REMINDER" "$OUT"
+git checkout -q main
+expect silent "main branch: silent"
+git checkout -q -b fix-typo
+expect silent "non-feature branch: silent"
+git checkout -q 056-demo
+rm specs/056-demo/tasks.md
+expect silent "feature before tasks.md: silent"
+echo '- [ ] T001' > specs/056-demo/tasks.md
+git checkout -q -b 056-demo-rework
+expect shown "branch with unique number prefix match: shown"
+git checkout -q main
+git checkout -q -b custom-name
+printf '{"feature_branch":"custom-name","spec_dir":"specs/056-demo"}' > .specify/.spex-state
+expect shown ".spex-state maps custom branch to feature: shown"
+git checkout -q 056-demo
+printf '{"mode":"flow","implemented":false,"feature_branch":"056-demo"}' > .specify/.spex-state
+expect silent "flow mode before implement: silent"
+printf '{"mode":"flow","implemented":false,"feature_branch":"099-other"}' > .specify/.spex-state
+expect shown "stale flow state of another feature is ignored"
+printf '{"mode":"flow","implemented":true,"feature_branch":"056-demo"}' > .specify/.spex-state
+expect shown "flow mode after implement: shown"
+rm .specify/.spex-state
+rm -rf .specify
+expect silent "no .specify: silent"
+cleanup
+
+echo "=== Test: what the commit carries ==="
+setup_test_repo
+git reset -q
+expect silent "nothing staged: silent"
+expect shown "git add + commit in one call: shown" "git add src/app.sh && git commit -m x"
+expect shown "git commit -am: shown" "git commit -am x"
+expect shown "git commit --all: shown" "git commit --all -m x"
+expect silent "git commit --amend with nothing staged: silent" "git commit --amend --no-edit"
+rm src/app.sh
+echo 'notes' > docs/guide.md
+echo 'more' >> specs/056-demo/tasks.md
+expect silent "git add of docs only in one call: silent" "git add docs specs && git commit -m x"
+expect silent "git commit -am with docs only: silent" "git commit -am x"
+git add docs
+expect silent "staged docs only: silent"
+cleanup
+
+echo "=== Test: once per session per feature ==="
+setup_test_repo
+for impl in gate pretool; do
+  run_impl "$impl" "git commit -m x" "same-$impl"
+  assert_contains "[$impl] first commit in session: shown" "$REMINDER" "$OUT"
+  run_impl "$impl" "git commit -m y" "same-$impl"
+  assert_eq "[$impl] second commit in same session: silent" "" "$OUT"
+  run_impl "$impl" "git commit -m z" "other-$impl"
+  assert_contains "[$impl] new session: shown again" "$REMINDER" "$OUT"
+  run_impl "$impl" "git commit -m x" "unknown"
+  run_impl "$impl" "git commit -m x" "unknown"
+  assert_contains "[$impl] unknown session id: never deduplicated" "$REMINDER" "$OUT"
+done
 cleanup
 
 echo "=== Test: pretool-gate.py timeout kills the record check ==="

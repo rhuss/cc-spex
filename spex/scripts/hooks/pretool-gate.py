@@ -267,8 +267,14 @@ def _stage_brief(stage_index):
 # Gate 4: Verification reminder
 # ---------------------------------------------------------------------------
 
-def check_verification_gate(tool_name, tool_input, cwd):
-    """Remind about verification before git commit in spex projects.
+def check_verification_gate(tool_name, tool_input, cwd, session_id='unknown'):
+    """Remind about verification before git commit on a feature in progress.
+
+    Only fires when the current branch belongs to a spex feature that has
+    reached implementation (tasks.md exists), the commit carries code (not
+    only specs/docs), no verification is recorded for the current code, and
+    the reminder was not already shown for this feature in this session.
+    Mirrors spex/scripts/hooks/shared/verify-gate.sh.
 
     Returns context string (non-blocking reminder), or None.
     """
@@ -282,22 +288,145 @@ def check_verification_gate(tool_name, tool_input, cwd):
     if not (Path(cwd) / '.specify').is_dir():
         return None
 
-    # Allow spec-only commits without verification
-    if _is_spec_only_commit(cwd):
+    # Ad-hoc work (main, non-feature branches) or a feature before implement
+    feature = _active_feature(cwd)
+    if feature is None:
         return None
+
+    # Spec/doc-only commits (and empty ones) have no code to verify
+    if not _commit_has_code(cwd, command):
+        return None
+
+    # Once per session per feature
+    marker = None
+    if session_id and session_id != 'unknown':
+        marker = marker_path('spex-verify-reminded', f'{session_id}-{feature}')
+        if marker.exists():
+            return None
 
     # Last, because it hashes the working tree
     if _is_verified(cwd):
         return None
 
-    return VERIFY_REMINDER
+    if marker is not None:
+        try:
+            marker.touch()
+        except Exception:
+            pass
+    return verify_reminder(feature)
 
 
-VERIFY_REMINDER = (
-    "spex verify reminder: No verification is recorded for the current code. "
-    "Consider running /speckit-spex-gates-verify or /speckit-spex-finish first, "
-    "or confirm with the user that they want to proceed without the final gate."
-)
+def verify_reminder(feature):
+    return (
+        f"spex verify reminder: Feature {feature} has code changes with no "
+        "recorded verification. Consider running /speckit-spex-gates-verify or "
+        "/speckit-spex-finish before committing, or confirm with the user that "
+        "they want to proceed without the final gate. "
+        "(Shown once per session for this feature.)"
+    )
+
+
+# Spec-kit feature branches: 056-name or 20260101-120000-name
+FEATURE_BRANCH_RE = re.compile(r'^(\d{3,}|\d{8}-\d{6})-')
+DOC_PREFIXES = ('specs/', 'brainstorm/', 'docs/', '.specify/')
+
+
+def _git(cwd, *args):
+    """Run git, return stdout or None on any failure."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['git', *args], capture_output=True, text=True, cwd=cwd, timeout=5,
+        )
+    except Exception:
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def _active_feature(cwd):
+    """Name of the feature in progress on the current branch, or None.
+
+    The feature dir comes from .spex-state (when it belongs to this branch),
+    specs/<branch>, or a unique specs/<number>-* match. It counts as in
+    progress once tasks.md exists, unless flow mode says implement has not
+    run yet.
+    """
+    out = _git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD')
+    branch = out.strip() if out else ''
+    if not branch or branch == 'HEAD':
+        return None
+
+    root = Path(cwd)
+    state = {}
+    state_file = root / '.specify' / '.spex-state'
+    if state_file.is_file():
+        try:
+            state = json.loads(state_file.read_text())
+        except Exception:
+            state = {}
+    state_branch = state.get('feature_branch')
+    if state_branch in (None, '', branch):
+        if state.get('mode') == 'flow' and state.get('implemented') is not True:
+            return None
+
+    candidates = []
+    if state_branch == branch and state.get('spec_dir'):
+        candidates.append(root / state['spec_dir'])
+    candidates.append(root / 'specs' / branch)
+    match = FEATURE_BRANCH_RE.match(branch)
+    if match:
+        prefixed = sorted((root / 'specs').glob(f'{match.group(1)}-*'))
+        if len(prefixed) == 1:
+            candidates.append(prefixed[0])
+
+    for spec_dir in candidates:
+        if (spec_dir / 'tasks.md').is_file():
+            return spec_dir.name
+    return None
+
+
+def _commit_paths(cwd, command):
+    """Paths the commit is likely to include.
+
+    At PreToolUse time a `git add ... && git commit` or `git commit -a` has not
+    staged anything yet, so those use all working tree changes instead of the
+    index.
+    """
+    stages_itself = (
+        re.search(r'\bgit\s+add\b', command)
+        or re.search(r'\bgit\s+commit\b[^;&|]*\s(-[a-zA-Z]*a[a-zA-Z]*|--all)\b', command)
+    )
+    if not stages_itself:
+        out = _git(cwd, 'diff', '--cached', '--name-only')
+        return None if out is None else [l.strip() for l in out.splitlines() if l.strip()]
+
+    out = _git(cwd, 'status', '--porcelain', '-uall')
+    if out is None:
+        return None
+    paths = []
+    for line in out.splitlines():
+        path = line[3:]
+        if ' -> ' in path:
+            path = path.split(' -> ', 1)[1]
+        path = path.strip().strip('"')
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _commit_has_code(cwd, command):
+    """True when the commit carries anything besides specs and docs.
+
+    Git errors count as code (reminder fires); an empty change set does not.
+    """
+    paths = _commit_paths(cwd, command)
+    if paths is None:
+        return True
+    return any(
+        not (p.startswith(DOC_PREFIXES) or p.endswith('.md')) for p in paths
+    )
 
 
 def _verify_record_script(cwd):
@@ -371,27 +500,6 @@ def _is_verified(cwd):
         return False
 
 
-def _is_spec_only_commit(cwd):
-    """Check if staged changes are spec/doc-only (no code to verify)."""
-    import subprocess
-    try:
-        result = subprocess.run(
-            ['git', 'diff', '--cached', '--name-only'],
-            capture_output=True, text=True, cwd=cwd, timeout=5,
-        )
-        if result.returncode != 0 or not result.stdout.strip():
-            return False
-        for f in result.stdout.strip().splitlines():
-            f = f.strip()
-            if (f.startswith(('specs/', 'brainstorm/', 'docs/', '.specify/'))
-                    or f.endswith('.md')):
-                continue
-            return False
-        return True
-    except Exception:
-        return False
-
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -429,7 +537,7 @@ def main():
     if ship_ctx:
         contexts.append(ship_ctx)
 
-    verify_ctx = check_verification_gate(tool_name, tool_input, cwd)
+    verify_ctx = check_verification_gate(tool_name, tool_input, cwd, session_id)
     if verify_ctx:
         contexts.append(verify_ctx)
 
