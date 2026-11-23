@@ -277,7 +277,9 @@ The workflow uses spec-kit's `SPECKIT_WORKFLOW_DIR` to locate its sibling script
 
 The first successful setup records requested project intent in
 `.specify/spex.json`. Commit this file so teammates and later refreshes use the
-same harness preference, extension selection, and requested security:
+same harness preference, extension selection, and requested security. Because
+a teammate's init applies the recorded security level again, do not commit a
+declaration with `"security": "yolo"`:
 
 ```json
 {
@@ -424,7 +426,21 @@ names `Bash`, `Read`, `Edit` and `Write`, which allow every command and path
 without the warnings current Claude Code releases print for the `(*)` forms.
 Other rules and settings stay untouched, and each changed file is reported
 with a `Migrated:` line. The YOLO permission level now writes the bare names
-directly.
+directly. If an earlier version left its permission level in the committed
+`.claude/settings.json` and the allow list there is exactly a known spex level,
+init removes those entries and clears `defaultMode: bypassPermissions` there
+(reported with a `Removed:` line); any other list is left alone with a
+`WARNING:`.
+
+The Standard and YOLO permission rules go to `.claude/settings.local.json`,
+the personal file that is not committed, and never to the shared
+`.claude/settings.json`: a permission level is one person's trust decision, so
+it must not reach teammates through the permission files in the repository.
+Init skips the write, with a `WARNING:`, when that file is tracked by git, not
+ignored by git, or a symlink or hard link. The init question names the file
+before you choose. `.specify/spex.json`
+still records the requested security level, and a teammate's init applies it
+again, so do not commit a declaration with `"security": "yolo"`.
 
 Every init run also protects project edits to the core spec-kit templates.
 `specify init --force` rewrites `.specify/templates/*.md` with the stock

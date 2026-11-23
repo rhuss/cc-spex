@@ -104,7 +104,10 @@ put .claude/settings.json '{"permissions":{"defaultMode":"bypassPermissions","al
 run_perms migrate
 assert_eq "exit code 0" "0" "$RC"
 assert_eq "allow list rewritten" '["Bash","Read","Edit","Write","Bash(npm test)"]' "$(allow .claude/settings.json)"
-assert_eq "exact Migrated line" "Migrated: .claude/settings.json permissions: Bash(*) -> Bash, Read(*) -> Read, Edit(*) -> Edit, Write(*) -> Write" "$ERR"
+# The list also holds a team rule, so it is not a known spex level: the file
+# keeps its rules and a warning follows the Migrated line.
+assert_eq "exact Migrated line, then the no-known-level warning" "Migrated: .claude/settings.json permissions: Bash(*) -> Bash, Read(*) -> Read, Edit(*) -> Edit, Write(*) -> Write
+WARNING: .claude/settings.json holds spex-style permissions that match no known spex level; left unchanged. Review it by hand: a committed file reaches every clone of the project" "$ERR"
 assert_eq "stdout empty" "" "$OUT"
 assert_eq "hooks kept" '{"Stop":[]}' "$(jq -c .hooks "$PROJ/.claude/settings.json")"
 assert_eq "2-space indentation" '  "permissions": {' "$(sed -n 2p "$PROJ/.claude/settings.json")"
@@ -391,6 +394,7 @@ make_project
 user_settings
 mkdir -p "$PROJ/.claude"
 ln -s ../../home/.claude/settings.json "$PROJ/.claude/settings.json"
+ln -s ../../home/.claude/settings.local.json "$PROJ/.claude/settings.local.json"
 expect_user_untouched "file symlink, migrate" migrate
 expect_user_untouched "file symlink, YOLO apply" apply --default-mode bypassPermissions Bash Read Edit Write
 
@@ -448,6 +452,7 @@ make_project
 dotfile_user_settings
 mkdir -p "$PROJ/.claude"
 ln -s ../../home/.claude/settings.json "$PROJ/.claude/settings.json"
+ln -s ../../home/.claude/settings.local.json "$PROJ/.claude/settings.local.json"
 expect_dotfiles_untouched "file symlink, migrate" "$PROJ" migrate
 expect_dotfiles_untouched "file symlink, YOLO apply" "$PROJ" apply --default-mode bypassPermissions Bash Read
 make_project
@@ -478,7 +483,7 @@ user_settings
 mkdir -p "$PROJ/.claude"
 NL='
 '
-ln -s "foo$NL" "$PROJ/.claude/settings.json"
+ln -s "foo$NL" "$PROJ/.claude/settings.local.json"
 ln -s ../../home/.claude/settings.json "$PROJ/.claude/foo$NL"
 BEFORE=$(sum "$TMPROOT/home/.claude/settings.json")
 run_perms apply Bash Read
@@ -545,8 +550,11 @@ assert_contains "config dir: warning" "resolves to the user-level Claude setting
 # skill" below.
 YOLO=(Bash Read Edit Write Skill 'Agent(*)' WebFetch WebSearch EnterPlanMode ExitPlanMode EnterWorktree ExitWorktree)
 YOLO_JSON='["Bash","Read","Edit","Write","Skill","Agent(*)","WebFetch","WebSearch","EnterPlanMode","ExitPlanMode","EnterWorktree","ExitWorktree"]'
-STANDARD=(Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)')
-STANDARD_JSON='["Skill","Bash(specify *)","Bash(*spex-init.sh*)","Bash(*spex-ship-statusline.sh*)"]'
+INIT_RULES_JSON='"Bash(/*/spex-init.sh)","Bash(/*/spex-init.sh --refresh)","Bash(/*/spex-init.sh --update)","Bash(C:/*/spex-init.sh)","Bash(C:/*/spex-init.sh --refresh)","Bash(C:/*/spex-init.sh --update)"'
+STANDARD=(Skill 'Bash(specify *)'
+  'Bash(/*/spex-init.sh)' 'Bash(/*/spex-init.sh --refresh)' 'Bash(/*/spex-init.sh --update)'
+  'Bash(C:/*/spex-init.sh)' 'Bash(C:/*/spex-init.sh --refresh)' 'Bash(C:/*/spex-init.sh --update)')
+STANDARD_JSON='["Skill","Bash(specify *)",'"$INIT_RULES_JSON"']'
 # The YOLO list as earlier spex versions left it (merged with `unique`, so sorted).
 OLD_YOLO_JSON='["Agent(*)","Bash(*)","Edit(*)","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Read(*)","Skill","WebFetch","WebSearch","Write(*)"]'
 
@@ -554,106 +562,122 @@ echo "Test: YOLO apply on a project without settings (US1-1, US1-2)"
 make_project
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
 assert_eq "exit code 0" "0" "$RC"
-assert_eq "allow list in argument order" "$YOLO_JSON" "$(allow .claude/settings.json)"
-assert_eq "defaultMode set" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.json")"
-assert_eq "output" "Default mode set to bypassPermissions in .claude/settings.json
-Permissions configured in .claude/settings.json (12 rules added)" "$ERR"
+assert_eq "allow list in argument order" "$YOLO_JSON" "$(allow .claude/settings.local.json)"
+assert_eq "defaultMode set" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.local.json")"
+assert_eq "output" "Default mode set to bypassPermissions in .claude/settings.local.json
+Permissions configured in .claude/settings.local.json (12 rules added)" "$ERR"
 assert_eq "stdout empty" "" "$OUT"
-assert_eq "no legacy form written" "0" "$(jq '[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)" or . == "Edit(*)" or . == "Write(*)")] | length' "$PROJ/.claude/settings.json")"
-assert_eq "only settings.json created" "settings.json" "$(ls -A "$PROJ/.claude")"
+assert_eq "no legacy form written" "0" "$(jq '[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)" or . == "Edit(*)" or . == "Write(*)")] | length' "$PROJ/.claude/settings.local.json")"
+assert_eq "only settings.local.json created" "settings.local.json" "$(ls -A "$PROJ/.claude")"
 
 echo "Test: Standard apply on a project without settings"
 make_project
 run_perms apply "${STANDARD[@]}"
-assert_eq "allow list" "$STANDARD_JSON" "$(allow .claude/settings.json)"
-assert_eq "no defaultMode" "false" "$(jq '.permissions | has("defaultMode")' "$PROJ/.claude/settings.json")"
-assert_eq "output" "Permissions configured in .claude/settings.json (4 rules added)" "$ERR"
+assert_eq "allow list" "$STANDARD_JSON" "$(allow .claude/settings.local.json)"
+assert_eq "no defaultMode" "false" "$(jq '.permissions | has("defaultMode")' "$PROJ/.claude/settings.local.json")"
+assert_eq "output" "Permissions configured in .claude/settings.local.json (8 rules added)" "$ERR"
 
 echo "Test: YOLO apply over the legacy rules leaves each bare form once (US1-3, FR-003)"
 make_project
-put .claude/settings.json "{\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":$OLD_YOLO_JSON}}"
+put .claude/settings.local.json "{\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":$OLD_YOLO_JSON}}"
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
 assert_eq "exit code 0" "0" "$RC"
-assert_eq "legacy forms replaced in place" '["Agent(*)","Bash","Edit","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Read","Skill","WebFetch","WebSearch","Write"]' "$(allow .claude/settings.json)"
+assert_eq "legacy forms replaced in place" '["Agent(*)","Bash","Edit","EnterPlanMode","EnterWorktree","ExitPlanMode","ExitWorktree","Read","Skill","WebFetch","WebSearch","Write"]' "$(allow .claude/settings.local.json)"
 for t in Bash Read Edit Write; do
-  assert_eq "$t exactly once" "1" "$(jq --arg t "$t" '[.permissions.allow[] | select(. == $t)] | length' "$PROJ/.claude/settings.json")"
+  assert_eq "$t exactly once" "1" "$(jq --arg t "$t" '[.permissions.allow[] | select(. == $t)] | length' "$PROJ/.claude/settings.local.json")"
 done
-assert_contains "Migrated line" "Migrated: .claude/settings.json permissions: Bash(*) -> Bash, Edit(*) -> Edit, Read(*) -> Read, Write(*) -> Write" "$ERR"
-assert_contains "no new rules counted" "Permissions configured in .claude/settings.json (0 rules added)" "$ERR"
+assert_contains "Migrated line" "Migrated: .claude/settings.local.json permissions: Bash(*) -> Bash, Edit(*) -> Edit, Read(*) -> Read, Write(*) -> Write" "$ERR"
+assert_contains "no new rules counted" "Permissions configured in .claude/settings.local.json (0 rules added)" "$ERR"
 
 echo "Test: existing user rules keep their order, new rules are appended (FR-017)"
 make_project
-put .claude/settings.json '{"permissions":{"allow":["Zeta","Bash(npm test)","Alpha","Skill"]}}'
+put .claude/settings.local.json '{"permissions":{"allow":["Zeta","Bash(npm test)","Alpha","Skill"]}}'
 run_perms apply "${STANDARD[@]}"
-assert_eq "no sorting, Skill not duplicated" '["Zeta","Bash(npm test)","Alpha","Skill","Bash(specify *)","Bash(*spex-init.sh*)","Bash(*spex-ship-statusline.sh*)"]' "$(allow .claude/settings.json)"
-assert_eq "output" "Permissions configured in .claude/settings.json (3 rules added)" "$ERR"
+assert_eq "no sorting, Skill not duplicated" '["Zeta","Bash(npm test)","Alpha","Skill","Bash(specify *)",'"$INIT_RULES_JSON"']' "$(allow .claude/settings.local.json)"
+assert_eq "output" "Permissions configured in .claude/settings.local.json (7 rules added)" "$ERR"
 
 echo "Test: a repeated rule argument is added once"
 make_project
 run_perms apply Skill Skill WebFetch
-assert_eq "allow list" '["Skill","WebFetch"]' "$(allow .claude/settings.json)"
-assert_eq "output" "Permissions configured in .claude/settings.json (2 rules added)" "$ERR"
+assert_eq "allow list" '["Skill","WebFetch"]' "$(allow .claude/settings.local.json)"
+assert_eq "output" "Permissions configured in .claude/settings.local.json (2 rules added)" "$ERR"
 
 echo "Test: settings with other keys but no permissions"
 make_project
 ORIG='{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"memory-sync"}]}]},"statusLine":{"type":"command","command":"cc-deck status"}}'
-put .claude/settings.json "$ORIG"
+put .claude/settings.local.json "$ORIG"
 run_perms apply "${STANDARD[@]}"
-assert_eq "rules added" "$STANDARD_JSON" "$(allow .claude/settings.json)"
-assert_eq "other keys unchanged" "$(printf '%s' "$ORIG" | jq -cS .)" "$(jq -cS 'del(.permissions)' "$PROJ/.claude/settings.json")"
+assert_eq "rules added" "$STANDARD_JSON" "$(allow .claude/settings.local.json)"
+assert_eq "other keys unchanged" "$(printf '%s' "$ORIG" | jq -cS .)" "$(jq -cS 'del(.permissions)' "$PROJ/.claude/settings.local.json")"
 
 echo "Test: settings with permissions but no allow"
 make_project
-put .claude/settings.json '{"permissions":{"deny":["Bash(rm *)"],"ask":["Write(*)"]},"env":{"A":"1"}}'
+put .claude/settings.local.json '{"permissions":{"deny":["Bash(rm *)"],"ask":["Write(*)"]},"env":{"A":"1"}}'
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
-assert_eq "rules added" "$YOLO_JSON" "$(allow .claude/settings.json)"
-assert_eq "deny kept" '["Bash(rm *)"]' "$(jq -c .permissions.deny "$PROJ/.claude/settings.json")"
-assert_eq "ask kept" '["Write(*)"]' "$(jq -c .permissions.ask "$PROJ/.claude/settings.json")"
-assert_eq "env kept" '{"A":"1"}' "$(jq -c .env "$PROJ/.claude/settings.json")"
+assert_eq "rules added" "$YOLO_JSON" "$(allow .claude/settings.local.json)"
+assert_eq "deny kept" '["Bash(rm *)"]' "$(jq -c .permissions.deny "$PROJ/.claude/settings.local.json")"
+assert_eq "ask kept" '["Write(*)"]' "$(jq -c .permissions.ask "$PROJ/.claude/settings.local.json")"
+assert_eq "env kept" '{"A":"1"}' "$(jq -c .env "$PROJ/.claude/settings.local.json")"
 
 echo "Test: re-applying the same level is byte-identical"
 make_project
-put .claude/settings.json '{"permissions": {"allow": ["Skill"]}, "hooks": {}}'
+put .claude/settings.local.json '{"permissions": {"allow": ["Skill"]}, "hooks": {}}'
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
-BEFORE=$(sum "$PROJ/.claude/settings.json")
+BEFORE=$(sum "$PROJ/.claude/settings.local.json")
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
 assert_eq "exit code 0" "0" "$RC"
-assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
-assert_eq "output" "Permissions configured in .claude/settings.json (0 rules added)" "$ERR"
+assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.local.json")"
+assert_eq "output" "Permissions configured in .claude/settings.local.json (0 rules added)" "$ERR"
 
 echo "Test: an unchanged file in its own layout is not rewritten"
 make_project
-put .claude/settings.json '{"permissions":{"allow":["Skill"]}}'
-BEFORE=$(sum "$PROJ/.claude/settings.json")
+put .claude/settings.local.json '{"permissions":{"allow":["Skill"]}}'
+BEFORE=$(sum "$PROJ/.claude/settings.local.json")
 run_perms apply Skill
-assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
-assert_eq "output" "Permissions configured in .claude/settings.json (0 rules added)" "$ERR"
+assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.local.json")"
+assert_eq "output" "Permissions configured in .claude/settings.local.json (0 rules added)" "$ERR"
 
 echo "Test: a changed defaultMode alone is written"
 make_project
-put .claude/settings.json "{\"permissions\":{\"defaultMode\":\"default\",\"allow\":$YOLO_JSON}}"
+put .claude/settings.local.json "{\"permissions\":{\"defaultMode\":\"default\",\"allow\":$YOLO_JSON}}"
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
-assert_eq "defaultMode updated" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.json")"
-assert_eq "output names the mode change" "Default mode set to bypassPermissions in .claude/settings.json
-Permissions configured in .claude/settings.json (0 rules added)" "$ERR"
+assert_eq "defaultMode updated" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.local.json")"
+assert_eq "output names the mode change" "Default mode set to bypassPermissions in .claude/settings.local.json
+Permissions configured in .claude/settings.local.json (0 rules added)" "$ERR"
 
-echo "Test: apply then migrate also repairs settings.local.json (init Step 2 sequence)"
+echo "Test: apply never writes the committed settings.json (issue 62)"
 make_project
+put .claude/settings.json '{"hooks":{"Stop":[]},"permissions":{"allow":["Bash(npm test)"]}}'
+BEFORE=$(sum "$PROJ/.claude/settings.json")
+run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
+assert_eq "committed settings.json bytes kept (YOLO)" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
+assert_eq "YOLO rules in settings.local.json" "$YOLO_JSON" "$(allow .claude/settings.local.json)"
+assert_not_contains "apply output never names settings.json" "settings.json" "$ERR"
+run_perms apply "${STANDARD[@]}"
+assert_eq "committed settings.json bytes kept (Standard)" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
+make_project
+run_perms apply "${STANDARD[@]}"
+assert_eq "no settings.json created" "settings.local.json" "$(ls -A "$PROJ/.claude")"
+
+echo "Test: apply then migrate repairs both files (init Step 2 sequence)"
+make_project
+put .claude/settings.json '{"permissions":{"allow":["Edit(*)","Bash(team rule)"]}}'
 put .claude/settings.local.json '{"permissions":{"allow":["Read(*)","Bash(*)","Bash(make *)"]}}'
 run_perms apply "${STANDARD[@]}"
 APPLY_ERR=$ERR
+assert_not_contains "apply leaves settings.json alone" "settings.json" "$APPLY_ERR"
+assert_eq "apply merged into settings.local.json (legacy rules collapse)" '["Read","Bash","Bash(make *)","Skill","Bash(specify *)",'"$INIT_RULES_JSON"']' "$(allow .claude/settings.local.json)"
 run_perms migrate
-assert_not_contains "apply leaves settings.local.json alone" "settings.local.json" "$APPLY_ERR"
-assert_eq "settings.local.json migrated" '["Read","Bash","Bash(make *)"]' "$(allow .claude/settings.local.json)"
-assert_eq "Migrated line" "Migrated: .claude/settings.local.json permissions: Read(*) -> Read, Bash(*) -> Bash" "$ERR"
+assert_eq "settings.json migrated" '["Edit","Bash(team rule)"]' "$(allow .claude/settings.json)"
+assert_eq "Migrated line" "Migrated: .claude/settings.json permissions: Edit(*) -> Edit" "$ERR"
 
 echo "Test: a rule argument with a newline stays one rule"
 make_project
 run_perms apply "Read(notes
 Bash
 archive/**)" Skill
-assert_eq "argument boundaries kept" '["Read(notes\nBash\narchive/**)","Skill"]' "$(allow .claude/settings.json)"
-assert_eq "no bare Bash smuggled in" "0" "$(jq '[.permissions.allow[] | select(. == "Bash")] | length' "$PROJ/.claude/settings.json")"
+assert_eq "argument boundaries kept" '["Read(notes\nBash\narchive/**)","Skill"]' "$(allow .claude/settings.local.json)"
+assert_eq "no bare Bash smuggled in" "0" "$(jq '[.permissions.allow[] | select(. == "Bash")] | length' "$PROJ/.claude/settings.local.json")"
 
 echo "Test: apply with --root from another directory"
 make_project
@@ -661,53 +685,53 @@ mkdir -p "$TMPROOT/elsewhere"
 RC=0
 (cd "$TMPROOT/elsewhere" && HOME="$TMPROOT/home" sh "$PERMS" apply --root "$PROJ" Skill 2> "$TMPROOT/err") || RC=$?
 assert_eq "exit code 0" "0" "$RC"
-assert_eq "written under root" '["Skill"]' "$(allow .claude/settings.json)"
+assert_eq "written under root" '["Skill"]' "$(allow .claude/settings.local.json)"
 assert_eq "nothing written in cwd" "" "$(ls -A "$TMPROOT/elsewhere")"
 
 echo "Test: apply never touches user-level settings (FR-012)"
 make_project
 mkdir -p "$TMPROOT/home/.claude"
-printf '%s' '{"permissions":{"allow":["Read(*)"]}}' > "$TMPROOT/home/.claude/settings.json"
-BEFORE=$(sum "$TMPROOT/home/.claude/settings.json")
+printf '%s' '{"permissions":{"allow":["Read(*)"]}}' > "$TMPROOT/home/.claude/settings.local.json"
+BEFORE=$(sum "$TMPROOT/home/.claude/settings.local.json")
 run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
-assert_eq "user settings bytes kept" "$BEFORE" "$(sum "$TMPROOT/home/.claude/settings.json")"
+assert_eq "user settings bytes kept" "$BEFORE" "$(sum "$TMPROOT/home/.claude/settings.local.json")"
 
-# expect_not_applied <desc> <content> <warning>: apply leaves settings.json
+# expect_not_applied <desc> <content> <warning>: apply leaves settings.local.json
 # with <content> byte-identical, warns, and exits 0.
 expect_not_applied() {
   make_project
-  put .claude/settings.json "$2"
+  put .claude/settings.local.json "$2"
   local before
-  before=$(sum "$PROJ/.claude/settings.json")
+  before=$(sum "$PROJ/.claude/settings.local.json")
   run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
   assert_eq "$1: exit code 0" "0" "$RC"
-  assert_eq "$1: bytes kept" "$before" "$(sum "$PROJ/.claude/settings.json")"
+  assert_eq "$1: bytes kept" "$before" "$(sum "$PROJ/.claude/settings.local.json")"
   assert_contains "$1: warning" "$3" "$ERR"
   assert_not_contains "$1: no configured line" "Permissions configured" "$ERR"
 }
 
 echo "Test: invalid JSON or an unexpected shape is never overwritten"
-expect_not_applied "invalid JSON" '{"permissions":' "WARNING: .claude/settings.json is not valid JSON; permissions not applied"
-expect_not_applied "empty file" '' "WARNING: .claude/settings.json is not valid JSON; permissions not applied"
-expect_not_applied "top level array" '["Skill"]' "WARNING: .claude/settings.json has an unexpected structure; permissions not applied"
-expect_not_applied "top level null" 'null' "WARNING: .claude/settings.json has an unexpected structure; permissions not applied"
-expect_not_applied "permissions is a string" '{"permissions":"yolo"}' "WARNING: .claude/settings.json has an unexpected structure; permissions not applied"
-expect_not_applied "allow is an object" '{"permissions":{"allow":{}}}' "WARNING: .claude/settings.json has an unexpected structure; permissions not applied"
-expect_not_applied "allow is null" '{"permissions":{"allow":null}}' "WARNING: .claude/settings.json has an unexpected structure; permissions not applied"
+expect_not_applied "invalid JSON" '{"permissions":' "WARNING: .claude/settings.local.json is not valid JSON; permissions not applied"
+expect_not_applied "empty file" '' "WARNING: .claude/settings.local.json is not valid JSON; permissions not applied"
+expect_not_applied "top level array" '["Skill"]' "WARNING: .claude/settings.local.json has an unexpected structure; permissions not applied"
+expect_not_applied "top level null" 'null' "WARNING: .claude/settings.local.json has an unexpected structure; permissions not applied"
+expect_not_applied "permissions is a string" '{"permissions":"yolo"}' "WARNING: .claude/settings.local.json has an unexpected structure; permissions not applied"
+expect_not_applied "allow is an object" '{"permissions":{"allow":{}}}' "WARNING: .claude/settings.local.json has an unexpected structure; permissions not applied"
+expect_not_applied "allow is null" '{"permissions":{"allow":null}}' "WARNING: .claude/settings.local.json has an unexpected structure; permissions not applied"
 
 echo "Test: a write failure in apply keeps the original and warns"
 if [ "$(id -u)" -eq 0 ]; then
   echo "  SKIP: running as root, directory permissions are not enforced"
 else
   make_project
-  put .claude/settings.json '{"permissions":{"allow":["Read(*)"]}}'
-  BEFORE=$(sum "$PROJ/.claude/settings.json")
+  put .claude/settings.local.json '{"permissions":{"allow":["Read(*)"]}}'
+  BEFORE=$(sum "$PROJ/.claude/settings.local.json")
   chmod 555 "$PROJ/.claude"
   run_perms apply Skill
   chmod 755 "$PROJ/.claude"
   assert_eq "exit code 0" "0" "$RC"
-  assert_eq "original intact" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
-  assert_contains "write warning" "WARNING: could not write .claude/settings.json; permissions not applied" "$ERR"
+  assert_eq "original intact" "$BEFORE" "$(sum "$PROJ/.claude/settings.local.json")"
+  assert_contains "write warning" "WARNING: could not write .claude/settings.local.json; permissions not applied" "$ERR"
   assert_not_contains "no Migrated line" "Migrated:" "$ERR"
 
   make_project
@@ -715,8 +739,149 @@ else
   run_perms apply Skill
   chmod 755 "$PROJ"
   assert_eq "missing .claude, unwritable root: exit code 0" "0" "$RC"
-  assert_contains "missing .claude, unwritable root: warning" "WARNING: could not write .claude/settings.json; permissions not applied" "$ERR"
+  assert_contains "missing .claude, unwritable root: warning" "WARNING: could not write .claude/settings.local.json; permissions not applied" "$ERR"
 fi
+
+# ===================================================================
+# migrate removes a spex level left in the committed settings.json (issue 62)
+# ===================================================================
+
+echo "Test: migrate removes an exact YOLO level from the committed settings.json"
+make_project
+put .claude/settings.json "{\"hooks\":{\"Stop\":[]},\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":$YOLO_JSON,\"deny\":[\"Bash(rm *)\"]}}"
+put .claude/settings.local.json "{\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":$YOLO_JSON}}"
+LOCAL_BEFORE=$(sum "$PROJ/.claude/settings.local.json")
+run_perms migrate
+assert_eq "exit code 0" "0" "$RC"
+assert_eq "allow list emptied" '[]' "$(allow .claude/settings.json)"
+assert_eq "defaultMode bypassPermissions cleared" "false" "$(jq '.permissions | has("defaultMode")' "$PROJ/.claude/settings.json")"
+assert_eq "deny and hooks kept" '["Bash(rm *)"]|{"Stop":[]}' "$(jq -c .permissions.deny "$PROJ/.claude/settings.json")|$(jq -c .hooks "$PROJ/.claude/settings.json")"
+assert_eq "Removed line" "Removed: .claude/settings.json permissions: 12 spex yolo rules, defaultMode bypassPermissions cleared (run /spex:init to set a level in .claude/settings.local.json)" "$ERR"
+assert_eq "personal settings.local.json untouched" "$LOCAL_BEFORE" "$(sum "$PROJ/.claude/settings.local.json")"
+run_perms migrate
+assert_eq "second run prints nothing" "" "$ERR"
+
+echo "Test: migrate removes an exact Standard level, legacy forms included"
+make_project
+put .claude/settings.json '{"permissions":{"allow":["Skill","Bash(specify *)","Bash(*spex-init.sh*)","Bash(*spex-ship-statusline.sh*)"]}}'
+run_perms migrate
+assert_eq "old Standard list removed" '[]' "$(allow .claude/settings.json)"
+assert_contains "Removed line names the level" "Removed: .claude/settings.json permissions: 4 spex standard rules (run /spex:init" "$ERR"
+make_project
+put .claude/settings.json "{\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":$OLD_YOLO_JSON}}"
+run_perms migrate
+assert_eq "legacy YOLO list removed" '[]' "$(allow .claude/settings.json)"
+assert_eq "legacy YOLO defaultMode cleared" "false" "$(jq '.permissions | has("defaultMode")' "$PROJ/.claude/settings.json")"
+assert_contains "Migrated line first" "Migrated: .claude/settings.json permissions: Bash(*) -> Bash" "$ERR"
+assert_contains "then Removed line" "Removed: .claude/settings.json permissions: 12 spex yolo rules" "$ERR"
+
+echo "Test: migrate warns and leaves a settings.json that matches no known level"
+make_project
+put .claude/settings.json "{\"permissions\":{\"defaultMode\":\"bypassPermissions\",\"allow\":[\"Bash\",\"Read\",\"Edit\",\"Write\",\"Bash(npm test)\"]}}"
+BEFORE=$(sum "$PROJ/.claude/settings.json")
+run_perms migrate
+assert_eq "exit code 0" "0" "$RC"
+assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
+assert_contains "warning" "WARNING: .claude/settings.json holds spex-style permissions that match no known spex level; left unchanged" "$ERR"
+assert_not_contains "no Removed line" "Removed:" "$ERR"
+
+echo "Test: migrate stays silent about a settings.json without spex permissions"
+make_project
+put .claude/settings.json '{"permissions":{"allow":["Bash(npm test)","Read(docs/**)"]}}'
+BEFORE=$(sum "$PROJ/.claude/settings.json")
+run_perms migrate
+assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.json")"
+assert_eq "no output" "" "$ERR"
+
+# ===================================================================
+# apply only writes a personal settings.local.json (issue 62)
+# ===================================================================
+
+# make_git_project <ignore-rule-or-empty>: a git repository at $PROJ whose
+# .gitignore holds the given rule (nothing when empty).
+make_git_project() {
+  make_project
+  git -C "$PROJ" init -q
+  git -C "$PROJ" config user.email "test@example.com"
+  git -C "$PROJ" config user.name "Test"
+  git -C "$PROJ" config core.excludesFile "$TMPROOT/empty-excludes"
+  : > "$TMPROOT/empty-excludes"
+  if [ -n "$1" ]; then
+    printf '%s\n' "$1" > "$PROJ/.gitignore"
+  fi
+  mkdir -p "$PROJ/.claude"
+}
+
+echo "Test: apply writes settings.local.json when git ignores it (control)"
+if ! command -v git >/dev/null 2>&1; then
+  echo "  SKIP: git not installed"
+else
+  make_git_project ".claude/settings.local.json"
+  run_perms apply Skill
+  assert_eq "rule written" '["Skill"]' "$(allow .claude/settings.local.json)"
+  assert_not_contains "no warning" "WARNING" "$ERR"
+
+  echo "Test: apply refuses a settings.local.json that git tracks"
+  make_git_project ".claude/settings.local.json"
+  put .claude/settings.local.json '{"permissions":{"allow":["Read(docs/**)"]}}'
+  git -C "$PROJ" add -f .claude/settings.local.json
+  BEFORE=$(sum "$PROJ/.claude/settings.local.json")
+  run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
+  assert_eq "exit code 0" "0" "$RC"
+  assert_eq "bytes kept" "$BEFORE" "$(sum "$PROJ/.claude/settings.local.json")"
+  assert_contains "warning" "WARNING: .claude/settings.local.json is tracked by git; permissions not applied" "$ERR"
+  assert_not_contains "no configured line" "Permissions configured" "$ERR"
+
+  echo "Test: apply refuses a settings.local.json that git does not ignore"
+  make_git_project ""
+  run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
+  assert_eq "exit code 0" "0" "$RC"
+  assert_eq "nothing created" "no" "$([ -e "$PROJ/.claude/settings.local.json" ] && echo yes || echo no)"
+  assert_contains "warning" "WARNING: .claude/settings.local.json is not ignored by git; permissions not applied" "$ERR"
+fi
+
+echo "Test: apply refuses a settings.local.json that is a symlink"
+make_project
+mkdir -p "$PROJ/.claude" "$TMPROOT/team"
+printf '%s' '{"permissions":{"allow":["Read(docs/**)"]}}' > "$TMPROOT/team/settings.local.json"
+ln -s ../../team/settings.local.json "$PROJ/.claude/settings.local.json"
+BEFORE=$(sum "$TMPROOT/team/settings.local.json")
+run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
+assert_eq "exit code 0" "0" "$RC"
+assert_eq "link target bytes kept" "$BEFORE" "$(sum "$TMPROOT/team/settings.local.json")"
+assert_contains "warning" "WARNING: .claude/settings.local.json is a symlink; permissions not applied" "$ERR"
+
+echo "Test: apply refuses a settings.local.json that is a hard link"
+make_project
+mkdir -p "$PROJ/.claude"
+printf '%s' '{"permissions":{"allow":["Read(docs/**)"]}}' > "$TMPROOT/other.json"
+ln "$TMPROOT/other.json" "$PROJ/.claude/settings.local.json"
+if [ "$(stat -c %h "$PROJ/.claude/settings.local.json" 2>/dev/null || echo 1)" -gt 1 ]; then
+  BEFORE=$(sum "$TMPROOT/other.json")
+  run_perms apply --default-mode bypassPermissions "${YOLO[@]}"
+  assert_eq "exit code 0" "0" "$RC"
+  assert_eq "other link bytes kept" "$BEFORE" "$(sum "$TMPROOT/other.json")"
+  assert_contains "warning" "WARNING: .claude/settings.local.json is hard-linked to another file; permissions not applied" "$ERR"
+else
+  echo "  SKIP: this file system does not create hard links"
+fi
+
+echo "Test: apply never reaches a user-level settings.local.json through a hard link or CLAUDE_CONFIG_DIR"
+make_project
+user_settings
+mkdir -p "$PROJ/.claude"
+ln "$TMPROOT/home/.claude/settings.local.json" "$PROJ/.claude/settings.local.json"
+expect_user_untouched "hard link, apply" apply --default-mode bypassPermissions "${YOLO[@]}"
+make_project
+mkdir -p "$TMPROOT/config" "$PROJ/.claude"
+printf '%s' '{"permissions":{"allow":["Write(*)"]}}' > "$TMPROOT/config/settings.local.json"
+ln -s ../../config/settings.local.json "$PROJ/.claude/settings.local.json"
+BEFORE=$(sum "$TMPROOT/config/settings.local.json")
+RC=0
+(cd "$PROJ" && HOME="$TMPROOT/home" CLAUDE_CONFIG_DIR="$TMPROOT/config" sh "$PERMS" apply --default-mode bypassPermissions "${YOLO[@]}" 2> "$TMPROOT/err") || RC=$?
+assert_eq "config dir, apply: exit code 0" "0" "$RC"
+assert_eq "config dir, apply: bytes kept" "$BEFORE" "$(sum "$TMPROOT/config/settings.local.json")"
+assert_contains "config dir, apply: warning" "resolves to the user-level Claude settings" "$(cat "$TMPROOT/err")"
 
 # ===================================================================
 # rule lists in setup.yml and the init skill (FR-001, FR-002, FR-014, FR-016)
@@ -749,6 +914,10 @@ for level in Standard YOLO None; do
   block=$(skill_block "$level")
   assert_contains "skill $level block calls the script" "spex-permissions.sh" "$block"
   assert_contains "skill $level block migrates" "spex-permissions.sh\" migrate" "$block"
+  if [ "$level" = None ]; then
+    # None must not add rules: its block only migrates.
+    assert_not_contains "skill None block does not apply rules" 'spex-permissions.sh" apply' "$block"
+  fi
   if printf '%s\n' "$block" | grep -Eq "$LEGACY_RE"; then
     echo "  FAIL: skill $level block passes a legacy Tool(*) rule"; FAIL=$((FAIL + 1))
   else
@@ -764,6 +933,33 @@ else
 fi
 assert_contains "setup.yml migrate step" 'spex-permissions.sh" migrate' "$(cat "$SETUP_YML")"
 
+# The init rules are anchored to the exact calls the context hook emits, and
+# checked on the files that really ship (setup.yml and the init skill), not on a
+# copy of the list inside this test.
+echo "Test: shipped Standard and YOLO lists anchor the init rule (setup.yml and the init skill)"
+ANCHORED_RULES=(
+  "'Bash(/*/spex-init.sh)'" "'Bash(/*/spex-init.sh --refresh)'" "'Bash(/*/spex-init.sh --update)'"
+  "'Bash(C:/*/spex-init.sh)'" "'Bash(C:/*/spex-init.sh --refresh)'" "'Bash(C:/*/spex-init.sh --update)'"
+)
+SHIPPED_SOURCES=(
+  "setup.yml apply calls"
+  "skill Standard block"
+  "skill YOLO block"
+)
+for source_name in "${SHIPPED_SOURCES[@]}"; do
+  case "$source_name" in
+    "setup.yml apply calls") text=$(setup_apply_lines) ;;
+    "skill Standard block") text=$(skill_block Standard) ;;
+    "skill YOLO block") text=$(skill_block YOLO) ;;
+  esac
+  for rule in "${ANCHORED_RULES[@]}"; do
+    assert_contains "$source_name has $rule" "$rule" "$text"
+  done
+  assert_not_contains "$source_name: no wildcard around the init script" "spex-init.sh*" "$text"
+  assert_not_contains "$source_name: no leading wildcard on the init script" "(*spex-init" "$text"
+  assert_not_contains "$source_name: no statusline rule" "spex-ship-statusline" "$text"
+done
+
 echo "Test: the init skill's YOLO block writes bare rules once each (US1-1)"
 make_project
 put .claude/settings.json '{"permissions":{"allow":["Bash(*)","Read(*)","Edit(*)","Write(*)","Bash(npm test)"]}}'
@@ -774,14 +970,14 @@ RC=0
 ERR=$(cat "$TMPROOT/err")
 assert_eq "exit code 0" "0" "$RC"
 for t in Bash Read Edit Write; do
-  assert_eq "$t exactly once" "1" "$(jq --arg t "$t" '[.permissions.allow[] | select(. == $t)] | length' "$PROJ/.claude/settings.json")"
+  assert_eq "$t exactly once in settings.local.json" "1" "$(jq --arg t "$t" '[.permissions.allow[] | select(. == $t)] | length' "$PROJ/.claude/settings.local.json")"
 done
-assert_eq "no legacy form left" "0" "$(jq '[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)" or . == "Edit(*)" or . == "Write(*)")] | length' "$PROJ/.claude/settings.json")"
-assert_eq "user rule kept" "1" "$(jq '[.permissions.allow[] | select(. == "Bash(npm test)")] | length' "$PROJ/.claude/settings.json")"
-assert_eq "defaultMode set" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.json")"
-assert_eq "settings.local.json migrated" '["Read"]' "$(allow .claude/settings.local.json)"
+assert_eq "no legacy form left in settings.local.json" "0" "$(jq '[.permissions.allow[] | select(. == "Bash(*)" or . == "Read(*)" or . == "Edit(*)" or . == "Write(*)")] | length' "$PROJ/.claude/settings.local.json")"
+assert_eq "defaultMode set in settings.local.json" "bypassPermissions" "$(jq -r .permissions.defaultMode "$PROJ/.claude/settings.local.json")"
+assert_eq "committed settings.json only migrated, no YOLO rules or mode added" '["Bash","Read","Edit","Write","Bash(npm test)"]|false' "$(allow .claude/settings.json)|$(jq '.permissions | has("defaultMode")' "$PROJ/.claude/settings.json")"
 assert_contains "Migrated line for settings.json" "Migrated: .claude/settings.json permissions:" "$ERR"
 assert_contains "Migrated line for settings.local.json" "Migrated: .claude/settings.local.json permissions: Read(*) -> Read" "$ERR"
+assert_contains "apply result names settings.local.json" "Permissions configured in .claude/settings.local.json" "$ERR"
 
 echo "Test: usage errors exit 2 and change nothing"
 make_project

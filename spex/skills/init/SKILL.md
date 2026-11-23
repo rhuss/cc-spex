@@ -32,9 +32,9 @@ You MUST ask all 3 questions below in a SINGLE AskUserQuestion call. Do NOT spli
    - "spex-detach": "Strip spec artifacts at PR time for contributing to repos that don't use SDD"
 
 3. (`multiSelect: false`, header: "Permissions"): "How should spex commands handle permission prompts?"
-   - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI)"
-   - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows"
-   - "None": "Confirm every spex command before execution"
+   - "Standard (Recommended)": "Auto-approve spex plugin scripts (spex-init.sh, specify CLI). Rules are written to .claude/settings.local.json (personal, not committed)"
+   - "YOLO": "Auto-approve everything, bypass all permission prompts for unattended workflows. Written to .claude/settings.local.json (personal, not committed)"
+   - "None": "Confirm every spex command before execution. No new rules are added; legacy `Tool(*)` rules are still repaired in both settings files."
 
 Then apply the selections:
 
@@ -71,19 +71,24 @@ Run the block as one Bash call so `set -e` stops it before `persist` when a step
 - `--legacy-permissions` maps None to `safe`, Standard to `autonomous` and YOLO to `yolo` in `.specify/spex.json`.
 - If the block fails, the declaration is not written. Show the error and STOP. For `ERROR: spex-worktrees requires the spec-kit git extension`, offer the two fixes from Step 1: add the git extension and run `/spex:init` again, or choose again without `spex-worktrees`. Otherwise report the `Enabled:` / `Disabled:` lines in Step 4.
 
-**Permissions**: The `specify` CLI does not manage permissions. All Claude permission writes go through `spex-permissions.sh` in the same `<scripts>` directory. Do not edit `.claude/settings.json` yourself, and do not merge rules with your own `jq` calls. Run the block for the user's choice as one Bash call, copying the rule arguments verbatim (do not modify or rephrase the permission strings):
+**Permissions**: The `specify` CLI does not manage permissions. All Claude permission writes go through `spex-permissions.sh` in the same `<scripts>` directory. Do not edit `.claude/settings.json` or `.claude/settings.local.json` yourself, and do not merge rules with your own `jq` calls. Run the block for the user's choice as one Bash call, copying the rule arguments verbatim (do not modify or rephrase the permission strings):
 
 - **Standard**:
   ```bash
   sh "<scripts>/spex-permissions.sh" apply \
-    Skill 'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+    Skill 'Bash(specify *)' \
+    'Bash(/*/spex-init.sh)' 'Bash(/*/spex-init.sh --refresh)' 'Bash(/*/spex-init.sh --update)' \
+    'Bash(C:/*/spex-init.sh)' 'Bash(C:/*/spex-init.sh --refresh)' 'Bash(C:/*/spex-init.sh --update)'
   sh "<scripts>/spex-permissions.sh" migrate
   ```
+  The init rules match only the exact calls the context hook emits (no wildcard around the script name, so a command that merely contains `spex-init.sh` is not approved), for absolute POSIX paths and Windows drive C: paths. There is no statusline rule: the status line runs as a `statusLine` command, never through Bash.
 - **YOLO**:
   ```bash
   sh "<scripts>/spex-permissions.sh" apply --default-mode bypassPermissions \
     Bash Read Edit Write WebFetch WebSearch Skill \
-    'Bash(specify *)' 'Bash(*spex-init.sh*)' 'Bash(*spex-ship-statusline.sh*)'
+    'Bash(specify *)' \
+    'Bash(/*/spex-init.sh)' 'Bash(/*/spex-init.sh --refresh)' 'Bash(/*/spex-init.sh --update)' \
+    'Bash(C:/*/spex-init.sh)' 'Bash(C:/*/spex-init.sh --refresh)' 'Bash(C:/*/spex-init.sh --update)'
   sh "<scripts>/spex-permissions.sh" migrate
   ```
   Note: `defaultMode: "bypassPermissions"` skips all permission prompts. The broad `allow` rules serve as additional fallback. Use this for unattended ship pipelines or when you trust the agent fully. The bare tool names `Bash`, `Read`, `Edit` and `Write` allow the tool for every command and every path, including sibling worktrees outside the working directory. Never write `Bash(*)`, `Read(*)`, `Edit(*)` or `Write(*)` instead: current Claude Code releases flag these forms, and `Read(*)`, `Edit(*)` and `Write(*)` only cover the working directories there.
@@ -92,7 +97,7 @@ Run the block as one Bash call so `set -e` stops it before `persist` when a step
   sh "<scripts>/spex-permissions.sh" migrate
   ```
 
-`apply` appends the missing rules to the project's `.claude/settings.json` (created when missing) without re-sorting the existing list, and leaves every other setting alone. `migrate` rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules to the bare names in `.claude/settings.json` and `.claude/settings.local.json`. Both print their results on stderr: `Permissions configured in .claude/settings.json (<n> rules added)`, `Default mode set to bypassPermissions in .claude/settings.json` when YOLO changed the default mode, one `Migrated: ...` line per repaired file, and `WARNING: ...` lines for files they left alone (including a project settings path that resolves to the user-level `~/.claude` settings, which spex never changes). Keep these lines for Step 4.
+`apply` appends the missing rules to the project's `.claude/settings.local.json` (created when missing), never to the committed `.claude/settings.json`, because a permission level is one person's trust decision. It does not re-sort the existing list and leaves every other setting alone. `migrate` rewrites the legacy `Bash(*)`, `Read(*)`, `Edit(*)` and `Write(*)` rules to the bare names in `.claude/settings.json` and `.claude/settings.local.json`. When an earlier spex version left its security level in the committed `.claude/settings.json` and the allow list there is exactly a known spex level, `migrate` removes those entries and clears `defaultMode: bypassPermissions`; any other list is left alone with a `WARNING:` when it still looks like spex permissions. `apply` skips with a `WARNING:` when `.claude/settings.local.json` is tracked by git, not ignored by git, a symlink or a hard link. Both print their results on stderr: `Permissions configured in .claude/settings.local.json (<n> rules added)`, `Default mode set to bypassPermissions in .claude/settings.local.json` when YOLO changed the default mode, one `Migrated: ...` line per repaired file, a `Removed: ...` line when `migrate` took a spex level out of the committed `.claude/settings.json`, and `WARNING: ...` lines for files they left alone (including a project settings path that resolves to the user-level `~/.claude` settings, which spex never changes). Keep these lines for Step 4.
 
 ## Step 3: Detect companion plugins and seed memory
 
