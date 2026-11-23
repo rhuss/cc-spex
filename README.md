@@ -758,7 +758,7 @@ make test-codex-plugin   # Test the bundled Codex plugin and $cc-spex-init boots
 make test-apply-extensions  # Test exact extension selection
 make test-install      # Integration test: install from local marketplace
 make test-install-remote  # Integration test: install from GitHub marketplace
-make release           # Full release: validate, update marketplace.json, tag, push, bump to dev
+make release           # Full release: validate, update marketplace.json, tag, push, bump to dev, reinstall
 ```
 
 The release process is fully automated via `make release`:
@@ -768,6 +768,7 @@ The release process is fully automated via `make release`:
 3. Commits, creates a git tag `vX.Y.Z`, and pushes
 4. Creates a GitHub release with auto-generated notes
 5. Bumps `VERSION` to the next dev version (`X.Y.{Z+1}-dev`), commits, and pushes
+6. Reinstalls the plugin from the local checkout (the `test-install` step removes it during its cleanup)
 
 The `VERSION` file at the repository root is the single source of truth for the project version. Between releases, it contains a `-dev` suffix (e.g., `5.9.1-dev`).
 

@@ -156,6 +156,10 @@ release: validate sync-scripts-check test-install
 	git push; \
 	echo ""; \
 	echo "Release v$$VERSION complete. VERSION bumped to $$NEXT_VERSION."
+	@# test-install removes the plugin during its cleanup; install it again
+	@echo ""
+	@echo "Reinstalling the plugin (test-install removed it)..."
+	@$(MAKE) --no-print-directory reinstall
 
 # Script inventory: which canonical scripts (in spex/scripts/) belong to which extensions
 SCRIPTS_spex := spex-flow-state.sh spex-ship-state.sh spex-ship-state.py spex-ship-statusline.sh spex-finish-context.sh spex-worktree-cwd.sh spex-runbook-status.sh spex-runbook-status.py spex-runbook-check.sh spex-runbook-check.py spex-runbook-fixture.sh spex-runbook-clip.sh spex-finish-preserve-specs.sh spex-verify-record.sh
