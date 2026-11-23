@@ -18,7 +18,7 @@ It supports these actions:
 - **ensure**: Called by the `before_implement` hook. Verifies worktree isolation exists. If already in a worktree, proceeds silently. If not, offers **adopt**.
 - **list**: Shows all active feature worktrees with path, branch, and feature name, plus pending (provisional) worktrees.
 - **finish**: Merges the current worktree's branch into the default branch and removes the worktree. Use when implementation is complete.
-- **cleanup**: Detects worktrees whose branches are merged, and pending worktrees left behind by an interrupted specify, and offers removal.
+- **cleanup**: Detects stale worktrees (branch merged into the default branch, upstream gone, or a detached `HEAD` already in the default branch, whatever the branch is called), and pending worktrees left behind by an interrupted specify, and offers removal one at a time. **prepare** and **adopt** print the same findings as a notice when they create a worktree.
 
 The **prepare**, **finalize** and **adopt** actions delegate to a script. Do not re-implement its steps inline:
 
@@ -82,6 +82,7 @@ Pass the short name in single quotes, and never splice free text (titles, descri
 - **`WORKTREE_PREPARED ... mode=late`**: `speckit.git.feature` already ran in the main checkout (hooks were dispatched in file order). The script restored the main checkout to its previous ref and attached the branch to the new worktree. Run `cd '<path>'`, show the `NOTICE: hook order ...` line, and continue `/speckit-specify` in the worktree. Do not run `speckit.git.feature` again.
 - **`WORKTREE_READY`**: the session is already inside a worktree. Run `cd '<path>'` (usually a no-op) and continue. Show a `WARNING:` line if one was printed (nesting is not supported, the spec is written in the current worktree).
 - **`WORKTREE_SKIPPED`**: the extension is disabled. Continue without a worktree.
+- **`NOTICE: stale worktree ...` or `NOTICE: <n> stale worktrees ...`** (after any `WORKTREE_PREPARED` result): show these lines to the user and carry on. They are information only: do not ask anything and do not remove anything here. The user decides later with the **cleanup** action.
 - **Exit code 1 or 2**: **STOP `/speckit-specify`.** Show the `ERROR:` lines and the remedy. Do not fall back to creating the branch or writing the spec in the main checkout. Do not run `speckit.git.feature`. Inside a ship pipeline this is a blocker at every oversight level. Late mode is taken only for a feature branch that was created moments ago and matches this run's short name (or `--branch`). If the main checkout sits on a fresh feature branch of another run, or on one that already has commits, `prepare` stops with an `ERROR:` and changes nothing.
 
 ### Step 4: If `speckit.git.feature` fails inside the prepared worktree
@@ -405,64 +406,61 @@ If the user wants to push: `git push origin $DEFAULT_BRANCH`
 
 ## Action: Cleanup
 
-Detect worktrees whose branches are merged, and pending worktrees left behind by an interrupted `/speckit-specify`, and offer removal.
+Find stale linked worktrees, and pending worktrees left behind by an interrupted `/speckit-specify`, and offer removal one at a time.
 
-### Step 1: Get Merged Branches
+The judgement of what is stale lives in the script, not here. The notice that **prepare** and **adopt** print when they create a worktree uses the same report, so the two always agree. Do not recompute it with `git branch --merged` or any branch-name filter.
 
-```bash
-# Detect default branch with fallback chain
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-if [ -z "$DEFAULT_BRANCH" ]; then
-  for candidate in main master; do
-    if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
-      DEFAULT_BRANCH="$candidate"
-      break
-    fi
-  done
-fi
-DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-
-# Get all feature branches merged into the default branch
-MERGED_BRANCHES=$(git branch --merged "$DEFAULT_BRANCH" | sed 's/^[+* ]*//' | grep -E '^[0-9]{3}-')
-```
-
-### Step 2: Cross-Reference with Worktrees
-
-For each worktree with a feature branch, check if its branch appears in the merged list.
-
-### Step 3: Handle Merged Worktrees
-
-For each merged worktree, present it to the user and ask for confirmation:
-
-```
-Worktree cc-spex@004-user-auth (branch 004-user-auth) is merged into main.
-Remove this worktree? (yes/no)
-```
-
-If the user confirms, first switch to the main repo root (to avoid cwd pointing at the deleted directory), then remove the worktree:
+### Step 1: Get the stale report
 
 ```bash
-# Switch cwd to the main worktree BEFORE removing the feature worktree.
-# If cwd is inside the worktree being removed, all subsequent commands will
-# fail with "Path does not exist" because the Bash tool persists cwd.
+"$WORKTREE_SCRIPT" stale
+```
+
+It changes nothing and does not fetch: it reads what the last fetch recorded. The first line is `WORKTREE_STALE count=<n> dirty=<m> default=<branch>`, or `WORKTREE_STALE_SKIPPED reason=no-default-branch` (then tell the user and skip to Step 4). One tab-separated record follows per stale worktree:
+
+```
+<STALE|DIRTY>  <path>  <branch or (detached)>  <reasons>  <origin>  <ahead>
+```
+
+- `reasons`: `merged` (branch tip is reachable from the default branch), `upstream-gone` (the remote branch was deleted after the last fetch, often a squash merge, which `merged` cannot see), `detached-merged` (detached `HEAD` reachable from the default branch). A branch can have both of the first two.
+- `origin`: `spex` for a worktree spex created or a feature branch (`NNN-`, timestamp), `other` for an agent worktree (`.claude/worktrees/agent-*`) or one made by hand, for any branch name.
+- `ahead`: commits on the branch that are not in the default branch. For `upstream-gone` this can be above zero, because a squash merge leaves the original commits behind.
+
+The report never lists the main checkout, the worktree this session runs in, locked worktrees, or a detached `HEAD` with commits on no branch. Do not offer anything that is not in the report, and do not offer to force it.
+
+### Step 2: Handle stale worktrees
+
+Handle `STALE` records one at a time, with a confirmation for each. Name the reason, and for `origin` `other` say that spex did not create it:
+
+```
+Worktree .claude/worktrees/agent-a1b2 (detached HEAD) is merged into main.
+It was not created by spex. Remove the worktree? (yes/no)
+```
+
+For `upstream-gone` with `ahead` above zero, add `N commits are not in main (a squash merge leaves them behind)`.
+
+`DIRTY` records have uncommitted or untracked changes that removal would delete. List them as dirty, with the path and the reason, and do not offer them for removal. Tell the user to commit, stash or discard the changes by hand, then run cleanup again.
+
+Remove a confirmed worktree from the main checkout, so the shell is never inside the directory being removed (the Bash tool keeps its working directory between calls):
+
+```bash
 MAIN_WORKTREE=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
-cd "$MAIN_WORKTREE"
-git worktree remove <path>
-git branch -d <branch-name>
+cd "$MAIN_WORKTREE" || exit 1
+git worktree remove '<path>'
 ```
 
-### Step 4: Handle Unmerged Worktrees
+Never add `--force` for a worktree whose `origin` is `other`. If git refuses, show its message and stop for that worktree.
 
-For worktrees with unmerged branches, warn the user:
+A worktree with `origin` `spex` may hold untracked configuration that `prepare` copied in (`.claude/`, `.specify/`) when the project does not gitignore it, and a plain `git worktree remove` refuses for that reason. The report only says `STALE` (not `DIRTY`) for such a worktree when everything untracked in it is that copied configuration, so it is the one case where `--force` is acceptable: retry with `git worktree remove --force '<path>'` only after plain removal was refused, and only for a `STALE` record with `origin` `spex`.
 
-```
-Worktree cc-spex@007-worktrees-trait (branch 007-worktrees-trait) has NOT been merged.
-Skipping. Use --force to remove unmerged worktrees (data may be lost).
-```
+### Step 3: Delete the branch
 
-Only remove unmerged worktrees if the user explicitly confirms after seeing the warning.
+After the worktree is removed:
 
-### Step 5: Handle Pending Worktrees
+- `origin` `spex`: delete the branch with `git branch -d '<branch>'`. If that refuses (an `upstream-gone` branch after a squash merge is not merged in git's eyes), show the `ahead` count and ask before using `git branch -D`.
+- `origin` `other` (agent or hand-made worktree): do not delete the branch with the worktree. Ask separately, "Also delete branch '<branch>'?", and use `git branch -d` first and `-D` only after a second confirmation. A detached worktree has no branch to ask about.
+
+### Step 4: Handle Pending Worktrees
 
 A pending worktree (directory `.pending-*`, or `<repo>@.pending-*` for an external base path) whose HEAD is still detached was prepared for a `/speckit-specify` run that never got its branch: the run was interrupted, or it is still running in another session right now. Only offer worktrees that carry the prepared marker, so worktrees made by hand are never touched:
 
