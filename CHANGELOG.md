@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.3.0] - 2026-11-23
+
+### Added
+
+- **Evolve keeps task history when specs change.** After implementation, `/speckit-spex-evolve` records accepted spec and plan changes with SUPERSEDED/RETIRED markers and dated revision notes, then hands off to the append-only `/speckit-converge` instead of regenerating `plan.md` and `tasks.md`, so completed tasks survive spec evolution. Evolve never edits `tasks.md` itself and never reruns plan/tasks for a feature with completed tasks. Spec amendments reset clarify, review and runbook results that no longer apply, and review-code and verify assess live spec items only. Finish can skip a drafted runbook and mark it done, recording every step as skipped.
+
+### Fixed
+
+- **Project edits to core spec-kit templates survive a refresh.** `specify init --force` (run by init, `--refresh`, `--update` and the setup workflow) rewrote `.specify/templates/*.md` with the stock versions, dropping project customizations. Before every init, edited core templates are now copied to `.specify/templates/overrides/`, which spec-kit resolves first and never writes. When an edited template conflicts with an existing override, init stops before changing anything.
+- **The verify reminder only shows for a feature in progress.** The pre-commit reminder fired on every `git commit` in a spex project, including ad-hoc work on `main`, and missed doc-only commits made with `git add ... && git commit` because nothing was staged yet when the hook ran. It now fires only on a branch whose feature has a `tasks.md` (and, in flow mode, has reached implement), only when the commit carries code (looking at all working tree changes for `git add` in the same command and `git commit -a`), and once per session per feature. The message names the feature.
+
 ## [6.2.2] - 2026-11-06
 
 ### Changed
