@@ -292,7 +292,7 @@ DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
 1. **Archive** (copy + commit to sibling repo):
    ```bash
    if [ "$SKIP_ARCHIVE" != "true" ]; then
-     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     ARCHIVE_PATH=$(yq -r '.archive.path | select(. != null)' "$DETACH_CONFIG" 2>/dev/null)
      if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH" ]; then
        ARCHIVE_RESULT=$("$DETACH_SCRIPT" archive --include-brainstorm)
        if [ $? -eq 0 ]; then

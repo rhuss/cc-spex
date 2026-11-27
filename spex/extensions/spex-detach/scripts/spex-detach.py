@@ -28,8 +28,16 @@ def yq_read(key, config_file):
     if shutil.which("yq") is None:
         print("WARNING: yq not found; ignoring {} (using defaults)".format(config_file), file=sys.stderr)
         return None
-    r = subprocess.run(["yq", "-r", "{} // empty".format(key), config_file], capture_output=True, text=True)
-    val = r.stdout.strip() if r.returncode == 0 else ""
+    # Read the plain key: `// empty` is jq-only (mikefarah yq rejects it), and
+    # `// <default>` would turn an explicit false into the default. Both yq
+    # flavours print "null" for a missing key.
+    r = subprocess.run(["yq", "-r", key, config_file], capture_output=True, text=True)
+    if r.returncode != 0:
+        msg = (r.stderr.strip().splitlines() or ["exit code {}".format(r.returncode)])[-1]
+        print("WARNING: cannot read {} from {} ({}); using the default".format(key, config_file, msg),
+              file=sys.stderr)
+        return None
+    val = r.stdout.strip()
     return val if val and val != "null" else None
 
 
@@ -561,7 +569,7 @@ def cmd_archive(args):
         files_copied += sum(len(files) for _, _, files in os.walk("brainstorm"))
 
     committed = False
-    should_commit = auto_commit or read_config(".archive.auto_commit", "true") == "true"
+    should_commit = auto_commit or read_config(".archive.auto_commit", "true").lower() in ("true", "yes", "on")
     if should_commit and git_ok("rev-parse", "--git-dir", cwd=target):
         git("add", os.path.join(project, feature), cwd=target)
         if not git_ok("diff", "--cached", "--quiet", cwd=target):

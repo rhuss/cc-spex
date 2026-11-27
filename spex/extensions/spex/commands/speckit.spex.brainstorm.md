@@ -303,7 +303,7 @@ Last updated: YYYY-MM-DD
    ```bash
    DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
    if [ -d ".specify/extensions/spex-detach" ]; then
-     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     ARCHIVE_PATH=$(yq -r '.archive.path | select(. != null)' "$DETACH_CONFIG" 2>/dev/null)
      if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH/brainstorm" ]; then
        # Scan sibling repo's brainstorm/ for NN-*.md files
        # Include matches alongside local brainstorm matches
@@ -356,7 +356,7 @@ You MUST write the brainstorm document at session end. This step is NOT optional
    DETACH_SCRIPT=".specify/extensions/spex-detach/scripts/spex-detach.sh"
    if [ -n "$DETACH_SCRIPT" ] && [ -x "$DETACH_SCRIPT" ] && "$DETACH_SCRIPT" is-enabled 2>/dev/null; then
      DETACH_CONFIG=".specify/extensions/spex-detach/spex-detach-config.yml"
-     ARCHIVE_PATH=$(yq -r '.archive.path // empty' "$DETACH_CONFIG" 2>/dev/null)
+     ARCHIVE_PATH=$(yq -r '.archive.path | select(. != null)' "$DETACH_CONFIG" 2>/dev/null)
      if [ -n "$ARCHIVE_PATH" ] && [ -d "$ARCHIVE_PATH" ]; then
        BRAINSTORM_DIR="$ARCHIVE_PATH/brainstorm"
        echo "spex-detach: writing brainstorm to project-specs repo at $BRAINSTORM_DIR"

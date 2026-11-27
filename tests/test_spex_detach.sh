@@ -245,6 +245,49 @@ assert_eq ".specify/ archived" "true" "$([ -f "$TMPDIR/specs-archive/$PROJECT_NA
 assert_eq "specs/<feature>/ archived" "true" "$([ -f "$TMPDIR/specs-archive/$PROJECT_NAME/test-feature/specs/test-feature/spec.md" ] && echo true || echo false)"
 cleanup
 
+# ─── Test: archive reads path and auto_commit from the config (#70) ───
+# `// empty` is jq-only: mikefarah yq rejected it, so the configured path was
+# ignored. `// ""` would turn auto_commit: false into the default true.
+echo "=== Test: archive reads archive.path and archive.auto_commit from the config ==="
+if command -v yq >/dev/null 2>&1; then
+  TMPDIR=$(mktemp -d)
+  git init -q "$TMPDIR/specs-archive"
+  git -C "$TMPDIR/specs-archive" commit --allow-empty -m "initial" -q
+  git init -q "$TMPDIR/test-repo"
+  cd "$TMPDIR/test-repo"
+  git commit --allow-empty -m "initial" -q
+  git checkout -b f1 -q
+  mkdir -p .specify/extensions/spex-detach specs/f1
+  echo "spec" > specs/f1/spec.md
+  CONFIG=.specify/extensions/spex-detach/spex-detach-config.yml
+
+  printf 'archive:\n  path: "%s"\n  auto_commit: false\n' "$TMPDIR/specs-archive" > "$CONFIG"
+  RESULT=$(python3 "$DETACH_SCRIPT" archive 2>/dev/null)
+  assert_eq "configured path used (not skipped)" "null" "$(echo "$RESULT" | jq -r '.skipped')"
+  assert_eq "auto_commit: false is honoured" "false" "$(echo "$RESULT" | jq -r '.committed')"
+
+  git checkout -b f2 -q && mkdir -p specs/f2 && echo "spec" > specs/f2/spec.md
+  printf 'archive:\n  path: "%s"\n  auto_commit: True\n' "$TMPDIR/specs-archive" > "$CONFIG"
+  RESULT=$(python3 "$DETACH_SCRIPT" archive 2>/dev/null)
+  assert_eq "auto_commit: True commits" "true" "$(echo "$RESULT" | jq -r '.committed')"
+
+  git checkout -b f3 -q && mkdir -p specs/f3 && echo "spec" > specs/f3/spec.md
+  printf 'archive:\n  path: "%s"\n' "$TMPDIR/specs-archive" > "$CONFIG"
+  RESULT=$(python3 "$DETACH_SCRIPT" archive 2>/dev/null)
+  assert_eq "missing auto_commit defaults to commit" "true" "$(echo "$RESULT" | jq -r '.committed')"
+
+  # A failing yq call is reported, not mistaken for a missing setting
+  mkdir -p "$TMPDIR/bin"
+  printf '#!/bin/sh\necho "Error: boom" >&2\nexit 1\n' > "$TMPDIR/bin/yq"
+  chmod +x "$TMPDIR/bin/yq"
+  STDERR=$(PATH="$TMPDIR/bin:$PATH" python3 "$DETACH_SCRIPT" archive 2>&1 >/dev/null || true)
+  assert_contains "yq failure warns" "WARNING: cannot read .archive.path" "$STDERR"
+  assert_contains "warning carries yq's error" "Error: boom" "$STDERR"
+  cleanup
+else
+  echo "  SKIP: yq not installed"
+fi
+
 # ─── Test: archive includes brainstorm by default ───
 echo "=== Test: archive includes brainstorm by default ==="
 TMPDIR=$(mktemp -d)
